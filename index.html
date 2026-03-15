@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Property Dashboard</title>
+    
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h1 { color: #1f2937; text-align: center; }
+        p.subtitle { text-align: center; color: #6b7280; margin-bottom: 30px; }
+        .property-list { display: flex; flex-direction: column; gap: 15px; }
+        .property-card { border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; background-color: #f9fafb; }
+        .property-card h2 { margin: 0 0 10px 0; color: #2563eb; font-size: 1.25rem; }
+        .property-card p { margin: 5px 0; color: #4b5563; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function App() {
+            return (
+                <div className="container">
+                    <h1>🏠 Property Dashboard</h1>
+                    <p className="subtitle">This is your live React site on GitHub! Later, we will connect this to your Google Sheet.</p>
+                    
+                    <div className="property-list">
+                        <div className="property-card">
+                            <h2>Example Property 1</h2>
+                            <p><strong>Location:</strong> New York, NY</p>
+                            <p><strong>Price:</strong> $500,000</p>
+                            <p><strong>Status:</strong> 🟢 Available</p>
+                        </div>
+                        
+                        <div className="property-card">
+                            <h2>Example Property 2</h2>
+                            <p><strong>Location:</strong> Austin, TX</p>
+                            <p><strong>Price:</strong> $350,000</p>
+                            <p><strong>Status:</strong> 🔴 Sold</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // This command tells React to render the app on the screen
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
