@@ -11,6 +11,8 @@
     <style>
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans">
@@ -19,38 +21,39 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        // --- CONFIGURATION ---
+        const LEAD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzKmjXhueUDqDJ2HwalGBuRk4WfEEx-ruYZJ5IeSCIMxSDuEwaCAMspYBq-zMrFzmY/exec';
+        const WHATSAPP_NUMBER = "919742353260";
+        const API_URL = "https://script.google.com/macros/s/AKfycbzORxItxvqlsIUokcs7JCKjFASG2e3y_CrAT2zuy81aEQvLsVG6Sm6CuuSplgWnWh4/exec";
+
         const fixImageUrl = (rawUrl) => {
             if (!rawUrl || typeof rawUrl !== 'string' || rawUrl.trim() === '') {
                 return 'https://via.placeholder.com/800x500?text=No+Image';
             }
-            
             let url = rawUrl.split(',')[0].trim();
             let id = null;
-
             if (url.includes('drive.google.com/file/d/')) {
                 const match = url.match(/\/d\/(.*?)\//);
                 if (match && match[1]) id = match[1];
             } else if (url.includes('drive.google.com/open?id=')) {
                 id = url.split('id=')[1];
             }
-
-            if (id) {
-                return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
-            }
-            return url;
+            return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1000` : url;
         };
 
         function App() {
             const [properties, setProperties] = useState([]);
             const [loading, setLoading] = useState(true);
-            const [error, setError] = useState(null);
             const [filters, setFilters] = useState({ bhk: "", location: "" });
             const [selectedProperty, setSelectedProperty] = useState(null);
+            
+            // Lead Form State
+            const [showLeadForm, setShowLeadForm] = useState(false);
+            const [leadData, setLeadData] = useState({ name: "", phone: "" });
+            const [isSubmitting, setIsSubmitting] = useState(false);
 
             const urlParams = new URLSearchParams(window.location.search);
             const isAdmin = urlParams.get("key") === "admin123";
-
-            const API_URL = "https://script.google.com/macros/s/AKfycbzORxItxvqlsIUokcs7JCKjFASG2e3y_CrAT2zuy81aEQvLsVG6Sm6CuuSplgWnWh4/exec";
 
             useEffect(() => {
                 fetch(`${API_URL}?nocache=${new Date().getTime()}`)
@@ -59,39 +62,40 @@
                         setProperties(data);
                         setLoading(false);
                     })
-                    .catch(err => {
-                        setError("Connecting to Sheet...");
-                        setLoading(false);
-                    });
+                    .catch(() => setLoading(false));
             }, []);
 
-            if (loading) return <div className="flex h-screen items-center justify-center font-bold text-blue-600 text-xl animate-bounce italic">PERFECT HORIZONS...</div>;
-            
+            const handleLeadSubmit = (e) => {
+                e.preventDefault();
+                if (!leadData.name || !leadData.phone) return alert("Please enter name and phone");
+                
+                setIsSubmitting(true);
+                fetch(LEAD_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        name: leadData.name,
+                        phone: leadData.phone,
+                        property: selectedProperty ? selectedProperty["Property Name"] : "General Inquiry"
+                    })
+                }).then(() => {
+                    alert("Thank you! Tharun will contact you shortly.");
+                    setIsSubmitting(false);
+                    setShowLeadForm(false);
+                    setLeadData({ name: "", phone: "" });
+                }).catch(() => {
+                    alert("Error submitting. Please try again.");
+                    setIsSubmitting(false);
+                });
+            };
+
             const filteredProperties = properties.filter(p => {
-                const locMatch = filters.location === "" || (p.Location && p.Location.toLowerCase().includes(filters.location.toLowerCase()));
-                const bhkMatch = filters.bhk === "" || String(p["No of BHK's"] || "").includes(filters.bhk);
+                const locMatch = !filters.location || (p.Location && p.Location.toLowerCase().includes(filters.location.toLowerCase()));
+                const bhkMatch = !filters.bhk || String(p["No of BHK's"] || "").includes(filters.bhk);
                 return locMatch && bhkMatch;
             });
 
-            const getGalleryImages = (p) => {
-                const cover = fixImageUrl(p["Cover Image"]);
-                const galleryStr = p["Images and short videos \nif any"]; 
-                
-                if (!galleryStr) return [cover];
-                
-                const links = String(galleryStr).split(',')
-                                .map(link => fixImageUrl(link.trim()))
-                                .filter(link => !link.includes('placeholder.com'));
-                
-                return [cover, ...links];
-            };
-
-            // Helper to format the date nicely
-            const formatDate = (dateString) => {
-                if (!dateString) return "N/A";
-                const date = new Date(dateString);
-                return date.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
-            };
+            if (loading) return <div className="flex h-screen items-center justify-center font-bold text-blue-600 text-xl animate-bounce italic tracking-widest">PERFECT HORIZONS...</div>;
 
             return (
                 <div className="min-h-screen pb-20">
@@ -101,6 +105,7 @@
                     </nav>
 
                     <main className="max-w-7xl mx-auto p-4 md:p-8">
+                        {/* Filters */}
                         <div className="bg-white p-6 rounded-2xl shadow-sm border mb-8 flex flex-wrap gap-4 items-end">
                             <div className="flex-1 min-w-[200px]">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Location</label>
@@ -110,151 +115,92 @@
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">BHK</label>
                                 <select className="w-full border-gray-200 border rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none bg-white" value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}>
                                     <option value="">All</option>
-                                    <option value="1">1 BHK</option>
-                                    <option value="2">2 BHK</option>
-                                    <option value="3">3 BHK</option>
-                                    <option value="4">4 BHK</option>
-                                    <option value="5">5 BHK</option>
+                                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} BHK</option>)}
                                 </select>
                             </div>
                             <button onClick={() => setFilters({bhk:"", location:""})} className="text-blue-600 text-sm font-bold h-12 px-4 hover:bg-blue-50 rounded-xl transition">Clear</button>
                         </div>
 
+                        {/* Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {filteredProperties.map((p, i) => {
-                                const name = p["Property Name"] || "New Launch";
-                                const priceText = p.Price || "Price on Request";
-                                const img = fixImageUrl(p["Cover Image"]);
-                                const bhkInfo = p["No of BHK's"] || '-';
-
-                                return (
-                                    <div key={i} onClick={() => setSelectedProperty(p)} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col">
-                                        <div className="relative h-56 shrink-0 bg-gray-100">
-                                            <img src={img} className="w-full h-full object-cover" />
-                                            <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-tighter">{bhkInfo} BHK</div>
-                                        </div>
-                                        <div className="p-6 flex-grow flex flex-col justify-between">
-                                            <div>
-                                                <h2 className="text-xl font-bold text-gray-900 leading-tight mb-1 line-clamp-2">{name}</h2>
-                                                <p className="text-gray-500 text-sm flex items-center gap-1 mb-4">📍 {p.Location || 'Location unavailable'}</p>
-                                            </div>
-                                            <div className="text-blue-600 font-black text-2xl">{priceText}</div>
-                                        </div>
+                            {filteredProperties.map((p, i) => (
+                                <div key={i} onClick={() => setSelectedProperty(p)} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col">
+                                    <div className="relative h-56 shrink-0 bg-gray-100">
+                                        <img src={fixImageUrl(p["Cover Image"])} className="w-full h-full object-cover" />
+                                        <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-lg text-[10px] font-bold uppercase">{p["No of BHK's"] || '-'} BHK</div>
                                     </div>
-                                );
-                            })}
+                                    <div className="p-6 flex-grow flex flex-col justify-between">
+                                        <div>
+                                            <h2 className="text-xl font-bold text-gray-900 leading-tight mb-1 line-clamp-2">{p["Property Name"] || "New Launch"}</h2>
+                                            <p className="text-gray-500 text-sm flex items-center gap-1 mb-4">📍 {p.Location || 'Location unavailable'}</p>
+                                        </div>
+                                        <div className="text-blue-600 font-black text-2xl">{p.Price || "Price on Request"}</div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </main>
 
+                    {/* DETAILS MODAL */}
                     {selectedProperty && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
                             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSelectedProperty(null)}></div>
-                            <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col relative z-10 shadow-2xl animate-[fadeIn_0.2s_ease-out]">
-                                <button onClick={() => setSelectedProperty(null)} className="absolute top-4 right-4 bg-black/50 hover:bg-black text-white w-10 h-10 rounded-full flex items-center justify-center font-bold z-20 transition backdrop-blur">✕</button>
+                            <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col relative z-10 shadow-2xl animate-fadeIn">
+                                <button onClick={() => setSelectedProperty(null)} className="absolute top-4 right-4 bg-black/50 hover:bg-black text-white w-10 h-10 rounded-full flex items-center justify-center font-bold z-20">✕</button>
                                 
                                 <div className="overflow-y-auto w-full hide-scroll">
-                                    
-                                    {/* Gallery Section */}
-                                    <div className="w-full h-72 sm:h-96 bg-gray-100 flex overflow-x-auto snap-x snap-mandatory hide-scroll">
-                                        {getGalleryImages(selectedProperty).map((imgUrl, idx) => (
-                                            <img key={idx} src={imgUrl} className="w-full h-full object-cover shrink-0 snap-center" alt={`Gallery ${idx + 1}`} />
-                                        ))}
-                                    </div>
-                                    <div className="text-center text-xs text-gray-400 mt-2 font-bold uppercase tracking-widest">Swipe to see more photos</div>
+                                    <img src={fixImageUrl(selectedProperty["Cover Image"])} className="w-full h-72 sm:h-96 object-cover" />
                                     
                                     <div className="p-6 sm:p-10">
-                                        
-                                        {/* Header */}
                                         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8 border-b pb-6">
                                             <div>
-                                                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold uppercase tracking-widest mb-2 inline-block">
-                                                    {selectedProperty["No of BHK's"] || '-'} BHK
-                                                </span>
-                                                <h1 className="text-3xl sm:text-4xl font-black text-gray-900 leading-tight">{selectedProperty["Property Name"]}</h1>
-                                                <p className="text-gray-500 text-lg mt-2">📍 {selectedProperty.Location}</p>
+                                                <h1 className="text-3xl font-black text-gray-900">{selectedProperty["Property Name"]}</h1>
+                                                <p className="text-gray-500 text-lg">📍 {selectedProperty.Location}</p>
                                             </div>
                                             <div className="text-left sm:text-right">
-                                                <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">Starting Price</div>
-                                                <div className="text-blue-600 font-black text-3xl sm:text-4xl">{selectedProperty.Price}</div>
+                                                <div className="text-blue-600 font-black text-3xl">{selectedProperty.Price}</div>
                                             </div>
-                                        </div>
-
-                                        {/* ALL NEW PROJECT DETAILS SECTION */}
-                                        <div className="mb-8">
-                                            <h3 className="text-lg font-bold text-gray-900 mb-4 border-l-4 border-blue-600 pl-3">Project Overview</h3>
-                                            
-                                            {/* Quick Stats Grid */}
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 bg-gray-50 p-6 rounded-2xl border border-gray-100 mb-6">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Type</span>
-                                                    <span className="font-semibold text-gray-900">{selectedProperty["Property Type"] || "N/A"}</span>
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Builder</span>
-                                                    <span className="font-semibold text-gray-900">{selectedProperty["Builder Name"] || "N/A"}</span>
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Total Area</span>
-                                                    <span className="font-semibold text-gray-900">{selectedProperty["Super built-up area (sq ft)"] || "N/A"}</span>
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Units</span>
-                                                    <span className="font-semibold text-gray-900">{selectedProperty["Total Units "] || "N/A"}</span>
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Approval</span>
-                                                    <span className="font-semibold text-gray-900">{selectedProperty["Approval "] || "N/A"}</span>
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Possession</span>
-                                                    <span className="font-semibold text-gray-900">{formatDate(selectedProperty["Possession Date"])}</span>
-                                                </div>
-                                            </div>
-
-                                            {/* Amenities */}
-                                            {selectedProperty["Amenities "] && (
-                                                <div className="mb-6">
-                                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Amenities</h4>
-                                                    <p className="text-gray-700 text-sm leading-relaxed bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-                                                        {selectedProperty["Amenities "]}
-                                                    </p>
-                                                </div>
-                                            )}
-
-                                            {/* USPs (Splits them by line break into a nice bulleted list) */}
-                                            {selectedProperty["USP's"] && (
-                                                <div className="mb-6">
-                                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Project Highlights</h4>
-                                                    <ul className="list-disc pl-5 text-gray-700 text-sm leading-relaxed space-y-1 bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-                                                        {selectedProperty["USP's"].split('\n').map((usp, i) => usp.trim() && <li key={i}>{usp}</li>)}
-                                                    </ul>
-                                                </div>
-                                            )}
                                         </div>
 
                                         {/* Action Buttons */}
-                                        <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                                        <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 mb-6">
                                             {isAdmin ? (
-                                                <div>
-                                                    <h4 className="text-sm font-bold text-blue-900 mb-4 uppercase tracking-widest text-center">Admin Quick Share</h4>
-                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                                        <a href={selectedProperty["Brochure"] || '#'} target="_blank" className="bg-white text-blue-700 py-3 rounded-xl text-xs font-black text-center uppercase shadow-sm hover:shadow-md transition">Brochure</a>
-                                                        <a href={selectedProperty["Cost Sheet"] || '#'} target="_blank" className="bg-white text-blue-700 py-3 rounded-xl text-xs font-black text-center uppercase shadow-sm hover:shadow-md transition">Cost Sheet</a>
-                                                        <a href={selectedProperty["Map Link"] || '#'} target="_blank" className="bg-white text-blue-700 py-3 rounded-xl text-xs font-black text-center uppercase shadow-sm hover:shadow-md transition">Location Map</a>
-                                                        <a href={selectedProperty["Website Link"] || '#'} target="_blank" className="bg-white text-blue-700 py-3 rounded-xl text-xs font-black text-center uppercase shadow-sm hover:shadow-md transition">Website</a>
-                                                    </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <a href={selectedProperty["Brochure"] || '#'} target="_blank" className="bg-white text-blue-700 py-3 rounded-xl text-xs font-black text-center shadow-sm">Brochure</a>
+                                                    <a href={selectedProperty["Cost Sheet"] || '#'} target="_blank" className="bg-white text-blue-700 py-3 rounded-xl text-xs font-black text-center shadow-sm">Cost Sheet</a>
                                                 </div>
                                             ) : (
-                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                                    <button className="sm:col-span-3 bg-blue-600 text-white font-black py-4 rounded-xl shadow-lg hover:bg-blue-700 transition active:scale-95 text-sm tracking-widest uppercase">I am Interested</button>
-                                                    <button className="bg-white text-gray-700 border border-gray-200 py-3 rounded-xl text-xs font-bold uppercase hover:bg-gray-50 transition">Req. Brochure</button>
-                                                    <button className="bg-white text-gray-700 border border-gray-200 py-3 rounded-xl text-xs font-bold uppercase hover:bg-gray-50 transition">Req. Cost Sheet</button>
-                                                    <button className="bg-white text-gray-700 border border-gray-200 py-3 rounded-xl text-xs font-bold uppercase hover:bg-gray-50 transition">Request Callback</button>
+                                                <div className="flex flex-col gap-3">
+                                                    <button onClick={() => setShowLeadForm(true)} className="bg-blue-600 text-white font-black py-4 rounded-xl shadow-lg hover:bg-blue-700 text-sm uppercase tracking-widest">I am Interested</button>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi%20Tharun,%20send%20brochure%20for%20${selectedProperty["Property Name"]}`} target="_blank" className="bg-white text-gray-700 border p-3 rounded-xl text-[10px] font-bold text-center uppercase">Brochure</a>
+                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi%20Tharun,%20send%20cost%20sheet%20for%20${selectedProperty["Property Name"]}`} target="_blank" className="bg-white text-gray-700 border p-3 rounded-xl text-[10px] font-bold text-center uppercase">Cost Sheet</a>
+                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi%20Tharun,%20call%20me%20back%20for%20${selectedProperty["Property Name"]}`} target="_blank" className="bg-white text-gray-700 border p-3 rounded-xl text-[10px] font-bold text-center uppercase">Callback</a>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* LEAD FORM POPUP */}
+                    {showLeadForm && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowLeadForm(false)}></div>
+                            <div className="bg-white rounded-3xl p-8 w-full max-w-sm relative z-10 animate-fadeIn shadow-2xl">
+                                <h2 className="text-2xl font-black text-blue-900 mb-2">Interested?</h2>
+                                <p className="text-gray-500 text-sm mb-6">Leave your contact and Tharun will call you back shortly.</p>
+                                <form onSubmit={handleLeadSubmit} className="space-y-4">
+                                    <input type="text" placeholder="Your Name" required className="w-full border p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-600" value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
+                                    <input type="tel" placeholder="Phone Number" required className="w-full border p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-600" value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
+                                    <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl hover:bg-blue-700 transition">
+                                        {isSubmitting ? "Submitting..." : "SUBMIT DETAILS"}
+                                    </button>
+                                    <p onClick={() => setShowLeadForm(false)} className="text-center text-gray-400 text-xs cursor-pointer hover:text-gray-600">Cancel</p>
+                                </form>
                             </div>
                         </div>
                     )}
