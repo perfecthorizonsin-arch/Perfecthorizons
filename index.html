@@ -14,11 +14,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.15s ease-out forwards; }
     </style>
-    <script>
-        window.addEventListener('error', function(e) {
-            document.body.innerHTML = '<div style="padding:20px; color:red; font-family:sans-serif;"><h2>🚨 Code Cut Off!</h2><p>The code was not copied completely. Please make sure you copy everything down to the END OF CODE line.</p></div>';
-        });
-    </script>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans">
     <div id="root"></div>
@@ -70,6 +65,8 @@
             } catch(e) { return 0; }
         };
 
+        const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : "N/A";
+
         function App() {
             const [properties, setProperties] = useState([]);
             const [loading, setLoading] = useState(true);
@@ -85,7 +82,7 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get("key") === "admin123") setIsAdmin(true);
                 
-                try { localStorage.removeItem('ph_cache_v19'); } catch(e){} // Clear bad cache
+                try { localStorage.removeItem('ph_cache_v19'); } catch(e){} // Clear cache
                 
                 fetch(API_URL).then(res => res.json()).then(data => {
                     if (Array.isArray(data)) setProperties(data);
