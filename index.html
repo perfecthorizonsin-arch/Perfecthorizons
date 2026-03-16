@@ -1,13 +1,27 @@
-<script type="text/babel">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfect Horizons | Property Dashboard</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans">
+    
+    <div id="root"></div>
+
+    <script type="text/babel">
         const { useState, useEffect } = React;
 
         function App() {
             const [properties, setProperties] = useState([]);
             const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null); // Added Safety Net
             const [filters, setFilters] = useState({ bhk: "", location: "", maxPrice: "" });
 
-            // THE SECRET LINK TRICK:
-            // This checks the URL for "?key=admin123" to unlock your buttons
             const urlParams = new URLSearchParams(window.location.search);
             const [isAdmin, setIsAdmin] = useState(urlParams.get("key") === "admin123");
 
@@ -16,13 +30,26 @@
 
             useEffect(() => {
                 fetch(API_URL)
-                    .then(res => res.json())
+                    .then(res => {
+                        if (!res.ok) throw new Error("Could not connect to Google Sheets");
+                        return res.json();
+                    })
                     .then(data => {
                         setProperties(data);
                         setLoading(false);
                     })
-                    .catch(err => console.error("Error fetching data:", err));
+                    .catch(err => {
+                        console.error("Data Error:", err);
+                        setError(err.message);
+                        setLoading(false);
+                    });
             }, []);
+
+            // If there's an error, show it instead of a blank screen
+            if (error) return <div className="p-10 text-center text-red-600 font-bold mt-10">⚠️ Error: {error}. Please check your Google Apps Script URL.</div>;
+            
+            // Show loading text while fetching data
+            if (loading) return <div className="flex h-screen items-center justify-center font-bold text-blue-600 text-xl">Loading Portfolio...</div>;
 
             const filteredProperties = properties.filter(prop => {
                 const matchBhk = filters.bhk === "" || String(prop.BHK) === filters.bhk;
@@ -31,17 +58,13 @@
                 return matchBhk && matchLoc && matchPrice;
             });
 
-            if (loading) return <div className="flex h-screen items-center justify-center font-bold text-blue-600">Loading Portfolio...</div>;
-
             return (
                 <div className="min-h-screen">
-                    {/* Navigation - TOGGLE BUTTONS REMOVED FOR SECURITY */}
                     <nav className="bg-white shadow-md px-6 py-4 flex justify-between items-center sticky top-0 z-50">
                         <h1 className="text-xl font-black text-blue-900 tracking-tight">PERFECT HORIZONS</h1>
                     </nav>
 
                     <main className="max-w-7xl mx-auto p-6">
-                        {/* Filter Bar */}
                         <div className="bg-white p-4 rounded-xl shadow-sm border mb-8 flex flex-wrap gap-4 items-end">
                             <div className="flex-1 min-w-[140px]">
                                 <label className="text-xs font-bold text-gray-500 uppercase">Location</label>
@@ -57,41 +80,46 @@
                                     <option value="4">4 BHK</option>
                                 </select>
                             </div>
-                            <button onClick={() => setFilters({bhk:"", location:"", maxPrice:""})} className="text-blue-600 text-sm font-bold hover:underline">Clear Filters</button>
+                            <button onClick={() => setFilters({bhk:"", location:"", maxPrice:""})} className="text-blue-600 text-sm font-bold hover:underline mb-2">Clear Filters</button>
                         </div>
 
-                        {/* Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {filteredProperties.map(p => (
-                                <div key={p.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all">
-                                    <img src={p.ImageURL || 'https://via.placeholder.com/400x250?text=No+Image'} className="w-full h-52 object-cover" />
-                                    <div className="p-5">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h2 className="text-xl font-bold">{p.Title}</h2>
-                                            <span className="text-blue-600 font-bold">₹{(p.Price/10000000).toFixed(2)} Cr</span>
-                                        </div>
-                                        <p className="text-gray-500 text-sm mb-4 italic">📍 {p.Location}</p>
-                                        
-                                        {isAdmin ? (
-                                            <div className="grid grid-cols-2 gap-2 border-t pt-4 mt-4">
-                                                <a href={p.BrochureURL} target="_blank" className="text-center bg-gray-50 text-blue-700 p-2 rounded text-xs font-bold border hover:bg-blue-50">Share Brochure</a>
-                                                <a href={p.ImageURL} target="_blank" className="text-center bg-gray-50 text-blue-700 p-2 rounded text-xs font-bold border hover:bg-blue-50">Share Images</a>
-                                                <a href={p.CostSheetURL} target="_blank" className="text-center bg-gray-50 text-blue-700 p-2 rounded text-xs font-bold border hover:bg-blue-50">Share Cost Sheet</a>
-                                                <a href={p.MapURL} target="_blank" className="text-center bg-gray-50 text-blue-700 p-2 rounded text-xs font-bold border hover:bg-blue-50">Share Map</a>
+                            {filteredProperties.length === 0 ? (
+                                <div className="col-span-full text-center text-gray-500 py-10">No properties found. Check if your spreadsheet is empty!</div>
+                            ) : (
+                                filteredProperties.map((p, index) => (
+                                    <div key={p.id || index} className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all">
+                                        <img src={p.ImageURL || 'https://via.placeholder.com/400x250?text=No+Image'} className="w-full h-52 object-cover" />
+                                        <div className="p-5">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h2 className="text-xl font-bold">{p.Title || 'Unnamed Property'}</h2>
+                                                <span className="text-blue-600 font-bold">
+                                                    {p.Price ? `₹${(Number(p.Price)/10000000).toFixed(2)} Cr` : 'Price on Request'}
+                                                </span>
                                             </div>
-                                        ) : (
-                                            <div className="space-y-2 border-t pt-4 mt-4">
-                                                <button className="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700">I am Interested</button>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <button className="border p-2 rounded text-xs font-bold hover:bg-gray-50">Request Brochure</button>
-                                                    <button className="border p-2 rounded text-xs font-bold hover:bg-gray-50">Request Callback</button>
+                                            <p className="text-gray-500 text-sm mb-4 italic">📍 {p.Location || 'Location not specified'}</p>
+                                            
+                                            {isAdmin ? (
+                                                <div className="grid grid-cols-2 gap-2 border-t pt-4 mt-4">
+                                                    <a href={p.BrochureURL || '#'} target="_blank" className="text-center bg-gray-50 text-blue-700 p-2 rounded text-xs font-bold border hover:bg-blue-50">Share Brochure</a>
+                                                    <a href={p.ImageURL || '#'} target="_blank" className="text-center bg-gray-50 text-blue-700 p-2 rounded text-xs font-bold border hover:bg-blue-50">Share Images</a>
+                                                    <a href={p.CostSheetURL || '#'} target="_blank" className="text-center bg-gray-50 text-blue-700 p-2 rounded text-xs font-bold border hover:bg-blue-50">Share Cost Sheet</a>
+                                                    <a href={p.MapURL || '#'} target="_blank" className="text-center bg-gray-50 text-blue-700 p-2 rounded text-xs font-bold border hover:bg-blue-50">Share Map</a>
                                                 </div>
-                                                <button className="w-full border p-2 rounded text-xs font-bold hover:bg-gray-50">Request Cost Sheet</button>
-                                            </div>
-                                        )}
+                                            ) : (
+                                                <div className="space-y-2 border-t pt-4 mt-4">
+                                                    <button className="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700">I am Interested</button>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button className="border p-2 rounded text-xs font-bold hover:bg-gray-50">Request Brochure</button>
+                                                        <button className="border p-2 rounded text-xs font-bold hover:bg-gray-50">Request Callback</button>
+                                                    </div>
+                                                    <button className="w-full border p-2 rounded text-xs font-bold hover:bg-gray-50">Request Cost Sheet</button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </main>
                 </div>
@@ -101,3 +129,5 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
+</body>
+</html>
