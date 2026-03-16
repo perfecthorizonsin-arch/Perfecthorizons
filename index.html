@@ -8,9 +8,12 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans">
-    
     <div id="root"></div>
 
     <script type="text/babel">
@@ -19,109 +22,164 @@
         function App() {
             const [properties, setProperties] = useState([]);
             const [loading, setLoading] = useState(true);
-            const [error, setError] = useState(null); // Added Safety Net
-            const [filters, setFilters] = useState({ bhk: "", location: "", maxPrice: "" });
+            const [error, setError] = useState(null);
+            const [filters, setFilters] = useState({ bhk: "", location: "" });
+            const [selectedProperty, setSelectedProperty] = useState(null);
 
             const urlParams = new URLSearchParams(window.location.search);
-            const [isAdmin, setIsAdmin] = useState(urlParams.get("key") === "admin123");
+            const isAdmin = urlParams.get("key") === "admin123";
 
-            // YOUR GOOGLE SCRIPT URL
             const API_URL = "https://script.google.com/macros/s/AKfycbzORxItxvqlsIUokcs7JCKjFASG2e3y_CrAT2zuy81aEQvLsVG6Sm6CuuSplgWnWh4/exec";
 
             useEffect(() => {
                 fetch(API_URL)
-                    .then(res => {
-                        if (!res.ok) throw new Error("Could not connect to Google Sheets");
-                        return res.json();
-                    })
+                    .then(res => res.json())
                     .then(data => {
                         setProperties(data);
                         setLoading(false);
                     })
                     .catch(err => {
-                        console.error("Data Error:", err);
-                        setError(err.message);
+                        setError("Connecting to Sheet...");
                         setLoading(false);
                     });
             }, []);
 
-            // If there's an error, show it instead of a blank screen
-            if (error) return <div className="p-10 text-center text-red-600 font-bold mt-10">⚠️ Error: {error}. Please check your Google Apps Script URL.</div>;
+            if (loading) return <div className="flex h-screen items-center justify-center font-bold text-blue-600 text-xl animate-bounce italic">PERFECT HORIZONS...</div>;
             
-            // Show loading text while fetching data
-            if (loading) return <div className="flex h-screen items-center justify-center font-bold text-blue-600 text-xl">Loading Portfolio...</div>;
-
-            const filteredProperties = properties.filter(prop => {
-                const matchBhk = filters.bhk === "" || String(prop.BHK) === filters.bhk;
-                const matchLoc = filters.location === "" || (prop.Location && prop.Location.toLowerCase().includes(filters.location.toLowerCase()));
-                const matchPrice = filters.maxPrice === "" || Number(prop.Price) <= Number(filters.maxPrice);
-                return matchBhk && matchLoc && matchPrice;
+            const filteredProperties = properties.filter(p => {
+                const locMatch = filters.location === "" || (p.Location && p.Location.toLowerCase().includes(filters.location.toLowerCase()));
+                const bhkMatch = filters.bhk === "" || String(p["BHK Options"] || p.BHK || "").includes(filters.bhk);
+                return locMatch && bhkMatch;
             });
 
+            // UPDATED: Now perfectly matches your spreadsheet column
+            const getGalleryImages = (p) => {
+                const cover = p["cover images"] || p.ImageURL || 'https://via.placeholder.com/800x500?text=No+Image';
+                const galleryStr = p["images and videos if any"]; 
+                
+                if (!galleryStr) return [cover];
+                
+                const links = String(galleryStr).split(',').map(link => link.trim()).filter(link => link.length > 0);
+                return [cover, ...links];
+            };
+
             return (
-                <div className="min-h-screen">
-                    <nav className="bg-white shadow-md px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-                        <h1 className="text-xl font-black text-blue-900 tracking-tight">PERFECT HORIZONS</h1>
+                <div className="min-h-screen pb-20">
+                    <nav className="bg-white shadow-sm px-6 py-5 sticky top-0 z-40 border-b flex justify-between items-center">
+                        <h1 className="text-xl font-black text-blue-900 tracking-tighter uppercase italic">Perfect Horizons</h1>
+                        {isAdmin && <span className="bg-green-100 text-green-700 text-[10px] px-2 py-1 rounded font-bold">ADMIN ACTIVE</span>}
                     </nav>
 
-                    <main className="max-w-7xl mx-auto p-6">
-                        <div className="bg-white p-4 rounded-xl shadow-sm border mb-8 flex flex-wrap gap-4 items-end">
-                            <div className="flex-1 min-w-[140px]">
-                                <label className="text-xs font-bold text-gray-500 uppercase">Location</label>
-                                <input type="text" placeholder="Search area..." className="w-full border rounded-lg p-2 text-sm" value={filters.location} onChange={e => setFilters({...filters, location: e.target.value})} />
+                    <main className="max-w-7xl mx-auto p-4 md:p-8">
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border mb-8 flex flex-wrap gap-4 items-end">
+                            <div className="flex-1 min-w-[200px]">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Location</label>
+                                <input type="text" placeholder="Search area..." className="w-full border-gray-200 border rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none" value={filters.location} onChange={e => setFilters({...filters, location: e.target.value})} />
                             </div>
                             <div className="w-32">
-                                <label className="text-xs font-bold text-gray-500 uppercase">BHK</label>
-                                <select className="w-full border rounded-lg p-2 text-sm" value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">BHK</label>
+                                <select className="w-full border-gray-200 border rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none bg-white" value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}>
                                     <option value="">All</option>
-                                    <option value="1">1 BHK</option>
                                     <option value="2">2 BHK</option>
                                     <option value="3">3 BHK</option>
                                     <option value="4">4 BHK</option>
                                 </select>
                             </div>
-                            <button onClick={() => setFilters({bhk:"", location:"", maxPrice:""})} className="text-blue-600 text-sm font-bold hover:underline mb-2">Clear Filters</button>
+                            <button onClick={() => setFilters({bhk:"", location:""})} className="text-blue-600 text-sm font-bold h-12 px-4 hover:bg-blue-50 rounded-xl transition">Clear</button>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {filteredProperties.length === 0 ? (
-                                <div className="col-span-full text-center text-gray-500 py-10">No properties found. Check if your spreadsheet is empty!</div>
-                            ) : (
-                                filteredProperties.map((p, index) => (
-                                    <div key={p.id || index} className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all">
-                                        <img src={p.ImageURL || 'https://via.placeholder.com/400x250?text=No+Image'} className="w-full h-52 object-cover" />
-                                        <div className="p-5">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h2 className="text-xl font-bold">{p.Title || 'Unnamed Property'}</h2>
-                                                <span className="text-blue-600 font-bold">
-                                                    {p.Price ? `₹${(Number(p.Price)/10000000).toFixed(2)} Cr` : 'Price on Request'}
-                                                </span>
+                            {filteredProperties.map((p, i) => {
+                                const name = p["Property Name"] || p["Project Name"] || p["Title"] || "New Launch";
+                                const priceText = p.Price || p["Cost"] || "Price on Request";
+                                const img = p["cover images"] || p.ImageURL || 'https://via.placeholder.com/400x250?text=No+Image';
+                                const bhkInfo = p["BHK Options"] || p.BHK || '3';
+
+                                return (
+                                    <div 
+                                        key={i} 
+                                        onClick={() => setSelectedProperty(p)} 
+                                        className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col"
+                                    >
+                                        <div className="relative h-56 shrink-0">
+                                            <img src={img} className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
+                                                <span className="text-white font-bold text-sm bg-black/50 px-4 py-2 rounded-full backdrop-blur">Click for full details 🔍</span>
                                             </div>
-                                            <p className="text-gray-500 text-sm mb-4 italic">📍 {p.Location || 'Location not specified'}</p>
-                                            
+                                            <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-tighter">
+                                                {bhkInfo} BHK
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="p-6 flex-grow flex flex-col justify-between">
+                                            <div>
+                                                <h2 className="text-xl font-bold text-gray-900 leading-tight mb-1 line-clamp-2">{name}</h2>
+                                                <p className="text-gray-500 text-sm flex items-center gap-1 mb-4">📍 {p.Location || 'Bengaluru'}</p>
+                                            </div>
+                                            <div className="text-blue-600 font-black text-2xl">{priceText}</div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </main>
+
+                    {/* POPUP MODAL */}
+                    {selectedProperty && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSelectedProperty(null)}></div>
+                            
+                            <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col relative z-10 shadow-2xl animate-[fadeIn_0.2s_ease-out]">
+                                <button onClick={() => setSelectedProperty(null)} className="absolute top-4 right-4 bg-black/50 hover:bg-black text-white w-10 h-10 rounded-full flex items-center justify-center font-bold z-20 transition backdrop-blur">✕</button>
+                                
+                                <div className="overflow-y-auto w-full hide-scroll">
+                                    <div className="w-full h-72 sm:h-96 bg-gray-100 flex overflow-x-auto snap-x snap-mandatory hide-scroll">
+                                        {getGalleryImages(selectedProperty).map((imgUrl, idx) => (
+                                            <img key={idx} src={imgUrl} className="w-full h-full object-cover shrink-0 snap-center" alt={`Gallery ${idx + 1}`} />
+                                        ))}
+                                    </div>
+                                    <div className="text-center text-xs text-gray-400 mt-2 font-bold uppercase tracking-widest">Swipe / Scroll to see more photos</div>
+
+                                    <div className="p-6 sm:p-10">
+                                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 border-b pb-6">
+                                            <div>
+                                                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold uppercase tracking-widest mb-2 inline-block">
+                                                    {selectedProperty["BHK Options"] || selectedProperty.BHK || '3'} BHK
+                                                </span>
+                                                <h1 className="text-3xl sm:text-4xl font-black text-gray-900 leading-tight">{selectedProperty["Property Name"] || selectedProperty["Project Name"] || selectedProperty["Title"]}</h1>
+                                                <p className="text-gray-500 text-lg mt-2">📍 {selectedProperty.Location || 'Bengaluru'}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">Starting Price</div>
+                                                <div className="text-blue-600 font-black text-3xl sm:text-4xl">{selectedProperty.Price || selectedProperty["Cost"] || "On Request"}</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
                                             {isAdmin ? (
-                                                <div className="grid grid-cols-2 gap-2 border-t pt-4 mt-4">
-                                                    <a href={p.BrochureURL || '#'} target="_blank" className="text-center bg-gray-50 text-blue-700 p-2 rounded text-xs font-bold border hover:bg-blue-50">Share Brochure</a>
-                                                    <a href={p.ImageURL || '#'} target="_blank" className="text-center bg-gray-50 text-blue-700 p-2 rounded text-xs font-bold border hover:bg-blue-50">Share Images</a>
-                                                    <a href={p.CostSheetURL || '#'} target="_blank" className="text-center bg-gray-50 text-blue-700 p-2 rounded text-xs font-bold border hover:bg-blue-50">Share Cost Sheet</a>
-                                                    <a href={p.MapURL || '#'} target="_blank" className="text-center bg-gray-50 text-blue-700 p-2 rounded text-xs font-bold border hover:bg-blue-50">Share Map</a>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-blue-900 mb-4 uppercase tracking-widest text-center">Admin Quick Share</h4>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                        <a href={selectedProperty["Brochure URL"] || selectedProperty.BrochureURL} target="_blank" className="bg-white text-blue-700 py-3 rounded-xl text-xs font-black text-center uppercase shadow-sm hover:shadow-md transition">Brochure</a>
+                                                        <a href={selectedProperty["Cost Sheet URL"] || selectedProperty.CostSheetURL} target="_blank" className="bg-white text-blue-700 py-3 rounded-xl text-xs font-black text-center uppercase shadow-sm hover:shadow-md transition">Cost Sheet</a>
+                                                        <a href={selectedProperty["Map URL"] || selectedProperty.MapURL} target="_blank" className="bg-white text-blue-700 py-3 rounded-xl text-xs font-black text-center uppercase shadow-sm hover:shadow-md transition">Location Map</a>
+                                                        <a href={getGalleryImages(selectedProperty)[0]} target="_blank" className="bg-white text-blue-700 py-3 rounded-xl text-xs font-black text-center uppercase shadow-sm hover:shadow-md transition">Main Image</a>
+                                                    </div>
                                                 </div>
                                             ) : (
-                                                <div className="space-y-2 border-t pt-4 mt-4">
-                                                    <button className="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700">I am Interested</button>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <button className="border p-2 rounded text-xs font-bold hover:bg-gray-50">Request Brochure</button>
-                                                        <button className="border p-2 rounded text-xs font-bold hover:bg-gray-50">Request Callback</button>
-                                                    </div>
-                                                    <button className="w-full border p-2 rounded text-xs font-bold hover:bg-gray-50">Request Cost Sheet</button>
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                    <button className="sm:col-span-3 bg-blue-600 text-white font-black py-4 rounded-xl shadow-lg hover:bg-blue-700 transition active:scale-95 text-sm tracking-widest uppercase">I am Interested</button>
+                                                    <button className="bg-white text-gray-700 border border-gray-200 py-3 rounded-xl text-xs font-bold uppercase hover:bg-gray-50 transition">Req. Brochure</button>
+                                                    <button className="bg-white text-gray-700 border border-gray-200 py-3 rounded-xl text-xs font-bold uppercase hover:bg-gray-50 transition">Req. Cost Sheet</button>
+                                                    <button className="bg-white text-gray-700 border border-gray-200 py-3 rounded-xl text-xs font-bold uppercase hover:bg-gray-50 transition">Request Callback</button>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-                                ))
-                            )}
+                                </div>
+                            </div>
                         </div>
-                    </main>
+                    )}
                 </div>
             );
         }
