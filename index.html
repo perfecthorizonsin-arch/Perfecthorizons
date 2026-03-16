@@ -34,26 +34,32 @@
         };
 
         const formatPercent = (val) => {
+            if (!val) return "0%";
             let num = parseFloat(val);
-            if (isNaN(num)) return val;
+            if (isNaN(num)) return String(val);
             return (num < 1 && num > 0) ? (num * 100).toFixed(1) + "%" : num + "%";
         };
 
         const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : "N/A";
 
-        // SMART PRICE EXTRACTOR: Ignores ₹, onwards, *, etc.
+        // ARMOR-PLATED PRICE EXTRACTOR
         const extractPriceInCr = (priceString) => {
             if (!priceString) return 0;
-            const cleanStr = String(priceString).toLowerCase().replace(/,/g, '');
-            const numMatch = cleanStr.match(/[\d\.]+/); // Grabs ONLY the numbers/decimals
-            if (!numMatch) return 0;
-            
-            const val = parseFloat(numMatch[0]);
-            if (cleanStr.includes('cr') || cleanStr.includes('crore')) return val;
-            if (cleanStr.includes('lac') || cleanStr.includes('lakh')) return val / 100;
-            if (val > 100000) return val / 10000000; // If they just wrote 12000000
-            
-            return 0; // Fallback
+            try {
+                const cleanStr = String(priceString).toLowerCase().replace(/,/g, '');
+                const numMatch = cleanStr.match(/[0-9.]+/); 
+                if (!numMatch) return 0;
+                
+                const val = parseFloat(numMatch[0]);
+                if (isNaN(val)) return 0;
+
+                if (cleanStr.includes('cr') || cleanStr.includes('crore')) return val;
+                if (cleanStr.includes('lac') || cleanStr.includes('lakh')) return val / 100;
+                if (val > 100000) return val / 10000000; 
+                return 0; 
+            } catch(e) {
+                return 0;
+            }
         };
 
         function App() {
@@ -70,18 +76,36 @@
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get("key") === "admin123") setIsAdmin(true);
-                const cached = localStorage.getItem('ph_cache_v17');
-                if (cached) { setProperties(JSON.parse(cached)); setLoading(false); }
-                fetch(API_URL).then(res => res.json()).then(data => {
-                    setProperties(data); setLoading(false);
-                    localStorage.setItem('ph_cache_v17', JSON.stringify(data));
-                }).catch(() => setLoading(false));
+                
+                // SAFE CACHE LOADING
+                try {
+                    const cached = localStorage.getItem('ph_cache_v18');
+                    if (cached) {
+                        const parsed = JSON.parse(cached);
+                        if (Array.isArray(parsed)) {
+                            setProperties(parsed);
+                            setLoading(false);
+                        }
+                    }
+                } catch(e) { console.error("Cache error ignored"); }
+
+                // SAFE FETCHING
+                fetch(API_URL)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (Array.isArray(data)) {
+                            setProperties(data);
+                            localStorage.setItem('ph_cache_v18', JSON.stringify(data));
+                        }
+                        setLoading(false);
+                    })
+                    .catch(() => setLoading(false));
             }, []);
 
             const loginAdmin = () => {
                 const pin = prompt("Enter Admin PIN:");
                 if (pin === ADMIN_PIN) { setIsAdmin(true); alert("Admin Access Granted"); }
-                else alert("Incorrect PIN");
+                else if (pin) alert("Incorrect PIN");
             };
 
             const handleLeadSubmit = (e) => {
@@ -93,10 +117,17 @@
                 })}).then(() => {
                     alert("Interest Registered!");
                     setIsSubmitting(false); setShowLeadForm(false); setLeadData({ name: "", phone: "" });
+                }).catch(() => {
+                    alert("Error submitting. Please contact directly.");
+                    setIsSubmitting(false);
                 });
             };
 
-            const filtered = properties.filter(p => {
+            // SAFE FILTERING: Prevents crash if 'properties' is somehow not an array
+            const safeProperties = Array.isArray(properties) ? properties : [];
+            const filtered = safeProperties.filter(p => {
+                if (!p || typeof p !== 'object') return false; // Ignore blank sheet rows
+
                 const term = String(search || "").toLowerCase();
                 const pName = String(p["Property Name"] || "").toLowerCase();
                 const pLoc = String(p.Location || "").toLowerCase();
@@ -107,25 +138,26 @@
                 const matchStatus = !filters.status || String(p["Construction Status"] || "") === filters.status;
                 const matchType = !filters.type || String(p["Property Type"] || "") === filters.type;
                 
-                // USE THE SMART EXTRACTOR HERE
                 const priceInCr = extractPriceInCr(p.Price);
                 let matchPrice = true;
                 
-                if (filters.priceBracket && priceInCr > 0) {
-                    if (filters.priceBracket === "under1") matchPrice = priceInCr < 1;
-                    else if (filters.priceBracket === "1-2") matchPrice = priceInCr >= 1 && priceInCr < 2;
-                    else if (filters.priceBracket === "2-3") matchPrice = priceInCr >= 2 && priceInCr < 3;
-                    else if (filters.priceBracket === "3-4") matchPrice = priceInCr >= 3 && priceInCr < 4;
-                    else if (filters.priceBracket === "4-5") matchPrice = priceInCr >= 4 && priceInCr < 5;
-                    else if (filters.priceBracket === "5plus") matchPrice = priceInCr >= 5;
-                } else if (filters.priceBracket && priceInCr === 0) {
-                    matchPrice = false; // Hide properties without a readable price if filtering
+                if (filters.priceBracket) {
+                    if (priceInCr > 0) {
+                        if (filters.priceBracket === "under1") matchPrice = priceInCr < 1;
+                        else if (filters.priceBracket === "1-2") matchPrice = priceInCr >= 1 && priceInCr < 2;
+                        else if (filters.priceBracket === "2-3") matchPrice = priceInCr >= 2 && priceInCr < 3;
+                        else if (filters.priceBracket === "3-4") matchPrice = priceInCr >= 3 && priceInCr < 4;
+                        else if (filters.priceBracket === "4-5") matchPrice = priceInCr >= 4 && priceInCr < 5;
+                        else if (filters.priceBracket === "5plus") matchPrice = priceInCr >= 5;
+                    } else {
+                        matchPrice = false;
+                    }
                 }
 
                 return matchSearch && matchBHK && matchStatus && matchType && matchPrice;
             });
 
-            if (loading && properties.length === 0) return <div className="h-screen flex items-center justify-center font-black text-blue-900 animate-pulse text-2xl uppercase italic tracking-tighter">Perfect Horizons</div>;
+            if (loading && safeProperties.length === 0) return <div className="h-screen flex items-center justify-center font-black text-blue-900 animate-pulse text-2xl uppercase italic tracking-tighter">Perfect Horizons</div>;
 
             return (
                 <div className="min-h-screen flex flex-col">
@@ -176,12 +208,12 @@
                                     <div className="p-7 flex-grow">
                                         <div className="text-[9px] font-bold text-blue-600 uppercase tracking-[0.2em] mb-1">{p["Property Type"] || 'Residential'}</div>
                                         <h2 className="text-xl font-black uppercase tracking-tighter text-gray-900 leading-tight mb-2">
-                                            {p["Property Name"]}
+                                            {p["Property Name"] || "Listed Property"}
                                         </h2>
-                                        <p className="text-gray-400 text-sm mb-4 italic text-justify">📍 {p.Location}</p>
+                                        <p className="text-gray-400 text-sm mb-4 italic text-justify">📍 {p.Location || "Location on Request"}</p>
                                         <div className="flex justify-between items-center border-t pt-4">
-                                            <span className="text-blue-600 font-black text-2xl italic tracking-tighter">{p.Price}</span>
-                                            <span className="bg-blue-600 text-white px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-widest shadow-md">{p["No of BHK's"]} BHK</span>
+                                            <span className="text-blue-600 font-black text-2xl italic tracking-tighter">{p.Price || "Price on Request"}</span>
+                                            <span className="bg-blue-600 text-white px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-widest shadow-md">{p["No of BHK's"] || "-"} BHK</span>
                                         </div>
                                     </div>
                                 </div>
@@ -201,7 +233,8 @@
                                             const cover = fixImageUrl(selectedProperty["Cover Image"]);
                                             const gal = selectedProperty["Images and short videos \nif any"];
                                             const imgs = (typeof gal === 'string' && gal.length > 5) ? gal.split(',').map(l => fixImageUrl(l.trim())) : [];
-                                            return [cover, ...imgs].map((img, idx) => (
+                                            const allImgs = [cover, ...imgs].filter(i => i); // Safe check
+                                            return allImgs.map((img, idx) => (
                                                 <img key={idx} src={img} className="w-full h-full object-cover shrink-0 snap-center" />
                                             ));
                                         })()}
@@ -210,21 +243,21 @@
                                     <div className="p-6 md:p-10">
                                         <div className="flex flex-col md:flex-row justify-between mb-8 border-b pb-8">
                                             <div>
-                                                <div className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">{selectedProperty["Property Type"]} • {selectedProperty["Construction Status"]}</div>
-                                                <h1 className="text-4xl font-black uppercase tracking-tighter leading-tight">{selectedProperty["Property Name"]}</h1>
-                                                <p className="text-gray-500 text-lg italic">📍 {selectedProperty.Location} • <span className="text-blue-900 font-bold uppercase tracking-widest text-sm">{selectedProperty["Approval "] ? `${selectedProperty["Approval "]} APPROVED` : 'VERIFIED'}</span></p>
+                                                <div className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">{selectedProperty["Property Type"] || 'Property'} • {selectedProperty["Construction Status"] || 'Status'}</div>
+                                                <h1 className="text-4xl font-black uppercase tracking-tighter leading-tight">{selectedProperty["Property Name"] || 'Property Details'}</h1>
+                                                <p className="text-gray-500 text-lg italic">📍 {selectedProperty.Location || 'Bengaluru'} • <span className="text-blue-900 font-bold uppercase tracking-widest text-sm">{selectedProperty["Approval "] ? `${selectedProperty["Approval "]} APPROVED` : 'VERIFIED'}</span></p>
                                             </div>
                                             <div className="text-left md:text-right mt-4 md:mt-0 flex flex-col items-start md:items-end">
-                                                <div className="text-blue-600 font-black text-4xl italic tracking-tighter">{selectedProperty.Price}</div>
-                                                <div className="bg-yellow-400 text-yellow-900 border border-yellow-500 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest mt-2 shadow-sm">{selectedProperty["No of BHK's"]} BHK Config</div>
+                                                <div className="text-blue-600 font-black text-4xl italic tracking-tighter">{selectedProperty.Price || 'Price on Request'}</div>
+                                                <div className="bg-yellow-400 text-yellow-900 border border-yellow-500 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest mt-2 shadow-sm">{selectedProperty["No of BHK's"] || '-'} BHK Config</div>
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-6 rounded-3xl mb-8 border border-gray-100">
-                                            <div><span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Builder</span><span className="font-bold text-sm">{selectedProperty["Builder Name"]}</span></div>
-                                            <div><span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Total Units</span><span className="font-bold text-sm">{selectedProperty["Total Units "]}</span></div>
+                                            <div><span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Builder</span><span className="font-bold text-sm">{selectedProperty["Builder Name"] || "N/A"}</span></div>
+                                            <div><span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Total Units</span><span className="font-bold text-sm">{selectedProperty["Total Units "] || "N/A"}</span></div>
                                             <div><span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Possession</span><span className="font-bold text-sm">{formatDate(selectedProperty["Possession Date"])}</span></div>
-                                            <div><span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Status</span><span className="font-bold text-sm">{selectedProperty["Construction Status"]}</span></div>
+                                            <div><span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Status</span><span className="font-bold text-sm">{selectedProperty["Construction Status"] || "N/A"}</span></div>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
@@ -232,35 +265,11 @@
                                                 <div>
                                                     <h3 className="text-xs font-black text-blue-900 uppercase tracking-widest mb-4 border-b pb-2">Project Highlights</h3>
                                                     <ul className="list-disc pl-5 text-sm space-y-2 text-gray-700 leading-relaxed">
-                                                        {String(selectedProperty["USP's"]).split('\n').map((u, i) => u.trim() && <li key={i}>{u}</li>)}
+                                                        {String(selectedProperty["USP's"]).split('\n').filter(u => u.trim() !== "").map((u, i) => <li key={i}>{u.trim()}</li>)}
                                                     </ul>
                                                 </div>
                                             )}
                                             {selectedProperty["Amenities "] && (
                                                 <div>
                                                     <h3 className="text-xs font-black text-blue-900 uppercase tracking-widest mb-4 border-b pb-2">Amenities</h3>
-                                                    <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-2xl border border-gray-100 italic whitespace-pre-line">{selectedProperty["Amenities "]}</p>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {isAdmin && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                                                <div className="bg-yellow-50 border-2 border-yellow-100 p-6 rounded-3xl text-yellow-900">
-                                                    <h4 className="text-[10px] font-black uppercase tracking-widest mb-2">Commission & Payout</h4>
-                                                    <p className="text-3xl font-black">{formatPercent(selectedProperty["Commission %"])}</p>
-                                                    <p className="text-sm font-medium italic mt-1">{selectedProperty["Payout info"]}</p>
-                                                </div>
-                                                <div className="bg-blue-50 border-2 border-blue-100 p-6 rounded-3xl text-blue-900">
-                                                    <h4 className="text-[10px] font-black uppercase tracking-widest mb-2">Internal Logistics</h4>
-                                                    <p className="text-sm font-bold">POC: {selectedProperty["Point of contact"]}</p>
-                                                    <p className="text-sm font-bold">Stock: {selectedProperty["Availability"]}</p>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        <div className="bg-gray-100 p-8 rounded-[35px]">
-                                            {isAdmin ? (
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <a href={selectedProperty["Website Link"] || "#"} target="_blank" className="bg-white border p-4 rounded-2xl text-[10px] font-black text-center uppercase shadow-sm">Builder Site</a>
-                                                    <a href={String(selectedProperty["Lead registration Link"] || "").includes('@') ? `mailto:${selectedProperty["Lead registration Link"]}` : selectedProperty["Lead registration Link"]} target="_
+                                                    <p className="text-sm text-gray-700 leading-relaxed bg
