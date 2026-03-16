@@ -75,7 +75,6 @@
 
             const getGalleryImages = (p) => {
                 const cover = fixImageUrl(p["Cover Image"]);
-                // Mapped precisely to your hidden line break!
                 const galleryStr = p["Images and short videos \nif any"]; 
                 
                 if (!galleryStr) return [cover];
@@ -85,6 +84,13 @@
                                 .filter(link => !link.includes('placeholder.com'));
                 
                 return [cover, ...links];
+            };
+
+            // Helper to format the date nicely
+            const formatDate = (dateString) => {
+                if (!dateString) return "N/A";
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
             };
 
             return (
@@ -108,6 +114,7 @@
                                     <option value="2">2 BHK</option>
                                     <option value="3">3 BHK</option>
                                     <option value="4">4 BHK</option>
+                                    <option value="5">5 BHK</option>
                                 </select>
                             </div>
                             <button onClick={() => setFilters({bhk:"", location:""})} className="text-blue-600 text-sm font-bold h-12 px-4 hover:bg-blue-50 rounded-xl transition">Clear</button>
@@ -146,14 +153,19 @@
                                 <button onClick={() => setSelectedProperty(null)} className="absolute top-4 right-4 bg-black/50 hover:bg-black text-white w-10 h-10 rounded-full flex items-center justify-center font-bold z-20 transition backdrop-blur">✕</button>
                                 
                                 <div className="overflow-y-auto w-full hide-scroll">
+                                    
+                                    {/* Gallery Section */}
                                     <div className="w-full h-72 sm:h-96 bg-gray-100 flex overflow-x-auto snap-x snap-mandatory hide-scroll">
                                         {getGalleryImages(selectedProperty).map((imgUrl, idx) => (
                                             <img key={idx} src={imgUrl} className="w-full h-full object-cover shrink-0 snap-center" alt={`Gallery ${idx + 1}`} />
                                         ))}
                                     </div>
+                                    <div className="text-center text-xs text-gray-400 mt-2 font-bold uppercase tracking-widest">Swipe / Scroll to see more photos</div>
                                     
                                     <div className="p-6 sm:p-10">
-                                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 border-b pb-6">
+                                        
+                                        {/* Header */}
+                                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8 border-b pb-6">
                                             <div>
                                                 <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold uppercase tracking-widest mb-2 inline-block">
                                                     {selectedProperty["No of BHK's"] || '-'} BHK
@@ -161,12 +173,66 @@
                                                 <h1 className="text-3xl sm:text-4xl font-black text-gray-900 leading-tight">{selectedProperty["Property Name"]}</h1>
                                                 <p className="text-gray-500 text-lg mt-2">📍 {selectedProperty.Location}</p>
                                             </div>
-                                            <div className="text-right">
+                                            <div className="text-left sm:text-right">
                                                 <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">Starting Price</div>
                                                 <div className="text-blue-600 font-black text-3xl sm:text-4xl">{selectedProperty.Price}</div>
                                             </div>
                                         </div>
 
+                                        {/* ALL NEW PROJECT DETAILS SECTION */}
+                                        <div className="mb-8">
+                                            <h3 className="text-lg font-bold text-gray-900 mb-4 border-l-4 border-blue-600 pl-3">Project Overview</h3>
+                                            
+                                            {/* Quick Stats Grid */}
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 bg-gray-50 p-6 rounded-2xl border border-gray-100 mb-6">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Type</span>
+                                                    <span className="font-semibold text-gray-900">{selectedProperty["Property Type"] || "N/A"}</span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Builder</span>
+                                                    <span className="font-semibold text-gray-900">{selectedProperty["Builder Name"] || "N/A"}</span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Total Area</span>
+                                                    <span className="font-semibold text-gray-900">{selectedProperty["Super built-up area (sq ft)"] || "N/A"}</span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Units</span>
+                                                    <span className="font-semibold text-gray-900">{selectedProperty["Total Units "] || "N/A"}</span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Approval</span>
+                                                    <span className="font-semibold text-gray-900">{selectedProperty["Approval "] || "N/A"}</span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Possession</span>
+                                                    <span className="font-semibold text-gray-900">{formatDate(selectedProperty["Possession Date"])}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Amenities */}
+                                            {selectedProperty["Amenities "] && (
+                                                <div className="mb-6">
+                                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Amenities</h4>
+                                                    <p className="text-gray-700 text-sm leading-relaxed bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                                                        {selectedProperty["Amenities "]}
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {/* USPs (Splits them by line break into a nice bulleted list) */}
+                                            {selectedProperty["USP's"] && (
+                                                <div className="mb-6">
+                                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Project Highlights</h4>
+                                                    <ul className="list-disc pl-5 text-gray-700 text-sm leading-relaxed space-y-1 bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                                                        {selectedProperty["USP's"].split('\n').map((usp, i) => usp.trim() && <li key={i}>{usp}</li>)}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Action Buttons */}
                                         <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
                                             {isAdmin ? (
                                                 <div>
