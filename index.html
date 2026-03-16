@@ -19,6 +19,26 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        // MAGIC FUNCTION: Automatically fixes Google Drive links to work on websites
+        const fixImageUrl = (url) => {
+            if (!url || typeof url !== 'string') return 'https://via.placeholder.com/800x500?text=No+Image';
+            
+            // If it's a standard Google Drive link, convert it to a raw image link
+            if (url.includes('drive.google.com/file/d/')) {
+                const match = url.match(/\/d\/(.*?)\//);
+                if (match && match[1]) {
+                    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+                }
+            }
+            // If it's a Drive link formatted slightly differently
+            if (url.includes('drive.google.com/open?id=')) {
+                const id = url.split('id=')[1];
+                return `https://drive.google.com/uc?export=view&id=${id}`;
+            }
+            
+            return url;
+        };
+
         function App() {
             const [properties, setProperties] = useState([]);
             const [loading, setLoading] = useState(true);
@@ -52,14 +72,14 @@
                 return locMatch && bhkMatch;
             });
 
-            // UPDATED: Now perfectly matches your spreadsheet column
             const getGalleryImages = (p) => {
-                const cover = p["cover images"] || p.ImageURL || 'https://via.placeholder.com/800x500?text=No+Image';
-                const galleryStr = p["images and videos if any"]; 
+                const rawCover = p["cover images"] || p.ImageURL;
+                const cover = fixImageUrl(rawCover);
                 
+                const galleryStr = p["images and videos if any"]; 
                 if (!galleryStr) return [cover];
                 
-                const links = String(galleryStr).split(',').map(link => link.trim()).filter(link => link.length > 0);
+                const links = String(galleryStr).split(',').map(link => fixImageUrl(link.trim())).filter(link => link.length > 0);
                 return [cover, ...links];
             };
 
@@ -92,7 +112,7 @@
                             {filteredProperties.map((p, i) => {
                                 const name = p["Property Name"] || p["Project Name"] || p["Title"] || "New Launch";
                                 const priceText = p.Price || p["Cost"] || "Price on Request";
-                                const img = p["cover images"] || p.ImageURL || 'https://via.placeholder.com/400x250?text=No+Image';
+                                const img = fixImageUrl(p["cover images"] || p.ImageURL);
                                 const bhkInfo = p["BHK Options"] || p.BHK || '3';
 
                                 return (
@@ -101,7 +121,7 @@
                                         onClick={() => setSelectedProperty(p)} 
                                         className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col"
                                     >
-                                        <div className="relative h-56 shrink-0">
+                                        <div className="relative h-56 shrink-0 bg-gray-100">
                                             <img src={img} className="w-full h-full object-cover" />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
                                                 <span className="text-white font-bold text-sm bg-black/50 px-4 py-2 rounded-full backdrop-blur">Click for full details 🔍</span>
@@ -124,7 +144,6 @@
                         </div>
                     </main>
 
-                    {/* POPUP MODAL */}
                     {selectedProperty && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
                             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSelectedProperty(null)}></div>
