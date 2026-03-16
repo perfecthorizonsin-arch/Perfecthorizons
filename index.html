@@ -14,13 +14,9 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.15s ease-out forwards; }
     </style>
-    
     <script>
-        window.addEventListener('error', function(event) {
-            document.body.innerHTML = '<div style="background:#fee2e2; color:#991b1b; padding:2rem; font-family:sans-serif; height:100vh;">' +
-                '<h2 style="font-weight:900; font-size:1.5rem; margin-bottom:1rem; text-transform:uppercase;">🚨 Syntax Error Detected</h2>' +
-                '<p style="font-family:monospace; padding:1rem; background:#fecaca; border-radius:0.5rem; font-weight:bold;">' + event.message + '</p>' +
-                '<p style="margin-top:1rem; font-size:0.875rem;">Screenshot this to Tharun.</p></div>';
+        window.addEventListener('error', function(e) {
+            document.body.innerHTML = '<div style="padding:20px; color:red; font-family:sans-serif;"><h2>🚨 Code Cut Off!</h2><p>The code was not copied completely. Please make sure you copy everything down to the END OF CODE line.</p></div>';
         });
     </script>
 </head>
@@ -30,30 +26,21 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // --- ERROR BOUNDARY: Catches React Runtime Errors ---
-        class ErrorBoundary extends React.Component {
-            constructor(props) { super(props); this.state = { hasError: false, errorInfo: null }; }
-            static getDerivedStateFromError(error) { return { hasError: true, errorInfo: error }; }
-            render() {
-                if (this.state.hasError) {
-                    return (
-                        <div className="h-screen bg-red-50 text-red-900 p-8 font-sans flex flex-col justify-center items-center text-center">
-                            <h2 className="text-3xl font-black mb-4 uppercase">Portal Crash Detected</h2>
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border-2 border-red-200 font-mono text-sm mb-6 text-left w-full max-w-2xl">
-                                {this.state.errorInfo ? this.state.errorInfo.toString() : "Unknown Error"}
-                            </div>
-                            <p className="text-sm font-bold bg-red-200 px-4 py-2 rounded-lg">Please send a screenshot of this exact screen back!</p>
-                        </div>
-                    );
-                }
-                return this.props.children;
-            }
-        }
-
         const LEAD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzKmjXhueUDqDJ2HwalGBuRk4WfEEx-ruYZJ5IeSCIMxSDuEwaCAMspYBq-zMrFzmY/exec';
         const API_URL = "https://script.google.com/macros/s/AKfycbzORxItxvqlsIUokcs7JCKjFASG2e3y_CrAT2zuy81aEQvLsVG6Sm6CuuSplgWnWh4/exec";
         const WHATSAPP_NUMBER = "919742353260";
         const ADMIN_PIN = "1234"; 
+
+        // SMART SCANNER: Fixes Google Sheet header typos (like trailing spaces)
+        const getVal = (obj, searchKey) => {
+            if (!obj) return "";
+            if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
+            const cleanKey = searchKey.trim().toLowerCase();
+            for (let k in obj) {
+                if (k.trim().toLowerCase() === cleanKey) return obj[k];
+            }
+            return "";
+        };
 
         const fixImageUrl = (u) => {
             if (!u || typeof u !== 'string') return 'https://via.placeholder.com/800x500?text=No+Image';
@@ -63,10 +50,20 @@
         };
 
         const formatPercent = (val) => {
-            if (!val) return "0%";
             let num = parseFloat(val);
-            if (isNaN(num)) return String(val);
+            if (isNaN(num)) return String(val || "0%");
             return (num < 1 && num > 0) ? (num * 100).toFixed(1) + "%" : num + "%";
         };
 
-        const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
+        const extractPriceInCr = (priceString) => {
+            if (!priceString) return 0;
+            try {
+                const cleanStr = String(priceString).toLowerCase().replace(/,/g, '');
+                const numMatch = cleanStr.match(/[0-9.]+/); 
+                if (!numMatch) return 0;
+                const val = parseFloat(numMatch[0]);
+                if (isNaN(val)) return 0;
+                if (cleanStr.includes('cr') || cleanStr.includes('crore')) return val;
+                if (cleanStr.includes('lac') || cleanStr.includes('lakh')) return val / 100;
+                if (val > 100000) return val / 10000000; 
+                return 0;
