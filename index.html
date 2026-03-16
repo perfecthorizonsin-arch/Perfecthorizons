@@ -19,12 +19,16 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // MAGIC FUNCTION V2: Bypasses Google Security & Brave Browser Blocks
-        const fixImageUrl = (url) => {
-            if (!url || typeof url !== 'string') return 'https://via.placeholder.com/800x500?text=No+Image';
+        // Upgraded Image Fixer: Handles commas, empty spaces, and Drive links
+        const fixImageUrl = (rawUrl) => {
+            if (!rawUrl || typeof rawUrl !== 'string' || rawUrl.trim() === '') {
+                return 'https://via.placeholder.com/800x500?text=No+Image';
+            }
             
+            // If there are multiple links, grab ONLY the first one so it doesn't crash
+            let url = rawUrl.split(',')[0].trim();
+
             let id = null;
-            // Extract the hidden ID from the Google Drive link
             if (url.includes('drive.google.com/file/d/')) {
                 const match = url.match(/\/d\/(.*?)\//);
                 if (match && match[1]) id = match[1];
@@ -32,12 +36,11 @@
                 id = url.split('id=')[1];
             }
 
-            // If we found an ID, use the backdoor Thumbnail API
             if (id) {
                 return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
             }
             
-            return url.trim();
+            return url;
         };
 
         function App() {
@@ -50,11 +53,11 @@
             const urlParams = new URLSearchParams(window.location.search);
             const isAdmin = urlParams.get("key") === "admin123";
 
-            // YOUR API LINK
             const API_URL = "https://script.google.com/macros/s/AKfycbzORxItxvqlsIUokcs7JCKjFASG2e3y_CrAT2zuy81aEQvLsVG6Sm6CuuSplgWnWh4/exec";
 
             useEffect(() => {
-                fetch(API_URL)
+                // ADDED: Cache-buster. Forces the browser to grab the freshest data from your sheet
+                fetch(`${API_URL}?nocache=${new Date().getTime()}`)
                     .then(res => res.json())
                     .then(data => {
                         setProperties(data);
@@ -75,11 +78,18 @@
             });
 
             const getGalleryImages = (p) => {
-                const cover = fixImageUrl(p["cover images"] || p.ImageURL);
-                const galleryStr = p["images and videos if any"]; 
+                // Added checks for capitalized column names just in case!
+                const rawCover = p["cover images"] || p["Cover Images"] || p.ImageURL;
+                const cover = fixImageUrl(rawCover);
+                
+                const galleryStr = p["images and videos if any"] || p["Images and videos if any"]; 
                 if (!galleryStr) return [cover];
                 
-                const links = String(galleryStr).split(',').map(link => fixImageUrl(link.trim())).filter(link => link.length > 0);
+                // Splits all the gallery links and cleans them up
+                const links = String(galleryStr).split(',')
+                                .map(link => fixImageUrl(link.trim()))
+                                .filter(link => !link.includes('placeholder.com'));
+                
                 return [cover, ...links];
             };
 
@@ -112,7 +122,7 @@
                             {filteredProperties.map((p, i) => {
                                 const name = p["Property Name"] || p["Project Name"] || p["Title"] || "New Launch";
                                 const priceText = p.Price || p["Cost"] || "Price on Request";
-                                const img = fixImageUrl(p["cover images"] || p.ImageURL);
+                                const img = fixImageUrl(p["cover images"] || p["Cover Images"] || p.ImageURL);
                                 const bhkInfo = p["BHK Options"] || p.BHK || '3';
 
                                 return (
