@@ -51,11 +51,11 @@
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get("key") === "admin123") setIsAdmin(true);
-                const cached = localStorage.getItem('ph_cache_v11');
+                const cached = localStorage.getItem('ph_cache_v12');
                 if (cached) { setProperties(JSON.parse(cached)); setLoading(false); }
                 fetch(API_URL).then(res => res.json()).then(data => {
                     setProperties(data); setLoading(false);
-                    localStorage.setItem('ph_cache_v11', JSON.stringify(data));
+                    localStorage.setItem('ph_cache_v12', JSON.stringify(data));
                 }).catch(() => setLoading(false));
             }, []);
 
@@ -95,6 +95,8 @@
                 return matchSearch && matchBHK && matchStatus && matchType && matchPrice;
             });
 
+            if (loading && properties.length === 0) return <div className="h-screen flex items-center justify-center font-black text-blue-900 animate-pulse italic uppercase tracking-tighter text-2xl">Perfect Horizons</div>;
+
             return (
                 <div className="min-h-screen flex flex-col">
                     <nav className="bg-white shadow-sm px-6 py-5 sticky top-0 z-40 border-b flex justify-between items-center">
@@ -130,7 +132,7 @@
                                     <option value="3-4">3 - 4 Cr</option>
                                     <option value="5plus">5 Cr & Above</option>
                                 </select>
-                                <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:"", priceBracket:""})}} className="text-red-500 font-black text-[10px] uppercase tracking-widest border border-red-100 rounded-xl hover:bg-red-50 transition">Clear All Filters</button>
+                                <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:"", priceBracket:""})}} className="text-red-500 font-black text-[10px] uppercase tracking-widest border border-red-100 rounded-xl hover:bg-red-50 transition">Clear Filters</button>
                             </div>
                         </div>
 
@@ -139,11 +141,10 @@
                                 <div key={i} onClick={() => setSelectedProperty(p)} className="bg-white rounded-[35px] shadow-sm border overflow-hidden hover:shadow-2xl transition-all cursor-pointer group flex flex-col">
                                     <div className="relative h-56 overflow-hidden shrink-0 bg-gray-100">
                                         <img src={fixImageUrl(p["Cover Image"])} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                                        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-blue-900 shadow-sm">{p["Construction Status"]}</div>
                                     </div>
                                     <div className="p-7 flex-grow">
-                                        <div className="text-[9px] font-bold text-blue-600 uppercase tracking-[0.2em] mb-1">{p["Property Type"]}</div>
-                                        <h2 className="text-xl font-black uppercase tracking-tighter line-clamp-1">{p["Property Name"]}</h2>
+                                        <div className="text-[9px] font-bold text-blue-600 uppercase tracking-[0.2em] mb-1">{p["Property Type"] || 'Residential'}</div>
+                                        <h2 className="text-xl font-black uppercase tracking-tighter line-clamp-1 block text-gray-900">{p["Property Name"]}</h2>
                                         <p className="text-gray-400 text-sm mb-4">📍 {p.Location}</p>
                                         <div className="flex justify-between items-center border-t pt-4">
                                             <span className="text-blue-600 font-black text-2xl italic">{p.Price}</span>
@@ -205,7 +206,7 @@
                                             {selectedProperty["Amenities "] && (
                                                 <div>
                                                     <h3 className="text-xs font-black text-blue-900 uppercase tracking-widest mb-4 border-b pb-2">Amenities</h3>
-                                                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line bg-gray-50 p-4 rounded-2xl border border-gray-100 italic">{selectedProperty["Amenities "]}</p>
+                                                    <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-2xl border border-gray-100 italic">{selectedProperty["Amenities "]}</p>
                                                 </div>
                                             )}
                                         </div>
@@ -228,18 +229,18 @@
                                         <div className="bg-gray-100 p-8 rounded-[35px]">
                                             {isAdmin ? (
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    <a href={selectedProperty["Website Link"] || "#"} target="_blank" className="bg-white border p-4 rounded-2xl text-[10px] font-black text-center uppercase shadow-sm">Builder Site</a>
+                                                    <a href={selectedProperty["Website Link"] || "#"} target="_blank" className="bg-white border p-4 rounded-2xl text-[10px] font-black text-center uppercase">Builder Site</a>
                                                     <a href={selectedProperty["Lead registration Link"]?.includes('@') ? `mailto:${selectedProperty["Lead registration Link"]}` : selectedProperty["Lead registration Link"]} target="_blank" className="bg-blue-900 text-white p-4 rounded-2xl text-[10px] font-black text-center uppercase shadow-lg">Register Lead</a>
-                                                    <a href={selectedProperty["Brochure"] || "#"} target="_blank" className="bg-white border p-4 rounded-2xl text-[10px] font-black text-center uppercase shadow-sm">Share Brochure</a>
-                                                    <a href={selectedProperty["Cost Sheet"] || "#"} target="_blank" className="bg-white border p-4 rounded-2xl text-[10px] font-black text-center uppercase shadow-sm">Share Cost Sheet</a>
+                                                    <a href={selectedProperty["Brochure"] || "#"} target="_blank" className="bg-white border p-4 rounded-2xl text-[10px] font-black text-center uppercase">Share Brochure</a>
+                                                    <a href={selectedProperty["Cost Sheet"] || "#"} target="_blank" className="bg-white border p-4 rounded-2xl text-[10px] font-black text-center uppercase">Share Cost Sheet</a>
                                                 </div>
                                             ) : (
                                                 <div className="flex flex-col gap-4">
-                                                    <button onClick={() => setShowLeadForm(true)} className="bg-blue-600 text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 transition active:scale-95">I am Interested</button>
+                                                    <button onClick={() => setShowLeadForm(true)} className="bg-blue-600 text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl">I am Interested</button>
                                                     <div className="grid grid-cols-3 gap-3">
-                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi Tharun, I request the Brochure for ${selectedProperty["Property Name"]}`} target="_blank" className="bg-white border p-4 rounded-xl text-[9px] font-black text-center uppercase shadow-sm">Request Brochure</a>
-                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi Tharun, I request the Cost Sheet for ${selectedProperty["Property Name"]}`} target="_blank" className="bg-white border p-4 rounded-xl text-[9px] font-black text-center uppercase shadow-sm">Request Cost Sheet</a>
-                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi Tharun, I request a Callback for ${selectedProperty["Property Name"]}`} target="_blank" className="bg-white border p-4 rounded-xl text-[9px] font-black text-center uppercase shadow-sm">Request Callback</a>
+                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi Tharun, I request the Brochure for ${selectedProperty["Property Name"]}`} target="_blank" className="bg-white border p-4 rounded-xl text-[9px] font-black text-center uppercase">Request Brochure</a>
+                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi Tharun, I request the Cost Sheet for ${selectedProperty["Property Name"]}`} target="_blank" className="bg-white border p-4 rounded-xl text-[9px] font-black text-center uppercase">Request Cost Sheet</a>
+                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi Tharun, I request a Callback for ${selectedProperty["Property Name"]}`} target="_blank" className="bg-white border p-4 rounded-xl text-[9px] font-black text-center uppercase">Request Callback</a>
                                                     </div>
                                                 </div>
                                             )}
