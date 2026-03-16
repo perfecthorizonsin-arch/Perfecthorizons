@@ -265,13 +265,13 @@
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                                                 <div className="bg-yellow-50 border-2 border-yellow-100 p-6 rounded-3xl text-yellow-900">
                                                     <h4 className="text-[10px] font-black uppercase tracking-widest mb-2">Commission & Payout</h4>
-                                                    <p className="text-3xl font-black">{formatPercent(getVal(selectedProperty, "Commission %"))}</p>
+                                                    <p className="text-3xl font-black">{formatPercent(getVal(selectedProperty, "Commission % and Payout info"))}</p>
                                                     <p className="text-sm font-medium italic mt-1">{getVal(selectedProperty, "Payout info") || "N/A"}</p>
                                                 </div>
                                                 <div className="bg-blue-50 border-2 border-blue-100 p-6 rounded-3xl text-blue-900">
-                                                    <h4 className="text-[10px] font-black uppercase tracking-widest mb-2">Internal Logistics</h4>
+                                                    <h4 className="text-[10px] font-black uppercase tracking-widest mb-2">Internal Details</h4>
                                                     <p className="text-sm font-bold">POC: {getVal(selectedProperty, "Point of contact") || "N/A"}</p>
-                                                    <p className="text-sm font-bold">Stock: {getVal(selectedProperty, "Availability") || "Check master sheet"}</p>
+                                                    <p className="text-sm font-bold">Availability: {getVal(selectedProperty, "Availability") || "Check master sheet"}</p>
                                                 </div>
                                             </div>
                                         )}
