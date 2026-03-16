@@ -24,7 +24,7 @@
         const LEAD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzKmjXhueUDqDJ2HwalGBuRk4WfEEx-ruYZJ5IeSCIMxSDuEwaCAMspYBq-zMrFzmY/exec';
         const API_URL = "https://script.google.com/macros/s/AKfycbzORxItxvqlsIUokcs7JCKjFASG2e3y_CrAT2zuy81aEQvLsVG6Sm6CuuSplgWnWh4/exec";
         const WHATSAPP_NUMBER = "919742353260";
-        const ADMIN_PIN = "1234"; 
+        const ADMIN_PIN = "1007"; 
 
         const fixImageUrl = (u) => {
             if (!u || typeof u !== 'string') return 'https://via.placeholder.com/800x500?text=No+Image';
@@ -54,11 +54,11 @@
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get("key") === "admin123") setIsAdmin(true);
-                const cached = localStorage.getItem('ph_cache_v7');
+                const cached = localStorage.getItem('ph_cache_v8');
                 if (cached) { setProperties(JSON.parse(cached)); setLoading(false); }
                 fetch(API_URL).then(res => res.json()).then(data => {
                     setProperties(data); setLoading(false);
-                    localStorage.setItem('ph_cache_v7', JSON.stringify(data));
+                    localStorage.setItem('ph_cache_v8', JSON.stringify(data));
                 }).catch(() => setLoading(false));
             }, []);
 
@@ -66,6 +66,11 @@
                 const pin = prompt("Enter 4-Digit Admin PIN:");
                 if (pin === ADMIN_PIN) { setIsAdmin(true); alert("Admin Access Granted"); }
                 else { alert("Incorrect PIN"); }
+            };
+
+            const getRegisterLeadLink = (val) => {
+                if (!val) return "#";
+                return val.includes("@") ? `mailto:${val}` : val;
             };
 
             const handleLeadSubmit = (e) => {
@@ -103,11 +108,10 @@
                 <div className="min-h-screen flex flex-col">
                     <nav className="bg-white shadow-sm px-6 py-5 sticky top-0 z-40 border-b flex justify-between items-center">
                         <h1 className="text-xl font-black text-blue-900 tracking-tighter uppercase italic">Perfect Horizons</h1>
-                        {isAdmin && <span className="bg-green-600 text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest">Admin Mode</span>}
+                        {isAdmin && <span className="bg-green-600 text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest shadow-sm">Admin Mode</span>}
                     </nav>
 
                     <main className="max-w-7xl mx-auto p-4 md:p-8 flex-grow w-full">
-                        {/* SEARCH & FILTERS */}
                         <div className="bg-white p-6 rounded-3xl shadow-sm border mb-8 space-y-4">
                             <input type="text" placeholder="Search Location or Property..." className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm outline-none ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-600" value={search} onChange={e => setSearch(e.target.value)} />
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -127,11 +131,10 @@
                                     <option value="Villa">Villa</option>
                                     <option value="Plot">Plot</option>
                                 </select>
-                                <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:""})}} className="text-blue-600 font-bold text-xs uppercase tracking-widest">Clear</button>
+                                <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:""})}} className="text-blue-600 font-bold text-xs uppercase tracking-widest">Reset Filters</button>
                             </div>
                         </div>
 
-                        {/* GRID */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {filtered.map((p, i) => (
                                 <div key={i} onClick={() => setSelectedProperty(p)} className="bg-white rounded-[35px] shadow-sm border overflow-hidden hover:shadow-2xl transition-all cursor-pointer group flex flex-col">
@@ -153,85 +156,79 @@
                         </div>
                     </main>
 
-                    {/* DETAILS MODAL */}
                     {selectedProperty && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedProperty(null)}></div>
                             <div className="bg-white rounded-[40px] w-full max-w-4xl max-h-[90vh] overflow-hidden relative z-10 animate-fadeIn flex flex-col shadow-2xl">
                                 <div className="overflow-y-auto w-full hide-scroll">
-                                    <button onClick={() => setSelectedProperty(null)} className="absolute top-6 right-6 bg-black/50 text-white w-10 h-10 rounded-full z-20 font-bold hover:bg-black transition text-center">✕</button>
+                                    <button onClick={() => setSelectedProperty(null)} className="absolute top-6 right-6 bg-black/50 text-white w-10 h-10 rounded-full z-20 font-bold hover:bg-black transition text-center flex items-center justify-center">✕</button>
                                     
-                                    {/* Gallery */}
                                     <div className="flex overflow-x-auto snap-x snap-mandatory h-72 md:h-96 bg-gray-100 hide-scroll">
                                         {getGallery(selectedProperty).map((img, idx) => (
                                             <img key={idx} src={img} className="w-full h-full object-cover shrink-0 snap-center" />
                                         ))}
                                     </div>
-                                    <div className="text-center text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-widest">Swipe for more photos</div>
+                                    <div className="text-center text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-widest italic">Swipe for project gallery</div>
 
                                     <div className="p-6 md:p-10">
-                                        {/* Header */}
                                         <div className="flex flex-col md:flex-row justify-between mb-8 border-b pb-8">
                                             <div>
                                                 <div className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">{selectedProperty["Property Type"]} • {selectedProperty["Construction Status"]}</div>
-                                                <h1 className="text-4xl font-black uppercase tracking-tighter">{selectedProperty["Property Name"]}</h1>
-                                                <p className="text-gray-500 text-lg">📍 {selectedProperty.Location} • <span className="text-blue-900 font-bold">{selectedProperty["Approval "] || 'Verified'}</span></p>
+                                                <h1 className="text-4xl font-black uppercase tracking-tighter leading-tight">{selectedProperty["Property Name"]}</h1>
+                                                <p className="text-gray-500 text-lg">📍 {selectedProperty.Location} • <span className="text-blue-900 font-bold uppercase">{selectedProperty["Approval "] || 'Verified'}</span></p>
                                             </div>
                                             <div className="text-left md:text-right mt-4 md:mt-0">
                                                 <div className="text-blue-600 font-black text-4xl italic">{selectedProperty.Price}</div>
-                                                <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{selectedProperty["No of BHK's"]} BHK Options</div>
+                                                <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{selectedProperty["No of BHK's"]} BHK Configurations</div>
                                             </div>
                                         </div>
 
-                                        {/* Public Stats */}
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-gray-50 p-6 rounded-3xl mb-8">
-                                            <div><span className="text-[10px] text-gray-400 font-bold uppercase block">Builder</span><span className="font-bold">{selectedProperty["Builder Name"] || "N/A"}</span></div>
-                                            <div><span className="text-[10px] text-gray-400 font-bold uppercase block">Units</span><span className="font-bold">{selectedProperty["Total Units "] || "N/A"}</span></div>
-                                            <div><span className="text-[10px] text-gray-400 font-bold uppercase block">Possession</span><span className="font-bold">{formatDate(selectedProperty["Possession Date"])}</span></div>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-gray-50 p-6 rounded-3xl mb-8 border border-gray-100">
+                                            <div><span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Builder</span><span className="font-bold text-sm">{selectedProperty["Builder Name"] || "N/A"}</span></div>
+                                            <div><span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Total Units</span><span className="font-bold text-sm">{selectedProperty["Total Units "] || "N/A"}</span></div>
+                                            <div><span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Possession</span><span className="font-bold text-sm">{formatDate(selectedProperty["Possession Date"])}</span></div>
                                         </div>
 
-                                        {/* Highlights & Amenities */}
                                         {selectedProperty["USP's"] && (
-                                            <div className="mb-8">
-                                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Project Highlights</h3>
-                                                <ul className="list-disc pl-5 text-sm space-y-1 text-gray-700">
+                                            <div className="mb-8 p-1">
+                                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-l-4 border-blue-600 pl-3">Project Highlights</h3>
+                                                <ul className="list-disc pl-8 text-sm space-y-2 text-gray-700 leading-relaxed">
                                                     {selectedProperty["USP's"].split('\n').map((u, i) => u.trim() && <li key={i}>{u}</li>)}
                                                 </ul>
                                             </div>
                                         )}
 
-                                        {/* ADMIN SECTION */}
                                         {isAdmin && (
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                                                <div className="bg-yellow-50 border-2 border-yellow-200 p-6 rounded-3xl">
-                                                    <h4 className="text-[10px] font-black uppercase text-yellow-700 mb-2 tracking-widest">Commission & Payout</h4>
+                                                <div className="bg-yellow-50 border-2 border-yellow-100 p-6 rounded-3xl">
+                                                    <h4 className="text-[10px] font-black uppercase text-yellow-700 mb-2 tracking-widest">Commission % & Payout</h4>
                                                     <p className="text-2xl font-black text-yellow-900">{formatPercent(selectedProperty["Commission % and Payout info"])}</p>
-                                                    <p className="text-sm font-medium text-yellow-800 mt-1">{selectedProperty["Payout info"]}</p>
+                                                    <p className="text-sm font-medium text-yellow-800 mt-1 italic">{selectedProperty["Payout info"] || 'No payout terms added'}</p>
                                                 </div>
-                                                <div className="bg-blue-50 border-2 border-blue-200 p-6 rounded-3xl">
-                                                    <h4 className="text-[10px] font-black uppercase text-blue-700 mb-2 tracking-widest">Internal Logistics</h4>
-                                                    <p className="text-sm font-bold text-blue-900 mb-1">POC: {selectedProperty["Point of contact"] || "N/A"}</p>
-                                                    <p className="text-sm font-bold text-blue-900">Availability: {selectedProperty["Availability"] || "Ask Builder"}</p>
+                                                <div className="bg-blue-50 border-2 border-blue-100 p-6 rounded-3xl">
+                                                    <h4 className="text-[10px] font-black uppercase text-blue-700 mb-2 tracking-widest">Internal Details</h4>
+                                                    <p className="text-sm font-bold text-blue-900 mb-1 leading-relaxed">POC: {selectedProperty["Point of contact"] || "N/A"}</p>
+                                                    <p className="text-sm font-bold text-blue-900">Availability: {selectedProperty["Availability"] || "Check Master Sheet"}</p>
                                                 </div>
                                             </div>
                                         )}
 
-                                        {/* ACTION BUTTONS */}
                                         <div className="bg-gray-50 p-6 rounded-[35px] border border-gray-100">
                                             {isAdmin ? (
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    <a href={selectedProperty["Website Link"] || "#"} target="_blank" className="bg-white border-2 border-gray-200 p-4 rounded-2xl text-[11px] font-black text-center uppercase">Builder Website</a>
-                                                    <a href={selectedProperty["Lead registration Link or email ID—"] || "#"} target="_blank" className="bg-blue-900 text-white p-4 rounded-2xl text-[11px] font-black text-center uppercase">Register Lead</a>
-                                                    <a href={selectedProperty["Brochure"] || "#"} target="_blank" className="bg-white border-2 border-gray-200 p-4 rounded-2xl text-[11px] font-black text-center uppercase">Share Brochure</a>
-                                                    <a href={selectedProperty["Map Link"] || "#"} target="_blank" className="bg-white border-2 border-gray-200 p-4 rounded-2xl text-[11px] font-black text-center uppercase">Location Map</a>
+                                                    <a href={selectedProperty["Website Link"] || "#"} target="_blank" className="bg-white border-2 border-gray-100 p-4 rounded-2xl text-[10px] font-black text-center uppercase shadow-sm">Builder Website</a>
+                                                    <a href={getRegisterLeadLink(selectedProperty["Lead registration Link or email ID—"])} target="_blank" className="bg-blue-900 text-white p-4 rounded-2xl text-[10px] font-black text-center uppercase shadow-lg">Register Lead</a>
+                                                    <a href={selectedProperty["Brochure"] || "#"} target="_blank" className="bg-white border-2 border-gray-100 p-4 rounded-2xl text-[10px] font-black text-center uppercase shadow-sm">Share Brochure</a>
+                                                    <a href={selectedProperty["Cost Sheet"] || "#"} target="_blank" className="bg-white border-2 border-gray-100 p-4 rounded-2xl text-[10px] font-black text-center uppercase shadow-sm">Share Cost Sheet</a>
+                                                    <a href={selectedProperty["Map Link"] || "#"} target="_blank" className="bg-white border-2 border-gray-200 p-4 rounded-2xl text-[10px] font-black text-center uppercase col-span-2 shadow-sm">Location Map</a>
                                                 </div>
                                             ) : (
                                                 <div className="flex flex-col gap-3">
                                                     <button onClick={() => setShowLeadForm(true)} className="bg-blue-600 text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 transition active:scale-95">I am Interested</button>
                                                     <div className="grid grid-cols-3 gap-2">
-                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Brochure for ${selectedProperty["Property Name"]}`} className="bg-white border p-3 rounded-xl text-[10px] font-bold text-center uppercase">Brochure</a>
-                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Cost for ${selectedProperty["Property Name"]}`} className="bg-white border p-3 rounded-xl text-[10px] font-bold text-center uppercase">Cost Sheet</a>
-                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Callback for ${selectedProperty["Property Name"]}`} className="bg-white border p-3 rounded-xl text-[10px] font-bold text-center uppercase">Callback</a>
+                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Brochure requested for ${selectedProperty["Property Name"]}`} className="bg-white border p-3 rounded-xl text-[10px] font-bold text-center uppercase shadow-sm">Brochure</a>
+                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Cost details for ${selectedProperty["Property Name"]}`} className="bg-white border p-3 rounded-xl text-[10px] font-bold text-center uppercase shadow-sm">Cost Sheet</a>
+                                                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Callback for ${selectedProperty["Property Name"]}`} className="bg-white border p-3 rounded-xl text-[10px] font-bold text-center uppercase shadow-sm">Callback</a>
                                                     </div>
                                                 </div>
                                             )}
@@ -242,34 +239,36 @@
                         </div>
                     )}
 
-                    {/* FOOTER */}
                     <footer className="bg-slate-900 text-white p-12 mt-auto">
                         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
                             <div>
                                 <h3 className="text-xl font-black italic uppercase text-blue-500 mb-4 tracking-tighter">About Us</h3>
-                                <p className="text-slate-400 text-sm leading-relaxed">Authorized channel partners dedicated to providing buyers with unbiased, expert advice. Our mission is to simplify the complex real estate landscape by offering transparent guidance, ensuring you make an informed decision for your dream home or investment.</p>
-                                <button onClick={loginAdmin} className="mt-8 text-[9px] text-slate-600 uppercase font-black tracking-widest hover:text-blue-400 transition">Management Login</button>
+                                <p className="text-slate-400 text-sm leading-relaxed max-w-xl">Authorized channel partners dedicated to providing buyers with unbiased, expert advice. Our mission is to simplify the complex real estate landscape by offering transparent guidance, ensuring you make an informed decision for your dream home or investment.</p>
+                                <button onClick={loginAdmin} className="mt-8 text-[9px] text-slate-600 uppercase font-black tracking-widest hover:text-blue-400 transition">Portal Management Login</button>
                             </div>
                             <div className="space-y-4">
-                                <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Contact Details</h3>
-                                <p className="text-sm">📞 +91 9742353260</p>
-                                <a href="mailto:perfecthorizons.in@gmail.com" className="text-sm underline block">✉️ perfecthorizons.in@gmail.com</a>
-                                <p className="text-sm text-slate-500 italic">📍 Hosa Road, Bengaluru</p>
+                                <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Official Contact</h3>
+                                <p className="text-sm flex items-center gap-2"><span>📞</span> +91 9742353260</p>
+                                <a href="mailto:perfecthorizons.in@gmail.com" className="text-sm underline block text-blue-400"><span>✉️</span> perfecthorizons.in@gmail.com</a>
+                                <p className="text-sm text-slate-500 italic flex items-center gap-2"><span>📍</span> Hosa Road, Bengaluru</p>
                             </div>
                         </div>
                     </footer>
 
-                    {/* LEAD FORM */}
                     {showLeadForm && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
                             <div className="bg-white rounded-[40px] p-10 w-full max-w-sm animate-fadeIn shadow-2xl text-center">
                                 <h2 className="text-3xl font-black text-blue-900 mb-2 italic tracking-tighter uppercase">Enquiry</h2>
-                                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest mb-8">Verified Property Lead</p>
-                                <form onSubmit={handleLeadSubmit} className="space-y-4">
-                                    <input type="text" placeholder="Full Name" className="w-full border-none bg-gray-50 p-4 rounded-2xl outline-none text-sm font-bold" value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
-                                    <input type="tel" placeholder="10-Digit Mobile" className="w-full border-none bg-gray-50 p-4 rounded-2xl outline-none text-sm font-bold" value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
-                                    <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg">{isSubmitting ? "Processing..." : "Submit Interest"}</button>
-                                    <p onClick={() => setShowLeadForm(false)} className="text-center text-gray-400 text-xs cursor-pointer mt-4 font-bold hover:text-blue-600">Cancel</p>
+                                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest mb-8">Verified Lead Registration</p>
+                                <form onSubmit={handleLeadSubmit} className="space-y-4 text-left">
+                                    <label className="text-[10px] font-bold uppercase text-gray-400 ml-2">Your Full Name</label>
+                                    <input type="text" placeholder="Tharun..." className="w-full border-none bg-gray-50 p-4 rounded-2xl outline-none text-sm font-bold focus:ring-2 focus:ring-blue-600 transition" value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
+                                    
+                                    <label className="text-[10px] font-bold uppercase text-gray-400 ml-2">Mobile Number</label>
+                                    <input type="tel" placeholder="10 Digits" className="w-full border-none bg-gray-50 p-4 rounded-2xl outline-none text-sm font-bold focus:ring-2 focus:ring-blue-600 transition" value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
+                                    
+                                    <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg mt-4 hover:bg-blue-700 transition active:scale-95">{isSubmitting ? "Processing..." : "Submit Interest"}</button>
+                                    <p onClick={() => setShowLeadForm(false)} className="text-center text-gray-400 text-xs cursor-pointer mt-4 font-bold hover:text-blue-600 uppercase">Cancel</p>
                                 </form>
                             </div>
                         </div>
