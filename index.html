@@ -26,13 +26,12 @@
         const WHATSAPP_NUMBER = "919742353260";
         const ADMIN_PIN = "1234"; 
 
-        // ULTRA SMART SCANNER: Ignores all spaces and special characters to find the right column
         const getVal = (obj, searchKey) => {
             if (!obj) return "";
             if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
-            const cleanKey = searchKey.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+            const cleanKey = searchKey.trim().toLowerCase();
             for (let k in obj) {
-                if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k];
+                if (k.trim().toLowerCase() === cleanKey) return obj[k];
             }
             return "";
         };
@@ -81,6 +80,8 @@
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get("key") === "admin123") setIsAdmin(true);
+                
+                try { localStorage.removeItem('ph_cache_v19'); } catch(e){} 
                 
                 fetch(API_URL).then(res => res.json()).then(data => {
                     if (Array.isArray(data)) setProperties(data);
@@ -141,32 +142,33 @@
 
             return (
                 <div className="min-h-screen flex flex-col">
-                    <nav className="bg-white shadow-sm px-6 py-5 sticky top-0 z-40 border-b flex justify-between items-center">
-                        <h1 className="text-xl font-black text-blue-900 tracking-tighter uppercase italic">Perfect Horizons</h1>
-                        {isAdmin && <span className="bg-green-600 text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest shadow-sm">Admin Mode</span>}
+                    <nav className="bg-white shadow-sm px-4 md:px-6 py-4 md:py-5 sticky top-0 z-40 border-b flex justify-between items-center">
+                        <h1 className="text-lg md:text-xl font-black text-blue-900 tracking-tighter uppercase italic">Perfect Horizons</h1>
+                        {isAdmin && <span className="bg-green-600 text-white text-[9px] md:text-[10px] px-2 py-1 md:px-3 md:py-1 rounded-full font-bold uppercase tracking-widest shadow-sm">Admin Mode</span>}
                     </nav>
 
                     <main className="max-w-7xl mx-auto p-4 md:p-8 flex-grow w-full">
-                        <div className="bg-white p-6 rounded-3xl shadow-sm border mb-8 space-y-4">
-                            <input type="text" placeholder="Search Location, Project or Builder..." className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm outline-none ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-600 transition" value={search} onChange={e => setSearch(e.target.value)} />
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                <select className="bg-gray-50 p-3 rounded-xl text-xs font-bold outline-none" value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}>
+                        {/* ULTRA-COMPACT MOBILE FILTERS */}
+                        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border mb-6 md:mb-8 space-y-2 md:space-y-4">
+                            <input type="text" placeholder="Search Location, Project or Builder..." className="w-full bg-gray-50 border-none rounded-xl md:rounded-2xl p-3 md:p-4 text-xs md:text-sm outline-none ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-600 transition" value={search} onChange={e => setSearch(e.target.value)} />
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3">
+                                <select className="bg-gray-50 p-2 md:p-3 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none" value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}>
                                     <option value="">BHK</option>
                                     {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} BHK</option>)}
                                 </select>
-                                <select className="bg-gray-50 p-3 rounded-xl text-xs font-bold outline-none" value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
+                                <select className="bg-gray-50 p-2 md:p-3 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none" value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
                                     <option value="">Status</option>
                                     <option value="Ready to Move">Ready to Move</option>
                                     <option value="Under Construction">Under Construction</option>
                                     <option value="New Launch">New Launch</option>
                                 </select>
-                                <select className="bg-gray-50 p-3 rounded-xl text-xs font-bold outline-none" value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})}>
+                                <select className="bg-gray-50 p-2 md:p-3 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none" value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})}>
                                     <option value="">Type</option>
                                     <option value="Apartment">Apartment</option>
                                     <option value="Villa">Villa</option>
                                     <option value="Plot">Plot</option>
                                 </select>
-                                <select className="bg-gray-50 p-3 rounded-xl text-xs font-bold outline-none" value={filters.priceBracket} onChange={e => setFilters({...filters, priceBracket: e.target.value})}>
+                                <select className="bg-gray-50 p-2 md:p-3 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none" value={filters.priceBracket} onChange={e => setFilters({...filters, priceBracket: e.target.value})}>
                                     <option value="">Budget</option>
                                     <option value="under1">Under 1 Cr</option>
                                     <option value="1-2">1 - 2 Cr</option>
@@ -175,7 +177,7 @@
                                     <option value="4-5">4 - 5 Cr</option>
                                     <option value="5plus">5 Cr & Above</option>
                                 </select>
-                                <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:"", priceBracket:""})}} className="text-red-500 font-black text-[10px] uppercase tracking-widest border border-red-100 rounded-xl hover:bg-red-50 transition p-3 md:p-0">Clear All</button>
+                                <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:"", priceBracket:""})}} className="col-span-2 md:col-span-1 text-red-500 font-black text-[10px] uppercase tracking-widest border border-red-100 rounded-lg md:rounded-xl hover:bg-red-50 transition py-2 md:py-0">Clear All</button>
                             </div>
                         </div>
 
@@ -300,60 +302,60 @@
                         </div>
                     )}
 
-                    {/* COMPACT MOBILE 'WHY CHOOSE US' BANNER */}
-                    <div className="bg-blue-900 text-white py-8 md:py-12 px-4 md:px-6 mt-8 md:mt-12 border-t-4 border-blue-500">
+                    {/* ULTRA-COMPACT MOBILE 'WHY CHOOSE US' BANNER */}
+                    <div className="bg-blue-900 text-white py-6 md:py-12 px-4 md:px-6 mt-8 md:mt-12 border-t-4 border-blue-500">
                         <div className="max-w-7xl mx-auto">
-                            <h2 className="text-lg md:text-2xl font-black italic uppercase tracking-tighter mb-6 md:mb-8 text-center text-blue-200">Why Choose Perfect Horizons?</h2>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 text-center">
-                                <div className="bg-blue-800/50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-blue-700 hover:scale-105 transition">
-                                    <div className="text-2xl md:text-3xl mb-2">🛡️</div>
-                                    <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-1 md:mb-2">Verified</h4>
-                                    <p className="text-blue-200 text-[9px] md:text-xs hidden md:block">Every listing is thoroughly checked for RERA & legal compliance.</p>
+                            <h2 className="text-base md:text-2xl font-black italic uppercase tracking-tighter mb-4 md:mb-8 text-center text-blue-200">Why Choose Perfect Horizons?</h2>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-6 text-center">
+                                <div className="bg-blue-800/50 py-3 px-2 md:p-6 rounded-lg md:rounded-2xl border border-blue-700 hover:scale-105 transition">
+                                    <div className="text-xl md:text-3xl mb-1 md:mb-2">🛡️</div>
+                                    <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-0 md:mb-2">Verified</h4>
+                                    <p className="text-blue-200 text-xs hidden md:block mt-2">Every listing is thoroughly checked for RERA & legal compliance.</p>
                                 </div>
-                                <div className="bg-blue-800/50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-blue-700 hover:scale-105 transition">
-                                    <div className="text-2xl md:text-3xl mb-2">💰</div>
-                                    <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-1 md:mb-2">Best Price</h4>
-                                    <p className="text-blue-200 text-[9px] md:text-xs hidden md:block">Direct builder prices negotiated exclusively for you.</p>
+                                <div className="bg-blue-800/50 py-3 px-2 md:p-6 rounded-lg md:rounded-2xl border border-blue-700 hover:scale-105 transition">
+                                    <div className="text-xl md:text-3xl mb-1 md:mb-2">💰</div>
+                                    <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-0 md:mb-2">Best Price</h4>
+                                    <p className="text-blue-200 text-xs hidden md:block mt-2">Direct builder prices negotiated exclusively for you.</p>
                                 </div>
-                                <div className="bg-blue-800/50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-blue-700 hover:scale-105 transition">
-                                    <div className="text-2xl md:text-3xl mb-2">🚗</div>
-                                    <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-1 md:mb-2">Free Visits</h4>
-                                    <p className="text-blue-200 text-[9px] md:text-xs hidden md:block">Complimentary cab pickup & drop for property inspections.</p>
+                                <div className="bg-blue-800/50 py-3 px-2 md:p-6 rounded-lg md:rounded-2xl border border-blue-700 hover:scale-105 transition">
+                                    <div className="text-xl md:text-3xl mb-1 md:mb-2">🚗</div>
+                                    <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-0 md:mb-2">Free Visits</h4>
+                                    <p className="text-blue-200 text-xs hidden md:block mt-2">Complimentary cab pickup & drop for property inspections.</p>
                                 </div>
-                                <div className="bg-blue-800/50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-blue-700 hover:scale-105 transition">
-                                    <div className="text-2xl md:text-3xl mb-2">🤝</div>
-                                    <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-1 md:mb-2">No Brokerage</h4>
-                                    <p className="text-blue-200 text-[9px] md:text-xs hidden md:block">We charge absolutely no fees from buyers. Honest advice, free.</p>
+                                <div className="bg-blue-800/50 py-3 px-2 md:p-6 rounded-lg md:rounded-2xl border border-blue-700 hover:scale-105 transition">
+                                    <div className="text-xl md:text-3xl mb-1 md:mb-2">🤝</div>
+                                    <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-0 md:mb-2">No Brokerage</h4>
+                                    <p className="text-blue-200 text-xs hidden md:block mt-2">We charge absolutely no fees from buyers. Honest advice, free.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <footer className="bg-slate-900 text-white p-12 mt-auto text-justify">
-                        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 text-justify">
+                    <footer className="bg-slate-900 text-white p-8 md:p-12 mt-auto text-justify">
+                        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 text-justify">
                             <div className="text-justify">
-                                <h3 className="text-xl font-black italic uppercase text-blue-500 mb-4 tracking-tighter underline decoration-blue-500/30 text-left">Meet Your Advisor: Tharun</h3>
-                                <p className="text-slate-400 text-sm leading-relaxed max-w-xl text-left">Hi, I'm Tharun. I built Perfect Horizons to simplify the Bengaluru real estate landscape. As an authorized channel partner, my goal is to provide you with completely unbiased, expert advice and transparent guidance. I am here to ensure you make the smartest, safest decision for your dream home or investment.</p>
-                                <button onClick={loginAdmin} className="mt-8 text-[9px] text-slate-600 uppercase font-black tracking-widest hover:text-blue-400 transition text-left block">Management Login</button>
+                                <h3 className="text-lg md:text-xl font-black italic uppercase text-blue-500 mb-3 md:mb-4 tracking-tighter underline decoration-blue-500/30 text-left">Meet Your Advisor: Tharun</h3>
+                                <p className="text-slate-400 text-xs md:text-sm leading-relaxed max-w-xl text-left">Hi, I'm Tharun. I built Perfect Horizons to simplify the Bengaluru real estate landscape. As an authorized channel partner, my goal is to provide you with completely unbiased, expert advice and transparent guidance. I am here to ensure you make the smartest, safest decision for your dream home or investment.</p>
+                                <button onClick={loginAdmin} className="mt-6 md:mt-8 text-[9px] text-slate-600 uppercase font-black tracking-widest hover:text-blue-400 transition text-left block">Management Login</button>
                             </div>
-                            <div className="space-y-4 text-left">
-                                <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 text-left">Official Contact</h3>
-                                <p className="text-sm">📞 +91 9742353260</p>
-                                <a href="mailto:perfecthorizons.in@gmail.com" className="text-sm underline block text-blue-400 decoration-blue-400/30">✉️ perfecthorizons.in@gmail.com</a>
-                                <p className="text-sm text-slate-500 italic">📍 Bengaluru, Karnataka</p>
+                            <div className="space-y-3 md:space-y-4 text-left">
+                                <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-2 md:mb-4 text-left">Official Contact</h3>
+                                <p className="text-xs md:text-sm">📞 +91 9742353260</p>
+                                <a href="mailto:perfecthorizons.in@gmail.com" className="text-xs md:text-sm underline block text-blue-400 decoration-blue-400/30">✉️ perfecthorizons.in@gmail.com</a>
+                                <p className="text-xs md:text-sm text-slate-500 italic">📍 Bengaluru, Karnataka</p>
                             </div>
                         </div>
                     </footer>
 
                     {/* FLOATING WHATSAPP BUTTON */}
-                    <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi Tharun, I am looking for property assistance.`} target="_blank" className="fixed bottom-6 right-6 bg-green-500 text-white p-4 rounded-full shadow-2xl z-[55] hover:bg-green-600 transition hover:scale-110 flex items-center justify-center">
-                        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.12.553 4.148 1.603 5.946L.2 24l6.195-1.62c1.737.947 3.69 1.445 5.636 1.445 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.615 0 12.031 0zm0 21.846c-1.802 0-3.568-.484-5.115-1.402l-.366-.217-3.805.996.996-3.805-.217-.366a9.92 9.92 0 0 1-1.402-5.115c0-5.514 4.486-10 10-10 5.514 0 10 4.486 10 10 0 5.514-4.486 10-10 10zm5.496-7.518c-.301-.15-1.785-.885-2.062-.986-.277-.1-.478-.15-.678.15-.201.301-.778.986-.954 1.187-.176.201-.351.226-.653.076-1.609-.816-2.73-1.637-3.784-3.411-.176-.301.176-.277.453-.827.076-.15-.038-.277-.038-.427-.076-.15-.678-1.631-.929-2.233-.251-.602-.502-.527-.678-.527-.176 0-.377 0-.578 0-.201 0-.527.076-.803.427-.276.351-1.054 1.028-1.054 2.508 0 1.48 1.079 2.91 1.229 3.111.15.201 2.133 3.262 5.169 4.566.726.301 1.28.478 1.731.628.728.227 1.381.194 1.905.118.578-.084 1.785-.728 2.036-1.431.251-.703.251-1.305.176-1.431-.076-.126-.277-.201-.578-.352z"/></svg>
+                    <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi Tharun, I am looking for property assistance.`} target="_blank" className="fixed bottom-6 right-6 bg-green-500 text-white p-3 md:p-4 rounded-full shadow-2xl z-[55] hover:bg-green-600 transition hover:scale-110 flex items-center justify-center">
+                        <svg className="w-6 h-6 md:w-8 md:h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.12.553 4.148 1.603 5.946L.2 24l6.195-1.62c1.737.947 3.69 1.445 5.636 1.445 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.615 0 12.031 0zm0 21.846c-1.802 0-3.568-.484-5.115-1.402l-.366-.217-3.805.996.996-3.805-.217-.366a9.92 9.92 0 0 1-1.402-5.115c0-5.514 4.486-10 10-10 5.514 0 10 4.486 10 10 0 5.514-4.486 10-10 10zm5.496-7.518c-.301-.15-1.785-.885-2.062-.986-.277-.1-.478-.15-.678.15-.201.301-.778.986-.954 1.187-.176.201-.351.226-.653.076-1.609-.816-2.73-1.637-3.784-3.411-.176-.301.176-.277.453-.827.076-.15-.038-.277-.038-.427-.076-.15-.678-1.631-.929-2.233-.251-.602-.502-.527-.678-.527-.176 0-.377 0-.578 0-.201 0-.527.076-.803.427-.276.351-1.054 1.028-1.054 2.508 0 1.48 1.079 2.91 1.229 3.111.15.201 2.133 3.262 5.169 4.566.726.301 1.28.478 1.731.628.728.227 1.381.194 1.905.118.578-.084 1.785-.728 2.036-1.431.251-.703.251-1.305.176-1.431-.076-.126-.277-.201-.578-.352z"/></svg>
                     </a>
 
                     {showLeadForm && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" onClick={() => setShowLeadForm(false)}>
-                            <div className="bg-white rounded-[40px] p-10 w-full max-w-sm animate-fadeIn shadow-2xl text-center" onClick={e => e.stopPropagation()}>
-                                <h2 className="text-3xl font-black text-blue-900 mb-6 italic tracking-tighter uppercase">Enquiry</h2>
+                            <div className="bg-white rounded-[40px] p-8 md:p-10 w-full max-w-sm animate-fadeIn shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+                                <h2 className="text-2xl md:text-3xl font-black text-blue-900 mb-6 italic tracking-tighter uppercase">Enquiry</h2>
                                 <form onSubmit={handleLeadSubmit} className="space-y-4 text-left">
                                     <label className="text-[10px] font-black uppercase text-gray-400 ml-2 tracking-widest">Full Name</label>
                                     <input type="text" placeholder="Enter Name" required className="w-full border-none bg-gray-50 p-4 rounded-2xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-600 transition" value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
