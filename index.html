@@ -26,13 +26,13 @@
         const WHATSAPP_NUMBER = "919742353260";
         const ADMIN_PIN = "1234"; 
 
-        // SMART SCANNER: Fixes Google Sheet header typos (like trailing spaces)
+        // ULTRA SMART SCANNER: Ignores all spaces and special characters to find the right column
         const getVal = (obj, searchKey) => {
             if (!obj) return "";
             if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
-            const cleanKey = searchKey.trim().toLowerCase();
+            const cleanKey = searchKey.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
             for (let k in obj) {
-                if (k.trim().toLowerCase() === cleanKey) return obj[k];
+                if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k];
             }
             return "";
         };
@@ -81,8 +81,6 @@
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get("key") === "admin123") setIsAdmin(true);
-                
-                try { localStorage.removeItem('ph_cache_v19'); } catch(e){} // Clear cache
                 
                 fetch(API_URL).then(res => res.json()).then(data => {
                     if (Array.isArray(data)) setProperties(data);
@@ -177,7 +175,7 @@
                                     <option value="4-5">4 - 5 Cr</option>
                                     <option value="5plus">5 Cr & Above</option>
                                 </select>
-                                <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:"", priceBracket:""})}} className="text-red-500 font-black text-[10px] uppercase tracking-widest border border-red-100 rounded-xl hover:bg-red-50 transition">Clear All</button>
+                                <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:"", priceBracket:""})}} className="text-red-500 font-black text-[10px] uppercase tracking-widest border border-red-100 rounded-xl hover:bg-red-50 transition p-3 md:p-0">Clear All</button>
                             </div>
                         </div>
 
@@ -265,7 +263,7 @@
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                                                 <div className="bg-yellow-50 border-2 border-yellow-100 p-6 rounded-3xl text-yellow-900">
                                                     <h4 className="text-[10px] font-black uppercase tracking-widest mb-2">Commission & Payout</h4>
-                                                    <p className="text-3xl font-black">{formatPercent(getVal(selectedProperty, "Commission % and Payout info"))}</p>
+                                                    <p className="text-3xl font-black">{formatPercent(getVal(selectedProperty, "Commission % and Payout info") || getVal(selectedProperty, "Commission %"))}</p>
                                                     <p className="text-sm font-medium italic mt-1">{getVal(selectedProperty, "Payout info") || "N/A"}</p>
                                                 </div>
                                                 <div className="bg-blue-50 border-2 border-blue-100 p-6 rounded-3xl text-blue-900">
@@ -302,30 +300,30 @@
                         </div>
                     )}
 
-                    {/* WHY CHOOSE US BANNER ADDED HERE */}
-                    <div className="bg-blue-900 text-white py-12 px-6 mt-12 border-t-4 border-blue-500">
+                    {/* COMPACT MOBILE 'WHY CHOOSE US' BANNER */}
+                    <div className="bg-blue-900 text-white py-8 md:py-12 px-4 md:px-6 mt-8 md:mt-12 border-t-4 border-blue-500">
                         <div className="max-w-7xl mx-auto">
-                            <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-8 text-center text-blue-200">Why Choose Perfect Horizons?</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
-                                <div className="bg-blue-800/50 p-6 rounded-2xl border border-blue-700 hover:scale-105 transition">
-                                    <div className="text-3xl mb-3">🛡️</div>
-                                    <h4 className="font-black uppercase tracking-widest text-[11px] mb-2">Verified Properties</h4>
-                                    <p className="text-blue-200 text-xs">Every listing is thoroughly checked for RERA & legal compliance.</p>
+                            <h2 className="text-lg md:text-2xl font-black italic uppercase tracking-tighter mb-6 md:mb-8 text-center text-blue-200">Why Choose Perfect Horizons?</h2>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 text-center">
+                                <div className="bg-blue-800/50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-blue-700 hover:scale-105 transition">
+                                    <div className="text-2xl md:text-3xl mb-2">🛡️</div>
+                                    <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-1 md:mb-2">Verified</h4>
+                                    <p className="text-blue-200 text-[9px] md:text-xs hidden md:block">Every listing is thoroughly checked for RERA & legal compliance.</p>
                                 </div>
-                                <div className="bg-blue-800/50 p-6 rounded-2xl border border-blue-700 hover:scale-105 transition">
-                                    <div className="text-3xl mb-3">💰</div>
-                                    <h4 className="font-black uppercase tracking-widest text-[11px] mb-2">Best Price Guarantee</h4>
-                                    <p className="text-blue-200 text-xs">Direct builder prices negotiated exclusively for you.</p>
+                                <div className="bg-blue-800/50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-blue-700 hover:scale-105 transition">
+                                    <div className="text-2xl md:text-3xl mb-2">💰</div>
+                                    <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-1 md:mb-2">Best Price</h4>
+                                    <p className="text-blue-200 text-[9px] md:text-xs hidden md:block">Direct builder prices negotiated exclusively for you.</p>
                                 </div>
-                                <div className="bg-blue-800/50 p-6 rounded-2xl border border-blue-700 hover:scale-105 transition">
-                                    <div className="text-3xl mb-3">🚗</div>
-                                    <h4 className="font-black uppercase tracking-widest text-[11px] mb-2">Free Site Visits</h4>
-                                    <p className="text-blue-200 text-xs">Complimentary cab pickup & drop for property inspections.</p>
+                                <div className="bg-blue-800/50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-blue-700 hover:scale-105 transition">
+                                    <div className="text-2xl md:text-3xl mb-2">🚗</div>
+                                    <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-1 md:mb-2">Free Visits</h4>
+                                    <p className="text-blue-200 text-[9px] md:text-xs hidden md:block">Complimentary cab pickup & drop for property inspections.</p>
                                 </div>
-                                <div className="bg-blue-800/50 p-6 rounded-2xl border border-blue-700 hover:scale-105 transition">
-                                    <div className="text-3xl mb-3">🤝</div>
-                                    <h4 className="font-black uppercase tracking-widest text-[11px] mb-2">Zero Brokerage</h4>
-                                    <p className="text-blue-200 text-xs">We charge absolutely no fees from buyers. Honest advice, free.</p>
+                                <div className="bg-blue-800/50 p-4 md:p-6 rounded-xl md:rounded-2xl border border-blue-700 hover:scale-105 transition">
+                                    <div className="text-2xl md:text-3xl mb-2">🤝</div>
+                                    <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-1 md:mb-2">No Brokerage</h4>
+                                    <p className="text-blue-200 text-[9px] md:text-xs hidden md:block">We charge absolutely no fees from buyers. Honest advice, free.</p>
                                 </div>
                             </div>
                         </div>
@@ -333,7 +331,6 @@
 
                     <footer className="bg-slate-900 text-white p-12 mt-auto text-justify">
                         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 text-justify">
-                            {/* PERSONALIZED ABOUT SECTION ADDED HERE */}
                             <div className="text-justify">
                                 <h3 className="text-xl font-black italic uppercase text-blue-500 mb-4 tracking-tighter underline decoration-blue-500/30 text-left">Meet Your Advisor: Tharun</h3>
                                 <p className="text-slate-400 text-sm leading-relaxed max-w-xl text-left">Hi, I'm Tharun. I built Perfect Horizons to simplify the Bengaluru real estate landscape. As an authorized channel partner, my goal is to provide you with completely unbiased, expert advice and transparent guidance. I am here to ensure you make the smartest, safest decision for your dream home or investment.</p>
@@ -348,7 +345,7 @@
                         </div>
                     </footer>
 
-                    {/* FLOATING WHATSAPP BUTTON ADDED HERE */}
+                    {/* FLOATING WHATSAPP BUTTON */}
                     <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi Tharun, I am looking for property assistance.`} target="_blank" className="fixed bottom-6 right-6 bg-green-500 text-white p-4 rounded-full shadow-2xl z-[55] hover:bg-green-600 transition hover:scale-110 flex items-center justify-center">
                         <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.12.553 4.148 1.603 5.946L.2 24l6.195-1.62c1.737.947 3.69 1.445 5.636 1.445 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.615 0 12.031 0zm0 21.846c-1.802 0-3.568-.484-5.115-1.402l-.366-.217-3.805.996.996-3.805-.217-.366a9.92 9.92 0 0 1-1.402-5.115c0-5.514 4.486-10 10-10 5.514 0 10 4.486 10 10 0 5.514-4.486 10-10 10zm5.496-7.518c-.301-.15-1.785-.885-2.062-.986-.277-.1-.478-.15-.678.15-.201.301-.778.986-.954 1.187-.176.201-.351.226-.653.076-1.609-.816-2.73-1.637-3.784-3.411-.176-.301.176-.277.453-.827.076-.15-.038-.277-.038-.427-.076-.15-.678-1.631-.929-2.233-.251-.602-.502-.527-.678-.527-.176 0-.377 0-.578 0-.201 0-.527.076-.803.427-.276.351-1.054 1.028-1.054 2.508 0 1.48 1.079 2.91 1.229 3.111.15.201 2.133 3.262 5.169 4.566.726.301 1.28.478 1.731.628.728.227 1.381.194 1.905.118.578-.084 1.785-.728 2.036-1.431.251-.703.251-1.305.176-1.431-.076-.126-.277-.201-.578-.352z"/></svg>
                     </a>
