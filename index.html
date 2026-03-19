@@ -35,16 +35,28 @@
             -webkit-box-orient: vertical;  
             overflow: hidden;
         }
+        
+        /* Native Splash Screen CSS */
+        @keyframes pulse-fast { 
+            0%, 100% { opacity: 1; transform: scale(1); } 
+            50% { opacity: 0.6; transform: scale(0.98); } 
+        }
+        .splash-title {
+            font-family: sans-serif; color: #1e3a8a; font-size: 2rem; font-weight: 900; font-style: italic; text-transform: uppercase; animation: pulse-fast 1.2s ease-in-out infinite;
+        }
+        .splash-sub {
+            font-family: sans-serif; color: #64748b; font-size: 0.75rem; margin-top: 1rem; font-weight: bold; letter-spacing: 0.15em; text-transform: uppercase;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans">
     
-    <div id="root">
-        <div style="height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; background-color: #f8fafc;">
-            <h1 style="font-size: 1.5rem; font-weight: 900; color: #1e3a8a; font-style: italic; text-transform: uppercase; animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;">Perfect Horizons</h1>
-            <p style="color: #64748b; font-size: 0.75rem; margin-top: 10px; font-weight: bold; letter-spacing: 0.1em; text-transform: uppercase;">Loading Portal...</p>
-        </div>
+    <div id="native-splash" style="position: fixed; inset: 0; z-index: 99999; background-color: #f8fafc; display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.5s ease;">
+        <div class="splash-title">Perfect Horizons</div>
+        <div class="splash-sub">Curating Properties...</div>
     </div>
+
+    <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
@@ -197,7 +209,18 @@
                 fetch(API_URL).then(res => res.json()).then(data => {
                     if (Array.isArray(data)) setProperties(data);
                     setLoading(false);
-                }).catch(() => setLoading(false));
+                    
+                    // Remove the native HTML splash screen smoothly once React is ready
+                    const splash = document.getElementById('native-splash');
+                    if(splash) {
+                        splash.style.opacity = '0';
+                        setTimeout(() => splash.remove(), 500);
+                    }
+                }).catch(() => {
+                    setLoading(false);
+                    const splash = document.getElementById('native-splash');
+                    if(splash) splash.remove();
+                });
             }, []);
 
             const loginAdmin = () => {
@@ -256,8 +279,6 @@
                 window.scrollTo(0,0);
             };
 
-            if (loading && safeProperties.length === 0) return <div className="h-screen flex items-center justify-center font-black text-blue-900 animate-pulse text-2xl uppercase italic">Perfect Horizons</div>;
-
             return (
                 <div className="min-h-screen flex flex-col">
                     {/* PREMIUM DARK HEADER */}
@@ -305,7 +326,7 @@
 
                         {/* Mobile Dark Dropdown */}
                         {isMobileMenuOpen && (
-                            <div className="md:hidden bg-slate-800 border-t border-slate-700 py-4 px-4 space-y-4 shadow-2xl absolute w-full left-0 top-full animate-fadeIn z-50">
+                            <div className="md:hidden bg-slate-800 border-t border-slate-700 py-4 px-4 space-y-4 shadow-2xl absolute w-full left-0 top-[60px] animate-fadeIn z-50">
                                 <div onClick={() => navTo('home')} className="text-xs font-black uppercase tracking-widest text-white py-2 border-b border-slate-700">Properties</div>
                                 <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 py-2">-- About --</div>
                                 <div onClick={() => navTo('about-us')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">About Us</div>
@@ -390,7 +411,7 @@
 
                         {/* 2. ABOUT US (NEW LUXURY COPY) */}
                         {activePage === 'about-us' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border">
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
                                 <div className="text-center mb-10 md:mb-16">
                                     <span className="text-blue-600 font-black uppercase tracking-[0.2em] text-[10px] md:text-xs bg-blue-50 px-4 py-2 rounded-full">About Perfect Horizons</span>
                                     <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic mt-6 mb-4 leading-tight">A Luxury Standard in Real Estate Advisory</h1>
@@ -451,7 +472,7 @@
 
                         {/* 3. OUR JOURNEY (NEW LUXURY COPY) */}
                         {activePage === 'our-journey' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border">
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
                                 <h1 className="text-3xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-4">The Perfect Horizons Story</h1>
                                 <p className="text-gray-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-8 md:mb-12">A platform where honesty comes before profit.</p>
                                 
@@ -484,7 +505,7 @@
 
                         {/* 4. OUR MANAGEMENT (Photo Updated) */}
                         {activePage === 'our-management' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border flex flex-col-reverse md:flex-row gap-8 md:gap-12 items-center">
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border flex flex-col-reverse md:flex-row gap-8 md:gap-12 items-center animate-fadeIn">
                                 <div className="w-full md:w-1/2">
                                     <h1 className="text-3xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-2 md:mb-4">Meet Tharun</h1>
                                     <h3 className="text-[10px] md:text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-6 md:mb-8">Lead Real Estate Advisor</h3>
@@ -499,18 +520,18 @@
                                         Schedule Consultation
                                     </button>
                                 </div>
-                              <div className="w-full md:w-1/2 flex justify-center mb-4 md:mb-0">
-    <div className="w-48 h-48 md:w-96 md:h-96 bg-slate-100 rounded-full md:rounded-[40px] border-4 md:border-8 border-white shadow-xl md:shadow-2xl overflow-hidden relative">
-        <img src="https://drive.google.com/uc?export=view&id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd" alt="Tharun Profile" className="w-full h-full object-cover" onError={(e) => { e.target.src = 'https://via.placeholder.com/400x400?text=Check+Drive+Permissions'; }} />
-    </div>
-</div>
+                                <div className="w-full md:w-1/2 flex justify-center mb-4 md:mb-0">
+                                    {/* DRIVE LINK FIXED: Direct Download URL */}
+                                    <div className="w-48 h-48 md:w-96 md:h-96 bg-slate-100 rounded-full md:rounded-[40px] border-4 md:border-8 border-white shadow-xl md:shadow-2xl overflow-hidden relative">
+                                        <img src="https://drive.google.com/uc?export=view&id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd" alt="Tharun Profile" className="w-full h-full object-cover" onError={(e) => { e.target.src = 'https://via.placeholder.com/400x400?text=Check+Drive+Permissions'; }} />
                                     </div>
                                 </div>
                             </div>
                         )}
 
+                        {/* 5. WHAT WE DO */}
                         {activePage === 'what-we-do' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border">
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
                                 <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">Our Services</h1>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
@@ -538,8 +559,9 @@
                             </div>
                         )}
 
+                        {/* 6. WHAT WE DON'T DO */}
                         {activePage === 'what-we-dont-do' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border">
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
                                 <h1 className="text-2xl md:text-5xl font-black text-red-700 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">What We Don't Do</h1>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
@@ -567,8 +589,9 @@
                             </div>
                         )}
 
+                        {/* 7. CUSTOMERS (Testimonials) */}
                         {activePage === 'customers' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border">
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
                                 <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-2 md:mb-4 text-center">Happy Homeowners</h1>
                                 <p className="text-gray-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-8 md:mb-12 text-center">Don't just take our word for it.</p>
                                 
@@ -621,7 +644,7 @@
                             </div>
                         )}
 
-                        {/* BLOGS LISTING OR READER VIEW */}
+                        {/* 8. BLOGS LISTING */}
                         {activePage === 'blogs' && !activeBlog && (
                             <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
                                 <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-2 md:mb-4">Real Estate Insights</h1>
@@ -646,7 +669,7 @@
                             </div>
                         )}
 
-                        {/* ACTIVE BLOG READER */}
+                        {/* ACTIVE BLOG READER (No Ask Advisor inside the text) */}
                         {activePage === 'blogs' && activeBlog && (
                             <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border max-w-4xl mx-auto animate-fadeIn">
                                 <button onClick={() => setActiveBlog(null)} className="text-gray-400 text-xs font-bold uppercase tracking-widest hover:text-blue-600 transition mb-8 flex items-center">
@@ -657,13 +680,7 @@
                                 <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase leading-tight mb-8">{activeBlog.title}</h1>
                                 
                                 {/* Dynamic Blog Content Injection */}
-                                <div className="text-gray-700 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6 border-b border-gray-100 pb-12 mb-12" dangerouslySetInnerHTML={{__html: activeBlog.content}}></div>
-                                
-                                <div className="bg-blue-50 border border-blue-100 p-8 rounded-3xl text-center">
-                                    <h3 className="text-lg font-black text-blue-900 uppercase tracking-tighter mb-2">Have questions about this topic?</h3>
-                                    <p className="text-gray-600 text-sm mb-6">Our advisory team is here to provide clarity and protect your investment.</p>
-                                    <button onClick={() => setShowLeadForm(true)} className="bg-blue-600 text-white font-black py-3 px-8 rounded-xl uppercase tracking-widest shadow-md hover:bg-blue-700 transition active:scale-95 inline-block">Talk with Advisor</button>
-                                </div>
+                                <div className="text-gray-700 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6" dangerouslySetInnerHTML={{__html: activeBlog.content}}></div>
                             </div>
                         )}
                     </main>
@@ -771,7 +788,6 @@
                         <div className="bg-slate-900 text-white py-6 md:py-12 px-0 md:px-6 mt-8 md:mt-12 border-t-4 border-blue-500">
                             <div className="max-w-7xl mx-auto">
                                 <h2 className="text-base md:text-2xl font-black italic uppercase tracking-tighter mb-4 md:mb-8 text-center text-blue-400">Why Choose Perfect Horizons?</h2>
-                                {/* Horizontal scrolling on mobile, grid on desktop */}
                                 <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:grid md:grid-cols-4 md:gap-6 hide-scroll px-4 md:px-0">
                                     <div className="min-w-[140px] md:min-w-0 snap-center bg-slate-800 py-4 px-3 md:p-6 rounded-xl md:rounded-2xl border border-slate-700 text-center flex flex-col items-center justify-center">
                                         <div className="text-2xl md:text-3xl mb-2">🛡️</div>
