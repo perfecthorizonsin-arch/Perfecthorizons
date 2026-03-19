@@ -10,43 +10,28 @@
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏢</text></svg>">
     
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.15s ease-out forwards; }
         .dropdown-arrow {
-            display: inline-block;
-            margin-left: 4px;
-            width: 0;
-            height: 0;
-            vertical-align: middle;
-            border-top: 4px solid currentColor;
-            border-right: 4px solid transparent;
-            border-left: 4px solid transparent;
+            display: inline-block; margin-left: 4px; width: 0; height: 0; vertical-align: middle; border-top: 4px solid currentColor; border-right: 4px solid transparent; border-left: 4px solid transparent;
         }
-        .line-clamp-3 {
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;  
-            overflow: hidden;
-        }
+        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
         
         /* Native Splash Screen CSS */
         @keyframes pulse-fast { 
             0%, 100% { opacity: 1; transform: scale(1); } 
             50% { opacity: 0.6; transform: scale(0.98); } 
         }
-        .splash-title {
-            font-family: sans-serif; color: #1e3a8a; font-size: 2rem; font-weight: 900; font-style: italic; text-transform: uppercase; animation: pulse-fast 1.2s ease-in-out infinite;
-        }
-        .splash-sub {
-            font-family: sans-serif; color: #64748b; font-size: 0.75rem; margin-top: 1rem; font-weight: bold; letter-spacing: 0.15em; text-transform: uppercase;
-        }
+        .splash-title { font-family: sans-serif; color: #1e3a8a; font-size: 2rem; font-weight: 900; font-style: italic; text-transform: uppercase; animation: pulse-fast 1.2s ease-in-out infinite; }
+        .splash-sub { font-family: sans-serif; color: #64748b; font-size: 0.75rem; margin-top: 1rem; font-weight: bold; letter-spacing: 0.15em; text-transform: uppercase; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans">
@@ -55,6 +40,16 @@
         <div class="splash-title">Perfect Horizons</div>
         <div class="splash-sub">Curating Properties...</div>
     </div>
+
+    <script>
+        setTimeout(function() {
+            var splash = document.getElementById('native-splash');
+            if (splash) {
+                splash.style.opacity = '0';
+                setTimeout(function() { splash.remove(); }, 500);
+            }
+        }, 3000);
+    </script>
 
     <div id="root"></div>
 
@@ -66,7 +61,6 @@
         const WHATSAPP_NUMBER = "919742353260";
         const ADMIN_PIN = "1234"; 
 
-        // --- EXTENDED BLOG DATA ---
         const BLOG_ARTICLES = [
             {
                 id: 1,
@@ -241,7 +235,6 @@
             const [leadData, setLeadData] = useState({ name: "", phone: "" });
             const [isSubmitting, setIsSubmitting] = useState(false);
             
-            // --- URL HASH ROUTING STATE ---
             const [activePage, setActivePage] = useState(() => {
                 const hash = window.location.hash.replace('#', '');
                 return hash || 'home';
@@ -255,7 +248,6 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get("key") === "admin123") setIsAdmin(true);
                 
-                // Handle Browser Back/Forward Navigation
                 const handleHashChange = () => {
                     const hash = window.location.hash.replace('#', '');
                     setActivePage(hash || 'home');
@@ -263,7 +255,6 @@
                 };
                 window.addEventListener('hashchange', handleHashChange);
                 
-                // Fetch Properties & Remove Splash
                 const removeSplash = () => {
                     const splash = document.getElementById('native-splash');
                     if(splash) {
@@ -283,8 +274,6 @@
                         setLoading(false);
                         removeSplash();
                     });
-                
-                setTimeout(removeSplash, 5000);
                 
                 return () => window.removeEventListener('hashchange', handleHashChange);
             }, []);
@@ -338,7 +327,6 @@
                 return matchSearch && matchBHK && matchStatus && matchType && matchPrice;
             });
 
-            // ROUTING FUNCTION
             const navTo = (page) => {
                 setIsMobileMenuOpen(false);
                 setActiveBlog(null);
@@ -358,7 +346,7 @@
                                 {/* LOGO */}
                                 <h1 onClick={() => navTo('home')} className="text-xl md:text-2xl font-black text-white tracking-tighter uppercase italic cursor-pointer hover:text-blue-400 transition drop-shadow-md shrink-0">Perfect Horizons</h1>
                                 
-                                {/* DESKTOP SEARCH BAR (Next to Logo) */}
+                                {/* DESKTOP SEARCH BAR */}
                                 {activePage === 'home' && (
                                     <div className="hidden md:block w-64 lg:w-96 ml-4">
                                         <div className="relative">
@@ -412,14 +400,14 @@
                         {/* STICKY FILTERS BAR (Full Width Aligned) */}
                         {activePage === 'home' && (
                             <div className="bg-white border-b border-gray-200 py-3 px-4 md:px-8 relative z-40">
-                                <div className="w-full flex flex-col gap-3">
-                                    {/* Mobile Search Input (Hidden on Desktop) */}
+                                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
+                                    {/* Mobile Search Input */}
                                     <div className="md:hidden w-full relative">
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
                                         <input type="text" placeholder="Search Location, Project..." className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500 transition" value={search} onChange={e => setSearch(e.target.value)} />
                                     </div>
                                     
-                                    {/* Filter Dropdowns (Full width grid) */}
+                                    {/* Filter Dropdowns (Full Width 5-Col Grid on Desktop) */}
                                     <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 w-full">
                                         <select className="w-full bg-gray-50 px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 transition" value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}>
                                             <option value="">BHK</option>
@@ -492,29 +480,29 @@
 
                                                 {/* Card Body */}
                                                 <div className="p-5 flex-grow flex flex-col">
-                                                    <h2 className="text-xl font-black text-gray-900 leading-tight mb-1">
+                                                    <h2 className="text-xl md:text-2xl font-black text-gray-900 leading-tight mb-1 uppercase tracking-tight">
                                                         {getVal(p, "Property Name") || "Listed Property"}
                                                     </h2>
-                                                    <p className="text-sm text-gray-500 mb-4 truncate">At {getVal(p, "Location") || "Location on Request"}</p>
+                                                    <p className="text-sm text-gray-500 mb-4 truncate font-medium">At {getVal(p, "Location") || "Location on Request"}</p>
                                                     
-                                                    <div className="flex items-center gap-2 text-sm font-bold text-gray-800 mb-5">
+                                                    <div className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-6 bg-slate-50 w-fit px-3 py-1.5 rounded-lg border border-slate-100">
                                                         <span className="text-lg">🔑</span> {getVal(p, "Construction Status") || "Status Unknown"}
                                                     </div>
 
                                                     {/* Card Footer (Price & Buttons) */}
-                                                    <div className="flex justify-between items-end border-t border-gray-100 pt-4 mt-auto">
+                                                    <div className="flex justify-between items-end border-t border-gray-100 pt-5 mt-auto">
                                                         <div className="flex flex-col">
-                                                            <span className="text-[10px] text-gray-500 font-medium mb-0.5 uppercase tracking-widest">Starting from</span>
-                                                            <span className="text-xl font-black text-gray-900">{getVal(p, "Price") || "On Request"}</span>
+                                                            <span className="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-widest">Starting from</span>
+                                                            <span className="text-xl md:text-2xl font-black text-blue-900 leading-none">{getVal(p, "Price") || "On Request"}</span>
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <button 
                                                                 onClick={(e) => { e.stopPropagation(); setSelectedProperty(p); setShowLeadForm(true); }} 
-                                                                className="bg-slate-900 text-white text-[10px] md:text-xs font-bold px-3 py-2 md:px-4 md:py-2.5 rounded-lg hover:bg-slate-800 transition shadow-md hidden md:block"
+                                                                className="bg-slate-900 text-white text-[10px] md:text-xs font-bold px-3 py-2 md:px-5 md:py-2.5 rounded-lg hover:bg-blue-600 transition-colors shadow-md hidden md:block"
                                                             >
                                                                 Enquire Now
                                                             </button>
-                                                            <button className="bg-[#f97316] text-white text-[10px] md:text-xs font-bold px-3 py-2 md:px-4 md:py-2.5 rounded-lg hover:bg-[#ea580c] transition shadow-md shadow-orange-500/30">
+                                                            <button className="bg-[#f97316] text-white text-[10px] md:text-xs font-bold px-3 py-2 md:px-5 md:py-2.5 rounded-lg hover:bg-[#ea580c] transition-colors shadow-md shadow-orange-500/20">
                                                                 View Project
                                                             </button>
                                                         </div>
@@ -527,7 +515,7 @@
                             </>
                         )}
 
-                        {/* 2. ABOUT US (LUXURY COPY) */}
+                        {/* 2. ABOUT US */}
                         {activePage === 'about-us' && (
                             <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
                                 <div className="text-center mb-10 md:mb-16">
@@ -588,7 +576,7 @@
                             </div>
                         )}
 
-                        {/* 3. OUR JOURNEY (LUXURY COPY) */}
+                        {/* 3. OUR JOURNEY */}
                         {activePage === 'our-journey' && (
                             <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
                                 <h1 className="text-3xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-4">The Perfect Horizons Story</h1>
@@ -621,7 +609,38 @@
                             </div>
                         )}
 
-                        {/* 4. WHAT WE DO */}
+                        {/* 4. ADVISOR PAGE */}
+                        {activePage === 'advisor' && (
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border flex flex-col-reverse md:flex-row gap-8 md:gap-12 items-center animate-fadeIn">
+                                <div className="w-full md:w-1/2">
+                                    <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic mb-2 md:mb-4 leading-tight">Meet Your Advisor</h1>
+                                    <h3 className="text-[10px] md:text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-6 md:mb-8">Tharun | Lead Luxury Advisor</h3>
+                                    
+                                    <div className="text-gray-600 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6">
+                                        <p>Hi, I'm Tharun. I built Perfect Horizons because I saw how confusing and overwhelming buying a home in Bengaluru can be.</p>
+                                        <p>As your dedicated channel partner, I don't just show you brochures. I provide you with complete, unbiased analysis of floor plans, builder histories, and locality growth potential.</p>
+                                        <p>My goal isn't just to help you buy a house; it's to ensure you make the smartest, safest financial decision for your family's future.</p>
+                                    </div>
+
+                                    <button onClick={() => setShowLeadForm(true)} className="w-full md:w-auto mt-6 md:mt-8 bg-slate-900 text-white font-black py-4 px-10 rounded-xl md:rounded-2xl uppercase tracking-widest shadow-xl hover:bg-blue-600 transition-all active:scale-95">
+                                        Schedule Consultation
+                                    </button>
+                                </div>
+                                <div className="w-full md:w-1/2 flex justify-center mb-4 md:mb-0">
+                                    <div className="w-56 h-56 md:w-96 md:h-96 bg-slate-100 rounded-full md:rounded-[40px] border-4 md:border-8 border-white shadow-2xl overflow-hidden relative">
+                                        <img 
+                                            src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w1000" 
+                                            alt="Tharun Profile" 
+                                            className="w-full h-full object-cover object-top" 
+                                            onError={(e) => { e.target.src = 'https://i.ibb.co/Y7Y6K3r/professional-placeholder.jpg'; }} 
+                                        />
+                                        <div className="absolute bottom-4 left-0 w-full text-center text-[8px] md:text-[10px] font-bold text-white/80 uppercase tracking-widest z-10 hidden md:block drop-shadow-md">Authorized Partner</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 5. WHAT WE DO */}
                         {activePage === 'what-we-do' && (
                             <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
                                 <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">Our Services</h1>
@@ -651,7 +670,7 @@
                             </div>
                         )}
 
-                        {/* 5. WHAT WE DON'T DO */}
+                        {/* 6. WHAT WE DON'T DO */}
                         {activePage === 'what-we-dont-do' && (
                             <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
                                 <h1 className="text-2xl md:text-5xl font-black text-red-700 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">What We Don't Do</h1>
@@ -681,37 +700,7 @@
                             </div>
                         )}
 
-                        {/* 6. ADVISOR (Moved to standalone section) */}
-                        {activePage === 'advisor' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border flex flex-col-reverse md:flex-row gap-8 md:gap-12 items-center animate-fadeIn">
-                                <div className="w-full md:w-1/2">
-                                    <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic mb-2 md:mb-4 leading-tight">Meet Your Advisor</h1>
-                                    <h3 className="text-[10px] md:text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-6 md:mb-8">Tharun | Lead Luxury Advisor</h3>
-                                    
-                                    <div className="text-gray-600 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6">
-                                        <p>Hi, I'm Tharun. I built Perfect Horizons because I saw how confusing and overwhelming buying a home in Bengaluru can be.</p>
-                                        <p>As your dedicated channel partner, I don't just show you brochures. I provide you with complete, unbiased analysis of floor plans, builder histories, and locality growth potential.</p>
-                                        <p>My goal isn't just to help you buy a house; it's to ensure you make the smartest, safest financial decision for your family's future.</p>
-                                    </div>
-
-                                    <button onClick={() => setShowLeadForm(true)} className="w-full md:w-auto mt-6 md:mt-8 bg-slate-900 text-white font-black py-4 px-10 rounded-xl md:rounded-2xl uppercase tracking-widest shadow-xl hover:bg-blue-600 transition-all active:scale-95">
-                                        Schedule Consultation
-                                    </button>
-                                </div>
-                                <div className="w-full md:w-1/2 flex justify-center mb-4 md:mb-0">
-                                    <div className="w-56 h-56 md:w-96 md:h-96 bg-slate-100 rounded-full md:rounded-[40px] border-4 md:border-8 border-white shadow-2xl overflow-hidden relative">
-                                        <img 
-                                            src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w1000" 
-                                            alt="Tharun Profile" 
-                                            className="w-full h-full object-cover object-top" 
-                                            onError={(e) => { e.target.src = 'https://i.ibb.co/Y7Y6K3r/professional-placeholder.jpg'; }} 
-                                        />
-                                      
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 7. CUSTOMERS (Testimonials with Added Reviews) */}
+                        {/* 7. CUSTOMERS */}
                         {activePage === 'customers' && (
                             <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
                                 <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-2 md:mb-4 text-center">Happy Homeowners</h1>
@@ -783,7 +772,7 @@
                                                 <h3 className="font-black text-base md:text-lg uppercase tracking-tighter leading-tight mb-3 text-blue-900 group-hover:text-blue-600 transition">{blog.title}</h3>
                                                 <p className="text-gray-600 text-xs md:text-sm line-clamp-3 leading-relaxed">{blog.excerpt}</p>
                                             </div>
-                                            <div className="px-6 md:px-8 pb-6 md:pb-8 border-t border-gray-200 pt-4">
+                                            <div className="px-6 md:px-8 pb-6 md:pb-8 border-t border-gray-200 pt-4 mt-auto">
                                                 <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest group-hover:text-blue-800 transition flex items-center">
                                                     Read Article <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                                                 </span>
