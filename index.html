@@ -23,6 +23,12 @@
             border-right: 4px solid transparent;
             border-left: 4px solid transparent;
         }
+        .line-clamp-4 {
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans">
@@ -39,9 +45,9 @@
         const getVal = (obj, searchKey) => {
             if (!obj) return "";
             if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
-            const cleanKey = searchKey.trim().toLowerCase();
+            const cleanKey = searchKey.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
             for (let k in obj) {
-                if (k.trim().toLowerCase() === cleanKey) return obj[k];
+                if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k];
             }
             return "";
         };
@@ -89,41 +95,16 @@
             
             const [activePage, setActivePage] = useState("home"); 
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-            
-            // BLOGS STATE
-            const [blogs, setBlogs] = useState([]);
-            const [loadingBlogs, setLoadingBlogs] = useState(false);
 
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get("key") === "admin123") setIsAdmin(true);
-                
-                try { localStorage.removeItem('ph_cache_v19'); } catch(e){} 
                 
                 fetch(API_URL).then(res => res.json()).then(data => {
                     if (Array.isArray(data)) setProperties(data);
                     setLoading(false);
                 }).catch(() => setLoading(false));
             }, []);
-
-            // AUTOMATED BLOG FETCHER
-            useEffect(() => {
-                if (activePage === 'blogs' && blogs.length === 0) {
-                    setLoadingBlogs(true);
-                    // Fetches top Bengaluru Real Estate news via RSS
-                    const rssUrl = encodeURIComponent('https://news.google.com/rss/search?q=Bengaluru+real+estate+property&hl=en-IN&gl=IN&ceid=IN:en');
-                    fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data && data.items) {
-                                // Keep only the top 6 news articles to look clean
-                                setBlogs(data.items.slice(0, 6)); 
-                            }
-                            setLoadingBlogs(false);
-                        })
-                        .catch(() => setLoadingBlogs(false));
-                }
-            }, [activePage]);
 
             const loginAdmin = () => {
                 const pin = prompt("Enter Admin PIN:");
@@ -136,9 +117,9 @@
                 if (!/^[6-9]\d{9}$/.test(leadData.phone)) return alert("Enter valid 10-digit number");
                 setIsSubmitting(true);
                 fetch(LEAD_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({
-                    name: leadData.name, phone: leadData.phone, property: getVal(selectedProperty, "Property Name") || "Unknown"
+                    name: leadData.name, phone: leadData.phone, property: getVal(selectedProperty, "Property Name") || "General Enquiry"
                 })}).then(() => {
-                    alert("Interest Registered!");
+                    alert("Interest Registered! We will contact you shortly.");
                     setIsSubmitting(false); setShowLeadForm(false); setLeadData({ name: "", phone: "" });
                 });
             };
@@ -184,64 +165,72 @@
 
             return (
                 <div className="min-h-screen flex flex-col">
-                    <nav className="bg-white shadow-sm sticky top-0 z-40 border-b">
-                        <div className="max-w-7xl mx-auto px-4 md:px-8 flex justify-between items-center py-4 md:py-5">
-                            <h1 onClick={() => navTo('home')} className="text-xl md:text-2xl font-black text-blue-900 tracking-tighter uppercase italic cursor-pointer hover:text-blue-700 transition">Perfect Horizons</h1>
-                            
-                            <div className="md:hidden flex items-center gap-4">
-                                {isAdmin && <span className="bg-green-600 text-white text-[9px] px-2 py-1 rounded-full font-bold uppercase tracking-widest shadow-sm">Admin</span>}
-                                <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-gray-900 focus:outline-none">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                                </button>
-                            </div>
-
-                            <div className="hidden md:flex gap-8 items-center">
-                                <button onClick={() => navTo('home')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'home' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}>Properties</button>
-                                
-                                <div className="relative group cursor-pointer py-2">
-                                    <span className={`text-xs font-black uppercase tracking-widest transition flex items-center ${['about-us', 'our-journey', 'our-management'].includes(activePage) ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}>
-                                        About <span className="dropdown-arrow"></span>
-                                    </span>
-                                    <div className="absolute hidden group-hover:block top-full left-0 mt-0 w-48 bg-white border border-gray-100 shadow-xl rounded-xl overflow-hidden z-50 animate-fadeIn">
-                                        <div onClick={() => navTo('about-us')} className="p-4 hover:bg-blue-50 text-xs font-bold cursor-pointer text-gray-700 hover:text-blue-600 transition">About Us</div>
-                                        <div onClick={() => navTo('our-journey')} className="p-4 hover:bg-blue-50 text-xs font-bold cursor-pointer text-gray-700 hover:text-blue-600 transition border-t border-gray-50">Our Journey</div>
-                                        <div onClick={() => navTo('our-management')} className="p-4 hover:bg-blue-50 text-xs font-bold cursor-pointer text-gray-700 hover:text-blue-600 transition border-t border-gray-50">Our Management</div>
-                                    </div>
-                                </div>
-
-                                <div className="relative group cursor-pointer py-2">
-                                    <span className={`text-xs font-black uppercase tracking-widest transition flex items-center ${['what-we-do', 'what-we-dont-do'].includes(activePage) ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}>
-                                        Services <span className="dropdown-arrow"></span>
-                                    </span>
-                                    <div className="absolute hidden group-hover:block top-full left-0 mt-0 w-48 bg-white border border-gray-100 shadow-xl rounded-xl overflow-hidden z-50 animate-fadeIn">
-                                        <div onClick={() => navTo('what-we-do')} className="p-4 hover:bg-blue-50 text-xs font-bold cursor-pointer text-gray-700 hover:text-blue-600 transition">What We Do</div>
-                                        <div onClick={() => navTo('what-we-dont-do')} className="p-4 hover:bg-blue-50 text-xs font-bold cursor-pointer text-gray-700 hover:text-blue-600 transition border-t border-gray-50">What We Don't Do</div>
-                                    </div>
-                                </div>
-
-                                <button onClick={() => navTo('blogs')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'blogs' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}>Blogs</button>
-                                
-                                {isAdmin && <span className="bg-green-600 text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest shadow-sm">Admin Mode</span>}
-                            </div>
+                    {/* ENHANCED HEADER NAVIGATION */}
+                    <nav className="bg-white shadow-sm px-4 md:px-6 py-4 md:py-5 sticky top-0 z-40 border-b flex justify-between items-center">
+                        <div className="flex justify-between w-full md:w-auto items-center">
+                            <h1 onClick={() => navTo('home')} className="text-lg md:text-xl font-black text-blue-900 tracking-tighter uppercase italic cursor-pointer hover:text-blue-700 transition">Perfect Horizons</h1>
                         </div>
 
-                        {isMobileMenuOpen && (
-                            <div className="md:hidden bg-white border-t border-gray-100 py-4 px-4 space-y-4 shadow-lg absolute w-full left-0 animate-fadeIn z-50">
-                                <div onClick={() => navTo('home')} className="text-xs font-black uppercase tracking-widest text-gray-700 py-2 border-b border-gray-50">Properties</div>
-                                <div className="text-xs font-black uppercase tracking-widest text-gray-400 py-2">-- About --</div>
-                                <div onClick={() => navTo('about-us')} className="text-xs font-bold text-gray-700 pl-4 py-2 border-b border-gray-50">About Us</div>
-                                <div onClick={() => navTo('our-journey')} className="text-xs font-bold text-gray-700 pl-4 py-2 border-b border-gray-50">Our Journey</div>
-                                <div onClick={() => navTo('our-management')} className="text-xs font-bold text-gray-700 pl-4 py-2 border-b border-gray-50">Our Management</div>
-                                <div className="text-xs font-black uppercase tracking-widest text-gray-400 py-2 mt-4">-- Services --</div>
-                                <div onClick={() => navTo('what-we-do')} className="text-xs font-bold text-gray-700 pl-4 py-2 border-b border-gray-50">What We Do</div>
-                                <div onClick={() => navTo('what-we-dont-do')} className="text-xs font-bold text-gray-700 pl-4 py-2 border-b border-gray-50">What We Don't Do</div>
-                                <div onClick={() => navTo('blogs')} className="text-xs font-black uppercase tracking-widest text-gray-700 py-2 mt-4">Blogs</div>
+                        {/* Mobile Menu Button */}
+                        <div className="md:hidden flex items-center gap-3">
+                            {isAdmin && <span className="bg-green-600 text-white text-[9px] px-2 py-1 rounded-full font-bold uppercase tracking-widest shadow-sm">Admin</span>}
+                            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-gray-900 focus:outline-none">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                            </button>
+                        </div>
+                        
+                        {/* Desktop Menu */}
+                        <div className="hidden md:flex gap-6 lg:gap-8 items-center">
+                            <button onClick={() => navTo('home')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'home' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-900'}`}>Properties</button>
+                            
+                            <div className="relative group cursor-pointer py-2">
+                                <span className={`text-xs font-black uppercase tracking-widest transition flex items-center ${['about-us', 'our-journey', 'our-management'].includes(activePage) ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}>
+                                    About <span className="dropdown-arrow"></span>
+                                </span>
+                                <div className="absolute hidden group-hover:block top-full left-0 mt-0 w-48 bg-white border border-gray-100 shadow-xl rounded-xl overflow-hidden z-50 animate-fadeIn">
+                                    <div onClick={() => navTo('about-us')} className="p-4 hover:bg-blue-50 text-xs font-bold cursor-pointer text-gray-700 hover:text-blue-600 transition">About Us</div>
+                                    <div onClick={() => navTo('our-journey')} className="p-4 hover:bg-blue-50 text-xs font-bold cursor-pointer text-gray-700 hover:text-blue-600 transition border-t border-gray-50">Our Journey</div>
+                                    <div onClick={() => navTo('our-management')} className="p-4 hover:bg-blue-50 text-xs font-bold cursor-pointer text-gray-700 hover:text-blue-600 transition border-t border-gray-50">Our Management</div>
+                                </div>
                             </div>
-                        )}
+
+                            <div className="relative group cursor-pointer py-2">
+                                <span className={`text-xs font-black uppercase tracking-widest transition flex items-center ${['what-we-do', 'what-we-dont-do'].includes(activePage) ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}>
+                                    Services <span className="dropdown-arrow"></span>
+                                </span>
+                                <div className="absolute hidden group-hover:block top-full left-0 mt-0 w-56 bg-white border border-gray-100 shadow-xl rounded-xl overflow-hidden z-50 animate-fadeIn">
+                                    <div onClick={() => navTo('what-we-do')} className="p-4 hover:bg-blue-50 text-xs font-bold cursor-pointer text-gray-700 hover:text-blue-600 transition">What We Do</div>
+                                    <div onClick={() => navTo('what-we-dont-do')} className="p-4 hover:bg-blue-50 text-xs font-bold cursor-pointer text-gray-700 hover:text-blue-600 transition border-t border-gray-50">What We Don't Do</div>
+                                </div>
+                            </div>
+
+                            <button onClick={() => navTo('customers')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'customers' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-900'}`}>Customers</button>
+                            <button onClick={() => navTo('blogs')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'blogs' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-900'}`}>Blogs</button>
+                            
+                            {isAdmin && <span className="bg-green-600 text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest shadow-sm">Admin Mode</span>}
+                        </div>
                     </nav>
 
+                    {/* Mobile Menu Dropdown Panel */}
+                    {isMobileMenuOpen && (
+                        <div className="md:hidden bg-white border-t border-gray-100 py-4 px-4 space-y-4 shadow-lg absolute w-full left-0 top-[60px] animate-fadeIn z-50">
+                            <div onClick={() => navTo('home')} className="text-xs font-black uppercase tracking-widest text-gray-700 py-2 border-b border-gray-50">Properties</div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-blue-600 py-2">-- About --</div>
+                            <div onClick={() => navTo('about-us')} className="text-xs font-bold text-gray-700 pl-4 py-2 border-b border-gray-50">About Us</div>
+                            <div onClick={() => navTo('our-journey')} className="text-xs font-bold text-gray-700 pl-4 py-2 border-b border-gray-50">Our Journey</div>
+                            <div onClick={() => navTo('our-management')} className="text-xs font-bold text-gray-700 pl-4 py-2 border-b border-gray-50">Our Management</div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-blue-600 py-2 mt-2">-- Services --</div>
+                            <div onClick={() => navTo('what-we-do')} className="text-xs font-bold text-gray-700 pl-4 py-2 border-b border-gray-50">What We Do</div>
+                            <div onClick={() => navTo('what-we-dont-do')} className="text-xs font-bold text-gray-700 pl-4 py-2 border-b border-gray-50">What We Don't Do</div>
+                            <div onClick={() => navTo('customers')} className="text-xs font-black uppercase tracking-widest text-gray-700 py-2 mt-2 border-b border-gray-50">Customers</div>
+                            <div onClick={() => navTo('blogs')} className="text-xs font-black uppercase tracking-widest text-gray-700 py-2">Blogs</div>
+                        </div>
+                    )}
+
+                    {/* MAIN CONTENT AREA */}
                     <main className="max-w-7xl mx-auto p-4 md:p-8 flex-grow w-full animate-fadeIn">
                         
+                        {/* 1. PROPERTIES (HOME) */}
                         {activePage === 'home' && (
                             <>
                                 <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border mb-6 md:mb-8 space-y-2 md:space-y-4">
@@ -301,157 +290,252 @@
                             </>
                         )}
 
+                        {/* 2. ABOUT US */}
                         {activePage === 'about-us' && (
-                            <div className="bg-white p-8 md:p-16 rounded-[40px] shadow-xl border">
-                                <h1 className="text-3xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-8 border-b-4 border-blue-500 pb-4 inline-block">About Perfect Horizons</h1>
-                                <div className="text-gray-600 text-sm md:text-base leading-relaxed space-y-6 max-w-3xl">
-                                    <p className="text-xl font-medium text-blue-900">We are authorized channel partners dedicated to providing home buyers with unbiased, expert advice in the complex Bengaluru real estate market.</p>
-                                    <p>Our mission is to simplify the real estate journey by offering transparent guidance, ensuring you make an informed and safe decision for your dream home or investment. We cut through the marketing noise to give you the raw facts, pros, and cons of every property.</p>
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border">
+                                <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-6 md:mb-8 border-b-4 border-blue-500 pb-2 md:pb-4 inline-block">About Perfect Horizons</h1>
+                                <div className="text-gray-600 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6 max-w-3xl">
+                                    <p className="text-lg md:text-xl font-medium text-blue-900">We are authorized channel partners dedicated to providing home buyers with unbiased, expert advice in the complex Bengaluru real estate market.</p>
+                                    <p>Buying a home is one of the most significant financial decisions you will ever make. Our mission is to simplify this journey by offering transparent guidance, ensuring you make an informed and safe decision for your dream home or investment. We cut through the marketing noise to give you the raw facts, pros, and cons of every property.</p>
                                     <p>Partnering with us means you have a dedicated advocate on your side, negotiating the best prices and ensuring a smooth, hassle-free transaction from your first site visit to the final handover.</p>
                                 </div>
                             </div>
                         )}
 
+                        {/* 3. OUR JOURNEY */}
                         {activePage === 'our-journey' && (
-                            <div className="bg-white p-8 md:p-16 rounded-[40px] shadow-xl border">
-                                <h1 className="text-3xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-4">Our Journey</h1>
-                                <p className="text-gray-400 font-bold uppercase tracking-widest mb-12">Built on Trust & Transparency</p>
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border">
+                                <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-2 md:mb-4">Our Journey</h1>
+                                <p className="text-gray-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-8 md:mb-12">Built on Trust & Transparency</p>
                                 
-                                <div className="space-y-12 max-w-3xl">
-                                    <div className="border-l-4 border-blue-600 pl-6">
-                                        <h3 className="text-xl font-black text-gray-900 uppercase">The Beginning</h3>
-                                        <p className="text-gray-600 mt-2 leading-relaxed">Perfect Horizons was founded out of a necessity. We noticed a gap in the market where home buyers were overwhelmed by aggressive sales pitches and a lack of clear, honest data. We started with a single goal: to protect the buyer.</p>
+                                <div className="space-y-8 md:space-y-12 max-w-3xl">
+                                    <div className="border-l-4 border-blue-600 pl-4 md:pl-6">
+                                        <h3 className="text-lg md:text-xl font-black text-gray-900 uppercase">The Beginning</h3>
+                                        <p className="text-gray-600 mt-2 leading-relaxed text-sm md:text-base">Perfect Horizons was founded out of a necessity. We noticed a gap in the market where home buyers were overwhelmed by aggressive sales pitches and a lack of clear, honest data. We started with a single goal: to protect the buyer.</p>
                                     </div>
-                                    <div className="border-l-4 border-blue-600 pl-6">
-                                        <h3 className="text-xl font-black text-gray-900 uppercase">Building Partnerships</h3>
-                                        <p className="text-gray-600 mt-2 leading-relaxed">We slowly built strong relationships with Bengaluru's most reputable Tier-1 and Tier-2 builders. By maintaining strict standards for the properties we list, we earned the trust of our early clients, leading to a network built almost entirely on referrals.</p>
+                                    <div className="border-l-4 border-blue-600 pl-4 md:pl-6">
+                                        <h3 className="text-lg md:text-xl font-black text-gray-900 uppercase">Building Partnerships</h3>
+                                        <p className="text-gray-600 mt-2 leading-relaxed text-sm md:text-base">We slowly built strong relationships with Bengaluru's most reputable Tier-1 and Tier-2 builders. By maintaining strict standards for the properties we list, we earned the trust of our early clients, leading to a network built almost entirely on referrals.</p>
                                     </div>
-                                    <div className="border-l-4 border-blue-600 pl-6">
-                                        <h3 className="text-xl font-black text-gray-900 uppercase">Looking Forward</h3>
-                                        <p className="text-gray-600 mt-2 leading-relaxed">Today, we are proud to be a fast-growing, tech-enabled channel partner. We continue to innovate our services while staying true to our core mission: putting the homebuyer's needs first.</p>
+                                    <div className="border-l-4 border-blue-600 pl-4 md:pl-6">
+                                        <h3 className="text-lg md:text-xl font-black text-gray-900 uppercase">Looking Forward</h3>
+                                        <p className="text-gray-600 mt-2 leading-relaxed text-sm md:text-base">Today, we are proud to be a fast-growing, tech-enabled channel partner. We continue to innovate our services while staying true to our core mission: putting the homebuyer's needs first.</p>
                                     </div>
                                 </div>
                             </div>
                         )}
 
+                        {/* 4. OUR MANAGEMENT (Advisor) */}
                         {activePage === 'our-management' && (
-                            <div className="bg-white p-8 md:p-16 rounded-[40px] shadow-xl border flex flex-col md:flex-row gap-12 items-center">
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border flex flex-col-reverse md:flex-row gap-8 md:gap-12 items-center">
                                 <div className="w-full md:w-1/2">
-                                    <h1 className="text-3xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-4">Meet Tharun</h1>
-                                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-8">Lead Real Estate Advisor</h3>
+                                    <h1 className="text-3xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-2 md:mb-4">Meet Tharun</h1>
+                                    <h3 className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 md:mb-8">Lead Real Estate Advisor</h3>
                                     
-                                    <div className="text-gray-600 text-sm md:text-base leading-relaxed space-y-6">
+                                    <div className="text-gray-600 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6">
                                         <p>Hi, I'm Tharun. I built Perfect Horizons because I saw how confusing and overwhelming buying a home in Bengaluru can be.</p>
                                         <p>As your dedicated channel partner, I don't just show you brochures. I provide you with complete, unbiased analysis of floor plans, builder histories, and locality growth potential.</p>
                                         <p>My goal isn't just to help you buy a house; it's to ensure you make the smartest, safest financial decision for your family's future.</p>
                                     </div>
 
-                                    <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi Tharun, I would like to schedule a consultation.`} target="_blank" className="inline-block mt-8 bg-blue-600 text-white font-black py-4 px-8 rounded-2xl uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 transition active:scale-95">
-                                        Chat with Tharun
-                                    </a>
+                                    <button onClick={() => setShowLeadForm(true)} className="w-full md:w-auto mt-6 md:mt-8 bg-blue-600 text-white font-black py-4 px-8 rounded-xl md:rounded-2xl uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-blue-700 transition active:scale-95">
+                                        Schedule Consultation
+                                    </button>
                                 </div>
-                                <div className="w-full md:w-1/2 flex justify-center">
-                                    <div className="w-64 h-64 md:w-96 md:h-96 bg-gray-100 rounded-[40px] border-8 border-white shadow-2xl flex items-center justify-center text-6xl text-gray-300 overflow-hidden relative">
+                                <div className="w-full md:w-1/2 flex justify-center mb-4 md:mb-0">
+                                    <div className="w-48 h-48 md:w-96 md:h-96 bg-gray-100 rounded-full md:rounded-[40px] border-4 md:border-8 border-white shadow-xl md:shadow-2xl flex items-center justify-center text-5xl md:text-6xl text-gray-300 overflow-hidden relative">
                                         <div className="absolute inset-0 bg-blue-900/5"></div>
                                         <span className="z-10">👨‍💼</span>
-                                        <div className="absolute bottom-4 left-0 w-full text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest z-10">Your Advisor</div>
+                                        <div className="absolute bottom-4 left-0 w-full text-center text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest z-10 hidden md:block">Your Advisor</div>
                                     </div>
                                 </div>
                             </div>
                         )}
 
+                        {/* 5. WHAT WE DO */}
                         {activePage === 'what-we-do' && (
-                            <div className="bg-white p-8 md:p-16 rounded-[40px] shadow-xl border">
-                                <h1 className="text-3xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-12 text-center">What We Do</h1>
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border">
+                                <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">Our Services</h1>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                                    <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 hover:shadow-lg transition">
-                                        <div className="text-4xl mb-4">🏠</div>
-                                        <h4 className="font-black uppercase tracking-widest text-lg mb-3 text-blue-900">Property Curation</h4>
-                                        <p className="text-gray-600 text-sm leading-relaxed">We filter out the noise. We only show you properties that match your specific budget, lifestyle requirements, and have clear legal titles.</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
+                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 hover:shadow-lg transition">
+                                        <div className="text-3xl md:text-4xl mb-3 md:mb-4">🔍</div>
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-blue-900">Project Discovery & Shortlisting</h4>
+                                        <p className="text-gray-600 text-xs md:text-sm leading-relaxed">We filter out the noise. We sit with you to understand your lifestyle and budget, then show you only the properties that match your specific requirements and have clear legal titles.</p>
                                     </div>
-                                    <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 hover:shadow-lg transition">
-                                        <div className="text-4xl mb-4">💰</div>
-                                        <h4 className="font-black uppercase tracking-widest text-lg mb-3 text-blue-900">Price Negotiation</h4>
-                                        <p className="text-gray-600 text-sm leading-relaxed">We sit across the table from the builders on your behalf. Leveraging our industry volume, we secure discounts and waivers you cannot get walking in alone.</p>
+                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 hover:shadow-lg transition">
+                                        <div className="text-3xl md:text-4xl mb-3 md:mb-4">🚗</div>
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-blue-900">Guided Site Visits</h4>
+                                        <p className="text-gray-600 text-xs md:text-sm leading-relaxed">We arrange and accompany you on site visits. We point out the practical pros and cons of the location, construction quality, and floor plan efficiency that brochures don't show.</p>
                                     </div>
-                                    <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 hover:shadow-lg transition">
-                                        <div className="text-4xl mb-4">🚗</div>
-                                        <h4 className="font-black uppercase tracking-widest text-lg mb-3 text-blue-900">End-to-End Logistics</h4>
-                                        <p className="text-gray-600 text-sm leading-relaxed">From arranging free cab pickups for site visits to helping coordinate your home loan paperwork, we handle the heavy lifting.</p>
+                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 hover:shadow-lg transition">
+                                        <div className="text-3xl md:text-4xl mb-3 md:mb-4">💰</div>
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-blue-900">Inventory Selection & Negotiation</h4>
+                                        <p className="text-gray-600 text-xs md:text-sm leading-relaxed">We help you pick the best unit (Vastu, ventilation, views) and sit across the table from the builders to negotiate the absolute best price and payment plan on your behalf.</p>
                                     </div>
-                                    <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 hover:shadow-lg transition">
-                                        <div className="text-4xl mb-4">📊</div>
-                                        <h4 className="font-black uppercase tracking-widest text-lg mb-3 text-blue-900">Investment Analysis</h4>
-                                        <p className="text-gray-600 text-sm leading-relaxed">We provide data-driven insights into micro-market trends, expected rental yields, and future appreciation potential.</p>
+                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 hover:shadow-lg transition">
+                                        <div className="text-3xl md:text-4xl mb-3 md:mb-4">🤝</div>
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-blue-900">End-to-End Post-Sales Support</h4>
+                                        <p className="text-gray-600 text-xs md:text-sm leading-relaxed">Our relationship doesn't end at booking. We assist with home loan coordination, legal document verification, and support you all the way until the final handover of your keys.</p>
                                     </div>
                                 </div>
                             </div>
                         )}
 
+                        {/* 6. WHAT WE DON'T DO */}
                         {activePage === 'what-we-dont-do' && (
-                            <div className="bg-white p-8 md:p-16 rounded-[40px] shadow-xl border">
-                                <h1 className="text-3xl md:text-5xl font-black text-red-900 tracking-tighter uppercase italic mb-12 text-center">What We Don't Do</h1>
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border">
+                                <h1 className="text-2xl md:text-5xl font-black text-red-900 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">What We Don't Do</h1>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                                    <div className="bg-red-50 p-8 rounded-3xl border border-red-100">
-                                        <div className="text-4xl mb-4">❌</div>
-                                        <h4 className="font-black uppercase tracking-widest text-lg mb-3 text-red-900">We Do Not Charge Brokerage</h4>
-                                        <p className="text-gray-700 text-sm leading-relaxed">As authorized channel partners, we are compensated by the developers out of their marketing budgets. Our services are 100% free for buyers.</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
+                                    <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
+                                        <div className="text-3xl md:text-4xl mb-3 md:mb-4">❌</div>
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-red-900">We Don't Charge Buyers</h4>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed">As authorized channel partners, we are compensated by the developers out of their marketing budgets. Our premium advisory services are 100% free for home buyers.</p>
                                     </div>
-                                    <div className="bg-red-50 p-8 rounded-3xl border border-red-100">
-                                        <div className="text-4xl mb-4">🚫</div>
-                                        <h4 className="font-black uppercase tracking-widest text-lg mb-3 text-red-900">We Do Not Push Bad Projects</h4>
-                                        <p className="text-gray-700 text-sm leading-relaxed">If a project has legal issues, poor construction quality, or a bad track record, we refuse to list it. We protect your money above all else.</p>
+                                    <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
+                                        <div className="text-3xl md:text-4xl mb-3 md:mb-4">🚫</div>
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-red-900">We Don't Push Bad Projects</h4>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed">If a project has legal issues, poor construction quality, or a bad track record, we refuse to list it or recommend it. We protect your money above all else.</p>
                                     </div>
-                                    <div className="bg-red-50 p-8 rounded-3xl border border-red-100">
-                                        <div className="text-4xl mb-4">📵</div>
-                                        <h4 className="font-black uppercase tracking-widest text-lg mb-3 text-red-900">We Do Not Spam Call</h4>
-                                        <p className="text-gray-700 text-sm leading-relaxed">We respect your privacy. Once you register interest, we provide the facts and step back. No aggressive sales tactics or relentless follow-ups.</p>
+                                    <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
+                                        <div className="text-3xl md:text-4xl mb-3 md:mb-4">📵</div>
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-red-900">We Don't Spam Call</h4>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed">We respect your privacy. Once you register interest, we provide the facts and step back to let you decide. No aggressive sales tactics or relentless follow-up calls.</p>
                                     </div>
-                                    <div className="bg-red-50 p-8 rounded-3xl border border-red-100">
-                                        <div className="text-4xl mb-4">⚖️</div>
-                                        <h4 className="font-black uppercase tracking-widest text-lg mb-3 text-red-900">We Do Not Hide Facts</h4>
-                                        <p className="text-gray-700 text-sm leading-relaxed">Every project has pros and cons. We will tell you the absolute truth about a property's downsides, not just the marketing highlights.</p>
+                                    <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
+                                        <div className="text-3xl md:text-4xl mb-3 md:mb-4">⚖️</div>
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-red-900">We Don't Hide Facts</h4>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed">Every project has pros and cons. We will tell you the absolute truth about a property's downsides—like traffic bottlenecks or water issues—not just the marketing highlights.</p>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* LIVE AUTOMATED BLOGS */}
-                        {activePage === 'blogs' && (
-                            <div className="bg-white p-8 md:p-16 rounded-[40px] shadow-xl border">
-                                <h1 className="text-3xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-4">Market News</h1>
-                                <p className="text-gray-400 font-bold uppercase tracking-widest mb-12">Latest Bengaluru Real Estate Updates</p>
+                        {/* 7. CUSTOMERS (Testimonials) */}
+                        {activePage === 'customers' && (
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border">
+                                <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-2 md:mb-4 text-center">Happy Homeowners</h1>
+                                <p className="text-gray-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-8 md:mb-12 text-center">Don't just take our word for it.</p>
                                 
-                                {loadingBlogs ? (
-                                    <div className="text-center py-20">
-                                        <div className="text-blue-600 font-black animate-pulse text-xl tracking-widest uppercase">Fetching Live Headlines...</div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
+                                    {/* Testimonial 1 */}
+                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 relative">
+                                        <div className="text-yellow-400 text-sm md:text-base mb-3 md:mb-4">★★★★★</div>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed italic mb-4 md:mb-6">"We were completely lost trying to find a 3BHK in East Bangalore. Tharun didn't just show us properties; he explained the actual ROI and negotiated a price we couldn't have gotten directly from the builder."</p>
+                                        <div className="flex items-center gap-3 md:gap-4">
+                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-600 text-sm md:text-base">SK</div>
+                                            <div>
+                                                <h5 className="font-black text-xs md:text-sm uppercase tracking-widest text-gray-900">Sandeep & Kavya</h5>
+                                                <p className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-widest">Bought in Sarjapur</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                        {blogs.length > 0 ? blogs.map((blog, i) => (
-                                            <a key={i} href={blog.link} target="_blank" rel="noopener noreferrer" className="bg-gray-50 rounded-[30px] border overflow-hidden hover:shadow-xl transition group cursor-pointer flex flex-col">
-                                                <div className="h-48 bg-gray-200 w-full overflow-hidden relative">
-                                                    {/* Fallback image if RSS doesn't provide one */}
-                                                    <img src={blog.thumbnail || `https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=500&q=60`} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                                                    <div className="absolute inset-0 bg-blue-900/20 group-hover:bg-transparent transition z-10"></div>
-                                                    <span className="absolute top-4 left-4 z-20 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg">News Insight</span>
-                                                </div>
-                                                <div className="p-6 flex-grow flex flex-col">
-                                                    <h3 className="font-black text-lg uppercase tracking-tighter leading-tight mb-3 line-clamp-3 text-gray-900 group-hover:text-blue-600 transition">{blog.title}</h3>
-                                                    <p className="text-gray-400 text-xs mt-auto font-bold uppercase tracking-widest">{new Date(blog.pubDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric'})}</p>
-                                                </div>
-                                            </a>
-                                        )) : (
-                                            <div className="col-span-3 text-center py-10 text-gray-400 font-bold uppercase tracking-widest">No recent news found at this moment.</div>
-                                        )}
+                                    {/* Testimonial 2 */}
+                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 relative">
+                                        <div className="text-yellow-400 text-sm md:text-base mb-3 md:mb-4">★★★★★</div>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed italic mb-4 md:mb-6">"The best part about Perfect Horizons is their zero-brokerage policy and absolute transparency. They pointed out flaws in properties I originally liked, saving me from a bad investment."</p>
+                                        <div className="flex items-center gap-3 md:gap-4">
+                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-600 text-sm md:text-base">RM</div>
+                                            <div>
+                                                <h5 className="font-black text-xs md:text-sm uppercase tracking-widest text-gray-900">Rahul M.</h5>
+                                                <p className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-widest">IT Professional</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                )}
+                                    {/* Testimonial 3 */}
+                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 relative">
+                                        <div className="text-yellow-400 text-sm md:text-base mb-3 md:mb-4">★★★★★</div>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed italic mb-4 md:mb-6">"From the free site visits to handling the endless paperwork with the bank and the builder, the team made the entire process stress-free. Highly recommend them to any first-time buyer."</p>
+                                        <div className="flex items-center gap-3 md:gap-4">
+                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-600 text-sm md:text-base">AT</div>
+                                            <div>
+                                                <h5 className="font-black text-xs md:text-sm uppercase tracking-widest text-gray-900">Ananya T.</h5>
+                                                <p className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-widest">Bought in Whitefield</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {/* Testimonial 4 */}
+                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 relative flex flex-col justify-center items-center text-center hover:bg-blue-50 transition cursor-pointer" onClick={() => setShowLeadForm(true)}>
+                                        <div className="text-3xl md:text-4xl mb-3 md:mb-4">🏡</div>
+                                        <h4 className="font-black text-sm md:text-lg uppercase tracking-widest text-blue-900 mb-2">Join the Family</h4>
+                                        <p className="text-gray-500 text-xs md:text-sm px-4">Let us help you find your perfect home.</p>
+                                        <span className="text-blue-600 text-[10px] font-black uppercase tracking-widest mt-4 underline">Get Started</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 8. BLOGS (Customer Helpful Content) */}
+                        {activePage === 'blogs' && (
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border">
+                                <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-2 md:mb-4">Real Estate Insights</h1>
+                                <p className="text-gray-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-8 md:mb-12">Expert guides for Bengaluru buyers</p>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 md:gap-8">
+                                    
+                                    {/* Blog Card 1 */}
+                                    <div className="bg-gray-50 rounded-[20px] md:rounded-[30px] border overflow-hidden hover:shadow-lg transition group flex flex-col">
+                                        <div className="p-6 md:p-8 flex-grow">
+                                            <span className="text-blue-600 text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-blue-100 px-3 py-1 rounded-lg mb-4 inline-block">Legal Guide</span>
+                                            <h3 className="font-black text-base md:text-xl uppercase tracking-tighter leading-tight mb-3 text-gray-900">What is UDS (Undivided Share) and Why Does it Matter?</h3>
+                                            <p className="text-gray-600 text-xs md:text-sm mb-4 line-clamp-4 leading-relaxed">When you buy an apartment, you aren't just buying the flat; you are buying a piece of the land it sits on. Understanding your UDS is critical for future resale value and redevelopment rights.</p>
+                                        </div>
+                                        <div className="px-6 md:px-8 pb-6 md:pb-8">
+                                            <button onClick={() => setShowLeadForm(true)} className="text-xs font-black text-blue-600 uppercase tracking-widest hover:text-blue-800 transition flex items-center">
+                                                Ask Advisor <span className="ml-2">→</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Blog Card 2 */}
+                                    <div className="bg-gray-50 rounded-[20px] md:rounded-[30px] border overflow-hidden hover:shadow-lg transition group flex flex-col">
+                                        <div className="p-6 md:p-8 flex-grow">
+                                            <span className="text-blue-600 text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-blue-100 px-3 py-1 rounded-lg mb-4 inline-block">Finance Hack</span>
+                                            <h3 className="font-black text-base md:text-xl uppercase tracking-tighter leading-tight mb-3 text-gray-900">5 Hidden Charges Builders Don't Tell You About</h3>
+                                            <p className="text-gray-600 text-xs md:text-sm mb-4 line-clamp-4 leading-relaxed">The 'Base Price' is never the final price. From Club House charges to BESCOM deposits and legal fees, learn how to calculate the actual landed cost of your property before paying a token.</p>
+                                        </div>
+                                        <div className="px-6 md:px-8 pb-6 md:pb-8">
+                                            <button onClick={() => setShowLeadForm(true)} className="text-xs font-black text-blue-600 uppercase tracking-widest hover:text-blue-800 transition flex items-center">
+                                                Ask Advisor <span className="ml-2">→</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Blog Card 3 */}
+                                    <div className="bg-gray-50 rounded-[20px] md:rounded-[30px] border overflow-hidden hover:shadow-lg transition group flex flex-col">
+                                        <div className="p-6 md:p-8 flex-grow">
+                                            <span className="text-blue-600 text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-blue-100 px-3 py-1 rounded-lg mb-4 inline-block">Checklist</span>
+                                            <h3 className="font-black text-base md:text-xl uppercase tracking-tighter leading-tight mb-3 text-gray-900">5 Things to Check Before Paying a Token Amount</h3>
+                                            <p className="text-gray-600 text-xs md:text-sm mb-4 line-clamp-4 leading-relaxed">Don't lose your hard-earned money. Always verify the RERA number, check the builder's past delivery record, and get a clear picture of the master plan before signing that initial cheque.</p>
+                                        </div>
+                                        <div className="px-6 md:px-8 pb-6 md:pb-8">
+                                            <button onClick={() => setShowLeadForm(true)} className="text-xs font-black text-blue-600 uppercase tracking-widest hover:text-blue-800 transition flex items-center">
+                                                Ask Advisor <span className="ml-2">→</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Blog Card 4 */}
+                                    <div className="bg-gray-50 rounded-[20px] md:rounded-[30px] border overflow-hidden hover:shadow-lg transition group flex flex-col">
+                                        <div className="p-6 md:p-8 flex-grow">
+                                            <span className="text-blue-600 text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-blue-100 px-3 py-1 rounded-lg mb-4 inline-block">Home Loans</span>
+                                            <h3 className="font-black text-base md:text-xl uppercase tracking-tighter leading-tight mb-3 text-gray-900">How to Maximize Tax Benefits on Your Home Loan</h3>
+                                            <p className="text-gray-600 text-xs md:text-sm mb-4 line-clamp-4 leading-relaxed">Under Section 80C and 24B, you can save lakhs in income tax if you structure your home loan correctly. Learn the difference between principal and interest deductions.</p>
+                                        </div>
+                                        <div className="px-6 md:px-8 pb-6 md:pb-8">
+                                            <button onClick={() => setShowLeadForm(true)} className="text-xs font-black text-blue-600 uppercase tracking-widest hover:text-blue-800 transition flex items-center">
+                                                Ask Advisor <span className="ml-2">→</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                </div>
                             </div>
                         )}
                     </main>
 
+                    {/* PROPERTY DETAILS MODAL */}
                     {selectedProperty && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedProperty(null)}></div>
@@ -543,36 +627,6 @@
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activePage === 'home' && (
-                        <div className="bg-blue-900 text-white py-6 md:py-12 px-4 md:px-6 mt-8 md:mt-12 border-t-4 border-blue-500">
-                            <div className="max-w-7xl mx-auto">
-                                <h2 className="text-base md:text-2xl font-black italic uppercase tracking-tighter mb-4 md:mb-8 text-center text-blue-200">Why Choose Perfect Horizons?</h2>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-6 text-center">
-                                    <div className="bg-blue-800/50 py-3 px-2 md:p-6 rounded-lg md:rounded-2xl border border-blue-700 hover:scale-105 transition">
-                                        <div className="text-xl md:text-3xl mb-1 md:mb-2">🛡️</div>
-                                        <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-0 md:mb-2">Verified</h4>
-                                        <p className="text-blue-200 text-xs hidden md:block mt-2">Every listing is thoroughly checked for RERA & legal compliance.</p>
-                                    </div>
-                                    <div className="bg-blue-800/50 py-3 px-2 md:p-6 rounded-lg md:rounded-2xl border border-blue-700 hover:scale-105 transition">
-                                        <div className="text-xl md:text-3xl mb-1 md:mb-2">💰</div>
-                                        <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-0 md:mb-2">Best Price</h4>
-                                        <p className="text-blue-200 text-xs hidden md:block mt-2">Direct builder prices negotiated exclusively for you.</p>
-                                    </div>
-                                    <div className="bg-blue-800/50 py-3 px-2 md:p-6 rounded-lg md:rounded-2xl border border-blue-700 hover:scale-105 transition">
-                                        <div className="text-xl md:text-3xl mb-1 md:mb-2">🚗</div>
-                                        <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-0 md:mb-2">Free Visits</h4>
-                                        <p className="text-blue-200 text-xs hidden md:block mt-2">Complimentary cab pickup & drop for property inspections.</p>
-                                    </div>
-                                    <div className="bg-blue-800/50 py-3 px-2 md:p-6 rounded-lg md:rounded-2xl border border-blue-700 hover:scale-105 transition">
-                                        <div className="text-xl md:text-3xl mb-1 md:mb-2">🤝</div>
-                                        <h4 className="font-black uppercase tracking-widest text-[9px] md:text-[11px] mb-0 md:mb-2">No Brokerage</h4>
-                                        <p className="text-blue-200 text-xs hidden md:block mt-2">We charge absolutely no fees from buyers. Honest advice, free.</p>
                                     </div>
                                 </div>
                             </div>
