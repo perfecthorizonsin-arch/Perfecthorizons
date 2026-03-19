@@ -29,9 +29,9 @@
             border-right: 4px solid transparent;
             border-left: 4px solid transparent;
         }
-        .line-clamp-4 {
+        .line-clamp-3 {
             display: -webkit-box;
-            -webkit-line-clamp: 4;
+            -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;  
             overflow: hidden;
         }
@@ -66,7 +66,7 @@
         const WHATSAPP_NUMBER = "919742353260";
         const ADMIN_PIN = "1234"; 
 
-        // --- BLOG DATA ---
+        // --- EXTENDED BLOG DATA ---
         const BLOG_ARTICLES = [
             {
                 id: 1,
@@ -111,6 +111,50 @@
             },
             {
                 id: 3,
+                tag: "Property Types",
+                title: "Carpet Area vs. Super Built-up Area: What Are You Actually Paying For?",
+                excerpt: "Don't be fooled by big numbers. Learn how builders calculate space and why RERA Carpet Area is the only metric that matters.",
+                content: `
+                    <p>One of the biggest confusions for home buyers is the difference between the area advertised and the actual livable space they get.</p>
+                    <br/>
+                    <h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">1. RERA Carpet Area</h3>
+                    <p>This is the actual usable floor area inside your apartment. Imagine laying a carpet wall-to-wall inside your house—that is the carpet area. Under the RERA act, builders <strong>must</strong> quote this area to buyers.</p>
+                    <br/>
+                    <h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">2. Built-up Area</h3>
+                    <p>This includes the Carpet Area PLUS the space taken up by the internal and external walls, and the balconies. It is usually 10-15% more than the Carpet Area.</p>
+                    <br/>
+                    <h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">3. Super Built-up Area (SBA) / Saleable Area</h3>
+                    <p>This is the number builders use to calculate your final price. It includes the Built-up Area PLUS a proportionate share of the common areas (lobbies, lifts, staircases, clubhouse). The difference between Carpet Area and SBA is called the "Loading Factor."</p>
+                    <br/>
+                    <p><strong>The Trap:</strong> Some builders apply a loading factor of 30-35%. This means if you buy a 1000 sq.ft. apartment (SBA), your actual livable space might only be 650 sq.ft. Always check the RERA Carpet Area to know what you are actually getting.</p>
+                `
+            },
+            {
+                id: 4,
+                tag: "Legal Guide",
+                title: "A Khata vs B Khata in Bengaluru: The Ultimate Buyer's Guide",
+                excerpt: "Confused about Khatas? Buying a 'B Khata' property can lead to loan rejections and legal trouble. Here is how to verify property records.",
+                content: `
+                    <p>If you are buying property in Bengaluru (especially plots or independent houses), the word "Khata" will come up immediately. It is a BBMP (Bruhat Bengaluru Mahanagara Palike) document assessing the property for tax records.</p>
+                    <br/>
+                    <h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is 'A' Khata?</h3>
+                    <p>An 'A' Khata certificate means the property is completely legal, fully approved by the BBMP, BDA, or BMRDA, and all property taxes have been paid. <strong>You can easily get home loans and building plan approvals with an 'A' Khata.</strong></p>
+                    <br/>
+                    <h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is 'B' Khata?</h3>
+                    <p>A 'B' Khata is technically not a certificate; it's just an entry in a register. It signifies that the property is illegal or built in violation of government regulations (e.g., built on unauthorized layouts or lacking DC conversion), but the government is collecting tax on it anyway.</p>
+                    <br/>
+                    <h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">Why you should avoid B Khata:</h3>
+                    <ul style="list-style-type: disc; margin-left: 20px;">
+                        <li>Nationalized banks (SBI, HDFC) will <strong>not</strong> give you a home loan.</li>
+                        <li>You cannot get an official building plan approval to construct a house.</li>
+                        <li>Selling the property later will be extremely difficult.</li>
+                    </ul>
+                    <br/>
+                    <p>Never fall for the "we will upgrade it to A Khata later" promise without verifying with a legal expert.</p>
+                `
+            },
+            {
+                id: 5,
                 tag: "Checklist",
                 title: "5 Things to Check Before Paying a Token Amount",
                 excerpt: "Don't lose your hard-earned money. Always verify the RERA number, check the builder's track record, and get a clear picture of the master plan.",
@@ -127,7 +171,7 @@
                 `
             },
             {
-                id: 4,
+                id: 6,
                 tag: "Home Loans",
                 title: "How to Maximize Tax Benefits on Your Home Loan",
                 excerpt: "Under Section 80C and 24B, you can save lakhs in income tax if you structure your home loan correctly. Learn the difference between principal and interest deductions.",
@@ -197,14 +241,29 @@
             const [leadData, setLeadData] = useState({ name: "", phone: "" });
             const [isSubmitting, setIsSubmitting] = useState(false);
             
-            const [activePage, setActivePage] = useState("home"); 
+            // --- URL HASH ROUTING STATE ---
+            const [activePage, setActivePage] = useState(() => {
+                const hash = window.location.hash.replace('#', '');
+                return hash || 'home';
+            }); 
+            
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+            const [showFiltersMobile, setShowFiltersMobile] = useState(false);
             const [activeBlog, setActiveBlog] = useState(null);
 
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get("key") === "admin123") setIsAdmin(true);
                 
+                // Handle Browser Back/Forward Navigation
+                const handleHashChange = () => {
+                    const hash = window.location.hash.replace('#', '');
+                    setActivePage(hash || 'home');
+                    if(hash !== 'blogs') setActiveBlog(null);
+                };
+                window.addEventListener('hashchange', handleHashChange);
+                
+                // Fetch Properties & Remove Splash
                 const removeSplash = () => {
                     const splash = document.getElementById('native-splash');
                     if(splash) {
@@ -226,6 +285,8 @@
                     });
                 
                 setTimeout(removeSplash, 5000);
+                
+                return () => window.removeEventListener('hashchange', handleHashChange);
             }, []);
 
             const loginAdmin = () => {
@@ -277,17 +338,18 @@
                 return matchSearch && matchBHK && matchStatus && matchType && matchPrice;
             });
 
+            // ROUTING FUNCTION
             const navTo = (page) => {
-                setActivePage(page);
                 setIsMobileMenuOpen(false);
                 setActiveBlog(null);
+                window.location.hash = page;
                 window.scrollTo(0,0);
             };
 
             return (
                 <div className="min-h-screen flex flex-col bg-gray-50">
                     
-                    {/* --- 1. STICKY HEADER & FILTERS WRAPPER --- */}
+                    {/* --- STICKY HEADER & FILTERS WRAPPER --- */}
                     <div className="sticky top-0 z-40 w-full shadow-[0_4px_20px_-10px_rgba(0,0,0,0.1)] flex flex-col">
                         
                         {/* PREMIUM DARK NAV */}
@@ -320,13 +382,12 @@
                                 <button onClick={() => navTo('home')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'home' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Properties</button>
                                 
                                 <div className="relative group cursor-pointer py-2">
-                                    <span className={`text-xs font-black uppercase tracking-widest transition flex items-center ${['about-us', 'our-journey', 'our-management'].includes(activePage) ? 'text-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>
+                                    <span className={`text-xs font-black uppercase tracking-widest transition flex items-center ${['about-us', 'our-journey'].includes(activePage) ? 'text-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>
                                         About <span className="dropdown-arrow"></span>
                                     </span>
                                     <div className="absolute hidden group-hover:block top-full left-0 mt-0 w-48 bg-slate-800 border border-slate-700 shadow-2xl rounded-xl overflow-hidden z-50 animate-fadeIn">
                                         <div onClick={() => navTo('about-us')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition">About Us</div>
                                         <div onClick={() => navTo('our-journey')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition border-t border-slate-700">Our Journey</div>
-                                        <div onClick={() => navTo('our-management')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition border-t border-slate-700">Our Management</div>
                                     </div>
                                 </div>
 
@@ -340,6 +401,7 @@
                                     </div>
                                 </div>
 
+                                <button onClick={() => navTo('advisor')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'advisor' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Advisor</button>
                                 <button onClick={() => navTo('customers')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'customers' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Customers</button>
                                 <button onClick={() => navTo('blogs')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'blogs' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Blogs</button>
                                 
@@ -347,35 +409,35 @@
                             </div>
                         </nav>
 
-                        {/* STICKY FILTERS BAR (Below Header, Only on Home Page) */}
+                        {/* STICKY FILTERS BAR (Full Width Aligned) */}
                         {activePage === 'home' && (
                             <div className="bg-white border-b border-gray-200 py-3 px-4 md:px-8 relative z-40">
-                                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
+                                <div className="w-full flex flex-col gap-3">
                                     {/* Mobile Search Input (Hidden on Desktop) */}
                                     <div className="md:hidden w-full relative">
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
                                         <input type="text" placeholder="Search Location, Project..." className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500 transition" value={search} onChange={e => setSearch(e.target.value)} />
                                     </div>
                                     
-                                    {/* Filter Dropdowns */}
-                                    <div className="grid grid-cols-2 md:flex md:flex-row gap-2 md:gap-4 w-full md:w-auto">
-                                        <select className="bg-gray-50 px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 transition" value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}>
+                                    {/* Filter Dropdowns (Full width grid) */}
+                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 w-full">
+                                        <select className="w-full bg-gray-50 px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 transition" value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}>
                                             <option value="">BHK</option>
                                             {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} BHK</option>)}
                                         </select>
-                                        <select className="bg-gray-50 px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 transition" value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
+                                        <select className="w-full bg-gray-50 px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 transition" value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
                                             <option value="">Status</option>
-                                            <option value="Ready to Move">Ready to Move</option>
+                                            <option value="Ready to Move">Ready</option>
                                             <option value="Under Construction">Under Const.</option>
                                             <option value="New Launch">New Launch</option>
                                         </select>
-                                        <select className="bg-gray-50 px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 transition" value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})}>
+                                        <select className="w-full bg-gray-50 px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 transition" value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})}>
                                             <option value="">Type</option>
                                             <option value="Apartment">Apartment</option>
                                             <option value="Villa">Villa</option>
                                             <option value="Plot">Plot</option>
                                         </select>
-                                        <select className="bg-gray-50 px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 transition" value={filters.priceBracket} onChange={e => setFilters({...filters, priceBracket: e.target.value})}>
+                                        <select className="w-full bg-gray-50 px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 transition" value={filters.priceBracket} onChange={e => setFilters({...filters, priceBracket: e.target.value})}>
                                             <option value="">Budget</option>
                                             <option value="under1">Under 1 Cr</option>
                                             <option value="1-2">1 - 2 Cr</option>
@@ -384,7 +446,7 @@
                                             <option value="4-5">4 - 5 Cr</option>
                                             <option value="5plus">5 Cr & Above</option>
                                         </select>
-                                        <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:"", priceBracket:""})}} className="col-span-2 md:col-span-1 text-red-500 font-black text-[10px] md:text-xs uppercase tracking-widest border border-red-100 bg-white rounded-lg md:rounded-xl hover:bg-red-50 transition px-4 py-2.5 shadow-sm">Clear All</button>
+                                        <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:"", priceBracket:""})}} className="w-full col-span-2 md:col-span-1 text-red-500 font-black text-[10px] md:text-xs uppercase tracking-widest border border-red-100 bg-white rounded-lg md:rounded-xl hover:bg-red-50 transition px-4 py-2.5 shadow-sm">Clear All</button>
                                     </div>
                                 </div>
                             </div>
@@ -397,11 +459,11 @@
                                 <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 py-2">-- About --</div>
                                 <div onClick={() => navTo('about-us')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">About Us</div>
                                 <div onClick={() => navTo('our-journey')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">Our Journey</div>
-                                <div onClick={() => navTo('our-management')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">Our Management</div>
                                 <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 py-2 mt-2">-- Services --</div>
                                 <div onClick={() => navTo('what-we-do')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">What We Do</div>
                                 <div onClick={() => navTo('what-we-dont-do')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">What We Don't Do</div>
-                                <div onClick={() => navTo('customers')} className="text-xs font-black uppercase tracking-widest text-white py-2 mt-2 border-b border-slate-700">Customers</div>
+                                <div onClick={() => navTo('advisor')} className="text-xs font-black uppercase tracking-widest text-white py-2 mt-2 border-b border-slate-700">Advisor</div>
+                                <div onClick={() => navTo('customers')} className="text-xs font-black uppercase tracking-widest text-white py-2 border-b border-slate-700">Customers</div>
                                 <div onClick={() => navTo('blogs')} className="text-xs font-black uppercase tracking-widest text-white py-2">Blogs</div>
                             </div>
                         )}
@@ -443,7 +505,7 @@
                                                     <div className="flex justify-between items-end border-t border-gray-100 pt-4 mt-auto">
                                                         <div className="flex flex-col">
                                                             <span className="text-[10px] text-gray-500 font-medium mb-0.5 uppercase tracking-widest">Starting from</span>
-                                                            <span className="text-xl font-black text-gray-900">₹ {getVal(p, "Price") || "On Request"}*</span>
+                                                            <span className="text-xl font-black text-gray-900">{getVal(p, "Price") || "On Request"}</span>
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <button 
@@ -559,39 +621,7 @@
                             </div>
                         )}
 
-                        {/* 4. OUR MANAGEMENT (Photo Updated & Fixed Framing) */}
-                        {activePage === 'our-management' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border flex flex-col-reverse md:flex-row gap-8 md:gap-12 items-center animate-fadeIn">
-                                <div className="w-full md:w-1/2">
-                                    <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic mb-2 md:mb-4 leading-tight">Meet Your Advisor</h1>
-                                    <h3 className="text-[10px] md:text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-6 md:mb-8">Tharun | Lead Luxury Advisor</h3>
-                                    
-                                    <div className="text-gray-600 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6">
-                                        <p>Hi, I'm Tharun. I built Perfect Horizons because I saw how confusing and overwhelming buying a home in Bengaluru can be.</p>
-                                        <p>As your dedicated channel partner, I don't just show you brochures. I provide you with complete, unbiased analysis of floor plans, builder histories, and locality growth potential.</p>
-                                        <p>My goal isn't just to help you buy a house; it's to ensure you make the smartest, safest financial decision for your family's future.</p>
-                                    </div>
-
-                                    <button onClick={() => setShowLeadForm(true)} className="w-full md:w-auto mt-6 md:mt-8 bg-slate-900 text-white font-black py-4 px-10 rounded-xl md:rounded-2xl uppercase tracking-widest shadow-xl hover:bg-blue-600 transition-all active:scale-95">
-                                        Schedule Consultation
-                                    </button>
-                                </div>
-                                <div className="w-full md:w-1/2 flex justify-center mb-4 md:mb-0">
-                                    {/* PHOTO FIX: Using object-top so the head doesn't get cropped */}
-                                    <div className="w-56 h-56 md:w-96 md:h-96 bg-slate-100 rounded-full md:rounded-[40px] border-4 md:border-8 border-white shadow-2xl overflow-hidden relative">
-                                        <img 
-                                            src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w1000" 
-                                            alt="Tharun Profile" 
-                                            className="w-full h-full object-cover object-top" 
-                                            onError={(e) => { e.target.src = 'https://i.ibb.co/Y7Y6K3r/professional-placeholder.jpg'; }} 
-                                        />
-                                        
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 5. WHAT WE DO */}
+                        {/* 4. WHAT WE DO */}
                         {activePage === 'what-we-do' && (
                             <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
                                 <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">Our Services</h1>
@@ -621,7 +651,7 @@
                             </div>
                         )}
 
-                        {/* 6. WHAT WE DON'T DO */}
+                        {/* 5. WHAT WE DON'T DO */}
                         {activePage === 'what-we-dont-do' && (
                             <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
                                 <h1 className="text-2xl md:text-5xl font-black text-red-700 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">What We Don't Do</h1>
@@ -647,6 +677,36 @@
                                         <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">We Don't Hide Facts</h4>
                                         <p className="text-gray-700 text-xs md:text-sm leading-relaxed">Every project has pros and cons. We will tell you the absolute truth about a property's downsides—like traffic bottlenecks or water issues—not just the marketing highlights.</p>
                                     </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 6. ADVISOR (Moved to standalone section) */}
+                        {activePage === 'advisor' && (
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border flex flex-col-reverse md:flex-row gap-8 md:gap-12 items-center animate-fadeIn">
+                                <div className="w-full md:w-1/2">
+                                    <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic mb-2 md:mb-4 leading-tight">Meet Your Advisor</h1>
+                                    <h3 className="text-[10px] md:text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-6 md:mb-8">Tharun | Lead Luxury Advisor</h3>
+                                    
+                                    <div className="text-gray-600 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6">
+                                        <p>Hi, I'm Tharun. I built Perfect Horizons because I saw how confusing and overwhelming buying a home in Bengaluru can be.</p>
+                                        <p>As your dedicated channel partner, I don't just show you brochures. I provide you with complete, unbiased analysis of floor plans, builder histories, and locality growth potential.</p>
+                                        <p>My goal isn't just to help you buy a house; it's to ensure you make the smartest, safest financial decision for your family's future.</p>
+                                    </div>
+
+                                    <button onClick={() => setShowLeadForm(true)} className="w-full md:w-auto mt-6 md:mt-8 bg-slate-900 text-white font-black py-4 px-10 rounded-xl md:rounded-2xl uppercase tracking-widest shadow-xl hover:bg-blue-600 transition-all active:scale-95">
+                                        Schedule Consultation
+                                    </button>
+                                </div>
+                                <div className="w-full md:w-1/2 flex justify-center mb-4 md:mb-0">
+                                    <div className="w-56 h-56 md:w-96 md:h-96 bg-slate-100 rounded-full md:rounded-[40px] border-4 md:border-8 border-white shadow-2xl overflow-hidden relative">
+                                        <img 
+                                            src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w1000" 
+                                            alt="Tharun Profile" 
+                                            className="w-full h-full object-cover object-top" 
+                                            onError={(e) => { e.target.src = 'https://i.ibb.co/Y7Y6K3r/professional-placeholder.jpg'; }} 
+                                        />
+                                      
                                 </div>
                             </div>
                         )}
@@ -715,16 +775,16 @@
                                 <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-2 md:mb-4">Real Estate Insights</h1>
                                 <p className="text-gray-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-8 md:mb-12">Expert guides for Bengaluru buyers</p>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                                     {BLOG_ARTICLES.map((blog) => (
                                         <div key={blog.id} onClick={() => { setActiveBlog(blog); window.scrollTo(0,0); }} className="bg-gray-50 rounded-[20px] md:rounded-[30px] border overflow-hidden hover:shadow-lg transition group flex flex-col cursor-pointer hover:-translate-y-1">
                                             <div className="p-6 md:p-8 flex-grow">
                                                 <span className="text-slate-900 text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-gray-200 px-3 py-1 rounded-lg mb-4 inline-block">{blog.tag}</span>
-                                                <h3 className="font-black text-base md:text-xl uppercase tracking-tighter leading-tight mb-3 text-blue-900 group-hover:text-blue-600 transition">{blog.title}</h3>
+                                                <h3 className="font-black text-base md:text-lg uppercase tracking-tighter leading-tight mb-3 text-blue-900 group-hover:text-blue-600 transition">{blog.title}</h3>
                                                 <p className="text-gray-600 text-xs md:text-sm line-clamp-3 leading-relaxed">{blog.excerpt}</p>
                                             </div>
-                                            <div className="px-6 md:px-8 pb-6 md:pb-8">
-                                                <span className="text-xs font-black text-blue-600 uppercase tracking-widest group-hover:text-blue-800 transition flex items-center">
+                                            <div className="px-6 md:px-8 pb-6 md:pb-8 border-t border-gray-200 pt-4">
+                                                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest group-hover:text-blue-800 transition flex items-center">
                                                     Read Article <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                                                 </span>
                                             </div>
@@ -734,7 +794,7 @@
                             </div>
                         )}
 
-                        {/* ACTIVE BLOG READER (Fixed Call to Action) */}
+                        {/* ACTIVE BLOG READER */}
                         {activePage === 'blogs' && activeBlog && (
                             <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border max-w-4xl mx-auto animate-fadeIn">
                                 <button onClick={() => setActiveBlog(null)} className="text-gray-400 text-xs font-bold uppercase tracking-widest hover:text-blue-600 transition mb-8 flex items-center">
@@ -747,7 +807,7 @@
                                 {/* Dynamic Blog Content Injection */}
                                 <div className="text-gray-700 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6" dangerouslySetInnerHTML={{__html: activeBlog.content}}></div>
 
-                                {/* Clean Call to Action Button */}
+                                {/* Call to Action Button */}
                                 <div className="mt-12 pt-8 border-t border-gray-100 text-center">
                                     <p className="text-gray-500 text-[10px] md:text-xs uppercase font-black tracking-widest mb-4">Get off the internet; trust a professional.</p>
                                     <button 
@@ -902,8 +962,7 @@
                                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Contact Us</h3>
                                 <p className="text-sm font-medium text-slate-300">📞 +91 9742353260</p>
                                 <a href="mailto:perfecthorizons.in@gmail.com" className="text-sm font-medium text-slate-300 hover:text-blue-400 transition block">✉️ perfecthorizons.in@gmail.com</a>
-                                <p className="text-sm text-slate-500 italic">📍 Electronic city
-                                    Bengaluru, Karnataka</p>
+                                <p className="text-sm text-slate-500 italic">📍 Bengaluru, Karnataka</p>
                             </div>
                         </div>
                     </footer>
