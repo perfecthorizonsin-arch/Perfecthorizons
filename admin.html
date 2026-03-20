@@ -141,7 +141,7 @@
                                                             <div className="text-blue-600 font-bold mt-0.5">{lead.phone_number}</div>
                                                             <div className="text-[9px] text-slate-400 mt-1 uppercase font-bold tracking-widest">{new Date(lead.created_at).toLocaleDateString('en-IN')}</div>
                                                         </td>
-                                                        <td className="p-4 font-bold text-[11px] uppercase text-slate-500 italic min-w-[150px]">{lead.project_interested}</td>
+                                                        <td className="p-4 font-bold text-[11px] uppercase text-slate-500 italic min-w-[150px]">{lead.project_interested_in}</td>
                                                         <td className="p-4 min-w-[140px]">
                                                             <select 
                                                                 value={lead.lead_status || 'Un called'} 
