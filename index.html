@@ -15,6 +15,8 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
@@ -54,6 +56,11 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        // 2. SUPABASE CONNECTION ADDED HERE
+        const supabaseUrl = 'https://uiiovtsktllvtecfokik.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
         const { useState, useEffect } = React;
 
         const LEAD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzKmjXhueUDqDJ2HwalGBuRk4WfEEx-ruYZJ5IeSCIMxSDuEwaCAMspYBq-zMrFzmY/exec';
@@ -284,16 +291,37 @@
                 else if (pin) alert("Incorrect PIN");
             };
 
-            const handleLeadSubmit = (e) => {
+            // 3. THIS FUNCTION WAS UPDATED TO SEND DIRECTLY TO SUPABASE
+            const handleLeadSubmit = async (e) => {
                 e.preventDefault();
                 if (!/^[6-9]\d{9}$/.test(leadData.phone)) return alert("Enter valid 10-digit number");
                 setIsSubmitting(true);
-                fetch(LEAD_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({
-                    name: leadData.name, phone: leadData.phone, property: getVal(selectedProperty, "Property Name") || "General Enquiry"
-                })}).then(() => {
+
+                try {
+                    // Send data to the 'leads' table
+                    const { error } = await supabase
+                        .from('leads')
+                        .insert([
+                            {
+                                customer_name: leadData.name,
+                                phone_number: leadData.phone,
+                                project_interested: getVal(selectedProperty, "Property Name") || "General Enquiry",
+                                lead_status: "Uncalled", // Automatically sets them as uncalled for your CRM
+                                rm_name: "Tharun" // Automatically assigns it to you
+                            }
+                        ]);
+
+                    if (error) throw error; // If Supabase throws an error, catch it
+
                     alert("Interest Registered! We will contact you shortly.");
-                    setIsSubmitting(false); setShowLeadForm(false); setLeadData({ name: "", phone: "" });
-                });
+                    setShowLeadForm(false); 
+                    setLeadData({ name: "", phone: "" });
+                } catch (error) {
+                    console.error("Supabase Error:", error);
+                    alert("Something went wrong saving your details. Please try again.");
+                } finally {
+                    setIsSubmitting(false);
+                }
             };
 
             const safeProperties = Array.isArray(properties) ? properties : [];
