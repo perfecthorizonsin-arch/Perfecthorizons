@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PH | Admin Engine</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- CONFIGURATION ---
+        const supabaseUrl = 'https://uiiovtsktllvtecfokik.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Your specific Google Apps Script URL
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJOoh4meGBQOZYZpUWqK1DmDS_B8fXSC5NlwPcTX3GUfP7gzYQKvatgj9IFT3Txy-FCQ/exec";
+
+        function AdminApp() {
+            const [leads, setLeads] = useState([]);
+            const [view, setView] = useState('dashboard'); 
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => { fetchLeads(); }, []);
+
+            async function fetchLeads() {
+                setLoading(true);
+                const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+                if (!error) setLeads(data || []);
+                setLoading(false);
+            }
+
+            const stats = useMemo(() => {
+                const total = leads.length;
+                const uncalled = leads.filter(l => l.lead_status === 'Un called' || !l.lead_status).length;
+                const called = leads.filter(l => l.lead_status === 'Called').length;
+                const rejected = leads.filter(l => l.lead_status === 'Rejected').length;
+                return {
+                    total, uncalled, called, rejected,
+                    uncalledPct: total ? Math.round((uncalled/total)*100) : 0,
+                    calledPct: total ? Math.round((called/total)*100) : 0,
+                    rejectedPct: total ? Math.round((rejected/total)*100) : 0
+                };
+            }, [leads]);
+
+            async function updateLead(id, field, value) {
+                const { error } = await supabase.from('leads').update({ [field]: value }).eq('id', id);
+                if (!error) {
+                    setLeads(prev => prev.map(l => l.id === id ? {...l, [field]: value} : l));
+                } else {
+                    alert("Error updating lead: " + error.message);
+                }
+            }
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    {/* Header */}
+                    <nav className="bg-slate-950 text-white p-5 flex justify-between items-center sticky top-0 z-50">
+                        <div className="flex items-center gap-4">
+                            <h1 className="font-black italic uppercase tracking-tighter text-2xl text-blue-400">PH Engine</h1>
+                            <span className="bg-blue-900/50 text-blue-200 text-[10px] px-2 py-1 rounded font-bold uppercase tracking-widest">Admin v1.0</span>
+                        </div>
+                        <div className="flex gap-6 text-[11px] font-black uppercase tracking-[0.15em]">
+                            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'text-blue-400' : 'text-slate-400 hover:text-white transition'}>Leads CRM</button>
+                            <button onClick={() => setView('add-property')} className={view === 'add-property' ? 'text-blue-400' : 'text-slate-400 hover:text-white transition'}>List Property</button>
+                        </div>
+                    </nav>
+
+                    <main className="p-4 md:p-8 max-w-7xl mx-auto w-full flex-grow">
+                        {view === 'dashboard' && (
+                            <div className="space-y-8 animate-fadeIn">
+                                {/* Metrics Table */}
+                                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-slate-50 border-b uppercase text-[10px] font-black text-slate-400 tracking-widest">
+                                            <tr>
+                                                <th className="p-5">Team Metric (Tharun)</th>
+                                                <th className="p-5">Total</th>
+                                                <th className="p-5">Uncalled</th>
+                                                <th className="p-5">Called</th>
+                                                <th className="p-5">Rejected</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="font-bold text-slate-700">
+                                            <tr>
+                                                <td className="p-5 border-b">Lead Volume</td>
+                                                <td className="p-5 border-b">{stats.total}</td>
+                                                <td className="p-5 border-b text-green-600">{stats.uncalled}</td>
+                                                <td className="p-5 border-b text-blue-600">{stats.called}</td>
+                                                <td className="p-5 border-b text-red-600">{stats.rejected}</td>
+                                            </tr>
+                                            <tr className="bg-slate-900 text-white italic">
+                                                <td className="p-5 uppercase text-[10px] tracking-widest">Conversion Rate %</td>
+                                                <td className="p-5">100%</td>
+                                                <td className="p-5 text-green-400">{stats.uncalledPct}%</td>
+                                                <td className="p-5 text-blue-400">{stats.calledPct}%</td>
+                                                <td className="p-5 text-red-400">{stats.rejectedPct}%</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Lead Pipeline */}
+                                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                                    <div className="p-5 bg-slate-50 border-b font-black uppercase text-[11px] tracking-[0.2em] text-slate-500 flex justify-between items-center">
+                                        <span>Incoming Pipeline</span>
+                                        <button onClick={fetchLeads} className="bg-white border px-3 py-1 rounded-full hover:bg-slate-100 transition shadow-sm text-[10px]">Sync Data ↻</button>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-xs">
+                                            <thead>
+                                                <tr className="bg-slate-100/50 text-slate-500 uppercase font-black text-[9px] tracking-widest">
+                                                    <th className="p-4 text-left">Customer Details</th>
+                                                    <th className="p-4 text-left">Property Source</th>
+                                                    <th className="p-4 text-left">Lead Status</th>
+                                                    <th className="p-4 text-left">Disposition</th>
+                                                    <th className="p-4 text-left">Agent Remarks</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="text-slate-600 font-medium">
+                                                {loading && <tr><td colSpan="5" className="p-10 text-center font-bold text-slate-400 uppercase italic tracking-widest">Loading Leads...</td></tr>}
+                                                {!loading && leads.length === 0 && <tr><td colSpan="5" className="p-10 text-center font-bold text-slate-400 uppercase italic tracking-widest">No leads captured yet.</td></tr>}
+                                                {leads.map(lead => (
+                                                    <tr key={lead.id} className="border-b hover:bg-blue-50/30 transition">
+                                                        <td className="p-4 min-w-[150px]">
+                                                            <div className="font-black text-slate-900 uppercase text-[13px]">{lead.customer_name}</div>
+                                                            <div className="text-blue-600 font-bold mt-0.5">{lead.phone_number}</div>
+                                                            <div className="text-[9px] text-slate-400 mt-1 uppercase font-bold tracking-widest">{new Date(lead.created_at).toLocaleDateString('en-IN')}</div>
+                                                        </td>
+                                                        <td className="p-4 font-bold text-[11px] uppercase text-slate-500 italic min-w-[150px]">{lead.project_interested}</td>
+                                                        <td className="p-4 min-w-[140px]">
+                                                            <select 
+                                                                value={lead.lead_status || 'Un called'} 
+                                                                onChange={(e) => updateLead(lead.id, 'lead_status', e.target.value)}
+                                                                className="w-full p-2 border border-slate-200 rounded-lg font-black uppercase text-[9px] bg-white cursor-pointer shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            >
+                                                                <option>Un called</option>
+                                                                <option>Called</option>
+                                                                <option>Rejected</option>
+                                                                <option>SV done</option>
+                                                                <option>SV Scheduled</option>
+                                                                <option>Converted</option>
+                                                            </select>
+                                                        </td>
+                                                        <td className="p-4 min-w-[160px]">
+                                                            <select 
+                                                                value={lead.call_reason || ''} 
+                                                                onChange={(e) => updateLead(lead.id, 'call_reason', e.target.value)}
+                                                                className="w-full p-2 border border-slate-200 rounded-lg font-black uppercase text-[9px] bg-white cursor-pointer shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            >
+                                                                <option value="">Reason...</option>
+                                                                <option>RNR</option>
+                                                                <option>Call Back</option>
+                                                                <option>Not Interested</option>
+                                                                <option>Not In location</option>
+                                                                <option>Not in Budget</option>
+                                                                <option>Unit Unavailablity</option>
+                                                                <option>Plan Postponed</option>
+                                                                <option>Details Shared</option>
+                                                                <option>No incoming</option>
+                                                            </select>
+                                                        </td>
+                                                        <td className="p-4 min-w-[200px]">
+                                                            <input 
+                                                                type="text" 
+                                                                placeholder="Add call notes..." 
+                                                                className="w-full border border-slate-200 p-2 rounded-lg text-[11px] font-medium outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
+                                                                defaultValue={lead.call_remark || ''}
+                                                                onBlur={(e) => updateLead(lead.id, 'call_remark', e.target.value)}
+                                                            />
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'add-property' && (
+                            <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} />
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        // Sub-component for adding properties with automated G-Drive uploads
+        function PropertyForm({ scriptUrl, supabase }) {
+            const [uploading, setUploading] = useState(false);
+            const [uploadStatus, setUploadStatus] = useState("");
+            const [form, setForm] = useState({
+                property_name: '', price: '', location: '', property_type: '', construction_status: '',
+                bhk: '', builder_name: '', cover_image: '', brochure: '', cost_sheet: ''
+            });
+
+            async function handleFileUpload(e, field) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                if (!form.property_name) {
+                    alert("Please enter a Property Name first so we know which folder to create/use in Google Drive!");
+                    e.target.value = ''; // clear the input
+                    return;
+                }
+
+                setUploading(true);
+                setUploadStatus(`Uploading ${field.replace('_', ' ')} to Drive...`);
+
+                try {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = async () => {
+                        const base64 = reader.result.split(',')[1];
+                        const response = await fetch(scriptUrl, {
+                            method: "POST",
+                            body: JSON.stringify({
+                                base64: base64,
+                                type: file.type,
+                                name: file.name,
+                                propertyName: form.property_name // Tells the script to make a subfolder!
+                            })
+                        });
+                        const result = await response.json();
+                        
+                        if(result.status === "success") {
+                            setForm(prev => ({ ...prev, [field]: result.url }));
+                            setUploadStatus(`Success! Link saved.`);
+                            setTimeout(() => setUploadStatus(""), 2000);
+                        } else {
+                            alert("Upload error: " + result.message);
+                            setUploadStatus("");
+                        }
+                    };
+                } catch (err) { 
+                    alert("Upload failed. Make sure your Apps Script Web App is deployed correctly."); 
+                    setUploadStatus("");
+                }
+                finally { setUploading(false); }
+            }
+
+            async function saveProperty() {
+                if (!form.property_name) return alert("Property Name is required!");
+                
+                // Map the form state to your database columns exactly
+                const insertData = {
+                    property_name: form.property_name,
+                    price: form.price,
+                    location: form.location,
+                    property_type: form.property_type,
+                    construction_status: form.construction_status,
+                    bhk: form.bhk,
+                    builder_name: form.builder_name,
+                    cover_image: form.cover_image,
+                    brochure: form.brochure,
+                    cost_sheet: form.cost_sheet
+                };
+
+                const { error } = await supabase.from('properties').insert([insertData]);
+                
+                if (error) {
+                    alert("Save failed: " + error.message);
+                } else {
+                    alert("Property Added Successfully! It is now live on your website.");
+                    setForm({ property_name: '', price: '', location: '', property_type: '', construction_status: '', bhk: '', builder_name: '', cover_image: '', brochure: '', cost_sheet: '' });
+                    // Clear file inputs visually
+                    document.querySelectorAll('input[type="file"]').forEach(el => el.value = '');
+                }
+            }
+
+            return (
+                <div className="bg-white p-6 md:p-10 rounded-3xl shadow-xl border border-slate-200 max-w-3xl mx-auto space-y-8 animate-fadeIn">
+                    <div>
+                        <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-slate-900">List New Property</h2>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Updates instantly to perfecthorizons.in</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Property Name (Required)</label>
+                            <input className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Godrej Splendour" onChange={e => setForm({...form, property_name: e.target.value})} value={form.property_name} />
+                        </div>
+                        
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Builder Name</label>
+                            <input className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Godrej Properties" onChange={e => setForm({...form, builder_name: e.target.value})} value={form.builder_name} />
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Starting Price</label>
+                            <input className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. ₹ 1.2 Cr" onChange={e => setForm({...form, price: e.target.value})} value={form.price} />
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Location</label>
+                            <input className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Whitefield, Bengaluru" onChange={e => setForm({...form, location: e.target.value})} value={form.location} />
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">BHK Config</label>
+                            <input className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. 2, 3, 4" onChange={e => setForm({...form, bhk: e.target.value})} value={form.bhk} />
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Property Type</label>
+                            <select className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, property_type: e.target.value})} value={form.property_type}>
+                                <option value="">Select Type...</option>
+                                <option value="Apartment">Apartment</option>
+                                <option value="Villa">Villa</option>
+                                <option value="Plot">Plot</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Construction Status</label>
+                            <select className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, construction_status: e.target.value})} value={form.construction_status}>
+                                <option value="">Select Status...</option>
+                                <option value="New Launch">New Launch</option>
+                                <option value="Under Construction">Under Construction</option>
+                                <option value="Ready to Move">Ready to Move</option>
+                            </select>
+                        </div>
+                        
+                        {/* Automated Uploaders */}
+                        <div className="md:col-span-2 space-y-5 border-t border-slate-200 pt-6 mt-2">
+                            <div className="flex items-center justify-between">
+                                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Google Drive Asset Uploads</p>
+                                {uploadStatus && <span className="text-[10px] font-bold text-blue-600 animate-pulse">{uploadStatus}</span>}
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 relative overflow-hidden group">
+                                    <span className="text-xs font-black uppercase tracking-widest block mb-3 text-slate-700">🖼️ Cover Image</span>
+                                    <input type="file" accept="image/*" onChange={e => handleFileUpload(e, 'cover_image')} className="text-[10px] w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+                                    {form.cover_image && <div className="mt-3 text-[9px] text-green-600 font-bold truncate">✓ Linked</div>}
+                                </div>
+                                
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 relative overflow-hidden group">
+                                    <span className="text-xs font-black uppercase tracking-widest block mb-3 text-slate-700">📄 Brochure</span>
+                                    <input type="file" accept=".pdf" onChange={e => handleFileUpload(e, 'brochure')} className="text-[10px] w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+                                    {form.brochure && <div className="mt-3 text-[9px] text-green-600 font-bold truncate">✓ Linked</div>}
+                                </div>
+
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 relative overflow-hidden group">
+                                    <span className="text-xs font-black uppercase tracking-widest block mb-3 text-slate-700">📊 Cost Sheet</span>
+                                    <input type="file" accept=".pdf" onChange={e => handleFileUpload(e, 'cost_sheet')} className="text-[10px] w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+                                    {form.cost_sheet && <div className="mt-3 text-[9px] text-green-600 font-bold truncate">✓ Linked</div>}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button 
+                        disabled={uploading}
+                        onClick={saveProperty}
+                        className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-900 transition-colors shadow-xl shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                    >
+                        {uploading ? "Waiting for upload..." : "Publish to Website"}
+                    </button>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AdminApp />);
+    </script>
+</body>
+</html>
