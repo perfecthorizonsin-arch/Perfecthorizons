@@ -242,7 +242,7 @@
             const allImgs = [cover, ...imgs].filter(i => i && !i.includes('undefined')).slice(0, 4); 
 
             // SAFETY FIX: Safely parse USPs
-            const projectUsps = getVal(property, "USP's") || getVal(property, "usp_s") || getVal(property, "usps") || getVal(property, "Project Highlights");
+            const projectUsps = getVal(property, "USP's") || getVal(property, "usp_details") || getVal(property, "usps") || getVal(property, "Project Highlights");
 
             return (
                 <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0">
