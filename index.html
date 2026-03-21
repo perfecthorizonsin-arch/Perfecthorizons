@@ -18,30 +18,26 @@
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
-        .dropdown-arrow {
-            display: inline-block; margin-left: 4px; width: 0; height: 0; vertical-align: middle; border-top: 4px solid currentColor; border-right: 4px solid transparent; border-left: 4px solid transparent;
-        }
+        .dropdown-arrow { display: inline-block; margin-left: 4px; width: 0; height: 0; vertical-align: middle; border-top: 4px solid currentColor; border-right: 4px solid transparent; border-left: 4px solid transparent; }
         .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
         
-        @keyframes pulse-fast { 
-            0%, 100% { opacity: 1; transform: scale(1); } 
-            50% { opacity: 0.6; transform: scale(0.98); } 
-        }
+        @keyframes pulse-fast { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.98); } }
         .splash-title { font-family: sans-serif; color: #1e3a8a; font-size: 2rem; font-weight: 900; font-style: italic; text-transform: uppercase; animation: pulse-fast 1.2s ease-in-out infinite; }
         .splash-sub { font-family: sans-serif; color: #64748b; font-size: 0.75rem; margin-top: 1rem; font-weight: bold; letter-spacing: 0.15em; text-transform: uppercase; }
 
-        /* Auto-Scrolling Marquee CSS */
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 30s linear infinite; }
         .marquee-container:hover .animate-marquee { animation-play-state: paused; }
         
-        /* Range Slider Styling for EMI Calculator */
-        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range] { -webkit-appearance: none; background: transparent; width: 100%; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; background: #2563eb; cursor: pointer; margin-top: -7px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px; }
+        
+        /* The Conic Gradient for the Pie Chart */
+        .pie-chart { border-radius: 50%; display: inline-block; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans">
+<body class="bg-gray-50 text-gray-900 font-sans pb-20 md:pb-0">
     
     <div id="native-splash" style="position: fixed; inset: 0; z-index: 99999; background-color: #f8fafc; display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.5s ease;">
         <div class="splash-title">Perfect Horizons</div>
@@ -51,10 +47,7 @@
     <script>
         setTimeout(function() {
             var splash = document.getElementById('native-splash');
-            if (splash) {
-                splash.style.opacity = '0';
-                setTimeout(function() { splash.remove(); }, 500);
-            }
+            if (splash) { splash.style.opacity = '0'; setTimeout(function() { splash.remove(); }, 500); }
         }, 3000);
     </script>
 
@@ -70,6 +63,15 @@
         const WHATSAPP_NUMBER = "919742353260";
         const ADMIN_PIN = "1234"; 
 
+        // 🟢 PASTE YOUR GOOGLE DRIVE IMAGE LINKS HERE FOR THE PARTNERS MARQUEE
+        const AUTHORIZED_PARTNERS = [
+            "https://via.placeholder.com/200x80?text=Prestige+Group", 
+            "https://via.placeholder.com/200x80?text=Godrej+Properties",
+            "https://via.placeholder.com/200x80?text=Sobha+Limited",
+            "https://via.placeholder.com/200x80?text=Brigade+Group",
+            "https://via.placeholder.com/200x80?text=Puravankara"
+        ];
+
         const BLOG_ARTICLES = [
             { id: 1, tag: "Legal Guide", title: "What is UDS (Undivided Share) and Why Does it Matter?", excerpt: "When you buy an apartment, you aren't just buying the flat; you are buying a piece of the land it sits on. Understanding your UDS is critical.", content: `<p>When purchasing an apartment in Bengaluru, many buyers focus entirely on the super built-up area and the amenities. However, the most critical element of your investment is the <strong>Undivided Share of Land (UDS)</strong>.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is UDS?</h3><p>UDS is your personal share of the land on which the entire apartment complex is built. Since you cannot physically mark out your exact piece of land in a high-rise, it is expressed as a fraction or percentage.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">Why is it so important?</h3><ul style="list-style-type: disc; margin-left: 20px;"><li><strong>Future Resale Value:</strong> The building structure depreciates over time, but the land appreciates. Your property's true resale value is determined by the UDS.</li><li><strong>Redevelopment:</strong> If the building is demolished or redeveloped 40 years from now, your compensation or new apartment allocation will be based strictly on your UDS.</li></ul><br/><p><strong>The Rule of Thumb:</strong> Always ask the builder for the exact UDS before booking. If the UDS is unusually low compared to the size of your flat, it means the builder is over-utilizing the land, which dilutes your investment.</p>` },
             { id: 2, tag: "Finance Hack", title: "5 Hidden Charges Builders Don't Tell You About", excerpt: "The 'Base Price' is never the final price. From Club House charges to BESCOM deposits, learn how to calculate the actual landed cost.", content: `<p>You see an ad for a luxury 3BHK for "₹1.2 Cr Onwards." You visit the site, fall in love, and sit down to book it—only to realize the final cost is suddenly ₹1.45 Cr. What happened?</p><br/><p>Builders use a "Base Price" for marketing, but the "Landed Cost" includes mandatory hidden fees. Here is what you need to watch out for:</p><br/><ol style="list-style-type: decimal; margin-left: 20px;"><li><strong>BESCOM & BWSSB Charges:</strong> Fees for setting up the electricity and water infrastructure. This can add ₹200-₹300 per sq.ft.</li><li><strong>Clubhouse & Amenity Fees:</strong> Builders often charge a hefty one-time premium (anywhere from ₹2 Lakhs to ₹5 Lakhs) just to use the amenities they advertised.</li><li><strong>Advance Maintenance:</strong> You will typically have to pay 1 to 2 years of maintenance upfront at the time of possession.</li><li><strong>Legal & Documentation Charges:</strong> Builders charge for preparing your sale agreement and legal vetting, usually around ₹30,000 to ₹75,000.</li><li><strong>Floor Rise Premium (PLC):</strong> Prefer a higher floor? Expect to pay an extra ₹15 to ₹50 per sq.ft. for every floor you go up.</li></ol><br/><p>Always demand a comprehensive <strong>Cost Sheet</strong> before paying any token amount so you know exactly what you are paying for.</p>` },
@@ -79,7 +81,6 @@
             { id: 6, tag: "Home Loans", title: "How to Maximize Tax Benefits on Your Home Loan", excerpt: "Under Section 80C and 24B, you can save lakhs in income tax if you structure your home loan correctly. Learn the difference between principal and interest deductions.", content: `<p>A home loan isn't just a way to buy a house; it is one of the most powerful tax-saving instruments available to salaried professionals in India.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">Section 80C (The Principal Component)</h3><p>You can claim a deduction of up to <strong>₹1.5 Lakhs</strong> per year on the principal repayment of your home loan. Note: You can also include Stamp Duty and Registration charges under this section in the year you pay them!</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">Section 24(b) (The Interest Component)</h3><p>You can claim a deduction of up to <strong>₹2 Lakhs</strong> per year on the interest paid for a self-occupied property. If the property is rented out, there is no upper limit on the interest deduction you can claim against the rental income.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">Pro-Tip: Co-Applicant Power</h3><p>If you take a joint home loan with your working spouse, <strong>both</strong> of you can claim these deductions individually. This means a combined tax deduction limit of ₹3 Lakhs on principal and ₹4 Lakhs on interest every year!</p>` }
         ];
 
-        // HELPER FUNCTIONS
         const getVal = (obj, searchKey) => {
             if (!obj) return "";
             if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
@@ -91,49 +92,42 @@
         };
 
         const fixImageUrl = (u) => {
-            if (!u || typeof u !== 'string') return 'https://via.placeholder.com/800x500?text=No+Image';
+            if (!u || typeof u !== 'string') return '';
             let url = u.split(',')[0].trim();
             let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
             return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1000` : url;
         };
 
-        const extractPriceInCr = (priceString) => {
-            if (!priceString) return 0;
-            try {
-                const cleanStr = String(priceString).toLowerCase().replace(/,/g, '');
-                const numMatch = cleanStr.match(/[0-9.]+/); 
-                if (!numMatch) return 0;
-                const val = parseFloat(numMatch[0]);
-                if (isNaN(val)) return 0;
-                if (cleanStr.includes('cr') || cleanStr.includes('crore')) return val;
-                if (cleanStr.includes('lac') || cleanStr.includes('lakh')) return val / 100;
-                if (val > 100000) return val / 10000000; 
-                return 0; 
-            } catch(e) { return 0; }
+        const formatIndianCurrencyCompact = (num) => {
+            if (num >= 10000000) return '₹' + (num / 10000000).toFixed(2).replace(/\.00$/, '') + ' Cr';
+            if (num >= 100000) return '₹' + (num / 100000).toFixed(2).replace(/\.00$/, '') + ' L';
+            return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
         };
 
-        // --- NEW: EMI CALCULATOR COMPONENT ---
-        const EMICalculator = ({ propertyPriceStr }) => {
-            const extractRawNumber = (str) => {
-                const val = extractPriceInCr(str);
-                return val > 0 ? val * 10000000 : 10000000; 
-            };
-
-            const propertyValue = extractRawNumber(propertyPriceStr);
-            const [loanAmount, setLoanAmount] = useState(propertyValue * 0.8);
+        // --- NEW: ADVANCED EMI CALCULATOR ---
+        const EMICalculator = ({ onApplyAction }) => {
+            const [loanAmount, setLoanAmount] = useState(10000000); // 1 Cr default
             const [interestRate, setInterestRate] = useState(8.5);
             const [tenureYears, setTenureYears] = useState(20);
 
-            const emi = useMemo(() => {
+            const { emi, totalPayment, totalInterest, principalPct } = useMemo(() => {
                 const p = loanAmount;
                 const r = interestRate / 12 / 100;
                 const n = tenureYears * 12;
-                if (p === 0 || r === 0 || n === 0) return 0;
-                const calcEmi = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-                return Math.round(calcEmi);
-            }, [loanAmount, interestRate, tenureYears]);
+                if (p === 0 || r === 0 || n === 0) return { emi: 0, totalPayment: 0, totalInterest: 0, principalPct: 100 };
+                
+                const emiValue = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+                const totalPay = emiValue * n;
+                const totalInt = totalPay - p;
+                const pct = (p / totalPay) * 100;
 
-            const formatCurrency = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+                return { 
+                    emi: Math.round(emiValue), 
+                    totalPayment: Math.round(totalPay), 
+                    totalInterest: Math.round(totalInt), 
+                    principalPct: pct.toFixed(1) 
+                };
+            }, [loanAmount, interestRate, tenureYears]);
 
             return (
                 <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
@@ -141,55 +135,87 @@
                         <span className="mr-2 text-xl">📊</span> EMI Calculator
                     </h3>
                     
+                    {/* The Pie Chart & Summary */}
+                    <div className="flex items-center gap-6 mb-8">
+                        <div className="w-20 h-20 pie-chart shrink-0 shadow-inner" style={{ background: `conic-gradient(#2563eb ${principalPct}%, #e2e8f0 ${principalPct}% 100%)` }}></div>
+                        <div className="flex flex-col gap-2 w-full">
+                            <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span><span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Principal</span></div>
+                                <span className="text-[10px] font-black text-slate-900">{formatIndianCurrencyCompact(loanAmount)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span><span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Interest</span></div>
+                                <span className="text-[10px] font-black text-slate-900">{formatIndianCurrencyCompact(totalInterest)}</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="space-y-6">
                         <div>
                             <div className="flex justify-between mb-2">
                                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Loan Amount</label>
-                                <span className="text-xs font-bold text-blue-600">{formatCurrency(loanAmount)}</span>
+                                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{formatIndianCurrencyCompact(loanAmount)}</span>
                             </div>
-                            <input type="range" min="1000000" max={propertyValue * 1.5} step="100000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} className="w-full" />
+                            <input type="range" min="1000000" max="50000000" step="100000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} />
                         </div>
 
                         <div>
                             <div className="flex justify-between mb-2">
                                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Interest Rate</label>
-                                <span className="text-xs font-bold text-blue-600">{interestRate}%</span>
+                                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{interestRate}%</span>
                             </div>
-                            <input type="range" min="6" max="15" step="0.1" value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))} className="w-full" />
+                            <input type="range" min="6" max="15" step="0.1" value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))} />
                         </div>
 
                         <div>
                             <div className="flex justify-between mb-2">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tenure (Years)</label>
-                                <span className="text-xs font-bold text-blue-600">{tenureYears} Yrs</span>
+                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tenure</label>
+                                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{tenureYears} Yrs</span>
                             </div>
-                            <input type="range" min="5" max="30" step="1" value={tenureYears} onChange={(e) => setTenureYears(Number(e.target.value))} className="w-full" />
+                            <input type="range" min="5" max="30" step="1" value={tenureYears} onChange={(e) => setTenureYears(Number(e.target.value))} />
                         </div>
 
-                        <div className="pt-5 border-t border-slate-100 mt-2">
-                            <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Estimated EMI</div>
-                            <div className="text-3xl font-black text-slate-900 tracking-tighter">{formatCurrency(emi)} <span className="text-sm text-slate-400 font-bold tracking-normal">/month</span></div>
+                        <div className="pt-5 border-t border-slate-100 flex justify-between items-center">
+                            <div>
+                                <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">Estimated EMI</div>
+                                <div className="text-2xl font-black text-slate-900 tracking-tighter">{formatIndianCurrencyCompact(emi)} <span className="text-[10px] text-slate-400 font-bold tracking-normal uppercase">/mo</span></div>
+                            </div>
+                            <button onClick={onApplyAction} className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-5 py-3 rounded-xl hover:bg-blue-600 transition shadow-md">Apply Now</button>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // --- NEW: FULL PAGE PROPERTY DETAILS (JLL STYLE) ---
+        // --- FULL PAGE PROPERTY DETAILS ---
         const PropertyDetailsPage = ({ property, onBack, onSubmitLead }) => {
-            const [leadData, setLeadData] = useState({ name: "", phone: "" });
+            const [actionModal, setActionModal] = useState(null); // 'brochure', 'cost_sheet', 'apply_now'
+            const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
             const [isSubmitting, setIsSubmitting] = useState(false);
 
-            useEffect(() => {
-                window.scrollTo(0, 0); // Scroll to top when loaded
-            }, []);
+            useEffect(() => { window.scrollTo(0, 0); }, []);
 
-            const handleLead = async (e) => {
+            const openAction = (type) => {
+                setActionModal(type);
+                setLeadData({ name: "", phone: "", email: "" });
+            };
+
+            const handleActionSubmit = async (e) => {
                 e.preventDefault();
+                if (!/^[6-9]\d{9}$/.test(leadData.phone)) return alert("Enter valid 10-digit number");
                 setIsSubmitting(true);
-                await onSubmitLead(leadData, getVal(property, "Property Name"));
+                
+                const success = await onSubmitLead(leadData, getVal(property, "Property Name"), actionModal);
                 setIsSubmitting(false);
-                setLeadData({name: "", phone: ""});
+                
+                if (success) {
+                    if (actionModal === 'brochure' && getVal(property, "brochure")) {
+                        window.open(getVal(property, "brochure"), '_blank');
+                    } else if (actionModal === 'cost_sheet' && getVal(property, "cost_sheet")) {
+                        window.open(getVal(property, "cost_sheet"), '_blank');
+                    }
+                    setActionModal(null);
+                }
             };
 
             const cover = fixImageUrl(getVal(property, "cover_image") || getVal(property, "cover-image"));
@@ -197,10 +223,12 @@
             const imgs = (typeof galRaw === 'string' && galRaw.length > 5) ? galRaw.split(',').map(l => fixImageUrl(l.trim())) : [];
             const allImgs = [cover, ...imgs].filter(i => i && !i.includes('undefined')).slice(0, 4); 
 
+            // Fixing USPs Mapping
+            const projectUsps = getVal(property, "USP's") || getVal(property, "usp_s") || getVal(property, "usps") || getVal(property, "Project Highlights");
+
             return (
-                <div className="min-h-screen bg-slate-50 animate-fadeIn pb-20">
+                <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0">
                     
-                    {/* Floating Back Nav */}
                     <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
                         <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
                             <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> Back to Search
@@ -212,10 +240,10 @@
 
                     <div className="max-w-7xl mx-auto w-full p-4 md:p-8">
                         
-                        {/* Image Gallery Grid */}
+                        {/* Gallery */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4 h-[40vh] md:h-[60vh] rounded-3xl overflow-hidden mb-8 md:mb-12 shadow-sm">
                             <div className="md:col-span-3 h-full relative group bg-slate-200">
-                                <img src={allImgs[0]} className="w-full h-full object-cover" />
+                                <img src={allImgs[0] || 'https://via.placeholder.com/800x600?text=No+Image'} className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
                                 <div className="absolute bottom-6 left-6 right-6">
                                     <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{getVal(property, "Property Type") || 'Apartment'}</div>
@@ -236,14 +264,14 @@
                         {/* Main Content Layout */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                             
-                            {/* Left Column (Details) */}
+                            {/* Left Column */}
                             <div className="lg:col-span-2 space-y-10">
                                 
                                 {/* Quick Overview */}
                                 <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6">
                                     <div>
                                         <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div>
-                                        <div className="text-lg md:text-xl font-black text-slate-900">{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div>
+                                        <div className="text-sm md:text-lg font-black text-slate-900 mt-1">{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div>
                                     </div>
                                     <div>
                                         <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div>
@@ -259,7 +287,7 @@
                                     </div>
                                 </div>
 
-                                {/* Project Description */}
+                                {/* Description */}
                                 <div>
                                     <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-slate-900 mb-4 border-b border-slate-200 pb-2">About The Project</h2>
                                     <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
@@ -269,12 +297,12 @@
 
                                 {/* Highlights & Amenities Grid */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {(getVal(property, "USP's") || getVal(property, "usp_s")) && (
+                                    {projectUsps && (
                                         <div className="bg-blue-50 p-6 md:p-8 rounded-3xl border border-blue-100">
                                             <h3 className="text-sm font-black uppercase tracking-widest text-blue-900 mb-6">Key Highlights</h3>
                                             <ul className="space-y-4">
-                                                {String(getVal(property, "USP's") || getVal(property, "usp_s")).split('\n').filter(u => u.trim() !== "").map((u, i) => (
-                                                    <li key={i} className="flex items-start text-xs md:text-sm text-blue-800 font-medium leading-relaxed">
+                                                {String(projectUsps).split('\n').filter(u => u.trim() !== "").map((u, i) => (
+                                                    <li key={i} className="flex items-start text-xs md:text-sm text-blue-800 font-medium">
                                                         <span className="mr-3 text-blue-500 mt-0.5">✦</span> {u.trim()}
                                                     </li>
                                                 ))}
@@ -286,7 +314,7 @@
                                             <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">World-Class Amenities</h3>
                                             <ul className="space-y-4">
                                                 {String(getVal(property, "Amenities")).split(',').filter(u => u.trim() !== "").map((u, i) => (
-                                                    <li key={i} className="flex items-start text-xs md:text-sm text-slate-300 font-medium leading-relaxed">
+                                                    <li key={i} className="flex items-start text-xs md:text-sm text-slate-300 font-medium">
                                                         <span className="mr-3 text-blue-400 mt-0.5">✓</span> {u.trim()}
                                                     </li>
                                                 ))}
@@ -300,38 +328,63 @@
                             <div className="lg:col-span-1">
                                 <div className="sticky top-24 space-y-6">
                                     
-                                    {/* Pricing & Contact Box */}
-                                    <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
+                                    {/* Action Box */}
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50">
                                         <div className="mb-6 pb-6 border-b border-slate-100">
                                             <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Starting Price</div>
-                                            <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">{getVal(property, "Price") || 'On Request'}</div>
+                                            <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">{getVal(property, "Price") || 'Price on Request'}</div>
                                         </div>
 
-                                        <h3 className="text-xs md:text-sm font-black uppercase tracking-widest text-slate-900 mb-4">Request Complete Details</h3>
-                                        <form onSubmit={handleLead} className="space-y-4">
-                                            <input type="text" placeholder="Your Full Name" required className="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 transition" value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
-                                            <input type="tel" placeholder="Mobile Number" required className="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 transition" value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
-                                            <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase tracking-widest hover:bg-slate-900 transition-colors shadow-lg shadow-blue-500/30">
-                                                {isSubmitting ? "Registering..." : "Get Cost Sheet & Brochure"}
+                                        <div className="space-y-3">
+                                            <button onClick={() => openAction('cost_sheet')} className="w-full bg-slate-900 text-white font-black py-4 rounded-xl uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-lg flex justify-center items-center gap-2">
+                                                <span>📄</span> Request Cost Sheet
                                             </button>
-                                        </form>
-
-                                        <div className="mt-4 pt-4 border-t border-slate-100 text-center">
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Or talk to an expert directly</p>
-                                            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, I am interested in ${getVal(property, "Property Name")}. Please share the brochure and cost sheet.`} target="_blank" className="mt-2 flex items-center justify-center w-full bg-green-50 text-green-700 font-black py-3.5 rounded-xl uppercase tracking-widest hover:bg-green-500 hover:text-white transition-colors text-[10px] md:text-xs border border-green-200">
-                                                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.12.553 4.148 1.603 5.946L.2 24l6.195-1.62c1.737.947 3.69 1.445 5.636 1.445 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.615 0 12.031 0zm0 21.846c-1.802 0-3.568-.484-5.115-1.402l-.366-.217-3.805.996.996-3.805-.217-.366a9.92 9.92 0 0 1-1.402-5.115c0-5.514 4.486-10 10-10 5.514 0 10 4.486 10 10 0 5.514-4.486 10-10 10zm5.496-7.518c-.301-.15-1.785-.885-2.062-.986-.277-.1-.478-.15-.678.15-.201.301-.778.986-.954 1.187-.176.201-.351.226-.653.076-1.609-.816-2.73-1.637-3.784-3.411-.176-.301.176-.277.453-.827.076-.15-.038-.277-.038-.427-.076-.15-.678-1.631-.929-2.233-.251-.602-.502-.527-.678-.527-.176 0-.377 0-.578 0-.201 0-.527.076-.803.427-.276.351-1.054 1.028-1.054 2.508 0 1.48 1.079 2.91 1.229 3.111.15.201 2.133 3.262 5.169 4.566.726.301 1.28.478 1.731.628.728.227 1.381.194 1.905.118.578-.084 1.785-.728 2.036-1.431.251-.703.251-1.305.176-1.431-.076-.126-.277-.201-.578-.352z"/></svg>
-                                                WhatsApp Chat
-                                            </a>
+                                            <button onClick={() => openAction('brochure')} className="w-full bg-white border-2 border-slate-200 text-slate-900 font-black py-3.5 rounded-xl uppercase tracking-widest hover:border-slate-900 hover:bg-slate-50 transition-colors flex justify-center items-center gap-2">
+                                                <span>📥</span> Download Brochure
+                                            </button>
                                         </div>
                                     </div>
 
                                     {/* EMI Calculator */}
-                                    <EMICalculator propertyPriceStr={getVal(property, "Price")} />
+                                    <EMICalculator onApplyAction={() => openAction('apply_now')} propertyPriceStr={getVal(property, "Price")} />
 
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    {/* Mobile Fixed Bottom Action Bar */}
+                    <div className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 p-3 flex gap-2 z-[45] shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+                        <a href={`tel:${getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER}`} className="flex-1 bg-blue-600 text-white text-center py-3.5 rounded-xl font-black uppercase text-[11px] tracking-widest flex items-center justify-center gap-2 shadow-md">
+                            📞 Call Agent
+                        </a>
+                        <button onClick={() => openAction('brochure')} className="flex-1 bg-slate-900 text-white text-center py-3.5 rounded-xl font-black uppercase text-[11px] tracking-widest shadow-md">
+                            📥 Brochure
+                        </button>
+                    </div>
+
+                    {/* Dynamic Action Modal (For Brochure, Cost Sheet, Apply) */}
+                    {actionModal && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setActionModal(null)}>
+                            <div className="bg-white rounded-3xl md:rounded-[40px] p-8 md:p-10 w-full max-w-sm shadow-2xl text-center relative" onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setActionModal(null)} className="absolute top-4 right-6 text-2xl text-slate-400 hover:text-slate-900">&times;</button>
+                                <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-2 italic tracking-tighter uppercase">
+                                    {actionModal === 'brochure' ? "Get The Brochure" : actionModal === 'cost_sheet' ? "Get Cost Sheet" : "Apply for Loan Check"}
+                                </h2>
+                                <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">Please enter details to proceed</p>
+                                
+                                <form onSubmit={handleActionSubmit} className="space-y-4 text-left">
+                                    <input type="text" placeholder="Full Name" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
+                                    <input type="tel" placeholder="Mobile Number (10 Digits)" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
+                                    <input type="email" placeholder="Email Address (Optional)" className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.email} onChange={e => setLeadData({...leadData, email: e.target.value})} />
+                                    
+                                    <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg mt-4 active:scale-95 transition-transform">
+                                        {isSubmitting ? "Processing..." : actionModal === 'apply_now' ? "Submit Application" : "Unlock Download"}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -339,7 +392,6 @@
         function App() {
             const [properties, setProperties] = useState([]);
             const [loading, setLoading] = useState(true);
-            const [isAdmin, setIsAdmin] = useState(false);
             const [selectedProperty, setSelectedProperty] = useState(null);
             
             const [search, setSearch] = useState("");
@@ -347,7 +399,7 @@
             
             const [filters, setFilters] = useState({ bhk: "", status: "", type: "", priceBracket: "" });
             const [showLeadForm, setShowLeadForm] = useState(false);
-            const [leadData, setLeadData] = useState({ name: "", phone: "" });
+            const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
             const [isSubmitting, setIsSubmitting] = useState(false);
             
             const [activePage, setActivePage] = useState(() => window.location.hash.replace('#', '') || 'home'); 
@@ -355,9 +407,6 @@
             const [activeBlog, setActiveBlog] = useState(null);
 
             useEffect(() => {
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get("key") === "admin123") setIsAdmin(true);
-                
                 const handleHashChange = () => {
                     const hash = window.location.hash.replace('#', '');
                     setActivePage(hash || 'home');
@@ -366,59 +415,49 @@
                 };
                 window.addEventListener('hashchange', handleHashChange);
                 
-                const removeSplash = () => {
-                    const splash = document.getElementById('native-splash');
-                    if(splash) {
-                        splash.style.opacity = '0';
-                        setTimeout(() => splash.remove(), 500);
-                    }
-                };
-
                 const fetchProperties = async () => {
                     try {
                         const { data, error } = await supabase.from('properties').select('*');
-                        if (error) throw error;
-                        setProperties(data || []);
-                    } catch (error) { console.error("Error fetching from Supabase:", error); } 
-                    finally { setLoading(false); removeSplash(); }
+                        if (!error) setProperties(data || []);
+                    } catch (error) { console.error(error); } 
+                    finally { setLoading(false); }
                 };
-
                 fetchProperties();
                 return () => window.removeEventListener('hashchange', handleHashChange);
             }, []);
 
-            const loginAdmin = () => {
-                const pin = prompt("Enter Admin PIN:");
-                if (pin === ADMIN_PIN) { setIsAdmin(true); alert("Admin Access Granted"); }
-                else if (pin) alert("Incorrect PIN");
-            };
-
-            const handleLeadSubmit = async (dataToSubmit, projectName) => {
+            const handleLeadSubmit = async (dataToSubmit, projectName, actionType = "General Enquiry") => {
                 const data = dataToSubmit || leadData;
-                const project = projectName || (getVal(selectedProperty, "Property Name") || "General Enquiry");
+                const project = projectName || "General Enquiry";
+                const sourceContext = actionType === 'brochure' ? "Website - Brochure Download" 
+                                    : actionType === 'cost_sheet' ? "Website - Cost Sheet Request" 
+                                    : actionType === 'apply_now' ? "Website - EMI Apply" 
+                                    : "Website - General";
                 
                 if (!/^[6-9]\d{9}$/.test(data.phone)) { alert("Enter valid 10-digit number"); return false; }
-                
                 if (!dataToSubmit) setIsSubmitting(true);
 
                 try {
                     const { error } = await supabase.from('leads').insert([{
-                        customer_name: data.name, phone_number: data.phone,
-                        project_interested_in: project, lead_status: "Un called", 
-                        lead_source: "Website", psa_agent_name: "Tharun" 
+                        customer_name: data.name, 
+                        phone_number: data.phone,
+                        customer_email: data.email || null,
+                        project_interested_in: project, 
+                        lead_status: "Un called", 
+                        lead_source: sourceContext, 
+                        psa_agent_name: "Tharun" 
                     }]);
 
                     if (error) throw error; 
 
-                    alert("Interest Registered! We will contact you shortly.");
                     if (!dataToSubmit) {
+                        alert("Interest Registered! Our advisor will contact you shortly.");
                         setShowLeadForm(false); 
-                        setLeadData({ name: "", phone: "" });
+                        setLeadData({ name: "", phone: "", email: "" });
                     }
                     return true;
                 } catch (error) {
-                    console.error("Supabase Error:", error);
-                    alert("Something went wrong saving your details. Please try again.");
+                    alert("Error saving details. Please try again.");
                     return false;
                 } finally {
                     if (!dataToSubmit) setIsSubmitting(false);
@@ -462,11 +501,7 @@
                 window.scrollTo(0,0);
             };
 
-            const handlePropertySelect = (p) => {
-                setSelectedProperty(p);
-            };
-
-            // IF A PROPERTY IS SELECTED, SHOW THE FULL PAGE VIEW INSTEAD
+            // IF A PROPERTY IS SELECTED, RENDER FULL PAGE
             if (selectedProperty) {
                 return <PropertyDetailsPage property={selectedProperty} onBack={() => setSelectedProperty(null)} onSubmitLead={handleLeadSubmit} />;
             }
@@ -477,13 +512,10 @@
                     {/* --- STICKY HEADER & FILTERS WRAPPER --- */}
                     <div className="sticky top-0 z-40 w-full shadow-[0_4px_20px_-10px_rgba(0,0,0,0.1)] flex flex-col bg-white">
                         
-                        {/* PREMIUM DARK NAV */}
                         <nav className="bg-slate-950 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center relative z-50">
                             <div className="flex items-center gap-4 md:gap-8 w-full md:w-auto justify-between md:justify-start">
-                                {/* LOGO */}
                                 <h1 onClick={() => navTo('home')} className="text-xl md:text-2xl font-black text-white tracking-tighter uppercase italic cursor-pointer hover:text-blue-400 transition drop-shadow-md shrink-0">Perfect Horizons</h1>
                                 
-                                {/* DESKTOP SEARCH BAR (Highlighted) */}
                                 {activePage === 'home' && (
                                     <div className="hidden md:block w-64 lg:w-96 ml-4">
                                         <div className="relative group">
@@ -499,24 +531,18 @@
                                     </div>
                                 )}
 
-                                {/* MOBILE MENU BUTTON */}
                                 <div className="md:hidden flex items-center gap-3">
-                                    {isAdmin && <span className="bg-green-500 text-slate-900 text-[9px] px-2 py-1 rounded-full font-black uppercase tracking-widest shadow-sm">Admin</span>}
-                                    
-                                    {/* Mobile Search Toggle */}
                                     {activePage === 'home' && (
                                         <button onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)} className={`p-2 rounded-full transition-colors ${isMobileSearchOpen ? 'bg-blue-500 text-white' : 'text-slate-300'}`}>
                                             🔍
                                         </button>
                                     )}
-
                                     <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-white focus:outline-none ml-1">
                                         <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}></path></svg>
                                     </button>
                                 </div>
                             </div>
 
-                            {/* DESKTOP NAV LINKS */}
                             <div className="hidden md:flex gap-6 lg:gap-8 items-center shrink-0">
                                 <button onClick={() => navTo('home')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'home' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Properties</button>
                                 
@@ -542,9 +568,7 @@
 
                                 <button onClick={() => navTo('advisor')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'advisor' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Advisor</button>
                                 <button onClick={() => navTo('customers')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'customers' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Customers</button>
-                                <button onClick={() => navTo('blogs')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'blogs' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Blogs</button>
-                                
-                                {isAdmin && <span className="bg-green-500 text-slate-900 text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest shadow-sm">Admin Mode</span>}
+                                <button onClick={() => navTo('blogs')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'blogs' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Insights</button>
                             </div>
                         </nav>
 
@@ -553,7 +577,6 @@
                             <div className="bg-white border-b border-gray-200 py-3 px-4 md:px-8 relative z-40 shadow-sm">
                                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
                                     
-                                    {/* Mobile Toggled Search Input */}
                                     {isMobileSearchOpen && (
                                         <div className="md:hidden w-full relative animate-fadeIn mb-2">
                                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 text-sm">🔍</span>
@@ -561,32 +584,18 @@
                                         </div>
                                     )}
                                     
-                                    {/* Filter Dropdowns */}
                                     <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 w-full">
                                         <select className="w-full bg-gray-50 px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 transition" value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}>
-                                            <option value="">Configurations</option>
-                                            {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} BHK</option>)}
+                                            <option value="">Configurations</option><option value="1">1 BHK</option><option value="2">2 BHK</option><option value="3">3 BHK</option><option value="4">4 BHK</option><option value="5">5+ BHK</option>
                                         </select>
                                         <select className="w-full bg-gray-50 px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 transition" value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
-                                            <option value="">Status</option>
-                                            <option value="Ready to Move">Ready</option>
-                                            <option value="Under Construction">Under Const.</option>
-                                            <option value="New Launch">New Launch</option>
+                                            <option value="">Status</option><option value="Ready to Move">Ready</option><option value="Under Construction">Under Const.</option><option value="New Launch">New Launch</option>
                                         </select>
                                         <select className="w-full bg-gray-50 px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 transition" value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})}>
-                                            <option value="">Property Type</option>
-                                            <option value="Apartment">Apartment</option>
-                                            <option value="Villa">Villa</option>
-                                            <option value="Plot">Plot</option>
+                                            <option value="">Property Type</option><option value="Apartment">Apartment</option><option value="Villa">Villa</option><option value="Plot">Plot</option>
                                         </select>
                                         <select className="w-full bg-gray-50 px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 transition" value={filters.priceBracket} onChange={e => setFilters({...filters, priceBracket: e.target.value})}>
-                                            <option value="">Budget</option>
-                                            <option value="under1">Under 1 Cr</option>
-                                            <option value="1-2">1 - 2 Cr</option>
-                                            <option value="2-3">2 - 3 Cr</option>
-                                            <option value="3-4">3 - 4 Cr</option>
-                                            <option value="4-5">4 - 5 Cr</option>
-                                            <option value="5plus">5 Cr & Above</option>
+                                            <option value="">Budget</option><option value="under1">Under 1 Cr</option><option value="1-2">1 - 2 Cr</option><option value="2-3">2 - 3 Cr</option><option value="3-4">3 - 4 Cr</option><option value="4-5">4 - 5 Cr</option><option value="5plus">5 Cr & Above</option>
                                         </select>
                                         <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:"", priceBracket:""}); setIsMobileSearchOpen(false);}} className="w-full col-span-2 md:col-span-1 text-slate-500 font-black text-[10px] md:text-xs uppercase tracking-widest border border-slate-200 bg-white rounded-lg md:rounded-xl hover:bg-slate-50 transition px-4 py-2.5 shadow-sm">Reset</button>
                                     </div>
@@ -594,39 +603,29 @@
                             </div>
                         )}
 
-                        {/* Mobile Dark Dropdown Menu */}
+                        {/* Mobile Dark Menu */}
                         {isMobileMenuOpen && (
-                            <div className="md:hidden bg-slate-800 border-t border-slate-700 py-4 px-4 space-y-4 shadow-2xl absolute w-full left-0 top-[60px] animate-fadeIn z-50">
-                                <div onClick={() => navTo('home')} className="text-xs font-black uppercase tracking-widest text-white py-2 border-b border-slate-700">Properties</div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 py-2">-- About --</div>
-                                <div onClick={() => navTo('about-us')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">About Us</div>
-                                <div onClick={() => navTo('our-journey')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">Our Journey</div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 py-2 mt-2">-- Services --</div>
-                                <div onClick={() => navTo('what-we-do')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">What We Do</div>
-                                <div onClick={() => navTo('what-we-dont-do')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">What We Don't Do</div>
-                                <div onClick={() => navTo('advisor')} className="text-xs font-black uppercase tracking-widest text-white py-2 mt-2 border-b border-slate-700">Advisor</div>
-                                <div onClick={() => navTo('customers')} className="text-xs font-black uppercase tracking-widest text-white py-2 border-b border-slate-700">Customers</div>
-                                <div onClick={() => navTo('blogs')} className="text-xs font-black uppercase tracking-widest text-white py-2">Blogs</div>
+                            <div className="md:hidden bg-slate-800 border-t border-slate-700 py-4 px-4 space-y-2 shadow-2xl absolute w-full left-0 top-[60px] animate-fadeIn z-50">
+                                <div onClick={() => navTo('home')} className="text-xs font-black uppercase tracking-widest text-white py-3 border-b border-slate-700">Find Properties</div>
+                                <div onClick={() => navTo('advisor')} className="text-xs font-black uppercase tracking-widest text-white py-3 border-b border-slate-700">Meet The Advisor</div>
+                                <div onClick={() => navTo('blogs')} className="text-xs font-black uppercase tracking-widest text-white py-3">Market Insights</div>
                             </div>
                         )}
                     </div>
 
-                    {/* NEW: BUILDER MARQUEE (Only on Home Page) */}
+                    {/* NEW: AUTHORIZED PARTNERS MARQUEE (Home Only) */}
                     {activePage === 'home' && (
-                        <div className="bg-white border-b border-gray-200 py-8 overflow-hidden marquee-container shadow-sm">
-                            <p className="text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6">Authorized Channel Partners</p>
-                            <div className="animate-marquee">
-                                <span className="font-black text-xl md:text-3xl text-slate-300 uppercase mx-6 md:mx-16 tracking-tighter hover:text-blue-900 transition-colors cursor-default">Prestige Group</span>
-                                <span className="font-black text-xl md:text-3xl text-slate-300 uppercase mx-6 md:mx-16 tracking-tighter hover:text-blue-900 transition-colors cursor-default">Godrej Properties</span>
-                                <span className="font-black text-xl md:text-3xl text-slate-300 uppercase mx-6 md:mx-16 tracking-tighter hover:text-blue-900 transition-colors cursor-default">Sobha Limited</span>
-                                <span className="font-black text-xl md:text-3xl text-slate-300 uppercase mx-6 md:mx-16 tracking-tighter hover:text-blue-900 transition-colors cursor-default">Brigade Group</span>
-                                <span className="font-black text-xl md:text-3xl text-slate-300 uppercase mx-6 md:mx-16 tracking-tighter hover:text-blue-900 transition-colors cursor-default">Puravankara</span>
+                        <div className="bg-white border-b border-gray-200 py-8 overflow-hidden marquee-container shadow-sm flex flex-col items-center">
+                            <p className="text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6">Authorized Partners</p>
+                            <div className="animate-marquee flex items-center">
+                                {/* Maps the array to show images instead of text */}
+                                {AUTHORIZED_PARTNERS.map((logo, index) => (
+                                    <img key={index} src={logo} className="h-12 md:h-16 w-auto object-contain mx-8 md:mx-16 grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all cursor-default" />
+                                ))}
                                 {/* Duplicated for smooth infinite scroll */}
-                                <span className="font-black text-xl md:text-3xl text-slate-300 uppercase mx-6 md:mx-16 tracking-tighter hover:text-blue-900 transition-colors cursor-default">Prestige Group</span>
-                                <span className="font-black text-xl md:text-3xl text-slate-300 uppercase mx-6 md:mx-16 tracking-tighter hover:text-blue-900 transition-colors cursor-default">Godrej Properties</span>
-                                <span className="font-black text-xl md:text-3xl text-slate-300 uppercase mx-6 md:mx-16 tracking-tighter hover:text-blue-900 transition-colors cursor-default">Sobha Limited</span>
-                                <span className="font-black text-xl md:text-3xl text-slate-300 uppercase mx-6 md:mx-16 tracking-tighter hover:text-blue-900 transition-colors cursor-default">Brigade Group</span>
-                                <span className="font-black text-xl md:text-3xl text-slate-300 uppercase mx-6 md:mx-16 tracking-tighter hover:text-blue-900 transition-colors cursor-default">Puravankara</span>
+                                {AUTHORIZED_PARTNERS.map((logo, index) => (
+                                    <img key={`dup-${index}`} src={logo} className="h-12 md:h-16 w-auto object-contain mx-8 md:mx-16 grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all cursor-default" />
+                                ))}
                             </div>
                         </div>
                     )}
@@ -634,7 +633,7 @@
                     {/* --- MAIN CONTENT AREA --- */}
                     <main className="max-w-7xl mx-auto p-4 md:p-8 flex-grow w-full animate-fadeIn">
                         
-                        {/* 1. PROPERTIES (HOME) - REDESIGNED CARDS */}
+                        {/* 1. PROPERTIES GRID */}
                         {activePage === 'home' && (
                             <>
                                 {loading ? (
@@ -648,9 +647,8 @@
                                             </div>
                                         ) : (
                                             filtered.map((p, i) => (
-                                                <div key={i} onClick={() => handlePropertySelect(p)} className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] transition-all duration-300 group flex flex-col">
+                                                <div key={i} onClick={() => setSelectedProperty(p)} className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] transition-all duration-300 group flex flex-col">
                                                     
-                                                    {/* Card Image & Badge */}
                                                     <div className="relative h-56 md:h-64 w-full overflow-hidden shrink-0 bg-slate-100">
                                                         <img src={fixImageUrl(getVal(p, "Cover Image") || getVal(p, "cover_image"))} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                                         <div className="absolute top-4 left-0 bg-slate-900/90 backdrop-blur-sm text-white text-[10px] font-black px-4 py-1.5 rounded-r-lg shadow-md uppercase tracking-widest">
@@ -658,7 +656,6 @@
                                                         </div>
                                                     </div>
 
-                                                    {/* Card Body */}
                                                     <div className="p-6 flex-grow flex flex-col">
                                                         <h2 className="text-xl md:text-2xl font-black text-slate-900 leading-tight mb-1 uppercase tracking-tighter truncate">
                                                             {getVal(p, "Property Name") || "Listed Property"}
@@ -670,7 +667,6 @@
                                                             <span className="bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100 uppercase tracking-widest">🔑 {getVal(p, "Construction Status") || "Status"}</span>
                                                         </div>
 
-                                                        {/* Card Footer (Price & Buttons) */}
                                                         <div className="flex justify-between items-end border-t border-slate-100 pt-5 mt-auto">
                                                             <div className="flex flex-col">
                                                                 <span className="text-[9px] text-slate-400 font-bold mb-1 uppercase tracking-widest">Starting from</span>
@@ -967,16 +963,11 @@
                                 <span className="text-slate-900 text-[10px] font-black uppercase tracking-widest bg-gray-200 px-3 py-1 rounded-lg mb-4 inline-block">{activeBlog.tag}</span>
                                 <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase leading-tight mb-8">{activeBlog.title}</h1>
                                 
-                                {/* Dynamic Blog Content Injection */}
                                 <div className="text-gray-700 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6" dangerouslySetInnerHTML={{__html: activeBlog.content}}></div>
 
-                                {/* Call to Action Button */}
                                 <div className="mt-12 pt-8 border-t border-gray-100 text-center">
                                     <p className="text-gray-500 text-[10px] md:text-xs uppercase font-black tracking-widest mb-4">Get off the internet; trust a professional.</p>
-                                    <button 
-                                        onClick={() => setShowLeadForm(true)} 
-                                        className="bg-slate-900 text-white font-black py-4 px-10 rounded-xl uppercase tracking-widest shadow-xl hover:bg-blue-600 transition-all active:scale-95"
-                                    >
+                                    <button onClick={() => setShowLeadForm(true)} className="bg-slate-900 text-white font-black py-4 px-10 rounded-xl uppercase tracking-widest shadow-xl hover:bg-blue-600 transition-all active:scale-95">
                                         Talk with Advisor
                                     </button>
                                 </div>
@@ -991,14 +982,13 @@
                                 <h1 className="text-xl font-black italic uppercase text-slate-300 tracking-tighter">Perfect Horizons</h1>
                                 <p className="text-slate-600 text-xs mt-2 font-medium">© 2026 Perfect Horizons. All rights reserved.</p>
                                 
-                                {/* NEW: T&C and Privacy Links */}
                                 <div className="flex gap-4 mt-4 text-[9px] text-slate-500 uppercase tracking-widest font-bold">
                                     <a href="#" className="hover:text-slate-300 transition">Terms & Conditions</a>
                                     <span>|</span>
                                     <a href="#" className="hover:text-slate-300 transition">Privacy Policy</a>
                                 </div>
 
-                                <button onClick={loginAdmin} className="mt-6 text-[9px] text-slate-700 uppercase font-black tracking-widest hover:text-blue-400 transition">Management Login</button>
+                                <a href="admin.html" className="mt-6 text-[9px] text-slate-700 uppercase font-black tracking-widest hover:text-blue-400 transition block">Management Login</a>
                             </div>
                             <div className="space-y-3">
                                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Contact Us</h3>
@@ -1009,33 +999,32 @@
                         </div>
                     </footer>
 
-                    {/* NEW: AI ASSISTANT WHATSAPP BUTTON */}
-                    <div className="fixed bottom-6 right-6 z-[55] flex flex-col items-end animate-fadeIn group">
-                        {/* AI Assistant Tooltip */}
-                        <div className="bg-white text-slate-800 text-[10px] font-black px-4 py-2.5 rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.1)] border border-slate-100 mb-3 relative flex items-center gap-2 cursor-default group-hover:-translate-y-1 transition-transform">
-                            <span className="relative flex h-2.5 w-2.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
-                            </span>
-                            AI Assistant: Check Properties
-                            <div className="absolute -bottom-2 right-5 w-4 h-4 bg-white rotate-45 border-b border-r border-slate-100"></div>
+                    {/* AI ASSISTANT WHATSAPP BUTTON (Hidden on mobile property view) */}
+                    {!(window.innerWidth < 768 && selectedProperty) && (
+                        <div className="fixed bottom-6 right-6 z-[55] flex flex-col items-end animate-fadeIn group">
+                            <div className="bg-white text-slate-800 text-[10px] font-black px-4 py-2.5 rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.1)] border border-slate-100 mb-3 relative flex items-center gap-2 cursor-default group-hover:-translate-y-1 transition-transform">
+                                <span className="relative flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+                                </span>
+                                AI Assistant: Check Properties
+                                <div className="absolute -bottom-2 right-5 w-4 h-4 bg-white rotate-45 border-b border-r border-slate-100"></div>
+                            </div>
+                            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, I want to explore properties.`} target="_blank" className="bg-gradient-to-tr from-green-500 to-green-400 text-white p-4 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-transform flex items-center justify-center">
+                                <svg className="w-7 h-7 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.12.553 4.148 1.603 5.946L.2 24l6.195-1.62c1.737.947 3.69 1.445 5.636 1.445 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.615 0 12.031 0zm0 21.846c-1.802 0-3.568-.484-5.115-1.402l-.366-.217-3.805.996.996-3.805-.217-.366a9.92 9.92 0 0 1-1.402-5.115c0-5.514 4.486-10 10-10 5.514 0 10 4.486 10 10 0 5.514-4.486 10-10 10zm5.496-7.518c-.301-.15-1.785-.885-2.062-.986-.277-.1-.478-.15-.678.15-.201.301-.778.986-.954 1.187-.176.201-.351.226-.653.076-1.609-.816-2.73-1.637-3.784-3.411-.176-.301.176-.277.453-.827.076-.15-.038-.277-.038-.427-.076-.15-.678-1.631-.929-2.233-.251-.602-.502-.527-.678-.527-.176 0-.377 0-.578 0-.201 0-.527.076-.803.427-.276.351-1.054 1.028-1.054 2.508 0 1.48 1.079 2.91 1.229 3.111.15.201 2.133 3.262 5.169 4.566.726.301 1.28.478 1.731.628.728.227 1.381.194 1.905.118.578-.084 1.785-.728 2.036-1.431.251-.703.251-1.305.176-1.431-.076-.126-.277-.201-.578-.352z"/></svg>
+                            </a>
                         </div>
-                        {/* WhatsApp Icon */}
-                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, I want to explore properties.`} target="_blank" className="bg-gradient-to-tr from-green-500 to-green-400 text-white p-4 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-transform flex items-center justify-center">
-                            <svg className="w-7 h-7 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.12.553 4.148 1.603 5.946L.2 24l6.195-1.62c1.737.947 3.69 1.445 5.636 1.445 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.615 0 12.031 0zm0 21.846c-1.802 0-3.568-.484-5.115-1.402l-.366-.217-3.805.996.996-3.805-.217-.366a9.92 9.92 0 0 1-1.402-5.115c0-5.514 4.486-10 10-10 5.514 0 10 4.486 10 10 0 5.514-4.486 10-10 10zm5.496-7.518c-.301-.15-1.785-.885-2.062-.986-.277-.1-.478-.15-.678.15-.201.301-.778.986-.954 1.187-.176.201-.351.226-.653.076-1.609-.816-2.73-1.637-3.784-3.411-.176-.301.176-.277.453-.827.076-.15-.038-.277-.038-.427-.076-.15-.678-1.631-.929-2.233-.251-.602-.502-.527-.678-.527-.176 0-.377 0-.578 0-.201 0-.527.076-.803.427-.276.351-1.054 1.028-1.054 2.508 0 1.48 1.079 2.91 1.229 3.111.15.201 2.133 3.262 5.169 4.566.726.301 1.28.478 1.731.628.728.227 1.381.194 1.905.118.578-.084 1.785-.728 2.036-1.431.251-.703.251-1.305.176-1.431-.076-.126-.277-.201-.578-.352z"/></svg>
-                        </a>
-                    </div>
+                    )}
 
                     {showLeadForm && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm" onClick={() => setShowLeadForm(false)}>
                             <div className="bg-white rounded-3xl md:rounded-[40px] p-8 md:p-10 w-full max-w-sm animate-fadeIn shadow-2xl text-center" onClick={e => e.stopPropagation()}>
                                 <h2 className="text-2xl md:text-3xl font-black text-slate-900 mb-6 italic tracking-tighter uppercase">Enquiry</h2>
                                 <form onSubmit={(e) => handleLeadSubmit(null, "General Enquiry", e)} className="space-y-4 text-left">
-                                    <label className="text-[10px] font-black uppercase text-gray-500 ml-2 tracking-widest">Full Name</label>
-                                    <input type="text" placeholder="Enter Name" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
-                                    <label className="text-[10px] font-black uppercase text-gray-500 ml-2 tracking-widest">Mobile Number</label>
-                                    <input type="tel" placeholder="10 Digits" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
-                                    <button disabled={isSubmitting} type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg mt-4 active:scale-95 transition-transform">{isSubmitting ? "Processing..." : "Submit Interest"}</button>
+                                    <input type="text" placeholder="Full Name" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
+                                    <input type="tel" placeholder="Mobile Number" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
+                                    <input type="email" placeholder="Email (Optional)" className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.email} onChange={e => setLeadData({...leadData, email: e.target.value})} />
+                                    <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg mt-4 active:scale-95 transition-transform">{isSubmitting ? "Processing..." : "Submit Interest"}</button>
                                 </form>
                             </div>
                         </div>
