@@ -63,7 +63,15 @@
                 if (leadCategory === 'website') query = query.or('lead_source.eq.Website,lead_source.is.null');
 
                 const { data, error } = await query;
-                if (!error) setLeads(data || []);
+                
+                // NEW ALERT SYSTEM:
+                if (error) {
+                    alert("SUPABASE ERROR: " + error.message);
+                    console.error(error);
+                } else {
+                    setLeads(data || []);
+                }
+                
                 setLoading(false);
             }
 
