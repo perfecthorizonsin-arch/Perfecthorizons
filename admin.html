@@ -18,10 +18,13 @@
         .history-scroll::-webkit-scrollbar { width: 4px; }
         .history-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
         .toggle-active { background-color: #f59e0b; color: white; border-color: #f59e0b; }
-        .priority-hot { border-left: 4px solid #ef4444; background: #fef2f2; }
+        /* Lead Rings for Desktop */
+        .ring-hot { border-left: 5px solid #ef4444 !important; }
+        .ring-warm { border-left: 5px solid #f59e0b !important; }
+        .ring-cold { border-left: 5px solid #3b82f6 !important; }
     </style>
 </head>
-<body class="bg-gray-50 font-sans text-gray-900 pb-20 md:pb-0">
+<body class="bg-gray-100 font-sans text-gray-900 pb-20 md:pb-0">
     <div id="root"></div>
 
     <script type="text/babel">
@@ -41,31 +44,18 @@
             const [showManualModal, setShowManualModal] = useState(false);
             const [showTodayOnly, setShowTodayOnly] = useState(false);
 
-            // SECURITY: 1 Hour Idle Auto-Logout
+            // AUTO-LOGOUT AFTER 1 HOUR
             useEffect(() => {
                 if (!session) return;
                 let idleTimer;
                 const logoutTime = 60 * 60 * 1000; 
-                const resetIdleTimer = () => {
+                const resetTimer = () => {
                     clearTimeout(idleTimer);
-                    idleTimer = setTimeout(() => {
-                        supabase.auth.signOut();
-                        alert("Session securely locked due to 1 hour of inactivity.");
-                        window.location.reload();
-                    }, logoutTime);
+                    idleTimer = setTimeout(() => { supabase.auth.signOut(); window.location.reload(); }, logoutTime);
                 };
-                window.addEventListener('mousemove', resetIdleTimer);
-                window.addEventListener('keydown', resetIdleTimer);
-                window.addEventListener('touchstart', resetIdleTimer);
-                window.addEventListener('scroll', resetIdleTimer);
-                resetIdleTimer();
-                return () => {
-                    window.removeEventListener('mousemove', resetIdleTimer);
-                    window.removeEventListener('keydown', resetIdleTimer);
-                    window.removeEventListener('touchstart', resetIdleTimer);
-                    window.removeEventListener('scroll', resetIdleTimer);
-                    clearTimeout(idleTimer);
-                };
+                window.onmousemove = resetTimer;
+                window.onkeydown = resetTimer;
+                resetTimer();
             }, [session]);
 
             useEffect(() => {
@@ -73,77 +63,38 @@
                     setSession(session);
                     if (session) fetchLeads();
                 });
-                const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-                    setSession(session);
-                    if (session) fetchLeads();
-                });
-                return () => subscription.unsubscribe();
-            }, [leadCategory]);
+            }, [leadCategory, view]);
 
             async function fetchLeads() {
                 setLoading(true);
                 const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
                 const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false });
-
                 if (!error) {
-                    let rawData = data || [];
-                    let sortedData = [];
+                    let raw = data || [];
                     if (table === 'leads') {
-                        if (leadCategory === 'website') {
-                            sortedData = rawData.filter(l => !l.lead_source || l.lead_source.trim() === '' || l.lead_source.toLowerCase() === 'website');
-                        } else {
-                            sortedData = rawData.filter(l => l.lead_source && l.lead_source.trim() !== '' && l.lead_source.toLowerCase() !== 'website');
-                        }
-                    } else { sortedData = rawData; }
-                    setLeads(sortedData);
+                        setLeads(leadCategory === 'website' 
+                            ? raw.filter(l => !l.lead_source || l.lead_source.trim() === '' || l.lead_source.toLowerCase() === 'website')
+                            : raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && l.lead_source.toLowerCase() !== 'website'));
+                    } else { setLeads(raw); }
                 }
                 setLoading(false);
             }
 
-            const stats = useMemo(() => {
-                const total = leads.length;
-                const uncalled = leads.filter(l => l.lead_status === 'Un called' || !l.lead_status).length;
-                const called = leads.filter(l => l.lead_status && l.lead_status !== 'Un called' && l.lead_status !== 'Rejected').length;
-                const rejected = leads.filter(l => l.lead_status === 'Rejected').length;
-                return { total, uncalled, called, rejected };
-            }, [leads]);
-
             const displayedLeads = useMemo(() => {
                 if (!showTodayOnly) return leads;
-                const today = new Date();
-                const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                return leads.filter(lead => lead.follow_up_at && lead.follow_up_at.startsWith(todayString));
+                const today = new Date().toISOString().split('T')[0];
+                return leads.filter(l => l.follow_up_at && l.follow_up_at.startsWith(today));
             }, [leads, showTodayOnly]);
 
             async function updateLead(lead, field, value) {
-                // Formatting checks to prevent false re-saves
-                if (field === 'follow_up_at' || field === 'site_visit_at') {
-                    if (lead[field] && new Date(lead[field]).getTime() === new Date(value).getTime()) return;
-                } else if (lead[field] === value && field !== 'add_note') {
-                    return;
-                }
-
                 let updates = { [field]: value };
-                const timestamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
+                const stamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
 
-                if (field === 'lead_status') {
-                    const existingHistory = lead.call_remark ? `\n${lead.call_remark}` : '';
-                    updates.call_remark = `[${timestamp}] Status: ${value}${existingHistory}`;
-                }
-                if (field === 'site_visit_at') {
-                    const existingHistory = lead.call_remark ? `\n${lead.call_remark}` : '';
-                    updates.call_remark = `[${timestamp}] SV Booked: ${value}${existingHistory}`;
-                }
-                if (field === 'follow_up_at') {
-                    const existingHistory = lead.call_remark ? `\n${lead.call_remark}` : '';
-                    const formattedDate = new Date(value).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
-                    updates.call_remark = `[${timestamp}] Callback Set: ${formattedDate}${existingHistory}`;
-                }
+                if (field === 'lead_status') updates.call_remark = `[${stamp}] Status: ${value}\n${lead.call_remark || ''}`;
+                if (field === 'follow_up_at') updates.call_remark = `[${stamp}] Callback Set: ${value}\n${lead.call_remark || ''}`;
                 if (field === 'add_note') {
-                    if (!value.trim()) return;
-                    const existingHistory = lead.call_remark ? `\n${lead.call_remark}` : '';
-                    updates.call_remark = `[${timestamp}] Note: ${value}${existingHistory}`;
-                    delete updates.add_note; 
+                    updates.call_remark = `[${stamp}] Note: ${value}\n${lead.call_remark || ''}`;
+                    delete updates.add_note;
                 }
 
                 const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
@@ -151,322 +102,196 @@
                 if (!error) setLeads(prev => prev.map(l => l.id === lead.id ? {...l, ...updates} : l));
             }
 
-            // COLOR STYLING LOGIC
-            const getStatusColor = (status) => {
-                switch(status) {
-                    case 'Called': return 'bg-blue-50 text-blue-700 border-blue-300';
-                    case 'RNR': return 'bg-orange-50 text-orange-700 border-orange-300';
-                    case 'Details Shared': return 'bg-purple-50 text-purple-700 border-purple-300';
-                    case 'SV Scheduled': return 'bg-teal-50 text-teal-800 border-teal-400';
-                    case 'Converted': return 'bg-green-100 text-green-800 border-green-500 shadow-sm';
-                    case 'Rejected': return 'bg-red-50 text-red-700 border-red-300';
-                    default: return 'bg-slate-50 text-slate-700 border-slate-200';
-                }
-            };
-            const getPriorityColor = (priority) => {
-                switch(priority) {
-                    case 'Hot': return 'bg-red-100 text-red-700 border-red-300 font-black shadow-sm';
-                    case 'Cold': return 'bg-blue-50 text-blue-600 border-blue-200';
-                    default: return 'bg-amber-50 text-amber-700 border-amber-300'; 
-                }
-            };
-
             if (!session) return <LoginForm supabase={supabase} />;
 
             return (
                 <div className="min-h-screen flex flex-col animate-fadeIn">
-                    <nav className="bg-slate-950 text-white p-4 md:p-5 flex justify-between items-center sticky top-0 z-50">
-                        <h1 className="font-black italic uppercase tracking-tighter text-xl md:text-2xl text-white">Horizon <span className="text-blue-500">CRM</span></h1>
-                        <div className="flex gap-4 md:gap-6 text-[10px] md:text-[11px] font-black uppercase tracking-[0.15em] items-center">
-                            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'text-blue-400' : 'text-slate-400 hover:text-white transition'}>CRM</button>
-                            <button onClick={() => setView('add-property')} className={view === 'add-property' ? 'text-blue-400' : 'text-slate-400 hover:text-white transition'}>Listings</button>
-                            <button onClick={() => supabase.auth.signOut()} className="text-red-400 ml-2 bg-red-950/50 px-3 py-1.5 rounded-lg border border-red-900 hidden md:block">Logout</button>
-                            <button onClick={() => supabase.auth.signOut()} className="text-red-400 md:hidden text-lg">🚪</button>
+                    <nav className="bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-50">
+                        <h1 className="font-black tracking-tighter text-xl uppercase italic">Horizon <span className="text-blue-500">CRM</span></h1>
+                        <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest">
+                            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'text-blue-400' : ''}>CRM</button>
+                            <button onClick={() => setView('library')} className={view === 'library' ? 'text-blue-400' : ''}>Library</button>
+                            <button onClick={() => setView('add')} className={view === 'add' ? 'text-blue-400' : ''}>Add Project</button>
+                            <button onClick={() => supabase.auth.signOut()} className="text-red-400">Logout</button>
                         </div>
                     </nav>
 
-                    <main className="p-3 md:p-8 max-w-7xl mx-auto w-full space-y-5 md:space-y-6">
+                    <main className="p-3 md:p-8 max-w-7xl mx-auto w-full">
                         {view === 'dashboard' && (
-                            <>
-                                {/* Analytics Block */}
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
-                                    <table className="w-full text-sm text-left min-w-[450px]">
-                                        <thead className="bg-slate-50 border-b uppercase text-[9px] md:text-[10px] font-black text-slate-400 tracking-widest">
-                                            <tr>
-                                                <th className="p-3 md:p-5">Team Metric (Tharun)</th>
-                                                <th className="p-3 md:p-5 text-center">Total</th>
-                                                <th className="p-3 md:p-5 text-center">Uncalled</th>
-                                                <th className="p-3 md:p-5 text-center">Working</th>
-                                                <th className="p-3 md:p-5 text-center">Rejected</th>
-                                            </tr>
+                            <div className="space-y-6">
+                                {/* Filters */}
+                                <div className="flex flex-wrap gap-4 items-center justify-between border-b pb-4">
+                                    <div className="flex gap-4">
+                                        {['website', 'bulk', 'manual'].map(c => (
+                                            <button key={c} onClick={() => setLeadCategory(c)} className={`pb-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${leadCategory === c ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400'}`}>{c}</button>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setShowTodayOnly(!showTodayOnly)} className={`px-4 py-2 rounded-full text-[9px] font-black uppercase border ${showTodayOnly ? 'bg-amber-500 text-white' : 'bg-white'}`}>📅 Today</button>
+                                        <button onClick={() => setShowManualModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded-full text-[9px] font-black uppercase">+ Add Lead</button>
+                                    </div>
+                                </div>
+
+                                {/* DESKTOP TABLE */}
+                                <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                    <table className="w-full text-left text-xs">
+                                        <thead className="bg-slate-50 text-slate-400 font-black uppercase text-[9px] tracking-widest border-b">
+                                            <tr><th className="p-4">Customer</th><th className="p-4">Status</th><th className="p-4">Scheduling</th><th className="p-4">History</th></tr>
                                         </thead>
-                                        <tbody className="font-bold text-slate-700">
-                                            <tr>
-                                                <td className="p-3 md:p-5 border-b uppercase text-[10px] md:text-[11px] tracking-tighter">Volume ({leadCategory})</td>
-                                                <td className="p-3 md:p-5 border-b text-center">{stats.total}</td>
-                                                <td className="p-3 md:p-5 border-b text-green-600 text-center">{stats.uncalled}</td>
-                                                <td className="p-3 md:p-5 border-b text-blue-600 text-center">{stats.called}</td>
-                                                <td className="p-3 md:p-5 border-b text-red-600 text-center">{stats.rejected}</td>
-                                            </tr>
+                                        <tbody className="divide-y">
+                                            {displayedLeads.map(l => (
+                                                <tr key={l.id} className={`hover:bg-slate-50/50 ${l.lead_priority === 'Hot' ? 'ring-hot' : l.lead_priority === 'Cold' ? 'ring-cold' : 'ring-warm'}`}>
+                                                    <td className="p-4 font-bold uppercase">{l.customer_name}<div className="text-blue-600">{l.phone_number}</div></td>
+                                                    <td className="p-4">
+                                                        <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className="w-full p-2 border rounded font-bold uppercase text-[10px] bg-white"><option>Un called</option><option>Called</option><option>SV Scheduled</option><option>Converted</option><option>Rejected</option></select>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <input type="datetime-local" className="p-2 border rounded w-full text-[10px]" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <div className="h-16 overflow-y-auto text-[10px] bg-slate-50 p-2 rounded history-scroll whitespace-pre-wrap">{l.call_remark}</div>
+                                                        <input placeholder="Add note..." className="w-full mt-1 p-2 border rounded text-[10px]" onKeyDown={(e) => e.key === 'Enter' && (updateLead(l, 'add_note', e.target.value), e.target.value='')} />
+                                                    </td>
+                                                </tr>
+                                            ))}
                                         </tbody>
                                     </table>
                                 </div>
 
-                                {/* Controls Row */}
-                                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 border-b border-slate-200 pb-4 md:pb-2">
-                                    <div className="flex gap-4 md:gap-8 overflow-x-auto w-full md:w-auto">
-                                        {['website', 'bulk', 'manual'].map(cat => (
-                                            <button key={cat} onClick={() => setLeadCategory(cat)} className={`pb-2 text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap border-b-2 ${leadCategory === cat ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
-                                                {cat} Leads
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <div className="flex w-full md:w-auto md:ml-auto items-center gap-2 justify-between">
-                                        <button onClick={() => setShowTodayOnly(!showTodayOnly)} className={`flex-1 md:flex-none text-[9px] md:text-[10px] px-3 md:px-4 py-2.5 md:py-2 rounded-lg md:rounded-full font-black uppercase tracking-widest border transition-all text-center ${showTodayOnly ? 'toggle-active shadow-lg shadow-amber-500/30' : 'border-slate-300 text-slate-500 bg-white hover:bg-slate-50'}`}>
-                                            {showTodayOnly ? "📅 Today Only" : "📅 Filter Today"}
-                                        </button>
-                                        <button onClick={() => setShowManualModal(true)} className="flex-1 md:flex-none bg-blue-600 text-white text-[9px] md:text-[10px] px-3 md:px-6 py-2.5 md:py-2 rounded-lg md:rounded-full font-black uppercase tracking-widest shadow-lg hover:bg-slate-900 transition-colors text-center">
-                                            + Manual Add
-                                        </button>
-                                    </div>
+                                {/* MOBILE CARDS */}
+                                <div className="lg:hidden space-y-4">
+                                    {displayedLeads.map(l => (
+                                        <div key={`m-${l.id}`} className={`bg-white p-4 rounded-2xl shadow-md border-t-8 ${l.lead_priority === 'Hot' ? 'border-red-500' : 'border-blue-400'}`}>
+                                            <div className="flex justify-between items-start">
+                                                <div><h3 className="font-black text-sm uppercase">{l.customer_name}</h3><p className="font-bold text-blue-600">{l.phone_number}</p></div>
+                                                <div className="flex gap-2"><a href={`tel:${l.phone_number}`} className="bg-blue-100 p-2 rounded-full">📞</a><a href={`https://wa.me/91${l.phone_number}`} className="bg-green-100 p-2 rounded-full">💬</a></div>
+                                            </div>
+                                            <div className="mt-4 grid grid-cols-2 gap-2">
+                                                <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className="p-2 border rounded-xl font-bold uppercase text-[9px]"><option>Un called</option><option>Called</option><option>SV Scheduled</option><option>Rejected</option></select>
+                                                <input type="datetime-local" className="p-2 border rounded-xl text-[9px]" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
+                                            </div>
+                                            <div className="mt-4 bg-slate-50 p-3 rounded-xl h-20 overflow-y-auto text-[10px] italic whitespace-pre-wrap">{l.call_remark}</div>
+                                            <textarea className="w-full mt-2 p-3 border rounded-xl text-[10px] resize-none" placeholder="Type note & hit save..." id={`note-m-${l.id}`} />
+                                            <button onClick={() => { const el = document.getElementById(`note-m-${l.id}`); updateLead(l, 'add_note', el.value); el.value=''; }} className="w-full bg-slate-900 text-white p-2 rounded-xl text-[10px] font-bold mt-1 uppercase">Save Note</button>
+                                        </div>
+                                    ))}
                                 </div>
-
-                                {/* LEAD LISTINGS */}
-                                {loading ? (
-                                    <div className="p-20 text-center font-bold text-slate-300 uppercase italic animate-pulse">Syncing Database...</div>
-                                ) : displayedLeads.length === 0 ? (
-                                    <div className="p-10 text-center font-bold text-slate-400 uppercase italic bg-slate-50 rounded-2xl border border-slate-200">No leads found for this view.</div>
-                                ) : (
-                                    <>
-                                        {/* 🖥️ DESKTOP VIEW (Hidden on Mobile) */}
-                                        <div className="hidden lg:block bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                                            <table className="w-full text-xs text-left">
-                                                <thead className="bg-slate-50/50 text-slate-400 uppercase font-black text-[9px] tracking-widest border-b">
-                                                    <tr>
-                                                        <th className="p-5">Customer Profile</th>
-                                                        <th className="p-5">Status & Priority</th>
-                                                        <th className="p-5">Scheduling</th>
-                                                        <th className="p-5 min-w-[300px]">Activity History & Notes</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100">
-                                                    {displayedLeads.map(lead => (
-                                                        <tr key={lead.id} className={`hover:bg-slate-50/50 transition ${lead.lead_priority === 'Hot' ? 'priority-hot' : ''}`}>
-                                                            <td className="p-5 min-w-[180px]">
-                                                                <div className="font-black text-slate-900 uppercase text-[13px]">{lead.customer_name}</div>
-                                                                <div className="text-blue-600 font-bold mt-0.5">{lead.phone_number}</div>
-                                                                {(leadCategory === 'website' || leadCategory === 'manual') && lead.created_at && (
-                                                                    <div className="text-[9px] text-slate-400 font-bold mt-1 tracking-widest uppercase">Logged: {new Date(lead.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</div>
-                                                                )}
-                                                                <div className="mt-3 flex gap-2">
-                                                                    <a href={`https://wa.me/91${lead.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-green-500 text-white text-[8px] font-black px-3 py-1.5 rounded uppercase tracking-widest shadow-sm hover:scale-105 transition">WhatsApp 💬</a>
-                                                                </div>
-                                                            </td>
-                                                            <td className="p-5 min-w-[150px]">
-                                                                <select value={lead.lead_status || 'Un called'} onChange={(e) => updateLead(lead, 'lead_status', e.target.value)} className={`block w-full mb-2 p-2 border rounded-lg text-[9px] font-black uppercase tracking-widest outline-none transition-colors ${getStatusColor(lead.lead_status)}`}>
-                                                                    {(!lead.lead_status || lead.lead_status === 'Un called') && <option value="Un called">Un called</option>}
-                                                                    <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option>
-                                                                    <option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
-                                                                </select>
-                                                                <select value={lead.lead_priority || 'Warm'} onChange={(e) => updateLead(lead, 'lead_priority', e.target.value)} className={`block w-full p-2 border rounded-lg text-[9px] font-black uppercase tracking-widest outline-none transition-colors ${getPriorityColor(lead.lead_priority)}`}>
-                                                                    <option>Hot</option><option>Warm</option><option>Cold</option>
-                                                                </select>
-                                                            </td>
-                                                            <td className="p-5 min-w-[160px]">
-                                                                <div className="space-y-3">
-                                                                    <div>
-                                                                        <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">Call Back</span>
-                                                                        <input type="datetime-local" defaultValue={lead.follow_up_at ? lead.follow_up_at.slice(0,16) : ''} onChange={(e) => updateLead(lead, 'follow_up_at', e.target.value)} className="w-full p-2 border border-blue-200 bg-blue-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" />
-                                                                    </div>
-                                                                    {lead.lead_status === 'SV Scheduled' && (
-                                                                        <div className="animate-fadeIn pt-3 border-t border-slate-100">
-                                                                            <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">Site Visit Date</span>
-                                                                            <input type="date" defaultValue={lead.site_visit_at || ''} onChange={(e) => updateLead(lead, 'site_visit_at', e.target.value)} className="w-full p-2 border border-teal-200 bg-teal-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" />
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </td>
-                                                            <td className="p-5">
-                                                                <div className="flex flex-col gap-2">
-                                                                    <div className="h-20 history-scroll overflow-y-auto bg-slate-50 border border-slate-200 p-2 rounded-lg text-[10px] font-medium whitespace-pre-wrap leading-relaxed text-slate-700 shadow-inner">
-                                                                        {lead.call_remark || <span className="text-slate-400 italic">No activity recorded...</span>}
-                                                                    </div>
-                                                                    <div className="flex gap-2">
-                                                                        <textarea id={`desk-note-${lead.id}`} rows="1" placeholder="Type notes... (Press Enter for new line)" className="flex-1 p-2 border border-slate-200 rounded-lg text-[10px] outline-none focus:ring-2 focus:ring-blue-500 shadow-sm resize-none" />
-                                                                        <button onClick={() => { const el = document.getElementById(`desk-note-${lead.id}`); if (el && el.value.trim()) { updateLead(lead, 'add_note', el.value); el.value = ''; } }} className="bg-slate-900 text-white text-[9px] font-black px-3 rounded-lg uppercase tracking-widest hover:bg-blue-600 transition">Save</button>
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-
-                                        {/* 📱 MOBILE CARDS VIEW (Hidden on Desktop) */}
-                                        <div className="lg:hidden flex flex-col gap-4">
-                                            {displayedLeads.map(lead => (
-                                                <div key={`mob-${lead.id}`} className={`bg-white rounded-2xl shadow-sm border p-4 flex flex-col gap-4 ${lead.lead_priority === 'Hot' ? 'border-red-300 bg-red-50/10' : 'border-slate-200'}`}>
-                                                    
-                                                    {/* Header */}
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <h3 className="font-black text-slate-900 uppercase text-sm">{lead.customer_name}</h3>
-                                                            <p className="text-blue-600 font-bold text-sm mt-0.5">{lead.phone_number}</p>
-                                                            {(leadCategory === 'website' || leadCategory === 'manual') && lead.created_at && (
-                                                                <p className="text-[9px] text-slate-400 font-bold tracking-widest uppercase mt-1">Logged: {new Date(lead.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</p>
-                                                            )}
-                                                        </div>
-                                                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${getPriorityColor(lead.lead_priority)}`}>
-                                                            {lead.lead_priority || 'Warm'}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* Actions */}
-                                                    <div className="flex gap-2">
-                                                        <a href={`https://wa.me/91${lead.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="flex-1 bg-green-500 text-white text-[11px] font-black py-2.5 rounded-xl uppercase tracking-widest shadow-sm text-center">WhatsApp</a>
-                                                        <a href={`tel:${lead.phone_number}`} className="flex-1 bg-blue-500 text-white text-[11px] font-black py-2.5 rounded-xl uppercase tracking-widest shadow-sm text-center">📞 Call</a>
-                                                    </div>
-
-                                                    {/* Status Selector */}
-                                                    <div className="mt-1">
-                                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Current Status</label>
-                                                        <select value={lead.lead_status || 'Un called'} onChange={(e) => updateLead(lead, 'lead_status', e.target.value)} className={`w-full p-2.5 border rounded-xl text-[11px] font-black uppercase tracking-widest outline-none shadow-sm ${getStatusColor(lead.lead_status)}`}>
-                                                            {(!lead.lead_status || lead.lead_status === 'Un called') && <option value="Un called">Un called</option>}
-                                                            <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option>
-                                                            <option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
-                                                        </select>
-                                                    </div>
-
-                                                    {/* Scheduling */}
-                                                    <div className="grid grid-cols-1 gap-3 border-t border-slate-100 pt-3">
-                                                        <div className="flex flex-col gap-1">
-                                                            <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Callback Date & Time</label>
-                                                            <input type="datetime-local" defaultValue={lead.follow_up_at ? lead.follow_up_at.slice(0,16) : ''} onChange={(e) => updateLead(lead, 'follow_up_at', e.target.value)} className="w-full p-2.5 border border-blue-200 bg-blue-50 rounded-xl text-[11px] font-bold text-slate-700 outline-none" />
-                                                        </div>
-                                                        {lead.lead_status === 'SV Scheduled' && (
-                                                            <div className="flex flex-col gap-1 animate-fadeIn">
-                                                                <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest">Site Visit Scheduled</label>
-                                                                <input type="date" defaultValue={lead.site_visit_at || ''} onChange={(e) => updateLead(lead, 'site_visit_at', e.target.value)} className="w-full p-2.5 border border-teal-200 bg-teal-50 rounded-xl text-[11px] font-bold text-slate-700 outline-none" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Notes */}
-                                                    <div className="border-t border-slate-100 pt-3">
-                                                        <div className="h-20 history-scroll overflow-y-auto bg-slate-50 border border-slate-200 p-3 rounded-xl text-[11px] font-medium whitespace-pre-wrap leading-relaxed text-slate-700 shadow-inner mb-2">
-                                                            {lead.call_remark || <span className="text-slate-400 italic">No activity recorded...</span>}
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <textarea id={`mob-note-${lead.id}`} rows="1" placeholder="Type new remark..." className="flex-1 p-2.5 border border-slate-200 rounded-xl text-[11px] outline-none resize-none shadow-sm focus:ring-2 focus:ring-blue-500" />
-                                                            <button onClick={() => { const el = document.getElementById(`mob-note-${lead.id}`); if (el && el.value.trim()) { updateLead(lead, 'add_note', el.value); el.value = ''; } }} className="bg-slate-900 text-white text-[10px] font-black px-4 rounded-xl uppercase tracking-widest shadow-md">Save</button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
-                            </>
+                            </div>
                         )}
-                        {view === 'add-property' && <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} />}
+
+                        {view === 'library' && <ProjectLibrary supabase={supabase} />}
+                        {view === 'add' && <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} />}
                     </main>
 
-                    {/* MANUAL MODAL */}
-                    {showManualModal && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-end md:items-center justify-center p-0 md:p-4">
-                            <div className="bg-white rounded-t-[30px] md:rounded-[40px] p-6 md:p-10 w-full max-w-md animate-fadeIn shadow-2xl relative">
-                                <button onClick={() => setShowManualModal(false)} className="absolute top-4 right-6 text-3xl text-slate-300">&times;</button>
-                                <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter mb-6">Manual Registration</h2>
-                                <ManualLeadForm supabase={supabase} onSuccess={() => {setShowManualModal(false); fetchLeads();}} />
-                            </div>
-                        </div>
-                    )}
+                    {showManualModal && <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"><div className="bg-white p-8 rounded-[30px] w-full max-w-md shadow-2xl animate-fadeIn"><h2 className="text-xl font-black uppercase italic mb-6">Manual Entry</h2><ManualLeadForm supabase={supabase} onSuccess={() => {setShowManualModal(false); fetchLeads();}} /></div></div>}
                 </div>
             );
         }
 
-        function ManualLeadForm({ supabase, onSuccess }) {
-            const [form, setForm] = useState({ name: '', phone: '', email: '', project: '', source: 'Manual' });
-            const [loading, setLoading] = useState(false);
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                const { error } = await supabase.from('leads').insert([{ customer_name: form.name, phone_number: form.phone, customer_email: form.email, project_interested_in: form.project, lead_source: form.source, lead_status: 'Un called' }]);
-                if (!error) onSuccess();
-                setLoading(false);
+        // --- PROJECT LIBRARY (TO SHARE DETAILS) ---
+        function ProjectLibrary({ supabase }) {
+            const [data, setData] = useState([]);
+            useEffect(() => { supabase.from('properties').select('*').then(({data}) => setData(data || [])); }, []);
+            
+            const share = (p) => {
+                const txt = `*${p.property_name}*\n📍 ${p.location}\n💰 ${p.price}\n📐 ${p.bhk} BHK | ${p.super_built_up_area} Sq.Ft\n\n*View Brochure:* ${p.brochure}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
             };
+
             return (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <input required placeholder="Client Name" className="w-full p-4 bg-slate-50 border rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, name: e.target.value})} />
-                    <input required placeholder="Phone Number" className="w-full p-4 bg-slate-50 border rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, phone: e.target.value})} />
-                    <select className="w-full p-4 bg-slate-50 border rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, source: e.target.value})}>
-                        <option>Manual</option><option>MagicBricks</option><option>Housing.com</option><option>Direct Walk-in</option>
-                    </select>
-                    <button className="w-full bg-blue-600 text-white font-black py-5 rounded-3xl uppercase tracking-widest shadow-xl hover:bg-slate-900 transition mt-2">Inject Lead</button>
-                </form>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fadeIn">
+                    {data.map(p => (
+                        <div key={p.id} className="bg-white rounded-3xl overflow-hidden shadow-lg border">
+                            <img src={p.cover_image || 'https://via.placeholder.com/400x200'} className="h-40 w-full object-cover" />
+                            <div className="p-5">
+                                <h3 className="font-black uppercase text-lg">{p.property_name}</h3>
+                                <p className="text-blue-600 font-bold text-sm">{p.builder_name}</p>
+                                <div className="mt-4 text-[10px] font-bold space-y-1 bg-slate-50 p-3 rounded-xl">
+                                    <div className="flex justify-between"><span>Price:</span> <span>{p.price}</span></div>
+                                    <div className="flex justify-between"><span>Size:</span> <span>{p.super_built_up_area} Sqft</span></div>
+                                </div>
+                                <button onClick={() => share(p)} className="w-full mt-4 bg-green-500 text-white p-3 rounded-xl font-black uppercase text-[10px]">Share to WhatsApp</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        // --- UPDATED PROPERTY FORM (MATCHES FULL COLUMNS) ---
+        function PropertyForm({ scriptUrl, supabase }) {
+            const [form, setForm] = useState({
+                property_name: '', builder_name: '', location: '', price: '', bhk: '', 
+                super_built_up_area: '', possession_date: '', construction_status: '',
+                amenities: '', brochure: '', cover_image: '', usps: ''
+            });
+
+            async function upload(e, field) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = async () => {
+                    const res = await fetch(scriptUrl, { method: "POST", body: JSON.stringify({ base64: reader.result.split(',')[1], type: file.type, name: file.name, propertyName: form.property_name }) });
+                    const result = await res.json();
+                    if(result.status === "success") setForm(f => ({ ...f, [field]: result.url }));
+                };
+            }
+
+            async function save() {
+                const { error } = await supabase.from('properties').insert([form]);
+                if (!error) alert("Listing Live!");
+                else alert(error.message);
+            }
+
+            return (
+                <div className="bg-white p-6 md:p-10 rounded-3xl shadow-xl max-w-4xl mx-auto space-y-6 animate-fadeIn border">
+                    <h2 className="text-2xl font-black uppercase italic border-b pb-4">Master Property Listing</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input placeholder="Property Name" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, property_name: e.target.value})} />
+                        <input placeholder="Builder Name" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, builder_name: e.target.value})} />
+                        <input placeholder="Location" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, location: e.target.value})} />
+                        <input placeholder="Starting Price (e.g. 1.2 Cr)" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, price: e.target.value})} />
+                        <input placeholder="BHK (e.g. 2, 3 BHK)" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, bhk: e.target.value})} />
+                        <input placeholder="Super Built-up Area" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, super_built_up_area: e.target.value})} />
+                        <input placeholder="Possession Date" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, possession_date: e.target.value})} />
+                        <input placeholder="Construction Status" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, construction_status: e.target.value})} />
+                        <input placeholder="USPs (Special points)" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, usps: e.target.value})} />
+                    </div>
+                    <textarea placeholder="Amenities (Pool, Gym, etc.)" className="w-full p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, amenities: e.target.value})} />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t">
+                        <div><label className="text-[10px] font-black uppercase mb-2 block">Cover Image</label><input type="file" onChange={e => upload(e, 'cover_image')} /></div>
+                        <div><label className="text-[10px] font-black uppercase mb-2 block">Brochure (PDF)</label><input type="file" onChange={e => upload(e, 'brochure')} /></div>
+                    </div>
+                    
+                    <button onClick={save} className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-900 shadow-xl transition">Publish Master Listing</button>
+                </div>
+            );
+        }
+
+        // --- MISC COMPONENTS ---
+        function ManualLeadForm({ supabase, onSuccess }) {
+            const [form, setForm] = useState({ name: '', phone: '', source: 'Manual' });
+            return (
+                <div className="space-y-4">
+                    <input placeholder="Client Name" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold" onChange={e => setForm({...form, name: e.target.value})} />
+                    <input placeholder="Phone Number" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold" onChange={e => setForm({...form, phone: e.target.value})} />
+                    <button onClick={async () => { await supabase.from('leads').insert([{ customer_name: form.name, phone_number: form.phone, lead_source: form.source, lead_status: 'Un called' }]); onSuccess(); }} className="w-full bg-blue-600 text-white p-4 rounded-2xl font-black uppercase">Inject Lead</button>
+                </div>
             );
         }
 
         function LoginForm({ supabase }) {
             const [email, setEmail] = useState("");
             const [pass, setPass] = useState("");
-            const handleLogin = async (e) => {
-                e.preventDefault();
-                await supabase.auth.signInWithPassword({ email, password: pass });
-            };
             return (
                 <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-                    <form onSubmit={handleLogin} className="bg-white p-8 md:p-10 rounded-[40px] shadow-2xl w-full max-w-sm text-center border-t-8 border-blue-500">
-                        <h1 className="text-3xl font-black italic uppercase mb-2">Horizon CRM</h1>
-                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em] mb-8">Secure Access Portal</p>
-                        <input type="email" placeholder="Email" className="w-full p-4 bg-slate-100 rounded-2xl mb-4 font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setEmail(e.target.value)} required />
-                        <input type="password" placeholder="Password" className="w-full p-4 bg-slate-100 rounded-2xl mb-8 font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setPass(e.target.value)} required />
-                        <button className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest">Login</button>
+                    <form onSubmit={async (e) => { e.preventDefault(); await supabase.auth.signInWithPassword({ email, password: pass }); }} className="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-sm text-center border-t-8 border-blue-500">
+                        <h1 className="text-3xl font-black italic uppercase mb-8">Horizon CRM</h1>
+                        <input type="email" placeholder="Email" className="w-full p-4 bg-slate-100 rounded-2xl mb-4 font-bold" onChange={e => setEmail(e.target.value)} />
+                        <input type="password" placeholder="Password" className="w-full p-4 bg-slate-100 rounded-2xl mb-8 font-bold" onChange={e => setPass(e.target.value)} />
+                        <button className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg">Login</button>
                     </form>
-                </div>
-            );
-        }
-
-        function PropertyForm({ scriptUrl, supabase }) {
-            const [uploading, setUploading] = useState(false);
-            const [uploadStatus, setUploadStatus] = useState("");
-            const [form, setForm] = useState({ property_name: '', price: '', location: '', property_type: '', construction_status: '', bhk: '', builder_name: '', cover_image: '', brochure: '', cost_sheet: '' });
-
-            async function handleFileUpload(e, field) {
-                const file = e.target.files[0];
-                if (!file) return;
-                if (!form.property_name) { alert("Enter Property Name first!"); e.target.value = ''; return; }
-                setUploading(true); setUploadStatus(`Uploading...`);
-                try {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    reader.onload = async () => {
-                        const base64 = reader.result.split(',')[1];
-                        const response = await fetch(scriptUrl, { method: "POST", body: JSON.stringify({ base64: base64, type: file.type, name: file.name, propertyName: form.property_name }) });
-                        const result = await response.json();
-                        if(result.status === "success") { setForm(prev => ({ ...prev, [field]: result.url })); setUploadStatus(`Saved.`); setTimeout(() => setUploadStatus(""), 2000); } 
-                        else { alert("Error: " + result.message); setUploadStatus(""); }
-                    };
-                } catch (err) { alert("Upload failed."); setUploadStatus(""); } finally { setUploading(false); }
-            }
-
-            async function saveProperty() {
-                if (!form.property_name) return alert("Property Name is required!");
-                const { error } = await supabase.from('properties').insert([form]);
-                if (error) alert("Save failed: " + error.message);
-                else { alert("Published!"); setForm({ property_name: '', price: '', location: '', property_type: '', construction_status: '', bhk: '', builder_name: '', cover_image: '', brochure: '', cost_sheet: '' }); document.querySelectorAll('input[type="file"]').forEach(el => el.value = ''); }
-            }
-
-            return (
-                <div className="bg-white p-6 md:p-10 rounded-2xl md:rounded-3xl shadow-sm border border-slate-200 max-w-3xl mx-auto space-y-6 animate-fadeIn">
-                    <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic text-slate-900">List New Property</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2"><input className="w-full p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2" placeholder="Property Name (Required)" onChange={e => setForm({...form, property_name: e.target.value})} value={form.property_name} /></div>
-                        <div><input className="w-full p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2" placeholder="Builder" onChange={e => setForm({...form, builder_name: e.target.value})} value={form.builder_name} /></div>
-                        <div><input className="w-full p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2" placeholder="Starting Price" onChange={e => setForm({...form, price: e.target.value})} value={form.price} /></div>
-                    </div>
-                    <button disabled={uploading} onClick={saveProperty} className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-900 mt-4">{uploading ? "Waiting for upload..." : "Publish to Website"}</button>
                 </div>
             );
         }
