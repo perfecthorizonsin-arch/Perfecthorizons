@@ -54,24 +54,44 @@
                 return () => subscription.unsubscribe();
             }, [leadCategory]);
 
-            async function fetchLeads() {
+           async function fetchLeads() {
                 setLoading(true);
                 const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-                let query = supabase.from(table).select('*').order('created_at', { ascending: false });
                 
-                if (leadCategory === 'manual') query = query.eq('lead_source', 'Manual');
-                if (leadCategory === 'website') query = query.or('lead_source.eq.Website,lead_source.is.null');
+                // Fetch ALL rows to bypass Supabase's strict syntax rules
+                const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false });
 
-                const { data, error } = await query;
-                
-                // NEW ALERT SYSTEM:
                 if (error) {
-                    alert("SUPABASE ERROR: " + error.message);
+                    alert("Database Error: " + error.message);
                     console.error(error);
                 } else {
-                    setLeads(data || []);
+                    let rawData = data || [];
+                    let sortedData = [];
+
+                    // Let JavaScript do the sorting so we don't miss any leads!
+                    if (table === 'leads') {
+                        if (leadCategory === 'website') {
+                            // Show it if the source is blank, null, or says 'website' (any capitalization)
+                            sortedData = rawData.filter(lead => 
+                                !lead.lead_source || 
+                                lead.lead_source.trim() === '' || 
+                                lead.lead_source.toLowerCase() === 'website'
+                            );
+                        } else if (leadCategory === 'manual') {
+                            // Show it if the source exists and is NOT a website lead (e.g., MagicBricks, Walk-in, Manual)
+                            sortedData = rawData.filter(lead => 
+                                lead.lead_source && 
+                                lead.lead_source.trim() !== '' && 
+                                lead.lead_source.toLowerCase() !== 'website'
+                            );
+                        }
+                    } else {
+                        // If it's the bulk table, just show everything
+                        sortedData = rawData;
+                    }
+
+                    setLeads(sortedData);
                 }
-                
                 setLoading(false);
             }
 
