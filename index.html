@@ -26,7 +26,7 @@
         .splash-sub { font-family: sans-serif; color: #64748b; font-size: 0.75rem; margin-top: 1rem; font-weight: bold; letter-spacing: 0.15em; text-transform: uppercase; }
 
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 30s linear infinite; }
+        .animate-marquee { display: flex; white-space: nowrap; animation: marquee 30s linear infinite; }
         .marquee-container:hover .animate-marquee { animation-play-state: paused; }
         
         input[type=range] { -webkit-appearance: none; background: transparent; width: 100%; }
@@ -57,14 +57,24 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
         const WHATSAPP_NUMBER = "919742353260";
         const ADMIN_PIN = "1234"; 
 
-        // 🟢 PASTE YOUR GOOGLE DRIVE IMAGE LINKS HERE FOR THE PARTNERS MARQUEE
-        // Note: You must get the "Direct Download" or "Thumbnail" link from Google Drive, not the folder view link.
+        // Helper to convert standard Drive links to direct image links
+        const convertDriveLink = (url) => {
+            if (!url || typeof url !== 'string') return url;
+            let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
+            if (id) {
+                // Remove any tracking params if they exist
+                id = id.split('&')[0];
+                return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+            }
+            return url;
+        };
+
         const AUTHORIZED_PARTNERS = [
-            "https://drive.google.com/file/d/1IsWpoHNh1Wj0toMnzXc4FFvqCHxMoK85/view?usp=drive_link", 
+            convertDriveLink("https://drive.google.com/file/d/1IsWpoHNh1Wj0toMnzXc4FFvqCHxMoK85/view?usp=drive_link"), 
             "https://via.placeholder.com/200x80?text=Godrej+Properties",
             "https://via.placeholder.com/200x80?text=Sobha+Limited",
             "https://via.placeholder.com/200x80?text=Brigade+Group",
@@ -86,13 +96,6 @@
                 if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k];
             }
             return "";
-        };
-
-        const fixImageUrl = (u) => {
-            if (!u || typeof u !== 'string') return '';
-            let url = u.split(',')[0].trim();
-            let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
-            return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1000` : url;
         };
 
         const extractPriceInCr = (priceString) => {
@@ -197,7 +200,6 @@
                                 <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">Estimated EMI</div>
                                 <div className="text-2xl font-black text-slate-900 tracking-tighter">{formatIndianCurrencyCompact(emi)} <span className="text-[10px] text-slate-400 font-bold tracking-normal uppercase">/mo</span></div>
                             </div>
-                            <button onClick={onApplyAction} className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-5 py-3 rounded-xl hover:bg-blue-600 transition shadow-md">Apply Now</button>
                         </div>
                     </div>
                 </div>
@@ -205,12 +207,22 @@
         };
 
         // --- FULL PAGE PROPERTY DETAILS ---
-        const PropertyDetailsPage = ({ property, onBack, onSubmitLead }) => {
-            const [actionModal, setActionModal] = useState(null); // 'brochure', 'cost_sheet', 'apply_now', 'interest'
+        const PropertyDetailsPage = ({ property, allProperties, onBack, onSubmitLead }) => {
+            const [actionModal, setActionModal] = useState(null); 
             const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
             const [isSubmitting, setIsSubmitting] = useState(false);
+            
+            // Image Gallery Scrolling Ref
+            const galleryRef = useRef(null);
 
-            useEffect(() => { window.scrollTo(0, 0); }, []);
+            useEffect(() => { window.scrollTo(0, 0); }, [property]);
+
+            const scrollGallery = (dir) => {
+                if (galleryRef.current) {
+                    const scrollAmount = galleryRef.current.clientWidth * 0.8;
+                    galleryRef.current.scrollBy({ left: dir === 'right' ? scrollAmount : -scrollAmount, behavior: 'smooth' });
+                }
+            };
 
             const openAction = (type) => {
                 setActionModal(type);
@@ -235,13 +247,20 @@
                 }
             };
 
-            const cover = fixImageUrl(getVal(property, "cover_image") || getVal(property, "cover-image"));
+            const cover = convertDriveLink(getVal(property, "cover_image") || getVal(property, "cover-image"));
             const galRaw = getVal(property, "gallery_images") || getVal(property, "gallery-images") || getVal(property, "Images and short videos \nif any") || "";
-            const imgs = (typeof galRaw === 'string' && galRaw.length > 5) ? galRaw.split(',').map(l => fixImageUrl(l.trim())) : [];
+            const imgs = (typeof galRaw === 'string' && galRaw.length > 5) ? galRaw.split(',').map(l => convertDriveLink(l.trim())) : [];
             const allImgs = [cover, ...imgs].filter(i => i && !i.includes('undefined')); 
 
-            // Safely parse USPs (Using usp_details)
             const projectUsps = getVal(property, "usp-details") || getVal(property, "usp_details") || getVal(property, "USP's") || getVal(property, "Project Highlights");
+
+            // SIMILAR PROPERTIES LOGIC
+            const similarProperties = useMemo(() => {
+                if (!allProperties || allProperties.length === 0) return [];
+                return allProperties
+                    .filter(p => p.id !== property.id && (getVal(p, "Location") === getVal(property, "Location") || getVal(p, "Property Type") === getVal(property, "Property Type")))
+                    .slice(0, 3);
+            }, [property, allProperties]);
 
             return (
                 <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0">
@@ -250,31 +269,50 @@
                         <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
                             <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> Back to Search
                         </button>
-                        <div className="hidden md:block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                            {getVal(property, "Location")} • {getVal(property, "Builder Name")}
+                        
+                        {/* Desktop Top Call Button */}
+                        <div className="hidden md:flex items-center gap-4">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                {getVal(property, "Location")} • {getVal(property, "Builder Name")}
+                            </div>
+                            <a href={`tel:${WHATSAPP_NUMBER}`} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-slate-200">
+                                📞 Call Us
+                            </a>
                         </div>
                     </div>
 
                     <div className="max-w-7xl mx-auto w-full p-4 md:p-8">
                         
-                        {/* Scrollable Gallery - Shows ALL images */}
-                        <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scroll h-[40vh] md:h-[60vh] rounded-3xl mb-8">
-                            {allImgs.length > 0 ? allImgs.map((img, i) => (
-                                <div key={i} className="min-w-full md:min-w-[80%] h-full shrink-0 snap-center relative rounded-3xl overflow-hidden bg-slate-200">
-                                    <img src={img} className="w-full h-full object-cover" />
-                                    {i === 0 && (
-                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent flex flex-col justify-end p-6 md:p-10">
-                                            <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{getVal(property, "Property Type") || 'Apartment'}</div>
-                                            <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-white mb-2">{getVal(property, "Property Name")}</h1>
-                                            <p className="text-white/80 font-medium text-sm md:text-base">📍 {getVal(property, "Location")}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            )) : (
-                                <div className="w-full h-full bg-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-400">
-                                    <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-slate-500 mb-2">{getVal(property, "Property Name")}</h1>
-                                    <p className="text-sm font-bold uppercase tracking-widest">Images Coming Soon</p>
-                                </div>
+                        {/* Scrollable Gallery */}
+                        <div className="relative mb-8">
+                            <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scroll h-[40vh] md:h-[60vh] rounded-3xl">
+                                {allImgs.length > 0 ? allImgs.map((img, i) => (
+                                    <div key={i} className="min-w-full md:min-w-[80%] h-full shrink-0 snap-center relative rounded-3xl overflow-hidden bg-slate-200 border border-slate-100">
+                                        <img src={img} className="w-full h-full object-cover" />
+                                        {i === 0 && (
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent flex flex-col justify-end p-6 md:p-10">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{getVal(property, "Property Type") || 'Apartment'}</div>
+                                                <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-white mb-2">{getVal(property, "Property Name")}</h1>
+                                                <p className="text-white/80 font-medium text-sm md:text-base">📍 {getVal(property, "Location")}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )) : (
+                                    <div className="w-full h-full bg-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-400">
+                                        <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-slate-500 mb-2">{getVal(property, "Property Name")}</h1>
+                                        <p className="text-sm font-bold uppercase tracking-widest">Images Coming Soon</p>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* Desktop Gallery Controls */}
+                            {allImgs.length > 1 && (
+                                <>
+                                    <button onClick={() => scrollGallery('left')} className="hidden md:flex absolute top-1/2 -left-4 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur rounded-full items-center justify-center shadow-lg text-slate-800 hover:bg-white transition hover:scale-110 z-10 border border-slate-100">←</button>
+                                    <button onClick={() => scrollGallery('right')} className="hidden md:flex absolute top-1/2 -right-4 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur rounded-full items-center justify-center shadow-lg text-slate-800 hover:bg-white transition hover:scale-110 z-10 border border-slate-100">→</button>
+                                    {/* Mobile Swipe Hint */}
+                                    <div className="md:hidden text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2 animate-pulse">Swipe for more images →</div>
+                                </>
                             )}
                         </div>
 
@@ -296,18 +334,15 @@
                                     </div>
                                     <div>
                                         <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Possession</div>
-                                        <div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).getFullYear() : 'On Request'}</div>
+                                        <div className="text-sm md:text-base font-black text-slate-900 mt-1">
+                                            {getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : 'On Request'}
+                                        </div>
                                     </div>
                                     <div>
                                         <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">RERA Status</div>
                                         <div className="text-sm md:text-base font-black text-green-600 mt-1">Verified ✓</div>
                                     </div>
                                 </div>
-                                
-                                {/* I am Interested Button (Mobile & Desktop inside content) */}
-                                <button onClick={() => openAction('interest')} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-xl shadow-blue-500/30 active:scale-95 transition-all text-sm">
-                                    I Am Interested
-                                </button>
 
                                 {/* Description */}
                                 <div>
@@ -354,14 +389,18 @@
                                     <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
                                         <div className="mb-6 pb-6 border-b border-slate-100">
                                             <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Starting Price</div>
-                                            <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">{getVal(property, "Price") || 'Price on Request'}</div>
+                                            <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">{getVal(property, "Price") || 'On Request'}</div>
                                         </div>
 
                                         <div className="space-y-3">
-                                            <button onClick={() => openAction('cost_sheet')} className="w-full bg-slate-900 text-white font-black py-4 rounded-xl uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-lg flex justify-center items-center gap-2 text-[10px] md:text-xs">
+                                            {/* I AM INTERESTED IS NOW HERE */}
+                                            <button onClick={() => openAction('interest')} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-1 transition-all text-xs md:text-sm mb-2">
+                                                I Am Interested
+                                            </button>
+                                            <button onClick={() => openAction('cost_sheet')} className="w-full bg-slate-900 text-white font-black py-3.5 rounded-xl uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-sm flex justify-center items-center gap-2 text-[10px]">
                                                 <span className="text-sm">📄</span> Request Cost Sheet
                                             </button>
-                                            <button onClick={() => openAction('brochure')} className="w-full bg-white border-2 border-slate-200 text-slate-900 font-black py-3.5 rounded-xl uppercase tracking-widest hover:border-slate-900 hover:bg-slate-50 transition-colors flex justify-center items-center gap-2 text-[10px] md:text-xs">
+                                            <button onClick={() => openAction('brochure')} className="w-full bg-white border-2 border-slate-200 text-slate-900 font-black py-3 rounded-xl uppercase tracking-widest hover:border-slate-900 hover:bg-slate-50 transition-colors flex justify-center items-center gap-2 text-[10px]">
                                                 <span className="text-sm">📥</span> Download Brochure
                                             </button>
                                         </div>
@@ -373,19 +412,43 @@
                                 </div>
                             </div>
                         </div>
+
+                        {/* Similar Properties Section */}
+                        {similarProperties.length > 0 && (
+                            <div className="mt-20 pt-10 border-t border-slate-200">
+                                <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-900 mb-6 border-l-4 border-blue-500 pl-4">Similar Properties You Might Like</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {similarProperties.map((simProp, i) => (
+                                        <div key={i} onClick={() => { window.location.hash = ''; setTimeout(() => {setSelectedProperty(simProp);}, 50) }} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col">
+                                            <div className="relative h-40 w-full overflow-hidden shrink-0 bg-slate-100">
+                                                <img src={convertDriveLink(getVal(simProp, "Cover Image") || getVal(simProp, "cover_image")) || 'https://via.placeholder.com/600x300'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            </div>
+                                            <div className="p-5 flex-grow flex flex-col">
+                                                <h3 className="text-lg font-black text-slate-900 leading-tight truncate uppercase">{getVal(simProp, "Property Name")}</h3>
+                                                <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">📍 {getVal(simProp, "Location")}</p>
+                                                <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-end">
+                                                    <span className="text-blue-600 font-black text-lg">{getVal(simProp, "Price")}</span>
+                                                    <span className="bg-slate-100 px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest">{getVal(simProp, "bhk")} BHK</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Mobile Fixed Bottom Action Bar */}
                     <div className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 p-2 flex gap-2 z-[45] shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
-                        <a href={`tel:${String(getVal(property, "point_of_contact")).replace(/\D/g,'') || WHATSAPP_NUMBER}`} className="flex-1 bg-blue-600 text-white text-center py-2.5 rounded-lg font-black uppercase text-[9px] tracking-widest flex flex-col items-center justify-center shadow-md">
-                            <span className="text-sm mb-0.5">📞</span> Call Us
+                        <button onClick={() => openAction('interest')} className="flex-none w-1/3 bg-blue-600 text-white text-center py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest flex flex-col items-center justify-center shadow-md">
+                            Interested
+                        </button>
+                        <a href={`tel:${String(getVal(property, "point_of_contact")).replace(/\D/g,'') || WHATSAPP_NUMBER}`} className="flex-1 bg-slate-100 text-slate-800 text-center py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 border border-slate-200">
+                            📞 Call Us
                         </a>
-                        <button onClick={() => openAction('brochure')} className="flex-1 bg-slate-800 text-white text-center py-2.5 rounded-lg font-black uppercase text-[9px] tracking-widest flex flex-col items-center justify-center shadow-md">
-                            <span className="text-sm mb-0.5">📥</span> Brochure
-                        </button>
-                        <button onClick={() => openAction('cost_sheet')} className="flex-1 bg-slate-900 text-white text-center py-2.5 rounded-lg font-black uppercase text-[9px] tracking-widest flex flex-col items-center justify-center shadow-md">
-                            <span className="text-sm mb-0.5">📄</span> Cost Sheet
-                        </button>
+                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, I want to explore ${getVal(property, "Property Name")}`} target="_blank" className="flex-1 bg-green-50 text-green-700 text-center py-2.5 rounded-lg font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 border border-green-200">
+                            💬 WhatsApp
+                        </a>
                     </div>
 
                     {/* Dynamic Action Modal */}
@@ -430,6 +493,9 @@
             const [activePage, setActivePage] = useState(() => window.location.hash.replace('#', '') || 'home'); 
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
             const [activeBlog, setActiveBlog] = useState(null);
+
+            // Legal Modals State
+            const [legalModal, setLegalModal] = useState(null); // 'terms', 'privacy'
 
             useEffect(() => {
                 const handleHashChange = () => {
@@ -530,26 +596,18 @@
 
             // RENDER FULL PAGE PROPERTY DETAILS
             if (selectedProperty) {
-                return <PropertyDetailsPage property={selectedProperty} onBack={() => setSelectedProperty(null)} onSubmitLead={handleLeadSubmit} />;
+                return <PropertyDetailsPage property={selectedProperty} allProperties={safeProperties} onBack={() => setSelectedProperty(null)} onSubmitLead={handleLeadSubmit} />;
             }
 
             return (
                 <div className="min-h-screen flex flex-col bg-gray-50">
                     
+                    {/* --- STICKY HEADER & FILTERS WRAPPER --- */}
                     <div className="sticky top-0 z-40 w-full shadow-[0_4px_20px_-10px_rgba(0,0,0,0.1)] flex flex-col bg-white">
                         <nav className="bg-slate-950 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center relative z-50">
-                            <div className="flex items-center gap-4 md:gap-8 w-full md:w-auto justify-between md:justify-start">
+                            <div className="flex items-center justify-between w-full md:w-auto">
                                 <h1 onClick={() => navTo('home')} className="text-xl md:text-2xl font-black text-white tracking-tighter uppercase italic cursor-pointer hover:text-blue-400 transition drop-shadow-md shrink-0">Perfect Horizons</h1>
                                 
-                                {activePage === 'home' && (
-                                    <div className="hidden md:block w-64 lg:w-96 ml-4">
-                                        <div className="relative group">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm z-10 transition-colors group-focus-within:text-blue-400">🔍</span>
-                                            <input type="text" placeholder="Search Location, Project or Builder..." className="w-full bg-slate-900 text-white placeholder-slate-400 border-2 border-blue-500/50 rounded-full pl-10 pr-5 py-2 text-xs font-bold outline-none focus:border-blue-500 focus:bg-slate-800 shadow-[0_0_15px_rgba(59,130,246,0.15)] focus:shadow-[0_0_25px_rgba(59,130,246,0.3)] transition-all" value={search} onChange={e => setSearch(e.target.value)} />
-                                        </div>
-                                    </div>
-                                )}
-
                                 <div className="md:hidden flex items-center gap-3">
                                     {activePage === 'home' && (
                                         <button onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)} className={`p-2 rounded-full transition-colors ${isMobileSearchOpen ? 'bg-blue-500 text-white' : 'text-slate-300'}`}>🔍</button>
@@ -560,12 +618,21 @@
                                 </div>
                             </div>
 
+                            {activePage === 'home' && (
+                                <div className="hidden md:block w-64 lg:w-[400px] absolute left-1/2 -translate-x-1/2">
+                                    <div className="relative group">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm z-10 transition-colors group-focus-within:text-blue-400">🔍</span>
+                                        <input type="text" placeholder="Search Location, Project or Builder..." className="w-full bg-slate-900 text-white placeholder-slate-400 border-2 border-blue-500/50 rounded-full pl-10 pr-5 py-2.5 text-xs font-bold outline-none focus:border-blue-500 focus:bg-slate-800 shadow-[0_0_15px_rgba(59,130,246,0.15)] focus:shadow-[0_0_25px_rgba(59,130,246,0.3)] transition-all" value={search} onChange={e => setSearch(e.target.value)} />
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="hidden md:flex gap-6 lg:gap-8 items-center shrink-0">
                                 <button onClick={() => navTo('home')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'home' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Properties</button>
                                 
                                 <div className="relative group cursor-pointer py-2">
                                     <span className={`text-xs font-black uppercase tracking-widest transition flex items-center ${['about-us', 'our-journey'].includes(activePage) ? 'text-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>About <span className="dropdown-arrow"></span></span>
-                                    <div className="absolute hidden group-hover:block top-full left-0 mt-0 w-48 bg-slate-800 border border-slate-700 shadow-2xl rounded-xl overflow-hidden z-50 animate-fadeIn">
+                                    <div className="absolute hidden group-hover:block top-full right-0 mt-0 w-48 bg-slate-800 border border-slate-700 shadow-2xl rounded-xl overflow-hidden z-50 animate-fadeIn text-right">
                                         <div onClick={() => navTo('about-us')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition">About Us</div>
                                         <div onClick={() => navTo('our-journey')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition border-t border-slate-700">Our Journey</div>
                                     </div>
@@ -573,18 +640,18 @@
 
                                 <div className="relative group cursor-pointer py-2">
                                     <span className={`text-xs font-black uppercase tracking-widest transition flex items-center ${['what-we-do', 'what-we-dont-do'].includes(activePage) ? 'text-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Services <span className="dropdown-arrow"></span></span>
-                                    <div className="absolute hidden group-hover:block top-full left-0 mt-0 w-56 bg-slate-800 border border-slate-700 shadow-2xl rounded-xl overflow-hidden z-50 animate-fadeIn">
+                                    <div className="absolute hidden group-hover:block top-full right-0 mt-0 w-56 bg-slate-800 border border-slate-700 shadow-2xl rounded-xl overflow-hidden z-50 animate-fadeIn text-right">
                                         <div onClick={() => navTo('what-we-do')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition">What We Do</div>
                                         <div onClick={() => navTo('what-we-dont-do')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition border-t border-slate-700">What We Don't Do</div>
                                     </div>
                                 </div>
 
                                 <button onClick={() => navTo('advisor')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'advisor' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Advisor</button>
-                                <button onClick={() => navTo('customers')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'customers' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Customers</button>
                                 <button onClick={() => navTo('blogs')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'blogs' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Insights</button>
                             </div>
                         </nav>
 
+                        {/* STICKY FILTERS BAR */}
                         {activePage === 'home' && (
                             <div className="bg-white border-b border-gray-200 py-3 px-4 md:px-8 relative z-40 shadow-sm">
                                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
@@ -613,18 +680,15 @@
                             </div>
                         )}
 
+                        {/* Mobile Right-Aligned Menu */}
                         {isMobileMenuOpen && (
-                            <div className="md:hidden bg-slate-800 border-t border-slate-700 py-4 px-4 space-y-2 shadow-2xl absolute w-full left-0 top-[60px] animate-fadeIn z-50">
-                                <div onClick={() => navTo('home')} className="text-xs font-black uppercase tracking-widest text-white py-3 border-b border-slate-700">Find Properties</div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 py-2">-- About --</div>
-                                <div onClick={() => navTo('about-us')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">About Us</div>
-                                <div onClick={() => navTo('our-journey')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">Our Journey</div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 py-2 mt-2">-- Services --</div>
-                                <div onClick={() => navTo('what-we-do')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">What We Do</div>
-                                <div onClick={() => navTo('what-we-dont-do')} className="text-xs font-bold text-slate-300 pl-4 py-2 border-b border-slate-700">What We Don't Do</div>
-                                <div onClick={() => navTo('advisor')} className="text-xs font-black uppercase tracking-widest text-white py-2 mt-2 border-b border-slate-700">Advisor</div>
-                                <div onClick={() => navTo('customers')} className="text-xs font-black uppercase tracking-widest text-white py-2 border-b border-slate-700">Customers</div>
-                                <div onClick={() => navTo('blogs')} className="text-xs font-black uppercase tracking-widest text-white py-2">Blogs</div>
+                            <div className="md:hidden bg-slate-900 border-t border-slate-800 py-6 px-6 space-y-4 shadow-2xl absolute w-full left-0 top-[60px] animate-fadeIn z-50 flex flex-col items-end">
+                                <div onClick={() => navTo('home')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Properties</div>
+                                <div onClick={() => navTo('about-us')} className="text-sm font-black uppercase tracking-widest text-slate-300 cursor-pointer hover:text-blue-400">About Us</div>
+                                <div onClick={() => navTo('our-journey')} className="text-sm font-black uppercase tracking-widest text-slate-300 cursor-pointer hover:text-blue-400">Our Journey</div>
+                                <div onClick={() => navTo('what-we-do')} className="text-sm font-black uppercase tracking-widest text-slate-300 cursor-pointer hover:text-blue-400">Services</div>
+                                <div onClick={() => navTo('advisor')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Meet Advisor</div>
+                                <div onClick={() => navTo('blogs')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Insights</div>
                             </div>
                         )}
                     </div>
@@ -750,12 +814,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <div className="mt-16 max-w-3xl mx-auto text-center bg-slate-900 text-white p-8 md:p-10 rounded-3xl">
-                                    <h3 className="text-xl font-black uppercase tracking-widest mb-4 text-blue-400">Our Promise</h3>
-                                    <p className="text-sm md:text-base leading-relaxed italic">"We are not here just to help you buy a home. We are here to ensure that every decision you make is safe, smart, and aligned with your future."</p>
-                                    <p className="mt-6 font-bold uppercase tracking-widest text-[10px] text-slate-400">Perfect Horizons — Where trust meets the right horizon.</p>
-                                </div>
                             </div>
                         )}
 
@@ -855,22 +913,18 @@
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
                                     <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
-                                        <div className="text-3xl md:text-4xl mb-3 md:mb-4">❌</div>
                                         <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">We Don't Charge Buyers</h4>
                                         <p className="text-gray-700 text-xs md:text-sm leading-relaxed">As authorized channel partners, we are compensated by the developers out of their marketing budgets. Our premium advisory services are 100% free for home buyers.</p>
                                     </div>
                                     <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
-                                        <div className="text-3xl md:text-4xl mb-3 md:mb-4">🚫</div>
                                         <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">We Don't Push Bad Projects</h4>
                                         <p className="text-gray-700 text-xs md:text-sm leading-relaxed">If a project has legal issues, poor construction quality, or a bad track record, we refuse to list it or recommend it. We protect your money above all else.</p>
                                     </div>
                                     <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
-                                        <div className="text-3xl md:text-4xl mb-3 md:mb-4">📵</div>
                                         <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">We Don't Spam Call</h4>
                                         <p className="text-gray-700 text-xs md:text-sm leading-relaxed">We respect your privacy. Once you register interest, we provide the facts and step back to let you decide. No aggressive sales tactics or relentless follow-up calls.</p>
                                     </div>
                                     <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
-                                        <div className="text-3xl md:text-4xl mb-3 md:mb-4">⚖️</div>
                                         <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">We Don't Hide Facts</h4>
                                         <p className="text-gray-700 text-xs md:text-sm leading-relaxed">Every project has pros and cons. We will tell you the absolute truth about a property's downsides—like traffic bottlenecks or water issues—not just the marketing highlights.</p>
                                     </div>
@@ -991,9 +1045,9 @@
                                 <p className="text-slate-600 text-xs mt-2 font-medium">© 2026 Perfect Horizons. All rights reserved.</p>
                                 
                                 <div className="flex gap-4 mt-4 text-[9px] text-slate-500 uppercase tracking-widest font-bold">
-                                    <a href="#" className="hover:text-slate-300 transition">Terms & Conditions</a>
+                                    <button onClick={() => setLegalModal('terms')} className="hover:text-slate-300 transition">Terms & Conditions</button>
                                     <span>|</span>
-                                    <a href="#" className="hover:text-slate-300 transition">Privacy Policy</a>
+                                    <button onClick={() => setLegalModal('privacy')} className="hover:text-slate-300 transition">Privacy Policy</button>
                                 </div>
 
                                 <a href="admin.html" className="mt-6 text-[9px] text-slate-700 uppercase font-black tracking-widest hover:text-blue-400 transition block">Management Login</a>
@@ -1007,20 +1061,32 @@
                         </div>
                     </footer>
 
-                    {/* AI ASSISTANT WHATSAPP BUTTON (Hidden on mobile when viewing a property to avoid overlap) */}
+                    {/* AI ASSISTANT WHATSAPP BUTTON (Hidden on mobile when viewing a property) */}
                     {!(window.innerWidth < 768 && selectedProperty) && (
                         <div className="fixed bottom-6 right-6 z-[55] flex flex-col items-end animate-fadeIn group">
-                            <div className="bg-white text-slate-800 text-[10px] font-black px-4 py-2.5 rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.1)] border border-slate-100 mb-3 relative flex items-center gap-2 cursor-default group-hover:-translate-y-1 transition-transform">
-                                <span className="relative flex h-2.5 w-2.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
-                                </span>
-                                AI Assistant: Check Properties
-                                <div className="absolute -bottom-2 right-5 w-4 h-4 bg-white rotate-45 border-b border-r border-slate-100"></div>
-                            </div>
                             <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, what properties are available?`} target="_blank" className="bg-gradient-to-tr from-green-500 to-green-400 text-white p-4 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-transform flex items-center justify-center">
                                 <svg className="w-7 h-7 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.12.553 4.148 1.603 5.946L.2 24l6.195-1.62c1.737.947 3.69 1.445 5.636 1.445 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.615 0 12.031 0zm0 21.846c-1.802 0-3.568-.484-5.115-1.402l-.366-.217-3.805.996.996-3.805-.217-.366a9.92 9.92 0 0 1-1.402-5.115c0-5.514 4.486-10 10-10 5.514 0 10 4.486 10 10 0 5.514-4.486 10-10 10zm5.496-7.518c-.301-.15-1.785-.885-2.062-.986-.277-.1-.478-.15-.678.15-.201.301-.778.986-.954 1.187-.176.201-.351.226-.653.076-1.609-.816-2.73-1.637-3.784-3.411-.176-.301.176-.277.453-.827.076-.15-.038-.277-.038-.427-.076-.15-.678-1.631-.929-2.233-.251-.602-.502-.527-.678-.527-.176 0-.377 0-.578 0-.201 0-.527.076-.803.427-.276.351-1.054 1.028-1.054 2.508 0 1.48 1.079 2.91 1.229 3.111.15.201 2.133 3.262 5.169 4.566.726.301 1.28.478 1.731.628.728.227 1.381.194 1.905.118.578-.084 1.785-.728 2.036-1.431.251-.703.251-1.305.176-1.431-.076-.126-.277-.201-.578-.352z"/></svg>
                             </a>
+                        </div>
+                    )}
+
+                    {/* Legal Modals */}
+                    {legalModal && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setLegalModal(null)}>
+                            <div className="bg-white rounded-3xl p-8 max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setLegalModal(null)} className="absolute top-4 right-6 text-2xl text-slate-400 hover:text-slate-900">&times;</button>
+                                <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-6 uppercase tracking-widest border-b border-slate-100 pb-4">
+                                    {legalModal === 'terms' ? "Terms & Conditions" : "Privacy Policy"}
+                                </h2>
+                                <div className="text-xs md:text-sm text-slate-600 leading-relaxed space-y-4">
+                                    <p className="font-bold text-slate-800 bg-amber-50 p-4 rounded-xl border border-amber-100">
+                                        Disclaimer: Perfect Horizons acts solely as an authorized channel partner and real estate advisory. We are not the developers or builders of the properties listed on this website. 
+                                    </p>
+                                    <p><strong>Information Accuracy:</strong> All images, layouts, pricing, and project details displayed are for informational and representational purposes only, sourced from respective developers under fair use policy. We do not guarantee the absolute accuracy of builder-provided data and advise clients to verify all legal and RERA documents independently before making a financial commitment.</p>
+                                    <p><strong>Liability:</strong> Perfect Horizons shall not be held liable for any disputes, delays in possession, or discrepancies between the builder's promised specifications and the final delivered product.</p>
+                                    <p><strong>Data Privacy:</strong> Any information submitted through our enquiry forms is kept strictly confidential. We do not sell your personal data to third-party marketing agencies. It is used exclusively by our internal advisors to assist you with your property search.</p>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
