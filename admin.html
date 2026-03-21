@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PH | Admin Engine</title>
+    <title>PH Engine v3.0 | Command Center</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -12,8 +12,10 @@
     <style>
         .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-active { color: #60a5fa; border-bottom: 2px solid #60a5fa; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .priority-hot { border-left: 4px solid #ef4444; background: #fef2f2; }
     </style>
 </head>
 <body class="bg-gray-50 font-sans text-gray-900">
@@ -22,257 +24,164 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // --- CONFIGURATION ---
         const supabaseUrl = 'https://uiiovtsktllvtecfokik.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
         
-        // MAGIC SECURITY LINE: We tell Supabase to destroy the login if the tab closes.
+        // SECURITY: Using sessionStorage so data wipes when tab closes
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
             auth: { storage: window.sessionStorage } 
         });
-        
+
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJOoh4meGBQOZYZpUWqK1DmDS_B8fXSC5NlwPcTX3GUfP7gzYQKvatgj9IFT3Txy-FCQ/exec";
 
         function AdminApp() {
-            // --- SECURITY STATE ---
             const [session, setSession] = useState(null);
-            const [emailInput, setEmailInput] = useState("");
-            const [passwordInput, setPasswordInput] = useState("");
-            const [loginLoading, setLoginLoading] = useState(false);
-
             const [leads, setLeads] = useState([]);
             const [view, setView] = useState('dashboard'); 
+            const [leadCategory, setLeadCategory] = useState('website'); // website, bulk, manual
             const [loading, setLoading] = useState(true);
+            const [showManualModal, setShowManualModal] = useState(false);
 
             useEffect(() => {
                 supabase.auth.getSession().then(({ data: { session } }) => {
                     setSession(session);
                     if (session) fetchLeads();
                 });
-
                 const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
                     setSession(session);
                     if (session) fetchLeads();
                 });
                 return () => subscription.unsubscribe();
-            }, []);
-
-            const handleLogin = async (e) => {
-                e.preventDefault();
-                setLoginLoading(true);
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: emailInput,
-                    password: passwordInput,
-                });
-                
-                if (error) alert("Login Failed: " + error.message);
-                
-                // Clear the password box immediately after submitting
-                setPasswordInput(""); 
-                setLoginLoading(false);
-            };
-
-            const handleLogout = async () => {
-                await supabase.auth.signOut();
-                // WIPE EVERYTHING
-                setSession(null);
-                setLeads([]);
-                setEmailInput("");
-                setPasswordInput("");
-            };
+            }, [leadCategory]);
 
             async function fetchLeads() {
                 setLoading(true);
-                const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+                const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
+                let query = supabase.from(table).select('*').order('created_at', { ascending: false });
+                
+                if (leadCategory === 'manual') query = query.eq('lead_source', 'Manual');
+                if (leadCategory === 'website') query = query.or('lead_source.eq.Website,lead_source.is.null');
+
+                const { data, error } = await query;
                 if (!error) setLeads(data || []);
                 setLoading(false);
             }
 
-            const stats = useMemo(() => {
-                const total = leads.length;
-                const uncalled = leads.filter(l => l.lead_status === 'Un called' || !l.lead_status).length;
-                const called = leads.filter(l => l.lead_status === 'Called').length;
-                const rejected = leads.filter(l => l.lead_status === 'Rejected').length;
-                return {
-                    total, uncalled, called, rejected,
-                    uncalledPct: total ? Math.round((uncalled/total)*100) : 0,
-                    calledPct: total ? Math.round((called/total)*100) : 0,
-                    rejectedPct: total ? Math.round((rejected/total)*100) : 0
-                };
-            }, [leads]);
-
             async function updateLead(id, field, value) {
-                const { error } = await supabase.from('leads').update({ [field]: value }).eq('id', id);
+                const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
+                const { error } = await supabase.from(table).update({ [field]: value }).eq('id', id);
                 if (!error) {
                     setLeads(prev => prev.map(l => l.id === id ? {...l, [field]: value} : l));
-                } else {
-                    alert("Error updating lead: " + error.message);
                 }
             }
 
-            // --- LOGIN SCREEN ---
-            if (!session) {
-                return (
-                    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-                        <form onSubmit={handleLogin} autoComplete="off" className="bg-white p-8 md:p-10 rounded-3xl shadow-2xl w-full max-w-sm text-center animate-fadeIn border-t-4 border-blue-500">
-                            <h1 className="text-2xl font-black italic uppercase tracking-tighter mb-2 text-slate-900">PH Engine</h1>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">Authorized Personnel Only</p>
-                            
-                            <input 
-                                type="email" 
-                                placeholder="Admin Email" 
-                                autoComplete="off"
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-                                value={emailInput}
-                                onChange={(e) => setEmailInput(e.target.value)}
-                                required
-                            />
-                            <input 
-                                type="password" 
-                                placeholder="Password" 
-                                autoComplete="new-password"
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 mb-6"
-                                value={passwordInput}
-                                onChange={(e) => setPasswordInput(e.target.value)}
-                                required
-                            />
-                            <button type="submit" disabled={loginLoading} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50">
-                                {loginLoading ? "Authenticating..." : "Access System"}
-                            </button>
-                        </form>
-                    </div>
-                );
-            }
+            if (!session) return <LoginForm supabase={supabase} />;
 
-            // --- MAIN DASHBOARD ---
             return (
                 <div className="min-h-screen flex flex-col animate-fadeIn">
-                    <nav className="bg-slate-950 text-white p-5 flex justify-between items-center sticky top-0 z-50">
+                    <nav className="bg-slate-950 text-white p-5 flex justify-between items-center sticky top-0 z-50 shadow-xl">
                         <div className="flex items-center gap-4">
                             <h1 className="font-black italic uppercase tracking-tighter text-2xl text-blue-400">PH Engine</h1>
-                            <span className="bg-blue-900/50 text-blue-200 text-[10px] px-2 py-1 rounded font-bold uppercase tracking-widest">Admin v2.0</span>
+                            <span className="bg-blue-900/50 text-blue-200 text-[10px] px-2 py-1 rounded font-bold uppercase tracking-widest">v3.0 CRM</span>
                         </div>
                         <div className="flex gap-6 text-[11px] font-black uppercase tracking-[0.15em] items-center">
-                            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'text-blue-400' : 'text-slate-400 hover:text-white transition'}>Leads CRM</button>
-                            <button onClick={() => setView('add-property')} className={view === 'add-property' ? 'text-blue-400' : 'text-slate-400 hover:text-white transition'}>List Property</button>
-                            
-                            <div className="h-4 w-px bg-slate-700 mx-2"></div>
-                            
-                            <span className="text-slate-500 hidden md:inline-block">{session.user.email}</span>
-                            <button onClick={handleLogout} className="text-red-400 hover:text-red-300 transition">Logout 🚪</button>
+                            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'text-blue-400' : 'text-slate-400'}>Leads CRM</button>
+                            <button onClick={() => setView('add-property')} className={view === 'add-property' ? 'text-blue-400' : 'text-slate-400'}>List Property</button>
+                            <button onClick={() => supabase.auth.signOut()} className="text-red-400 hover:text-red-300 transition">Logout 🚪</button>
                         </div>
                     </nav>
 
-                    <main className="p-4 md:p-8 max-w-7xl mx-auto w-full flex-grow">
+                    <main className="p-4 md:p-8 max-w-7xl mx-auto w-full">
                         {view === 'dashboard' && (
-                            <div className="space-y-8 animate-fadeIn">
-                                {/* Metrics Table */}
-                                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="bg-slate-50 border-b uppercase text-[10px] font-black text-slate-400 tracking-widest">
-                                            <tr>
-                                                <th className="p-5">Team Metric (Tharun)</th>
-                                                <th className="p-5">Total</th>
-                                                <th className="p-5">Uncalled</th>
-                                                <th className="p-5">Called</th>
-                                                <th className="p-5">Rejected</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="font-bold text-slate-700">
-                                            <tr>
-                                                <td className="p-5 border-b">Lead Volume</td>
-                                                <td className="p-5 border-b">{stats.total}</td>
-                                                <td className="p-5 border-b text-green-600">{stats.uncalled}</td>
-                                                <td className="p-5 border-b text-blue-600">{stats.called}</td>
-                                                <td className="p-5 border-b text-red-600">{stats.rejected}</td>
-                                            </tr>
-                                            <tr className="bg-slate-900 text-white italic">
-                                                <td className="p-5 uppercase text-[10px] tracking-widest">Conversion Rate %</td>
-                                                <td className="p-5">100%</td>
-                                                <td className="p-5 text-green-400">{stats.uncalledPct}%</td>
-                                                <td className="p-5 text-blue-400">{stats.calledPct}%</td>
-                                                <td className="p-5 text-red-400">{stats.rejectedPct}%</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                            <div className="space-y-6">
+                                {/* Category Tabs */}
+                                <div className="flex items-center gap-8 border-b border-slate-200 pb-2">
+                                    {['website', 'bulk', 'manual'].map(cat => (
+                                        <button 
+                                            key={cat}
+                                            onClick={() => setLeadCategory(cat)}
+                                            className={`pb-2 text-[11px] font-black uppercase tracking-[0.2em] transition-all border-b-2 ${leadCategory === cat ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400'}`}
+                                        >
+                                            {cat}
+                                        </button>
+                                    ))}
+                                    <button 
+                                        onClick={() => setShowManualModal(true)}
+                                        className="ml-auto bg-blue-600 text-white text-[10px] px-6 py-2 rounded-full font-black uppercase tracking-widest hover:bg-slate-900 transition shadow-lg shadow-blue-500/20"
+                                    >
+                                        + Manual Entry
+                                    </button>
                                 </div>
 
-                                {/* Lead Pipeline */}
+                                {/* Table Container */}
                                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                                    <div className="p-5 bg-slate-50 border-b font-black uppercase text-[11px] tracking-[0.2em] text-slate-500 flex justify-between items-center">
-                                        <span>Incoming Pipeline</span>
-                                        <button onClick={fetchLeads} className="bg-white border px-3 py-1 rounded-full hover:bg-slate-100 transition shadow-sm text-[10px]">Sync Data ↻</button>
+                                    <div className="p-4 bg-slate-50 border-b flex justify-between items-center">
+                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 italic">Tracking {leadCategory} pipeline</h3>
+                                        <button onClick={fetchLeads} className="text-[9px] font-bold text-blue-600 uppercase tracking-tighter">Sync Now ↻</button>
                                     </div>
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-xs">
+                                        <table className="w-full text-xs text-left">
                                             <thead>
-                                                <tr className="bg-slate-100/50 text-slate-500 uppercase font-black text-[9px] tracking-widest">
-                                                    <th className="p-4 text-left">Customer Details</th>
-                                                    <th className="p-4 text-left">Property Source</th>
-                                                    <th className="p-4 text-left">Lead Status</th>
-                                                    <th className="p-4 text-left">Disposition</th>
-                                                    <th className="p-4 text-left">Agent Remarks</th>
+                                                <tr className="bg-slate-50/50 text-slate-400 uppercase font-black text-[9px] tracking-widest border-b">
+                                                    <th className="p-5">Customer Profile</th>
+                                                    <th className="p-5">Status & Priority</th>
+                                                    <th className="p-5">Callback Log</th>
+                                                    <th className="p-5">Visit Date</th>
+                                                    <th className="p-5">Agent Remarks</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="text-slate-600 font-medium">
-                                                {loading && <tr><td colSpan="5" className="p-10 text-center font-bold text-slate-400 uppercase italic tracking-widest">Loading Leads...</td></tr>}
-                                                {!loading && leads.length === 0 && <tr><td colSpan="5" className="p-10 text-center font-bold text-slate-400 uppercase italic tracking-widest">No leads captured yet.</td></tr>}
-                                                {leads.map(lead => (
-                                                    <tr key={lead.id} className="border-b hover:bg-blue-50/30 transition">
-                                                        <td className="p-4 min-w-[150px]">
+                                            <tbody className="divide-y divide-slate-100">
+                                                {loading ? (
+                                                    <tr><td colSpan="5" className="p-20 text-center font-bold text-slate-300 uppercase italic animate-pulse">Establishing secure link...</td></tr>
+                                                ) : leads.map(lead => (
+                                                    <tr key={lead.id} className={`hover:bg-blue-50/20 transition ${lead.lead_priority === 'Hot' ? 'priority-hot' : ''}`}>
+                                                        <td className="p-5 min-w-[200px]">
                                                             <div className="font-black text-slate-900 uppercase text-[13px]">{lead.customer_name}</div>
                                                             <div className="text-blue-600 font-bold mt-0.5">{lead.phone_number}</div>
-                                                            <div className="text-[9px] text-slate-400 mt-1 uppercase font-bold tracking-widest">{new Date(lead.created_at).toLocaleDateString('en-IN')}</div>
-                                                            
-                                                            <a 
-                                                                href={`https://wa.me/91${lead.phone_number?.replace(/\D/g, '').slice(-10)}`} 
-                                                                target="_blank" 
-                                                                rel="noopener noreferrer"
-                                                                className="mt-3 inline-flex items-center gap-1 bg-green-500 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded shadow-sm hover:bg-green-600 transition"
-                                                            >
-                                                                💬 WhatsApp
-                                                            </a>
+                                                            {lead.customer_email && <div className="text-[10px] text-slate-400 italic lowercase">{lead.customer_email}</div>}
+                                                            <div className="mt-3 flex gap-2">
+                                                                <a href={`https://wa.me/91${lead.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-green-500 text-white text-[8px] font-black px-2 py-1 rounded uppercase tracking-tighter">WhatsApp 💬</a>
+                                                            </div>
                                                         </td>
-                                                        <td className="p-4 font-bold text-[11px] uppercase text-slate-500 italic min-w-[150px]">{lead.project_interested_in}</td>
-                                                        <td className="p-4 min-w-[140px]">
+                                                        <td className="p-5 min-w-[150px]">
                                                             <select 
                                                                 value={lead.lead_status || 'Un called'} 
                                                                 onChange={(e) => updateLead(lead.id, 'lead_status', e.target.value)}
-                                                                className="w-full p-2 border border-slate-200 rounded-lg font-black uppercase text-[9px] bg-white cursor-pointer shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                                className="block w-full mb-2 p-2 border rounded-lg text-[9px] font-black uppercase tracking-widest bg-white"
                                                             >
-                                                                <option>Un called</option>
-                                                                <option>Called</option>
-                                                                <option>Rejected</option>
-                                                                <option>SV done</option>
-                                                                <option>SV Scheduled</option>
-                                                                <option>Converted</option>
+                                                                <option>Un called</option><option>Called</option><option>RNR</option><option>Details Shared</option><option>SV Scheduled</option><option>Converted</option><option>Rejected</option>
                                                             </select>
-                                                        </td>
-                                                        <td className="p-4 min-w-[160px]">
                                                             <select 
-                                                                value={lead.call_reason || ''} 
-                                                                onChange={(e) => updateLead(lead.id, 'call_reason', e.target.value)}
-                                                                className="w-full p-2 border border-slate-200 rounded-lg font-black uppercase text-[9px] bg-white cursor-pointer shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                                value={lead.lead_priority || 'Warm'} 
+                                                                onChange={(e) => updateLead(lead.id, 'lead_priority', e.target.value)}
+                                                                className={`block w-full p-2 border rounded-lg text-[9px] font-black uppercase tracking-widest ${lead.lead_priority === 'Hot' ? 'text-red-600 font-black' : 'text-slate-500'}`}
                                                             >
-                                                                <option value="">Reason...</option>
-                                                                <option>RNR</option>
-                                                                <option>Call Back</option>
-                                                                <option>Not Interested</option>
-                                                                <option>Not In location</option>
-                                                                <option>Not in Budget</option>
-                                                                <option>Unit Unavailablity</option>
-                                                                <option>Plan Postponed</option>
-                                                                <option>Details Shared</option>
-                                                                <option>No incoming</option>
+                                                                <option>Hot</option><option>Warm</option><option>Cold</option>
                                                             </select>
                                                         </td>
-                                                        <td className="p-4 min-w-[200px]">
+                                                        <td className="p-5 min-w-[160px]">
                                                             <input 
-                                                                type="text" 
-                                                                placeholder="Add call notes..." 
-                                                                className="w-full border border-slate-200 p-2 rounded-lg text-[11px] font-medium outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
+                                                                type="datetime-local" 
+                                                                defaultValue={lead.follow_up_at ? lead.follow_up_at.slice(0,16) : ''}
+                                                                onBlur={(e) => updateLead(lead.id, 'follow_up_at', e.target.value)}
+                                                                className="w-full p-2 border rounded-lg text-[10px] font-bold text-slate-600 outline-none focus:ring-2 focus:ring-blue-500"
+                                                            />
+                                                            {lead.follow_up_at && <div className="mt-2 text-[8px] text-blue-500 font-black uppercase tracking-widest flex items-center gap-1">⏱️ Scheduled</div>}
+                                                        </td>
+                                                        <td className="p-5">
+                                                            <input 
+                                                                type="date" 
+                                                                defaultValue={lead.site_visit_at || ''}
+                                                                onBlur={(e) => updateLead(lead.id, 'site_visit_at', e.target.value)}
+                                                                className="w-full p-2 border rounded-lg text-[10px] font-bold text-slate-600"
+                                                            />
+                                                        </td>
+                                                        <td className="p-5">
+                                                            <textarea 
                                                                 defaultValue={lead.call_remark || ''}
                                                                 onBlur={(e) => updateLead(lead.id, 'call_remark', e.target.value)}
+                                                                className="w-full p-3 border rounded-xl text-[11px] font-medium h-20 bg-slate-50/50 resize-none outline-none focus:ring-2 focus:ring-blue-500"
+                                                                placeholder="Type interaction notes..."
                                                             />
                                                         </td>
                                                     </tr>
@@ -284,181 +193,123 @@
                             </div>
                         )}
 
-                        {view === 'add-property' && (
-                            <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} />
-                        )}
+                        {view === 'add-property' && <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} />}
                     </main>
+
+                    {/* MANUAL MODAL */}
+                    {showManualModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[40px] p-10 max-w-md w-full animate-fadeIn shadow-2xl relative">
+                                <button onClick={() => setShowManualModal(false)} className="absolute top-6 right-8 text-3xl text-slate-300 hover:text-slate-900 transition">&times;</button>
+                                <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-8">Manual Registration</h2>
+                                <ManualLeadForm supabase={supabase} onSuccess={() => {setShowManualModal(false); fetchLeads();}} />
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
 
+        function ManualLeadForm({ supabase, onSuccess }) {
+            const [form, setForm] = useState({ name: '', phone: '', email: '', project: '', source: 'Manual' });
+            const [loading, setLoading] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                const { error } = await supabase.from('leads').insert([{
+                    customer_name: form.name,
+                    phone_number: form.phone,
+                    customer_email: form.email,
+                    project_interested_in: form.project,
+                    lead_source: form.source,
+                    lead_status: 'Un called'
+                }]);
+                if (!error) onSuccess();
+                else alert("Entry failed. Ensure columns follow_up_at and site_visit_at exist.");
+                setLoading(false);
+            };
+
+            return (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <input required placeholder="Client Name" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, name: e.target.value})} />
+                    <input required placeholder="Phone Number" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, phone: e.target.value})} />
+                    <input placeholder="Email (Optional)" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, email: e.target.value})} />
+                    <input placeholder="Project Name" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, project: e.target.value})} />
+                    <select className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold" onChange={e => setForm({...form, source: e.target.value})}>
+                        <option>Manual</option><option>MagicBricks</option><option>Housing.com</option><option>Referral</option><option>Direct Walk-in</option>
+                    </select>
+                    <button disabled={loading} className="w-full bg-blue-600 text-white font-black py-5 rounded-3xl uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-slate-950 transition active:scale-95">
+                        {loading ? "Registering..." : "Inject into Database"}
+                    </button>
+                </form>
+            );
+        }
+
+        function LoginForm({ supabase }) {
+            const [email, setEmail] = useState("");
+            const [pass, setPass] = useState("");
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+                if (error) alert("Invalid Credentials. Make sure user exists in Supabase Auth.");
+            };
+            return (
+                <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+                    <form onSubmit={handleLogin} className="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-sm text-center border-t-8 border-blue-500 animate-fadeIn">
+                        <h1 className="text-3xl font-black italic uppercase tracking-tighter mb-4">PH Engine</h1>
+                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] mb-10">Restricted Admin Access</p>
+                        <input type="email" placeholder="Email Address" className="w-full p-4 bg-slate-100 border border-transparent rounded-2xl mb-3 font-bold text-sm focus:ring-2 focus:ring-blue-500 outline-none" onChange={e => setEmail(e.target.value)} required />
+                        <input type="password" placeholder="Password" className="w-full p-4 bg-slate-100 border border-transparent rounded-2xl mb-8 font-bold text-sm focus:ring-2 focus:ring-blue-500 outline-none" onChange={e => setPass(e.target.value)} required />
+                        <button className="w-full bg-blue-600 text-white font-black py-5 rounded-3xl uppercase tracking-widest shadow-xl hover:bg-slate-900 transition">Unlock System</button>
+                    </form>
+                </div>
+            );
+        }
+
+        // --- PROPERTY FORM ---
         function PropertyForm({ scriptUrl, supabase }) {
             const [uploading, setUploading] = useState(false);
-            const [uploadStatus, setUploadStatus] = useState("");
-            const [form, setForm] = useState({
-                property_name: '', price: '', location: '', property_type: '', construction_status: '',
-                bhk: '', builder_name: '', cover_image: '', brochure: '', cost_sheet: ''
-            });
+            const [form, setForm] = useState({ property_name: '', price: '', location: '', property_type: '', construction_status: '', bhk: '', builder_name: '', cover_image: '', brochure: '', cost_sheet: '' });
 
             async function handleFileUpload(e, field) {
                 const file = e.target.files[0];
-                if (!file) return;
-                
-                if (!form.property_name) {
-                    alert("Please enter a Property Name first so we know which folder to create/use in Google Drive!");
-                    e.target.value = ''; 
-                    return;
-                }
-
+                if (!file || !form.property_name) return alert("Enter Property Name first!");
                 setUploading(true);
-                setUploadStatus(`Uploading ${field.replace('_', ' ')} to Drive...`);
-
-                try {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    reader.onload = async () => {
-                        const base64 = reader.result.split(',')[1];
-                        const response = await fetch(scriptUrl, {
-                            method: "POST",
-                            body: JSON.stringify({
-                                base64: base64,
-                                type: file.type,
-                                name: file.name,
-                                propertyName: form.property_name 
-                            })
-                        });
-                        const result = await response.json();
-                        
-                        if(result.status === "success") {
-                            setForm(prev => ({ ...prev, [field]: result.url }));
-                            setUploadStatus(`Success! Link saved.`);
-                            setTimeout(() => setUploadStatus(""), 2000);
-                        } else {
-                            alert("Upload error: " + result.message);
-                            setUploadStatus("");
-                        }
-                    };
-                } catch (err) { 
-                    alert("Upload failed. Make sure your Apps Script Web App is deployed correctly."); 
-                    setUploadStatus("");
-                }
-                finally { setUploading(false); }
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = async () => {
+                    const base64 = reader.result.split(',')[1];
+                    const res = await fetch(scriptUrl, { method: "POST", body: JSON.stringify({ base64, type: file.type, name: file.name, propertyName: form.property_name }) });
+                    const result = await res.json();
+                    if(result.status === "success") setForm(prev => ({ ...prev, [field]: result.url }));
+                    setUploading(false);
+                };
             }
 
             async function saveProperty() {
-                if (!form.property_name) return alert("Property Name is required!");
-                
-                const insertData = {
-                    property_name: form.property_name,
-                    price: form.price,
-                    location: form.location,
-                    property_type: form.property_type,
-                    construction_status: form.construction_status,
-                    bhk: form.bhk,
-                    builder_name: form.builder_name,
-                    cover_image: form.cover_image,
-                    brochure: form.brochure,
-                    cost_sheet: form.cost_sheet
-                };
-
-                const { error } = await supabase.from('properties').insert([insertData]);
-                
-                if (error) {
-                    alert("Save failed: " + error.message);
-                } else {
-                    alert("Property Added Successfully! It is now live on your website.");
-                    setForm({ property_name: '', price: '', location: '', property_type: '', construction_status: '', bhk: '', builder_name: '', cover_image: '', brochure: '', cost_sheet: '' });
-                    document.querySelectorAll('input[type="file"]').forEach(el => el.value = '');
-                }
+                const { error } = await supabase.from('properties').insert([form]);
+                if (!error) { alert("Published!"); setForm({ property_name: '' }); }
             }
 
             return (
-                <div className="bg-white p-6 md:p-10 rounded-3xl shadow-xl border border-slate-200 max-w-3xl mx-auto space-y-8 animate-fadeIn">
-                    <div>
-                        <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-slate-900">List New Property</h2>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Updates instantly to perfecthorizons.in</p>
+                <div className="bg-white p-10 rounded-[40px] shadow-xl max-w-3xl mx-auto space-y-8 animate-fadeIn border border-slate-100">
+                    <h2 className="text-3xl font-black uppercase tracking-tighter italic">List New Property</h2>
+                    <div className="grid grid-cols-2 gap-4">
+                        <input placeholder="Project Title" className="col-span-2 p-4 bg-slate-50 border rounded-2xl font-bold text-sm" onChange={e => setForm({...form, property_name: e.target.value})} />
+                        <input placeholder="Builder" className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm" onChange={e => setForm({...form, builder_name: e.target.value})} />
+                        <input placeholder="Pricing" className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm" onChange={e => setForm({...form, price: e.target.value})} />
                     </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Property Name (Required)</label>
-                            <input className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Godrej Splendour" onChange={e => setForm({...form, property_name: e.target.value})} value={form.property_name} />
-                        </div>
-                        
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Builder Name</label>
-                            <input className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Godrej Properties" onChange={e => setForm({...form, builder_name: e.target.value})} value={form.builder_name} />
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Starting Price</label>
-                            <input className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. ₹ 1.2 Cr" onChange={e => setForm({...form, price: e.target.value})} value={form.price} />
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Location</label>
-                            <input className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Whitefield, Bengaluru" onChange={e => setForm({...form, location: e.target.value})} value={form.location} />
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">BHK Config</label>
-                            <input className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. 2, 3, 4" onChange={e => setForm({...form, bhk: e.target.value})} value={form.bhk} />
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Property Type</label>
-                            <select className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, property_type: e.target.value})} value={form.property_type}>
-                                <option value="">Select Type...</option>
-                                <option value="Apartment">Apartment</option>
-                                <option value="Villa">Villa</option>
-                                <option value="Plot">Plot</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2">Construction Status</label>
-                            <select className="w-full mt-1 p-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, construction_status: e.target.value})} value={form.construction_status}>
-                                <option value="">Select Status...</option>
-                                <option value="New Launch">New Launch</option>
-                                <option value="Under Construction">Under Construction</option>
-                                <option value="Ready to Move">Ready to Move</option>
-                            </select>
-                        </div>
-                        
-                        <div className="md:col-span-2 space-y-5 border-t border-slate-200 pt-6 mt-2">
-                            <div className="flex items-center justify-between">
-                                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Google Drive Asset Uploads</p>
-                                {uploadStatus && <span className="text-[10px] font-bold text-blue-600 animate-pulse">{uploadStatus}</span>}
+                    <div className="grid grid-cols-3 gap-6 border-t pt-8">
+                        {['cover_image', 'brochure', 'cost_sheet'].map(f => (
+                            <div key={f} className="text-center group">
+                                <label className="text-[9px] font-black uppercase block mb-3 text-slate-400 group-hover:text-blue-500 transition">{f.replace('_',' ')}</label>
+                                <input type="file" onChange={e => handleFileUpload(e, f)} className="text-[10px] w-full" />
                             </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 relative overflow-hidden group">
-                                    <span className="text-xs font-black uppercase tracking-widest block mb-3 text-slate-700">🖼️ Cover Image</span>
-                                    <input type="file" accept="image/*" onChange={e => handleFileUpload(e, 'cover_image')} className="text-[10px] w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
-                                    {form.cover_image && <div className="mt-3 text-[9px] text-green-600 font-bold truncate">✓ Linked</div>}
-                                </div>
-                                
-                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 relative overflow-hidden group">
-                                    <span className="text-xs font-black uppercase tracking-widest block mb-3 text-slate-700">📄 Brochure</span>
-                                    <input type="file" accept=".pdf" onChange={e => handleFileUpload(e, 'brochure')} className="text-[10px] w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
-                                    {form.brochure && <div className="mt-3 text-[9px] text-green-600 font-bold truncate">✓ Linked</div>}
-                                </div>
-
-                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 relative overflow-hidden group">
-                                    <span className="text-xs font-black uppercase tracking-widest block mb-3 text-slate-700">📊 Cost Sheet</span>
-                                    <input type="file" accept=".pdf" onChange={e => handleFileUpload(e, 'cost_sheet')} className="text-[10px] w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
-                                    {form.cost_sheet && <div className="mt-3 text-[9px] text-green-600 font-bold truncate">✓ Linked</div>}
-                                </div>
-                            </div>
-                        </div>
+                        ))}
                     </div>
-
-                    <button 
-                        disabled={uploading}
-                        onClick={saveProperty}
-                        className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-900 transition-colors shadow-xl shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-                    >
-                        {uploading ? "Waiting for upload..." : "Publish to Website"}
+                    <button onClick={saveProperty} disabled={uploading} className="w-full bg-blue-600 text-white p-6 rounded-3xl font-black uppercase tracking-widest shadow-2xl hover:bg-slate-950 transition">
+                        {uploading ? "Uploading to G-Drive..." : "Go Live"}
                     </button>
                 </div>
             );
