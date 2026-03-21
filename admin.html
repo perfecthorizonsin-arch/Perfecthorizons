@@ -87,12 +87,21 @@
                 return leads.filter(l => l.follow_up_at && l.follow_up_at.startsWith(today));
             }, [leads, showTodayOnly]);
 
+            const stats = useMemo(() => {
+                const total = leads.length;
+                const uncalled = leads.filter(l => l.lead_status === 'Un called' || !l.lead_status).length;
+                const called = leads.filter(l => l.lead_status && l.lead_status !== 'Un called' && l.lead_status !== 'Rejected').length;
+                const rejected = leads.filter(l => l.lead_status === 'Rejected').length;
+                return { total, uncalled, called, rejected };
+            }, [leads]);
+
             async function updateLead(lead, field, value) {
                 let updates = { [field]: value };
                 const stamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
 
                 if (field === 'lead_status') updates.call_remark = `[${stamp}] Status: ${value}\n${lead.call_remark || ''}`;
                 if (field === 'follow_up_at') updates.call_remark = `[${stamp}] Callback Set: ${value}\n${lead.call_remark || ''}`;
+                if (field === 'site_visit_at') updates.call_remark = `[${stamp}] SV Booked: ${value}\n${lead.call_remark || ''}`;
                 if (field === 'add_note') {
                     updates.call_remark = `[${stamp}] Note: ${value}\n${lead.call_remark || ''}`;
                     delete updates.add_note;
@@ -107,28 +116,62 @@
 
             return (
                 <div className="min-h-screen flex flex-col animate-fadeIn">
-                    <nav className="bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-50">
+                    <nav className="bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
                         <h1 className="font-black tracking-tighter text-xl uppercase italic">Horizon <span className="text-blue-500">CRM</span></h1>
-                        <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest">
-                            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'text-blue-400' : ''}>CRM</button>
-                            <button onClick={() => setView('library')} className={view === 'library' ? 'text-blue-400' : ''}>Library</button>
-                            <button onClick={() => setView('add')} className={view === 'add' ? 'text-blue-400' : ''}>Add Project</button>
-                            <button onClick={() => supabase.auth.signOut()} className="text-red-400 border border-red-900 px-2 py-1 rounded hidden md:block">Logout</button>
+                        <div className="flex gap-4 md:gap-6 text-[10px] md:text-[11px] font-bold uppercase tracking-widest items-center">
+                            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'text-blue-400' : 'hover:text-slate-300 transition'}>
+                                <span className="hidden md:inline">CRM</span>
+                                <span className="md:hidden text-lg" title="CRM">📱</span>
+                            </button>
+                            <button onClick={() => setView('library')} className={view === 'library' ? 'text-blue-400' : 'hover:text-slate-300 transition'}>
+                                <span className="hidden md:inline">Library</span>
+                                <span className="md:hidden text-lg" title="Library">📚</span>
+                            </button>
+                            <button onClick={() => setView('add')} className={view === 'add' ? 'text-blue-400' : 'hover:text-slate-300 transition'}>
+                                <span className="hidden md:inline">Add Project</span>
+                                <span className="md:hidden text-lg" title="Add Project">🏠</span>
+                            </button>
+                            <button onClick={() => supabase.auth.signOut()} className="text-red-400 border border-red-900 px-3 py-1.5 rounded hidden md:block hover:bg-red-900/50 transition">Logout</button>
+                            <button onClick={() => supabase.auth.signOut()} className="text-red-400 md:hidden text-lg" title="Logout">🚪</button>
                         </div>
                     </nav>
 
                     <main className="p-3 md:p-8 max-w-7xl mx-auto w-full">
                         {view === 'dashboard' && (
                             <div className="space-y-6">
+                                {/* Lead Status Summary Block */}
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+                                    <table className="w-full text-sm text-left min-w-[450px]">
+                                        <thead className="bg-slate-50 border-b uppercase text-[9px] md:text-[10px] font-black text-slate-400 tracking-widest">
+                                            <tr>
+                                                <th className="p-3 md:p-5">Team Metric (Tharun)</th>
+                                                <th className="p-3 md:p-5 text-center">Total</th>
+                                                <th className="p-3 md:p-5 text-center">Uncalled</th>
+                                                <th className="p-3 md:p-5 text-center">Working</th>
+                                                <th className="p-3 md:p-5 text-center">Rejected</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="font-bold text-slate-700">
+                                            <tr>
+                                                <td className="p-3 md:p-5 border-b uppercase text-[10px] md:text-[11px] tracking-tighter">Volume ({leadCategory})</td>
+                                                <td className="p-3 md:p-5 border-b text-center">{stats.total}</td>
+                                                <td className="p-3 md:p-5 border-b text-green-600 text-center">{stats.uncalled}</td>
+                                                <td className="p-3 md:p-5 border-b text-blue-600 text-center">{stats.called}</td>
+                                                <td className="p-3 md:p-5 border-b text-red-600 text-center">{stats.rejected}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
                                 <div className="flex flex-wrap gap-4 items-center justify-between border-b pb-4">
                                     <div className="flex gap-4">
                                         {['website', 'bulk', 'manual'].map(c => (
-                                            <button key={c} onClick={() => setLeadCategory(c)} className={`pb-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${leadCategory === c ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400'}`}>{c}</button>
+                                            <button key={c} onClick={() => setLeadCategory(c)} className={`pb-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${leadCategory === c ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>{c}</button>
                                         ))}
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => setShowTodayOnly(!showTodayOnly)} className={`px-4 py-2 rounded-full text-[9px] font-black uppercase border ${showTodayOnly ? 'bg-amber-500 text-white' : 'bg-white'}`}>📅 Today</button>
-                                        <button onClick={() => setShowManualModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded-full text-[9px] font-black uppercase">+ Add Lead</button>
+                                        <button onClick={() => setShowTodayOnly(!showTodayOnly)} className={`px-4 py-2 rounded-full text-[9px] font-black uppercase border ${showTodayOnly ? 'bg-amber-500 text-white border-amber-600' : 'bg-white text-slate-600 shadow-sm'}`}>📅 Today</button>
+                                        <button onClick={() => setShowManualModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded-full text-[9px] font-black uppercase shadow-sm">+ Add Lead</button>
                                     </div>
                                 </div>
 
@@ -136,21 +179,51 @@
                                 <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     <table className="w-full text-left text-xs">
                                         <thead className="bg-slate-50 text-slate-400 font-black uppercase text-[9px] tracking-widest border-b">
-                                            <tr><th className="p-4">Customer</th><th className="p-4">Status</th><th className="p-4">Scheduling</th><th className="p-4">History</th></tr>
+                                            <tr><th className="p-4">Customer</th><th className="p-4">Status & Priority</th><th className="p-4">Scheduling</th><th className="p-4 min-w-[250px]">Activity & Notes</th></tr>
                                         </thead>
                                         <tbody className="divide-y">
                                             {displayedLeads.map(l => (
-                                                <tr key={l.id} className={`hover:bg-slate-50/50 ${l.lead_priority === 'Hot' ? 'ring-hot' : l.lead_priority === 'Cold' ? 'ring-cold' : 'ring-warm'}`}>
-                                                    <td className="p-4 font-bold uppercase">{l.customer_name}<div className="text-blue-600">{l.phone_number}</div></td>
-                                                    <td className="p-4">
-                                                        <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className="w-full p-2 border rounded font-bold uppercase text-[10px] bg-white"><option>Un called</option><option>Called</option><option>SV Scheduled</option><option>Converted</option><option>Rejected</option></select>
+                                                <tr key={l.id} className={`hover:bg-slate-50/50 transition ${l.lead_priority === 'Hot' ? 'ring-hot bg-red-50/10' : l.lead_priority === 'Cold' ? 'ring-cold' : 'ring-warm'}`}>
+                                                    <td className="p-4 font-bold uppercase min-w-[180px]">
+                                                        {l.customer_name}
+                                                        <div className="text-blue-600 mt-1">{l.phone_number}</div>
+                                                        {(leadCategory === 'website' || leadCategory === 'manual') && l.created_at && (
+                                                            <div className="text-[9px] text-slate-400 font-bold mt-1 tracking-widest uppercase">Logged: {new Date(l.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</div>
+                                                        )}
+                                                        <div className="mt-3 flex gap-2">
+                                                            <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-green-500 text-white text-[8px] font-black px-3 py-1.5 rounded uppercase tracking-widest shadow-sm hover:scale-105 transition">WhatsApp 💬</a>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4 min-w-[140px]">
+                                                        <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className="w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[10px] bg-white outline-none">
+                                                            <option>Un called</option><option>Called</option><option>Details Shared</option><option>SV Scheduled</option><option>Converted</option><option>Rejected</option><option>RNR</option>
+                                                        </select>
+                                                        <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className="w-full p-2 border rounded-lg font-bold uppercase text-[10px] bg-white outline-none">
+                                                            <option>Hot</option><option>Warm</option><option>Cold</option>
+                                                        </select>
+                                                    </td>
+                                                    <td className="p-4 min-w-[160px]">
+                                                        <div className="space-y-3">
+                                                            <div>
+                                                                <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">Call Back Date</span>
+                                                                <input type="datetime-local" className="w-full p-2 border border-blue-200 bg-blue-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">Site Visit Date</span>
+                                                                <input type="date" className="w-full p-2 border border-teal-200 bg-teal-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
+                                                            </div>
+                                                        </div>
                                                     </td>
                                                     <td className="p-4">
-                                                        <input type="datetime-local" className="p-2 border rounded w-full text-[10px]" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <div className="h-16 overflow-y-auto text-[10px] bg-slate-50 p-2 rounded history-scroll whitespace-pre-wrap">{l.call_remark}</div>
-                                                        <input placeholder="Add note..." className="w-full mt-1 p-2 border rounded text-[10px]" onKeyDown={(e) => e.key === 'Enter' && (updateLead(l, 'add_note', e.target.value), e.target.value='')} />
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="h-20 overflow-y-auto text-[10px] bg-slate-50 p-3 rounded-lg history-scroll whitespace-pre-wrap border border-slate-100 leading-relaxed font-medium text-slate-700">
+                                                                {l.call_remark || <span className="text-slate-400 italic">No activity recorded...</span>}
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <textarea id={`note-d-${l.id}`} rows="1" placeholder="Type note & hit save..." className="flex-1 p-2 border border-slate-200 rounded-lg text-[10px] outline-none focus:ring-2 focus:ring-blue-500 shadow-sm resize-none" />
+                                                                <button onClick={() => { const el = document.getElementById(`note-d-${l.id}`); if(el.value.trim()){ updateLead(l, 'add_note', el.value); el.value=''; } }} className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest">Save</button>
+                                                            </div>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -161,18 +234,56 @@
                                 {/* MOBILE CARDS */}
                                 <div className="lg:hidden space-y-4">
                                     {displayedLeads.map(l => (
-                                        <div key={`m-${l.id}`} className={`bg-white p-4 rounded-2xl shadow-md border-t-8 ${l.lead_priority === 'Hot' ? 'border-red-500' : l.lead_priority === 'Cold' ? 'border-blue-400' : 'border-amber-400'}`}>
+                                        <div key={`m-${l.id}`} className={`bg-white p-4 rounded-2xl shadow-sm border border-t-8 ${l.lead_priority === 'Hot' ? 'border-t-red-500 bg-red-50/10' : l.lead_priority === 'Cold' ? 'border-t-blue-400' : 'border-t-amber-400'}`}>
                                             <div className="flex justify-between items-start">
-                                                <div><h3 className="font-black text-sm uppercase">{l.customer_name}</h3><p className="font-bold text-blue-600">{l.phone_number}</p></div>
-                                                <div className="flex gap-2"><a href={`tel:${l.phone_number}`} className="bg-blue-100 p-2 rounded-full">📞</a><a href={`https://wa.me/91${l.phone_number}`} className="bg-green-100 p-2 rounded-full">💬</a></div>
+                                                <div>
+                                                    <h3 className="font-black text-sm uppercase">{l.customer_name}</h3>
+                                                    <p className="font-bold text-blue-600">{l.phone_number}</p>
+                                                    {(leadCategory === 'website' || leadCategory === 'manual') && l.created_at && (
+                                                        <div className="text-[9px] text-slate-400 font-bold mt-1 tracking-widest uppercase">Logged: {new Date(l.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</div>
+                                                    )}
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 border border-blue-100 p-2.5 rounded-full shadow-sm">📞</a>
+                                                    <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="bg-green-50 text-green-600 border border-green-100 p-2.5 rounded-full shadow-sm">💬</a>
+                                                </div>
                                             </div>
+                                            
                                             <div className="mt-4 grid grid-cols-2 gap-2">
-                                                <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className="p-2 border rounded-xl font-bold uppercase text-[9px]"><option>Un called</option><option>Called</option><option>SV Scheduled</option><option>Rejected</option></select>
-                                                <input type="datetime-local" className="p-2 border rounded-xl text-[9px]" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</label>
+                                                    <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className="p-2 border rounded-xl font-bold uppercase text-[9px] outline-none">
+                                                        <option>Un called</option><option>Called</option><option>Details Shared</option><option>SV Scheduled</option><option>Converted</option><option>Rejected</option><option>RNR</option>
+                                                    </select>
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Priority</label>
+                                                    <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className="p-2 border rounded-xl font-bold uppercase text-[9px] outline-none">
+                                                        <option>Hot</option><option>Warm</option><option>Cold</option>
+                                                    </select>
+                                                </div>
                                             </div>
-                                            <div className="mt-4 bg-slate-50 p-3 rounded-xl h-20 overflow-y-auto text-[10px] italic whitespace-pre-wrap">{l.call_remark}</div>
-                                            <textarea className="w-full mt-2 p-3 border rounded-xl text-[10px] resize-none" placeholder="Type note & hit save..." id={`note-m-${l.id}`} rows="1" />
-                                            <button onClick={() => { const el = document.getElementById(`note-m-${l.id}`); if(el.value.trim()){ updateLead(l, 'add_note', el.value); el.value=''; } }} className="w-full bg-slate-900 text-white p-2 rounded-xl text-[10px] font-bold mt-1 uppercase">Save Note</button>
+
+                                            <div className="mt-3 grid grid-cols-1 gap-2 pt-3 border-t border-slate-100">
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[8px] font-black text-blue-600 uppercase tracking-widest">Callback Date</label>
+                                                    <input type="datetime-local" className="p-2 border border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-[8px] font-black text-teal-600 uppercase tracking-widest">Site Visit Date</label>
+                                                    <input type="date" className="p-2 border border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 pt-3 border-t border-slate-100">
+                                                <div className="bg-slate-50 p-3 rounded-xl h-24 overflow-y-auto text-[10px] font-medium whitespace-pre-wrap border border-slate-200 leading-relaxed text-slate-700">
+                                                    {l.call_remark || <span className="text-slate-400 italic">No activity recorded...</span>}
+                                                </div>
+                                                <div className="flex gap-2 mt-2">
+                                                    <textarea className="w-full p-2 border border-slate-200 rounded-xl text-[10px] resize-none focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" placeholder="Type note..." id={`note-m-${l.id}`} rows="1" />
+                                                    <button onClick={() => { const el = document.getElementById(`note-m-${l.id}`); if(el.value.trim()){ updateLead(l, 'add_note', el.value); el.value=''; } }} className="bg-slate-900 text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md">Save</button>
+                                                </div>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -201,6 +312,17 @@
                 }); 
             }, []);
 
+            // Front-end helper to prevent database column name crashes
+            const getVal = (obj, searchKey) => {
+                if (!obj) return "";
+                if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
+                const cleanKey = searchKey.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                for (let k in obj) {
+                    if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k];
+                }
+                return "";
+            };
+
             const formatPercent = (val) => {
                 let num = parseFloat(val);
                 if (isNaN(num)) return String(val || "0%");
@@ -208,6 +330,19 @@
             };
 
             const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : "N/A";
+
+            const getSafeLink = (rawLink) => {
+                if (!rawLink) return "#";
+                const link = String(rawLink).trim();
+                if (link.includes('@') && !link.startsWith('mailto:')) return `mailto:${link}`;
+                if (!link.startsWith('http') && !link.includes('@')) return `https://${link}`;
+                return link;
+            };
+
+            const shareWA = (p) => {
+                const txt = `*${getVal(p, "property_name")}* by ${getVal(p, "builder_name")}\n📍 ${getVal(p, "location")}\n💰 ${getVal(p, "price")}\n📐 ${getVal(p, "bhk")} BHK | ${getVal(p, "super_built_up_a") || getVal(p, "super_built_up_area") || "Area on Request"} Sq.Ft\n\n*View Brochure:* ${getVal(p, "brochure")}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
+            };
 
             if (loading) return <div className="text-center py-20 animate-pulse font-black text-slate-400 tracking-widest uppercase">Loading Master Library...</div>;
 
@@ -218,18 +353,18 @@
                         {data.map(p => (
                             <div key={p.id} onClick={() => setSelectedProperty(p)} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col">
                                 <div className="relative h-48 bg-slate-100 overflow-hidden">
-                                    <img src={p['cover-image'] || 'https://via.placeholder.com/600x300?text=No+Image'} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                                    <img src={getVal(p, "cover_image") || getVal(p, "cover-image") || 'https://via.placeholder.com/600x300?text=No+Image'} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                                     <div className="absolute top-4 left-0 bg-slate-900/90 backdrop-blur-sm text-white text-[10px] font-black px-3 py-1.5 rounded-r-lg uppercase tracking-widest shadow-md">
-                                        {p.property_type || 'Property'}
+                                        {getVal(p, "property_type") || 'Property'}
                                     </div>
                                 </div>
                                 <div className="p-5 flex-grow flex flex-col">
-                                    <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 leading-tight truncate">{p.property_name || "Unnamed Project"}</h3>
-                                    <p className="text-slate-500 text-xs font-bold mt-1 truncate">📍 {p.location || "Location Unknown"}</p>
+                                    <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 leading-tight truncate">{getVal(p, "property_name") || "Unnamed Project"}</h3>
+                                    <p className="text-slate-500 text-xs font-bold mt-1 truncate">📍 {getVal(p, "location") || "Location Unknown"}</p>
                                     <div className="mt-4 flex justify-between items-end pt-4 border-t border-slate-100">
                                         <div>
                                             <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Starting Price</div>
-                                            <div className="text-lg font-black text-blue-900">{p.price || "On Request"}</div>
+                                            <div className="text-lg font-black text-blue-900">{getVal(p, "price") || "On Request"}</div>
                                         </div>
                                         <button className="bg-slate-900 text-white text-[10px] font-bold px-4 py-2 rounded-lg hover:bg-blue-600 transition">View Full Details</button>
                                     </div>
@@ -249,8 +384,8 @@
                                     {/* Gallery Header */}
                                     <div className="flex overflow-x-auto snap-x snap-mandatory h-64 md:h-96 bg-slate-100 hide-scroll">
                                         {(() => {
-                                            const cover = selectedProperty['cover-image'];
-                                            const galRaw = selectedProperty['gallery-images'];
+                                            const cover = getVal(selectedProperty, "cover_image") || getVal(selectedProperty, "cover-image");
+                                            const galRaw = getVal(selectedProperty, "gallery-images") || getVal(selectedProperty, "gallery_images");
                                             const imgs = (typeof galRaw === 'string' && galRaw.length > 5) ? galRaw.split(',').map(l => l.trim()) : [];
                                             const allImgs = [cover, ...imgs].filter(i => i && !i.includes('undefined')); 
                                             return allImgs.length > 0 ? allImgs.map((img, idx) => (
@@ -263,64 +398,64 @@
                                         {/* Header Info */}
                                         <div className="flex flex-col md:flex-row justify-between mb-8 border-b border-gray-100 pb-8">
                                             <div>
-                                                <div className="text-[10px] md:text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">{selectedProperty.property_type || 'Property'} • {selectedProperty.construction_sta || 'Status'}</div>
-                                                <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tighter leading-tight text-slate-900">{selectedProperty.property_name || 'Property Details'}</h1>
-                                                <p className="text-gray-500 text-sm md:text-lg italic mt-1">📍 {selectedProperty.location || 'Bengaluru'} • <span className="text-blue-600 font-bold uppercase tracking-widest text-[10px] md:text-sm">{selectedProperty.approval ? `${selectedProperty.approval} APPROVED` : 'VERIFIED'}</span></p>
+                                                <div className="text-[10px] md:text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">{getVal(selectedProperty, "property_type") || 'Property'} • {getVal(selectedProperty, "construction_sta") || 'Status'}</div>
+                                                <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tighter leading-tight text-slate-900">{getVal(selectedProperty, "property_name") || 'Property Details'}</h1>
+                                                <p className="text-gray-500 text-sm md:text-lg italic mt-1">📍 {getVal(selectedProperty, "location") || 'Bengaluru'} • <span className="text-blue-600 font-bold uppercase tracking-widest text-[10px] md:text-sm">{getVal(selectedProperty, "approval") ? `${getVal(selectedProperty, "approval")} APPROVED` : 'VERIFIED'}</span></p>
                                             </div>
                                             <div className="text-left md:text-right mt-4 md:mt-0 flex flex-col items-start md:items-end">
-                                                <div className="text-slate-900 font-black text-3xl md:text-4xl italic tracking-tighter">{selectedProperty.price || 'On Request'}</div>
-                                                <div className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-widest mt-2 shadow-sm">{selectedProperty.bhk || '-'} BHK Config</div>
+                                                <div className="text-slate-900 font-black text-3xl md:text-4xl italic tracking-tighter">{getVal(selectedProperty, "price") || 'On Request'}</div>
+                                                <div className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-widest mt-2 shadow-sm">{getVal(selectedProperty, "bhk") || '-'} BHK Config</div>
                                             </div>
                                         </div>
 
                                         {/* Basic Grid */}
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-6 rounded-2xl md:rounded-3xl mb-8 border border-slate-100">
-                                            <div><span className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase block mb-1">Builder</span><span className="font-bold text-xs md:text-sm text-slate-800">{selectedProperty.builder_name || "N/A"}</span></div>
-                                            <div><span className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase block mb-1">Total Units</span><span className="font-bold text-xs md:text-sm text-slate-800">{selectedProperty.total_units || "N/A"}</span></div>
-                                            <div><span className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase block mb-1">Possession</span><span className="font-bold text-xs md:text-sm text-slate-800">{formatDate(selectedProperty.possession_date)}</span></div>
-                                            <div><span className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase block mb-1">Status</span><span className="font-bold text-xs md:text-sm text-slate-800">{selectedProperty.construction_sta || "N/A"}</span></div>
+                                            <div><span className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase block mb-1">Builder</span><span className="font-bold text-xs md:text-sm text-slate-800">{getVal(selectedProperty, "builder_name") || "N/A"}</span></div>
+                                            <div><span className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase block mb-1">Total Units</span><span className="font-bold text-xs md:text-sm text-slate-800">{getVal(selectedProperty, "total_units") || "N/A"}</span></div>
+                                            <div><span className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase block mb-1">Possession</span><span className="font-bold text-xs md:text-sm text-slate-800">{formatDate(getVal(selectedProperty, "possession_date"))}</span></div>
+                                            <div><span className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase block mb-1">Status</span><span className="font-bold text-xs md:text-sm text-slate-800">{getVal(selectedProperty, "construction_sta") || "N/A"}</span></div>
                                         </div>
 
                                         {/* Highlights & Amenities */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 mb-10">
-                                            {selectedProperty.usp_s && (
+                                            {getVal(selectedProperty, "usp_s") && (
                                                 <div>
                                                     <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Project Highlights</h3>
                                                     <ul className="list-disc pl-5 text-xs md:text-sm space-y-2 text-gray-600 leading-relaxed">
-                                                        {String(selectedProperty.usp_s).split('\n').filter(u => u.trim() !== "").map((u, i) => <li key={i}>{u.trim()}</li>)}
+                                                        {String(getVal(selectedProperty, "usp_s")).split('\n').filter(u => u.trim() !== "").map((u, i) => <li key={i}>{u.trim()}</li>)}
                                                     </ul>
                                                 </div>
                                             )}
-                                            {selectedProperty.amenities && (
+                                            {getVal(selectedProperty, "amenities") && (
                                                 <div>
                                                     <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Amenities</h3>
-                                                    <p className="text-xs md:text-sm text-gray-600 leading-relaxed bg-white p-4 rounded-xl border border-gray-100 italic whitespace-pre-line">{String(selectedProperty.amenities)}</p>
+                                                    <p className="text-xs md:text-sm text-gray-600 leading-relaxed bg-white p-4 rounded-xl border border-gray-100 italic whitespace-pre-line">{String(getVal(selectedProperty, "amenities"))}</p>
                                                 </div>
                                             )}
                                         </div>
 
-                                        {/* YELLOW & BLUE ADMIN BLOCKS (Matches User Screenshot) */}
+                                        {/* YELLOW & BLUE ADMIN BLOCKS */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                                             <div className="bg-[#fffbeb] border border-[#fde68a] p-5 md:p-6 rounded-2xl md:rounded-3xl text-[#92400e]">
                                                 <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-2">Commission & Payout</h4>
-                                                <p className="text-3xl md:text-4xl font-black">{formatPercent(selectedProperty.commision_deta)}</p>
-                                                <p className="text-xs md:text-sm font-medium italic mt-2 opacity-80">N/A</p> {/* Payout details usually go here if you had a column for it */}
+                                                <p className="text-3xl md:text-4xl font-black">{formatPercent(getVal(selectedProperty, "commision_deta") || getVal(selectedProperty, "commission"))}</p>
+                                                <p className="text-xs md:text-sm font-medium italic mt-2 opacity-80">N/A</p>
                                             </div>
                                             <div className="bg-[#f0f9ff] border border-[#bae6fd] p-5 md:p-6 rounded-2xl md:rounded-3xl text-[#0369a1]">
                                                 <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-3">Internal Details</h4>
-                                                <p className="text-xs md:text-sm font-bold mb-1">POC: {selectedProperty.point_of_contact || "N/A"}</p>
-                                                <p className="text-xs md:text-sm font-bold">Availability: {selectedProperty.availability || "N/A"}</p>
+                                                <p className="text-xs md:text-sm font-bold mb-1">POC: {getVal(selectedProperty, "point_of_contact") || "N/A"}</p>
+                                                <p className="text-xs md:text-sm font-bold">Availability: {getVal(selectedProperty, "availability") || "N/A"}</p>
                                             </div>
                                         </div>
 
-                                        {/* ACTION BUTTONS (Matches User Screenshot) */}
+                                        {/* ACTION BUTTONS */}
                                         <div className="bg-slate-50 border border-slate-100 p-6 md:p-8 rounded-2xl md:rounded-[35px]">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                <a href={selectedProperty.website_link || "#"} target="_blank" className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm hover:bg-slate-100 transition">Builder Site</a>
-                                                <a href={String(selectedProperty.lead_registration).includes('@') ? `mailto:${selectedProperty.lead_registration}` : selectedProperty.lead_registration || "#"} target="_blank" className="bg-[#0f172a] text-white p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-md hover:bg-blue-600 transition">Register Lead</a>
-                                                <a href={selectedProperty.brochure || "#"} target="_blank" className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm hover:bg-slate-100 transition">Share Brochure</a>
-                                                <a href={selectedProperty.cost_sheet || "#"} target="_blank" className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm hover:bg-slate-100 transition">Share Cost Sheet</a>
-                                                <a href={selectedProperty.map_link || "#"} target="_blank" className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm md:col-span-2 hover:bg-slate-100 transition">Share Location Map</a>
+                                                <a href={getSafeLink(getVal(selectedProperty, "website_link"))} target="_blank" rel="noopener noreferrer" className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm hover:bg-slate-100 transition">Builder Site</a>
+                                                <a href={getSafeLink(getVal(selectedProperty, "lead_registration") || getVal(selectedProperty, "lead_registration_link_or_email_id"))} target="_blank" rel="noopener noreferrer" className="bg-[#0f172a] text-white p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-md hover:bg-blue-600 transition">Register Lead</a>
+                                                <a href={getSafeLink(getVal(selectedProperty, "brochure"))} target="_blank" rel="noopener noreferrer" className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm hover:bg-slate-100 transition">Share Brochure</a>
+                                                <a href={getSafeLink(getVal(selectedProperty, "cost_sheet"))} target="_blank" rel="noopener noreferrer" className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm hover:bg-slate-100 transition">Share Cost Sheet</a>
+                                                <a href={getSafeLink(getVal(selectedProperty, "map_link"))} target="_blank" rel="noopener noreferrer" className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm md:col-span-2 hover:bg-slate-100 transition">Share Location Map</a>
                                             </div>
                                         </div>
                                     </div>
@@ -332,12 +467,12 @@
             );
         }
 
-        // --- UPDATED PROPERTY FORM (Matches Exact DB Schema) ---
+        // --- UPDATED PROPERTY FORM ---
         function PropertyForm({ scriptUrl, supabase }) {
             const [form, setForm] = useState({
                 property_name: '', builder_name: '', location: '', price: '', bhk: '', 
                 super_built_up_a: '', possession_date: '', construction_sta: '',
-                amenities: '', brochure: '', 'cover-image': '', usp_s: '',
+                amenities: '', brochure: '', cover_image: '', usp_s: '',
                 commision_deta: '', point_of_contact: '', website_link: '', map_link: '',
                 lead_registration: '', cost_sheet: '', property_type: '', total_units: '', availability: ''
             });
@@ -357,7 +492,7 @@
                 const { error } = await supabase.from('properties').insert([form]);
                 if (!error) {
                     alert("Listing Live!");
-                    setForm({ property_name: '', builder_name: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', amenities: '', brochure: '', 'cover-image': '', usp_s: '', commision_deta: '', point_of_contact: '', website_link: '', map_link: '', lead_registration: '', cost_sheet: '', property_type: '', total_units: '', availability: ''});
+                    setForm({ property_name: '', builder_name: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', amenities: '', brochure: '', cover_image: '', usp_s: '', commision_deta: '', point_of_contact: '', website_link: '', map_link: '', lead_registration: '', cost_sheet: '', property_type: '', total_units: '', availability: ''});
                 } else alert(error.message);
             }
 
@@ -366,45 +501,45 @@
                     <h2 className="text-2xl font-black uppercase italic border-b pb-4 text-blue-900">Master Property Form</h2>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <input placeholder="Property Name" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, property_name: e.target.value})} value={form.property_name}/>
-                        <input placeholder="Builder Name" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, builder_name: e.target.value})} value={form.builder_name}/>
-                        <select className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, property_type: e.target.value})} value={form.property_type}>
+                        <input placeholder="Property Name" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, property_name: e.target.value})} value={form.property_name}/>
+                        <input placeholder="Builder Name" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, builder_name: e.target.value})} value={form.builder_name}/>
+                        <select className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, property_type: e.target.value})} value={form.property_type}>
                             <option value="">Property Type</option><option>Apartment</option><option>Villa</option><option>Plot</option>
                         </select>
-                        <input placeholder="Location" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, location: e.target.value})} value={form.location}/>
-                        <input placeholder="Price (e.g. 1.2 Cr)" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, price: e.target.value})} value={form.price}/>
-                        <input placeholder="BHK (e.g. 2, 3 BHK)" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, bhk: e.target.value})} value={form.bhk}/>
-                        <input placeholder="Area (e.g. 1200 SqFt)" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, super_built_up_a: e.target.value})} value={form.super_built_up_a}/>
-                        <input type="date" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, possession_date: e.target.value})} value={form.possession_date}/>
-                        <select className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, construction_sta: e.target.value})} value={form.construction_sta}>
+                        <input placeholder="Location" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, location: e.target.value})} value={form.location}/>
+                        <input placeholder="Price (e.g. 1.2 Cr)" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, price: e.target.value})} value={form.price}/>
+                        <input placeholder="BHK (e.g. 2, 3 BHK)" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, bhk: e.target.value})} value={form.bhk}/>
+                        <input placeholder="Area (e.g. 1200 SqFt)" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, super_built_up_a: e.target.value})} value={form.super_built_up_a}/>
+                        <input type="date" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, possession_date: e.target.value})} value={form.possession_date}/>
+                        <select className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, construction_sta: e.target.value})} value={form.construction_sta}>
                             <option value="">Status</option><option>Ready to Move</option><option>Under Construction</option><option>New Launch</option>
                         </select>
-                        <input placeholder="Total Units" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, total_units: e.target.value})} value={form.total_units}/>
-                        <input placeholder="Availability" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm" onChange={e => setForm({...form, availability: e.target.value})} value={form.availability}/>
+                        <input placeholder="Total Units" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, total_units: e.target.value})} value={form.total_units}/>
+                        <input placeholder="Availability" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, availability: e.target.value})} value={form.availability}/>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <textarea placeholder="USPs (Line by Line)" rows="3" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm resize-none" onChange={e => setForm({...form, usp_s: e.target.value})} value={form.usp_s}/>
-                        <textarea placeholder="Amenities (Comma separated)" rows="3" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm resize-none" onChange={e => setForm({...form, amenities: e.target.value})} value={form.amenities}/>
+                        <textarea placeholder="USPs (Line by Line)" rows="3" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, usp_s: e.target.value})} value={form.usp_s}/>
+                        <textarea placeholder="Amenities (Comma separated)" rows="3" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, amenities: e.target.value})} value={form.amenities}/>
                     </div>
 
                     {/* Admin Specific Links */}
                     <div className="p-6 bg-slate-900 rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-4 border-t-4 border-blue-500">
                         <h3 className="col-span-1 md:col-span-2 text-[10px] font-black text-blue-400 uppercase tracking-widest">Admin Backend Links & Data</h3>
-                        <input placeholder="Commission %" className="p-4 bg-slate-800 text-white border border-slate-700 rounded-xl font-bold text-sm" onChange={e => setForm({...form, commision_deta: e.target.value})} value={form.commision_deta}/>
-                        <input placeholder="POC (Name / Number)" className="p-4 bg-slate-800 text-white border border-slate-700 rounded-xl font-bold text-sm" onChange={e => setForm({...form, point_of_contact: e.target.value})} value={form.point_of_contact}/>
-                        <input placeholder="Builder Website Link" className="p-4 bg-slate-800 text-white border border-slate-700 rounded-xl font-bold text-sm" onChange={e => setForm({...form, website_link: e.target.value})} value={form.website_link}/>
-                        <input placeholder="Lead Register Link / Email" className="p-4 bg-slate-800 text-white border border-slate-700 rounded-xl font-bold text-sm" onChange={e => setForm({...form, lead_registration: e.target.value})} value={form.lead_registration}/>
-                        <input placeholder="Map Link (Google Maps URL)" className="p-4 bg-slate-800 text-white border border-slate-700 rounded-xl font-bold text-sm md:col-span-2" onChange={e => setForm({...form, map_link: e.target.value})} value={form.map_link}/>
+                        <input placeholder="Commission %" className="p-4 bg-slate-800 text-white border border-slate-700 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-400" onChange={e => setForm({...form, commision_deta: e.target.value})} value={form.commision_deta}/>
+                        <input placeholder="POC (Name / Number)" className="p-4 bg-slate-800 text-white border border-slate-700 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-400" onChange={e => setForm({...form, point_of_contact: e.target.value})} value={form.point_of_contact}/>
+                        <input placeholder="Builder Website Link" className="p-4 bg-slate-800 text-white border border-slate-700 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-400" onChange={e => setForm({...form, website_link: e.target.value})} value={form.website_link}/>
+                        <input placeholder="Lead Register Link / Email" className="p-4 bg-slate-800 text-white border border-slate-700 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-400" onChange={e => setForm({...form, lead_registration: e.target.value})} value={form.lead_registration}/>
+                        <input placeholder="Map Link (Google Maps URL)" className="p-4 bg-slate-800 text-white border border-slate-700 rounded-xl font-bold text-sm md:col-span-2 outline-none focus:ring-2 focus:ring-blue-400" onChange={e => setForm({...form, map_link: e.target.value})} value={form.map_link}/>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t">
-                        <div><label className="text-[10px] font-black uppercase mb-2 block text-slate-500">Cover Image</label><input type="file" onChange={e => upload(e, 'cover-image')} className="text-xs"/></div>
-                        <div><label className="text-[10px] font-black uppercase mb-2 block text-slate-500">Brochure (PDF)</label><input type="file" onChange={e => upload(e, 'brochure')} className="text-xs"/></div>
-                        <div><label className="text-[10px] font-black uppercase mb-2 block text-slate-500">Cost Sheet (PDF)</label><input type="file" onChange={e => upload(e, 'cost_sheet')} className="text-xs"/></div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-slate-100">
+                        <div><label className="text-[10px] font-black uppercase mb-2 block text-slate-500 tracking-widest">Cover Image</label><input type="file" onChange={e => upload(e, 'cover_image')} className="text-xs text-slate-600"/></div>
+                        <div><label className="text-[10px] font-black uppercase mb-2 block text-slate-500 tracking-widest">Brochure (PDF)</label><input type="file" onChange={e => upload(e, 'brochure')} className="text-xs text-slate-600"/></div>
+                        <div><label className="text-[10px] font-black uppercase mb-2 block text-slate-500 tracking-widest">Cost Sheet (PDF)</label><input type="file" onChange={e => upload(e, 'cost_sheet')} className="text-xs text-slate-600"/></div>
                     </div>
                     
-                    <button onClick={save} className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-xl transition">Publish Property</button>
+                    <button onClick={save} className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-xl transition mt-4">Publish Property</button>
                 </div>
             );
         }
