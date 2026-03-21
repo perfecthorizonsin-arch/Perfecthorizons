@@ -18,9 +18,10 @@
         .history-scroll::-webkit-scrollbar { width: 4px; }
         .history-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
         .toggle-active { background-color: #f59e0b; color: white; border-color: #f59e0b; }
+        .priority-hot { border-left: 4px solid #ef4444; background: #fef2f2; }
     </style>
 </head>
-<body class="bg-gray-50 font-sans text-gray-900">
+<body class="bg-gray-50 font-sans text-gray-900 pb-20 md:pb-0">
     <div id="root"></div>
 
     <script type="text/babel">
@@ -28,8 +29,6 @@
 
         const supabaseUrl = 'https://uiiovtsktllvtecfokik.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
-        
-        // SECURITY: Tab closing wipes data (Session Storage)
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, { auth: { storage: window.sessionStorage } });
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJOoh4meGBQOZYZpUWqK1DmDS_B8fXSC5NlwPcTX3GUfP7gzYQKvatgj9IFT3Txy-FCQ/exec";
 
@@ -46,8 +45,7 @@
             useEffect(() => {
                 if (!session) return;
                 let idleTimer;
-                const logoutTime = 60 * 60 * 1000; // 1 Hour in milliseconds
-
+                const logoutTime = 60 * 60 * 1000; 
                 const resetIdleTimer = () => {
                     clearTimeout(idleTimer);
                     idleTimer = setTimeout(() => {
@@ -56,13 +54,11 @@
                         window.location.reload();
                     }, logoutTime);
                 };
-
                 window.addEventListener('mousemove', resetIdleTimer);
                 window.addEventListener('keydown', resetIdleTimer);
                 window.addEventListener('touchstart', resetIdleTimer);
                 window.addEventListener('scroll', resetIdleTimer);
                 resetIdleTimer();
-
                 return () => {
                     window.removeEventListener('mousemove', resetIdleTimer);
                     window.removeEventListener('keydown', resetIdleTimer);
@@ -120,7 +116,13 @@
             }, [leads, showTodayOnly]);
 
             async function updateLead(lead, field, value) {
-                if (lead[field] === value && field !== 'add_note') return; 
+                // Formatting checks to prevent false re-saves
+                if (field === 'follow_up_at' || field === 'site_visit_at') {
+                    if (lead[field] && new Date(lead[field]).getTime() === new Date(value).getTime()) return;
+                } else if (lead[field] === value && field !== 'add_note') {
+                    return;
+                }
+
                 let updates = { [field]: value };
                 const timestamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
 
@@ -161,126 +163,13 @@
                     default: return 'bg-slate-50 text-slate-700 border-slate-200';
                 }
             };
-
             const getPriorityColor = (priority) => {
                 switch(priority) {
-                    case 'Hot': return 'bg-red-100 text-red-700 border-red-300 font-black';
+                    case 'Hot': return 'bg-red-100 text-red-700 border-red-300 font-black shadow-sm';
                     case 'Cold': return 'bg-blue-50 text-blue-600 border-blue-200';
-                    default: return 'bg-amber-50 text-amber-700 border-amber-300'; // Warm
+                    default: return 'bg-amber-50 text-amber-700 border-amber-300'; 
                 }
             };
-
-            const formatLogDate = (dateString) => {
-                return new Date(dateString).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
-            };
-
-            // RENDER INDIVIDUAL LEAD (Used for both Desktop & Mobile)
-            const LeadDataModule = ({ lead, isMobile }) => (
-                <>
-                    {/* CUSTOMER INFO */}
-                    <td className={`p-4 md:p-5 ${isMobile ? 'block border-b' : 'min-w-[180px]'}`}>
-                        <div className="font-black text-slate-900 uppercase text-sm md:text-[13px]">{lead.customer_name}</div>
-                        <div className="text-blue-600 font-bold mt-0.5 text-sm md:text-xs">{lead.phone_number}</div>
-                        
-                        {/* Time Logged for Website/Manual */}
-                        {(leadCategory === 'website' || leadCategory === 'manual') && lead.created_at && (
-                            <div className="text-[10px] text-slate-400 font-semibold mt-1 tracking-widest uppercase">
-                                Logged: {formatLogDate(lead.created_at)}
-                            </div>
-                        )}
-
-                        <div className={`mt-4 flex gap-2 ${isMobile ? 'w-full' : ''}`}>
-                            <a href={`https://wa.me/91${lead.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-green-500 text-white text-[10px] md:text-[8px] font-black px-4 md:px-2 py-2 md:py-1 rounded uppercase tracking-widest shadow-sm hover:scale-105 transition flex-1 text-center">WhatsApp</a>
-                            {/* NEW: Dedicated Call Button (Visible on Mobile) */}
-                            {isMobile && <a href={`tel:${lead.phone_number}`} className="bg-blue-500 text-white text-[10px] font-black px-4 py-2 rounded uppercase tracking-widest shadow-sm flex-1 text-center">📞 Call</a>}
-                        </div>
-                    </td>
-                    
-                    {/* STATUS & LOCK */}
-                    <td className={`p-4 md:p-5 ${isMobile ? 'block border-b' : 'min-w-[150px]'}`}>
-                        {isMobile && <label className="text-[9px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Status & Priority</label>}
-                        <select 
-                            value={lead.lead_status || 'Un called'} 
-                            onChange={(e) => updateLead(lead, 'lead_status', e.target.value)} 
-                            className={`block w-full mb-3 p-2 md:p-2 border rounded-lg text-[10px] md:text-[9px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${getStatusColor(lead.lead_status)}`}
-                        >
-                            {(!lead.lead_status || lead.lead_status === 'Un called') && <option value="Un called">Un called</option>}
-                            <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option>
-                            <option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
-                        </select>
-
-                        <select 
-                            value={lead.lead_priority || 'Warm'} 
-                            onChange={(e) => updateLead(lead, 'lead_priority', e.target.value)} 
-                            className={`block w-full p-2 border rounded-lg text-[10px] md:text-[9px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${getPriorityColor(lead.lead_priority)}`}
-                        >
-                            <option>Hot</option><option>Warm</option><option>Cold</option>
-                        </select>
-                    </td>
-
-                    {/* SCHEDULING */}
-                    <td className={`p-4 md:p-5 ${isMobile ? 'block border-b' : 'min-w-[160px]'}`}>
-                        {isMobile && <label className="text-[9px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Scheduling</label>}
-                        <div className="space-y-3">
-                            <div>
-                                <span className="text-[9px] md:text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">Call Back</span>
-                                <input 
-                                    type="datetime-local" 
-                                    defaultValue={lead.follow_up_at ? lead.follow_up_at.slice(0,16) : ''} 
-                                    onBlur={(e) => updateLead(lead, 'follow_up_at', e.target.value)} 
-                                    className="w-full p-2 border border-blue-200 bg-blue-50 rounded-lg text-[11px] md:text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500" 
-                                />
-                            </div>
-
-                            {lead.lead_status === 'SV Scheduled' && (
-                                <div className="animate-fadeIn pt-3 border-t border-slate-100">
-                                    <span className="text-[9px] md:text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">Site Visit Date</span>
-                                    <input 
-                                        type="date" 
-                                        defaultValue={lead.site_visit_at || ''} 
-                                        onBlur={(e) => updateLead(lead, 'site_visit_at', e.target.value)} 
-                                        className="w-full p-2 border border-teal-200 bg-teal-50 rounded-lg text-[11px] md:text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-teal-500" 
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </td>
-
-                    {/* HISTORY LOGGER & TEXTAREA */}
-                    <td className={`p-4 md:p-5 ${isMobile ? 'block' : ''}`}>
-                        {isMobile && <label className="text-[9px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Activity & Notes</label>}
-                        <div className="flex flex-col gap-2">
-                            <div className="h-24 history-scroll overflow-y-auto bg-slate-50 border border-slate-200 p-3 rounded-lg text-[11px] md:text-[10px] font-medium whitespace-pre-wrap leading-relaxed text-slate-700 shadow-inner">
-                                {lead.call_remark || <span className="text-slate-400 italic">No activity recorded...</span>}
-                            </div>
-                            
-                            {/* MULTI-LINE TEXTAREA WITH BUTTON */}
-                            <div className="flex flex-col gap-2 border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-blue-500">
-                                <textarea 
-                                    id={`note-${lead.id}`}
-                                    rows="2"
-                                    placeholder="Type multi-line notes here..." 
-                                    className="w-full p-2 text-[11px] md:text-[10px] outline-none resize-none"
-                                />
-                                <div className="bg-slate-50 p-1 flex justify-end border-t border-slate-100">
-                                    <button 
-                                        onClick={() => {
-                                            const el = document.getElementById(`note-${lead.id}`);
-                                            if (el && el.value.trim()) {
-                                                updateLead(lead, 'add_note', el.value);
-                                                el.value = ''; 
-                                            }
-                                        }}
-                                        className="bg-slate-900 text-white text-[9px] font-black px-4 py-1.5 rounded uppercase tracking-widest hover:bg-blue-600 transition"
-                                    >
-                                        Save Note
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                </>
-            );
 
             if (!session) return <LoginForm supabase={supabase} />;
 
@@ -291,52 +180,49 @@
                         <div className="flex gap-4 md:gap-6 text-[10px] md:text-[11px] font-black uppercase tracking-[0.15em] items-center">
                             <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'text-blue-400' : 'text-slate-400 hover:text-white transition'}>CRM</button>
                             <button onClick={() => setView('add-property')} className={view === 'add-property' ? 'text-blue-400' : 'text-slate-400 hover:text-white transition'}>Listings</button>
-                            <button onClick={() => supabase.auth.signOut()} className="text-red-400 ml-2">Logout</button>
+                            <button onClick={() => supabase.auth.signOut()} className="text-red-400 ml-2 bg-red-950/50 px-3 py-1.5 rounded-lg border border-red-900 hidden md:block">Logout</button>
+                            <button onClick={() => supabase.auth.signOut()} className="text-red-400 md:hidden text-lg">🚪</button>
                         </div>
                     </nav>
 
-                    <main className="p-3 md:p-8 max-w-7xl mx-auto w-full space-y-6">
+                    <main className="p-3 md:p-8 max-w-7xl mx-auto w-full space-y-5 md:space-y-6">
                         {view === 'dashboard' && (
                             <>
-                                {/* Analytics */}
-                                <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-200 overflow-hidden animate-fadeIn overflow-x-auto">
-                                    <table className="w-full text-sm text-left min-w-[500px]">
+                                {/* Analytics Block */}
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+                                    <table className="w-full text-sm text-left min-w-[450px]">
                                         <thead className="bg-slate-50 border-b uppercase text-[9px] md:text-[10px] font-black text-slate-400 tracking-widest">
                                             <tr>
-                                                <th className="p-4 md:p-5">Team Metric (Tharun)</th>
-                                                <th className="p-4 md:p-5">Total</th>
-                                                <th className="p-4 md:p-5">Uncalled</th>
-                                                <th className="p-4 md:p-5">Called & Working</th>
-                                                <th className="p-4 md:p-5">Rejected</th>
+                                                <th className="p-3 md:p-5">Team Metric (Tharun)</th>
+                                                <th className="p-3 md:p-5 text-center">Total</th>
+                                                <th className="p-3 md:p-5 text-center">Uncalled</th>
+                                                <th className="p-3 md:p-5 text-center">Working</th>
+                                                <th className="p-3 md:p-5 text-center">Rejected</th>
                                             </tr>
                                         </thead>
                                         <tbody className="font-bold text-slate-700">
                                             <tr>
-                                                <td className="p-4 md:p-5 border-b uppercase text-[10px] md:text-[11px] tracking-tighter">Volume ({leadCategory})</td>
-                                                <td className="p-4 md:p-5 border-b">{stats.total}</td>
-                                                <td className="p-4 md:p-5 border-b text-green-600">{stats.uncalled}</td>
-                                                <td className="p-4 md:p-5 border-b text-blue-600">{stats.called}</td>
-                                                <td className="p-4 md:p-5 border-b text-red-600">{stats.rejected}</td>
+                                                <td className="p-3 md:p-5 border-b uppercase text-[10px] md:text-[11px] tracking-tighter">Volume ({leadCategory})</td>
+                                                <td className="p-3 md:p-5 border-b text-center">{stats.total}</td>
+                                                <td className="p-3 md:p-5 border-b text-green-600 text-center">{stats.uncalled}</td>
+                                                <td className="p-3 md:p-5 border-b text-blue-600 text-center">{stats.called}</td>
+                                                <td className="p-3 md:p-5 border-b text-red-600 text-center">{stats.rejected}</td>
                                             </tr>
                                         </tbody>
                                     </table>
                                 </div>
 
-                                {/* Category Switcher & Filters */}
+                                {/* Controls Row */}
                                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 border-b border-slate-200 pb-4 md:pb-2">
                                     <div className="flex gap-4 md:gap-8 overflow-x-auto w-full md:w-auto">
                                         {['website', 'bulk', 'manual'].map(cat => (
                                             <button key={cat} onClick={() => setLeadCategory(cat)} className={`pb-2 text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap border-b-2 ${leadCategory === cat ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400 hover:text-slate-700'}`}>
-                                                {cat}
+                                                {cat} Leads
                                             </button>
                                         ))}
                                     </div>
-                                    
-                                    <div className="flex w-full md:w-auto md:ml-auto items-center gap-2 justify-between md:justify-end">
-                                        <button 
-                                            onClick={() => setShowTodayOnly(!showTodayOnly)} 
-                                            className={`flex-1 md:flex-none text-[9px] md:text-[10px] px-3 md:px-4 py-2.5 md:py-2 rounded-lg md:rounded-full font-black uppercase tracking-widest border transition-all text-center ${showTodayOnly ? 'toggle-active shadow-lg shadow-amber-500/30' : 'border-slate-300 text-slate-500 bg-white hover:bg-slate-50'}`}
-                                        >
+                                    <div className="flex w-full md:w-auto md:ml-auto items-center gap-2 justify-between">
+                                        <button onClick={() => setShowTodayOnly(!showTodayOnly)} className={`flex-1 md:flex-none text-[9px] md:text-[10px] px-3 md:px-4 py-2.5 md:py-2 rounded-lg md:rounded-full font-black uppercase tracking-widest border transition-all text-center ${showTodayOnly ? 'toggle-active shadow-lg shadow-amber-500/30' : 'border-slate-300 text-slate-500 bg-white hover:bg-slate-50'}`}>
                                             {showTodayOnly ? "📅 Today Only" : "📅 Filter Today"}
                                         </button>
                                         <button onClick={() => setShowManualModal(true)} className="flex-1 md:flex-none bg-blue-600 text-white text-[9px] md:text-[10px] px-3 md:px-6 py-2.5 md:py-2 rounded-lg md:rounded-full font-black uppercase tracking-widest shadow-lg hover:bg-slate-900 transition-colors text-center">
@@ -345,14 +231,14 @@
                                     </div>
                                 </div>
 
-                                {/* LISTING: DESKTOP AND MOBILE LOGIC */}
+                                {/* LEAD LISTINGS */}
                                 {loading ? (
                                     <div className="p-20 text-center font-bold text-slate-300 uppercase italic animate-pulse">Syncing Database...</div>
                                 ) : displayedLeads.length === 0 ? (
-                                    <div className="p-20 text-center font-bold text-slate-400 uppercase italic bg-slate-50 rounded-2xl border border-slate-200">No leads found for this view.</div>
+                                    <div className="p-10 text-center font-bold text-slate-400 uppercase italic bg-slate-50 rounded-2xl border border-slate-200">No leads found for this view.</div>
                                 ) : (
                                     <>
-                                        {/* DESKTOP TABLE VIEW (Hidden on Mobile) */}
+                                        {/* 🖥️ DESKTOP VIEW (Hidden on Mobile) */}
                                         <div className="hidden lg:block bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                                             <table className="w-full text-xs text-left">
                                                 <thead className="bg-slate-50/50 text-slate-400 uppercase font-black text-[9px] tracking-widest border-b">
@@ -365,23 +251,117 @@
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100">
                                                     {displayedLeads.map(lead => (
-                                                        <tr key={lead.id} className="hover:bg-slate-50/50 transition">
-                                                            <LeadDataModule lead={lead} isMobile={false} />
+                                                        <tr key={lead.id} className={`hover:bg-slate-50/50 transition ${lead.lead_priority === 'Hot' ? 'priority-hot' : ''}`}>
+                                                            <td className="p-5 min-w-[180px]">
+                                                                <div className="font-black text-slate-900 uppercase text-[13px]">{lead.customer_name}</div>
+                                                                <div className="text-blue-600 font-bold mt-0.5">{lead.phone_number}</div>
+                                                                {(leadCategory === 'website' || leadCategory === 'manual') && lead.created_at && (
+                                                                    <div className="text-[9px] text-slate-400 font-bold mt-1 tracking-widest uppercase">Logged: {new Date(lead.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</div>
+                                                                )}
+                                                                <div className="mt-3 flex gap-2">
+                                                                    <a href={`https://wa.me/91${lead.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-green-500 text-white text-[8px] font-black px-3 py-1.5 rounded uppercase tracking-widest shadow-sm hover:scale-105 transition">WhatsApp 💬</a>
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-5 min-w-[150px]">
+                                                                <select value={lead.lead_status || 'Un called'} onChange={(e) => updateLead(lead, 'lead_status', e.target.value)} className={`block w-full mb-2 p-2 border rounded-lg text-[9px] font-black uppercase tracking-widest outline-none transition-colors ${getStatusColor(lead.lead_status)}`}>
+                                                                    {(!lead.lead_status || lead.lead_status === 'Un called') && <option value="Un called">Un called</option>}
+                                                                    <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option>
+                                                                    <option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
+                                                                </select>
+                                                                <select value={lead.lead_priority || 'Warm'} onChange={(e) => updateLead(lead, 'lead_priority', e.target.value)} className={`block w-full p-2 border rounded-lg text-[9px] font-black uppercase tracking-widest outline-none transition-colors ${getPriorityColor(lead.lead_priority)}`}>
+                                                                    <option>Hot</option><option>Warm</option><option>Cold</option>
+                                                                </select>
+                                                            </td>
+                                                            <td className="p-5 min-w-[160px]">
+                                                                <div className="space-y-3">
+                                                                    <div>
+                                                                        <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">Call Back</span>
+                                                                        <input type="datetime-local" defaultValue={lead.follow_up_at ? lead.follow_up_at.slice(0,16) : ''} onChange={(e) => updateLead(lead, 'follow_up_at', e.target.value)} className="w-full p-2 border border-blue-200 bg-blue-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" />
+                                                                    </div>
+                                                                    {lead.lead_status === 'SV Scheduled' && (
+                                                                        <div className="animate-fadeIn pt-3 border-t border-slate-100">
+                                                                            <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">Site Visit Date</span>
+                                                                            <input type="date" defaultValue={lead.site_visit_at || ''} onChange={(e) => updateLead(lead, 'site_visit_at', e.target.value)} className="w-full p-2 border border-teal-200 bg-teal-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-5">
+                                                                <div className="flex flex-col gap-2">
+                                                                    <div className="h-20 history-scroll overflow-y-auto bg-slate-50 border border-slate-200 p-2 rounded-lg text-[10px] font-medium whitespace-pre-wrap leading-relaxed text-slate-700 shadow-inner">
+                                                                        {lead.call_remark || <span className="text-slate-400 italic">No activity recorded...</span>}
+                                                                    </div>
+                                                                    <div className="flex gap-2">
+                                                                        <textarea id={`desk-note-${lead.id}`} rows="1" placeholder="Type notes... (Press Enter for new line)" className="flex-1 p-2 border border-slate-200 rounded-lg text-[10px] outline-none focus:ring-2 focus:ring-blue-500 shadow-sm resize-none" />
+                                                                        <button onClick={() => { const el = document.getElementById(`desk-note-${lead.id}`); if (el && el.value.trim()) { updateLead(lead, 'add_note', el.value); el.value = ''; } }} className="bg-slate-900 text-white text-[9px] font-black px-3 rounded-lg uppercase tracking-widest hover:bg-blue-600 transition">Save</button>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
                                             </table>
                                         </div>
 
-                                        {/* MOBILE CARDS VIEW (Hidden on Desktop) */}
+                                        {/* 📱 MOBILE CARDS VIEW (Hidden on Desktop) */}
                                         <div className="lg:hidden flex flex-col gap-4">
                                             {displayedLeads.map(lead => (
-                                                <div key={`mob-${lead.id}`} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                                                    <table className="w-full text-xs text-left">
-                                                        <tbody>
-                                                            <LeadDataModule lead={lead} isMobile={true} />
-                                                        </tbody>
-                                                    </table>
+                                                <div key={`mob-${lead.id}`} className={`bg-white rounded-2xl shadow-sm border p-4 flex flex-col gap-4 ${lead.lead_priority === 'Hot' ? 'border-red-300 bg-red-50/10' : 'border-slate-200'}`}>
+                                                    
+                                                    {/* Header */}
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h3 className="font-black text-slate-900 uppercase text-sm">{lead.customer_name}</h3>
+                                                            <p className="text-blue-600 font-bold text-sm mt-0.5">{lead.phone_number}</p>
+                                                            {(leadCategory === 'website' || leadCategory === 'manual') && lead.created_at && (
+                                                                <p className="text-[9px] text-slate-400 font-bold tracking-widest uppercase mt-1">Logged: {new Date(lead.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</p>
+                                                            )}
+                                                        </div>
+                                                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${getPriorityColor(lead.lead_priority)}`}>
+                                                            {lead.lead_priority || 'Warm'}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Actions */}
+                                                    <div className="flex gap-2">
+                                                        <a href={`https://wa.me/91${lead.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="flex-1 bg-green-500 text-white text-[11px] font-black py-2.5 rounded-xl uppercase tracking-widest shadow-sm text-center">WhatsApp</a>
+                                                        <a href={`tel:${lead.phone_number}`} className="flex-1 bg-blue-500 text-white text-[11px] font-black py-2.5 rounded-xl uppercase tracking-widest shadow-sm text-center">📞 Call</a>
+                                                    </div>
+
+                                                    {/* Status Selector */}
+                                                    <div className="mt-1">
+                                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Current Status</label>
+                                                        <select value={lead.lead_status || 'Un called'} onChange={(e) => updateLead(lead, 'lead_status', e.target.value)} className={`w-full p-2.5 border rounded-xl text-[11px] font-black uppercase tracking-widest outline-none shadow-sm ${getStatusColor(lead.lead_status)}`}>
+                                                            {(!lead.lead_status || lead.lead_status === 'Un called') && <option value="Un called">Un called</option>}
+                                                            <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option>
+                                                            <option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {/* Scheduling */}
+                                                    <div className="grid grid-cols-1 gap-3 border-t border-slate-100 pt-3">
+                                                        <div className="flex flex-col gap-1">
+                                                            <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Callback Date & Time</label>
+                                                            <input type="datetime-local" defaultValue={lead.follow_up_at ? lead.follow_up_at.slice(0,16) : ''} onChange={(e) => updateLead(lead, 'follow_up_at', e.target.value)} className="w-full p-2.5 border border-blue-200 bg-blue-50 rounded-xl text-[11px] font-bold text-slate-700 outline-none" />
+                                                        </div>
+                                                        {lead.lead_status === 'SV Scheduled' && (
+                                                            <div className="flex flex-col gap-1 animate-fadeIn">
+                                                                <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest">Site Visit Scheduled</label>
+                                                                <input type="date" defaultValue={lead.site_visit_at || ''} onChange={(e) => updateLead(lead, 'site_visit_at', e.target.value)} className="w-full p-2.5 border border-teal-200 bg-teal-50 rounded-xl text-[11px] font-bold text-slate-700 outline-none" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Notes */}
+                                                    <div className="border-t border-slate-100 pt-3">
+                                                        <div className="h-20 history-scroll overflow-y-auto bg-slate-50 border border-slate-200 p-3 rounded-xl text-[11px] font-medium whitespace-pre-wrap leading-relaxed text-slate-700 shadow-inner mb-2">
+                                                            {lead.call_remark || <span className="text-slate-400 italic">No activity recorded...</span>}
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <textarea id={`mob-note-${lead.id}`} rows="1" placeholder="Type new remark..." className="flex-1 p-2.5 border border-slate-200 rounded-xl text-[11px] outline-none resize-none shadow-sm focus:ring-2 focus:ring-blue-500" />
+                                                            <button onClick={() => { const el = document.getElementById(`mob-note-${lead.id}`); if (el && el.value.trim()) { updateLead(lead, 'add_note', el.value); el.value = ''; } }} className="bg-slate-900 text-white text-[10px] font-black px-4 rounded-xl uppercase tracking-widest shadow-md">Save</button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
@@ -395,7 +375,7 @@
                     {/* MANUAL MODAL */}
                     {showManualModal && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-end md:items-center justify-center p-0 md:p-4">
-                            <div className="bg-white rounded-t-3xl md:rounded-[40px] p-6 md:p-10 w-full max-w-md animate-fadeIn shadow-2xl relative">
+                            <div className="bg-white rounded-t-[30px] md:rounded-[40px] p-6 md:p-10 w-full max-w-md animate-fadeIn shadow-2xl relative">
                                 <button onClick={() => setShowManualModal(false)} className="absolute top-4 right-6 text-3xl text-slate-300">&times;</button>
                                 <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter mb-6">Manual Registration</h2>
                                 <ManualLeadForm supabase={supabase} onSuccess={() => {setShowManualModal(false); fetchLeads();}} />
@@ -406,16 +386,13 @@
             );
         }
 
-        // --- SUB-COMPONENTS (ManualLeadForm, LoginForm, PropertyForm) ---
         function ManualLeadForm({ supabase, onSuccess }) {
             const [form, setForm] = useState({ name: '', phone: '', email: '', project: '', source: 'Manual' });
             const [loading, setLoading] = useState(false);
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 setLoading(true);
-                const { error } = await supabase.from('leads').insert([{
-                    customer_name: form.name, phone_number: form.phone, customer_email: form.email, project_interested_in: form.project, lead_source: form.source, lead_status: 'Un called'
-                }]);
+                const { error } = await supabase.from('leads').insert([{ customer_name: form.name, phone_number: form.phone, customer_email: form.email, project_interested_in: form.project, lead_source: form.source, lead_status: 'Un called' }]);
                 if (!error) onSuccess();
                 setLoading(false);
             };
@@ -426,7 +403,7 @@
                     <select className="w-full p-4 bg-slate-50 border rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, source: e.target.value})}>
                         <option>Manual</option><option>MagicBricks</option><option>Housing.com</option><option>Direct Walk-in</option>
                     </select>
-                    <button className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl hover:bg-slate-900 transition mt-2">Inject Lead</button>
+                    <button className="w-full bg-blue-600 text-white font-black py-5 rounded-3xl uppercase tracking-widest shadow-xl hover:bg-slate-900 transition mt-2">Inject Lead</button>
                 </form>
             );
         }
@@ -452,7 +429,6 @@
         }
 
         function PropertyForm({ scriptUrl, supabase }) {
-            // (Property form remains fully functional as provided in v3.3)
             const [uploading, setUploading] = useState(false);
             const [uploadStatus, setUploadStatus] = useState("");
             const [form, setForm] = useState({ property_name: '', price: '', location: '', property_type: '', construction_status: '', bhk: '', builder_name: '', cover_image: '', brochure: '', cost_sheet: '' });
