@@ -56,13 +56,23 @@
                 window.onmousemove = resetTimer;
                 window.onkeydown = resetTimer;
                 resetTimer();
+
+                return () => clearTimeout(idleTimer);
             }, [session]);
 
+            // FIX: Added the onAuthStateChange listener back in so the app knows when you login/logout
             useEffect(() => {
                 supabase.auth.getSession().then(({ data: { session } }) => {
                     setSession(session);
-                    if (session) fetchLeads();
+                    if (session && view === 'dashboard') fetchLeads();
                 });
+
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                    setSession(session);
+                    if (session && view === 'dashboard') fetchLeads();
+                });
+
+                return () => subscription.unsubscribe();
             }, [leadCategory, view]);
 
             async function fetchLeads() {
@@ -102,6 +112,7 @@
                 if (field === 'follow_up_at') updates.call_remark = `[${stamp}] Callback Set: ${value}\n${lead.call_remark || ''}`;
                 if (field === 'site_visit_at') updates.call_remark = `[${stamp}] SV Booked: ${value}\n${lead.call_remark || ''}`;
                 if (field === 'add_note') {
+                    if (!value.trim()) return;
                     updates.call_remark = `[${stamp}] Note: ${value}\n${lead.call_remark || ''}`;
                     delete updates.add_note;
                 }
@@ -289,9 +300,7 @@
                             </div>
                         )}
 
-                        {/* FULL PAGE PROJECT LIBRARY */}
                         {view === 'library' && <ProjectLibrary supabase={supabase} />}
-                        
                         {view === 'add' && <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} />}
                     </main>
 
@@ -300,7 +309,7 @@
             );
         }
 
-        // --- FULL PAGE PROJECT LIBRARY (NO MORE POPUPS!) ---
+        // --- FULL PAGE PROJECT LIBRARY ---
         function ProjectLibrary({ supabase }) {
             const [data, setData] = useState([]);
             const [loading, setLoading] = useState(true);
@@ -329,9 +338,6 @@
                 return (num < 1 && num > 0) ? (num * 100).toFixed(1) + "%" : num + "%";
             };
 
-            const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : "N/A";
-
-            // PREVENTS THE NEW TAB LOGIN BUG
             const openLink = (rawLink) => {
                 if (!rawLink || rawLink.trim() === '') {
                     alert("This link was not provided for this property.");
@@ -341,11 +347,6 @@
                 if (link.includes('@') && !link.startsWith('mailto:')) link = `mailto:${link}`;
                 else if (!link.startsWith('http') && !link.includes('@')) link = `https://${link}`;
                 window.open(link, '_blank');
-            };
-
-            const shareWA = (p) => {
-                const txt = `*${getVal(p, "property_name")}* by ${getVal(p, "builder_name")}\n📍 ${getVal(p, "location")}\n💰 ${getVal(p, "price")}\n📐 ${getVal(p, "bhk")} BHK | ${getVal(p, "super_built_up_a") || getVal(p, "super_built_up_area") || "Area on Request"} Sq.Ft\n\n*View Brochure:* ${getVal(p, "brochure")}`;
-                window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
             };
 
             if (loading) return <div className="text-center py-20 animate-pulse font-black text-slate-400 tracking-widest uppercase">Loading Master Library...</div>;
@@ -379,34 +380,6 @@
                                     <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-tight text-slate-900">{getVal(selectedProperty, "property_name") || 'Property Details'}</h1>
                                     <p className="text-gray-500 text-sm md:text-lg italic mt-1">📍 {getVal(selectedProperty, "location") || 'Bengaluru'}</p>
                                 </div>
-                                <div className="text-left md:text-right mt-4 md:mt-0 flex flex-col items-start md:items-end">
-                                    <div className="text-slate-900 font-black text-3xl md:text-4xl italic tracking-tighter">{getVal(selectedProperty, "price") || 'On Request'}</div>
-                                    <div className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-widest mt-2 shadow-sm">{getVal(selectedProperty, "bhk") || '-'} BHK Config</div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-6 rounded-2xl md:rounded-3xl mb-8 border border-slate-100">
-                                <div><span className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase block mb-1">Builder</span><span className="font-bold text-xs md:text-sm text-slate-800">{getVal(selectedProperty, "builder_name") || "N/A"}</span></div>
-                                <div><span className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase block mb-1">Total Units</span><span className="font-bold text-xs md:text-sm text-slate-800">{getVal(selectedProperty, "total_units") || "N/A"}</span></div>
-                                <div><span className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase block mb-1">Possession</span><span className="font-bold text-xs md:text-sm text-slate-800">{formatDate(getVal(selectedProperty, "possession_date"))}</span></div>
-                                <div><span className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase block mb-1">Status</span><span className="font-bold text-xs md:text-sm text-slate-800">{getVal(selectedProperty, "construction_sta") || "N/A"}</span></div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 mb-10">
-                                {getVal(selectedProperty, "usp_s") && (
-                                    <div>
-                                        <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Project Highlights</h3>
-                                        <ul className="list-disc pl-5 text-xs md:text-sm space-y-2 text-gray-600 leading-relaxed">
-                                            {String(getVal(selectedProperty, "usp_s")).split('\n').filter(u => u.trim() !== "").map((u, i) => <li key={i}>{u.trim()}</li>)}
-                                        </ul>
-                                    </div>
-                                )}
-                                {getVal(selectedProperty, "amenities") && (
-                                    <div>
-                                        <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2">Amenities</h3>
-                                        <p className="text-xs md:text-sm text-gray-600 leading-relaxed bg-white p-4 rounded-xl border border-gray-100 italic whitespace-pre-line">{String(getVal(selectedProperty, "amenities"))}</p>
-                                    </div>
-                                )}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -554,13 +527,28 @@
         function LoginForm({ supabase }) {
             const [email, setEmail] = useState("");
             const [pass, setPass] = useState("");
+            const [loading, setLoading] = useState(false);
+            const [errorMsg, setErrorMsg] = useState("");
+
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setErrorMsg("");
+                const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+                if (error) setErrorMsg(error.message);
+                setLoading(false);
+            };
+
             return (
                 <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-                    <form onSubmit={async (e) => { e.preventDefault(); await supabase.auth.signInWithPassword({ email, password: pass }); }} className="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-sm text-center border-t-8 border-blue-500">
+                    <form onSubmit={handleLogin} className="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-sm text-center border-t-8 border-blue-500 relative">
                         <h1 className="text-3xl font-black italic uppercase mb-8">Horizon CRM</h1>
-                        <input type="email" placeholder="Email" className="w-full p-4 bg-slate-100 rounded-2xl mb-4 font-bold outline-none" onChange={e => setEmail(e.target.value)} />
-                        <input type="password" placeholder="Password" className="w-full p-4 bg-slate-100 rounded-2xl mb-8 font-bold outline-none" onChange={e => setPass(e.target.value)} />
-                        <button className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg">Login</button>
+                        {errorMsg && <div className="text-red-500 text-xs font-bold mb-4">{errorMsg}</div>}
+                        <input type="email" required placeholder="Email" className="w-full p-4 bg-slate-100 rounded-2xl mb-4 font-bold outline-none" onChange={e => setEmail(e.target.value)} />
+                        <input type="password" required placeholder="Password" className="w-full p-4 bg-slate-100 rounded-2xl mb-8 font-bold outline-none" onChange={e => setPass(e.target.value)} />
+                        <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg disabled:opacity-50">
+                            {loading ? "Authenticating..." : "Login"}
+                        </button>
                     </form>
                 </div>
             );
