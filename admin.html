@@ -20,22 +20,313 @@
         .history-scroll::-webkit-scrollbar { width: 4px; }
         .history-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
         .toggle-active { background-color: #f59e0b; color: white; border-color: #f59e0b; }
-        .ring-hot { border-left: 5px solid #ef4444 !important; }
-        .ring-warm { border-left: 5px solid #f59e0b !important; }
-        .ring-cold { border-left: 5px solid #3b82f6 !important; }
+        input[type=range] { -webkit-appearance: none; background: transparent; width: 100%; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; background: #2563eb; cursor: pointer; margin-top: -7px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px; }
+        .pie-chart { border-radius: 50%; display: inline-block; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-900 pb-20 md:pb-0">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
         const supabaseUrl = 'https://uiiovtsktllvtecfokik.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, { auth: { storage: window.sessionStorage } });
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJOoh4meGBQOZYZpUWqK1DmDS_B8fXSC5NlwPcTX3GUfP7gzYQKvatgj9IFT3Txy-FCQ/exec";
+        const WHATSAPP_NUMBER = "919742353260";
 
+        // GLOBAL HELPERS
+        const getVal = (obj, searchKey) => {
+            if (!obj) return "";
+            if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
+            const cleanKey = searchKey.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+            for (let k in obj) {
+                if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k];
+            }
+            return "";
+        };
+
+        const convertDriveLink = (url) => {
+            if (!url || typeof url !== 'string') return url;
+            let idMatch = url.match(/\/d\/(.*?)\//) || url.match(/id=(.*?)(&|$)/);
+            let id = idMatch ? idMatch[1] : null;
+            if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+            return url;
+        };
+
+        const fixImageUrl = (u) => {
+            if (!u || typeof u !== 'string') return '';
+            return convertDriveLink(u.split(',')[0].trim());
+        };
+
+        const extractPriceInCr = (priceString) => {
+            if (!priceString) return 0;
+            try {
+                const cleanStr = String(priceString).toLowerCase().replace(/,/g, '');
+                const numMatch = cleanStr.match(/[0-9.]+/); 
+                if (!numMatch) return 0;
+                const val = parseFloat(numMatch[0]);
+                if (isNaN(val)) return 0;
+                if (cleanStr.includes('cr') || cleanStr.includes('crore')) return val;
+                if (cleanStr.includes('lac') || cleanStr.includes('lakh')) return val / 100;
+                if (val > 100000) return val / 10000000; 
+                return 0; 
+            } catch(e) { return 0; }
+        };
+
+        const formatIndianCurrencyCompact = (num) => {
+            if (num >= 10000000) return '₹' + (num / 10000000).toFixed(2).replace(/\.00$/, '') + ' Cr';
+            if (num >= 100000) return '₹' + (num / 100000).toFixed(2).replace(/\.00$/, '') + ' L';
+            return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+        };
+
+        const formatPercent = (val) => {
+            let num = parseFloat(val);
+            if (isNaN(num)) return String(val || "0%");
+            return (num < 1 && num > 0) ? (num * 100).toFixed(1) + "%" : num + "%";
+        };
+
+        const getSafeLink = (rawLink) => {
+            if (!rawLink) return "#";
+            const link = String(rawLink).trim();
+            if (link === "#") return "#";
+            if (link.includes('@') && !link.startsWith('mailto:')) return `mailto:${link}`;
+            if (!link.startsWith('http') && !link.includes('@')) return `https://${link}`;
+            return link;
+        };
+
+        // --- EMI CALCULATOR (Shared) ---
+        const EMICalculator = ({ propertyPriceStr }) => {
+            const propertyValue = extractPriceInCr(propertyPriceStr) > 0 ? extractPriceInCr(propertyPriceStr) * 10000000 : 10000000; 
+            const [loanAmount, setLoanAmount] = useState(propertyValue * 0.8);
+            const [interestRate, setInterestRate] = useState(8.5);
+            const [tenureYears, setTenureYears] = useState(20);
+
+            const { emi, totalPayment, totalInterest, principalPct } = useMemo(() => {
+                const p = loanAmount;
+                const r = interestRate / 12 / 100;
+                const n = tenureYears * 12;
+                if (p === 0 || r === 0 || n === 0) return { emi: 0, totalPayment: 0, totalInterest: 0, principalPct: 100 };
+                
+                const emiValue = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+                const totalPay = emiValue * n;
+                const totalInt = totalPay - p;
+                const pct = (p / totalPay) * 100;
+
+                return { emi: Math.round(emiValue), totalPayment: Math.round(totalPay), totalInterest: Math.round(totalInt), principalPct: pct.toFixed(1) };
+            }, [loanAmount, interestRate, tenureYears]);
+
+            return (
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] mt-6">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-6 flex items-center">
+                        <span className="mr-2 text-xl">📊</span> EMI Calculator
+                    </h3>
+                    <div className="flex items-center gap-6 mb-8">
+                        <div className="w-16 h-16 pie-chart shrink-0 shadow-inner" style={{ background: `conic-gradient(#2563eb ${principalPct}%, #e2e8f0 ${principalPct}% 100%)` }}></div>
+                        <div className="flex flex-col gap-2 w-full">
+                            <div className="flex justify-between items-center border-b border-slate-100 pb-1">
+                                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span><span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Principal</span></div>
+                                <span className="text-[10px] font-black text-slate-900">{formatIndianCurrencyCompact(loanAmount)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span><span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Interest</span></div>
+                                <span className="text-[10px] font-black text-slate-900">{formatIndianCurrencyCompact(totalInterest)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="space-y-5">
+                        <div>
+                            <div className="flex justify-between mb-2">
+                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Loan Amount</label>
+                                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{formatIndianCurrencyCompact(loanAmount)}</span>
+                            </div>
+                            <input type="range" min="1000000" max="50000000" step="100000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} />
+                        </div>
+                        <div>
+                            <div className="flex justify-between mb-2">
+                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Interest Rate</label>
+                                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{interestRate}%</span>
+                            </div>
+                            <input type="range" min="6" max="15" step="0.1" value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))} />
+                        </div>
+                        <div>
+                            <div className="flex justify-between mb-2">
+                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tenure</label>
+                                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{tenureYears} Yrs</span>
+                            </div>
+                            <input type="range" min="5" max="30" step="1" value={tenureYears} onChange={(e) => setTenureYears(Number(e.target.value))} />
+                        </div>
+                        <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                            <div>
+                                <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">Estimated EMI</div>
+                                <div className="text-xl font-black text-slate-900 tracking-tighter">{formatIndianCurrencyCompact(emi)} <span className="text-[10px] text-slate-400 font-bold tracking-normal uppercase">/mo</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- FULL PAGE PROPERTY DETAILS (ADMIN VARIANT) ---
+        const PropertyDetailsPage = ({ property, allProperties, onBack }) => {
+            const galleryRef = useRef(null);
+            useEffect(() => { window.scrollTo(0, 0); }, [property]);
+
+            const scrollGallery = (dir) => {
+                if (galleryRef.current) {
+                    const scrollAmount = galleryRef.current.clientWidth * 0.8;
+                    galleryRef.current.scrollBy({ left: dir === 'right' ? scrollAmount : -scrollAmount, behavior: 'smooth' });
+                }
+            };
+
+            const cover = convertDriveLink(getVal(property, "cover_image") || getVal(property, "cover-image"));
+            const galRaw = getVal(property, "gallery_images") || getVal(property, "gallery-images") || "";
+            const imgs = (typeof galRaw === 'string' && galRaw.length > 5) ? galRaw.split(',').map(l => convertDriveLink(l.trim())) : [];
+            const allImgs = [cover, ...imgs].filter(i => i && !i.includes('undefined')); 
+
+            const projectUsps = getVal(property, "usp-details") || getVal(property, "usp_details") || getVal(property, "USP's") || getVal(property, "Project Highlights") || getVal(property, "usp_s");
+            
+            const openLink = (rawLink) => {
+                if (!rawLink || rawLink.trim() === '') return alert("This link was not provided for this property.");
+                window.open(getSafeLink(rawLink), '_blank');
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0">
+                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
+                        <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
+                            <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> Back to Search
+                        </button>
+                        <div className="hidden md:flex items-center gap-4">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-200 pr-4">
+                                {getVal(property, "Location")} • {getVal(property, "Builder Name")}
+                            </div>
+                            <a href={`tel:${getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER}`} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-slate-200">
+                                📞 Call Agent
+                            </a>
+                        </div>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto w-full p-4 md:p-8">
+                        {/* Scrollable Gallery */}
+                        <div className="relative mb-8">
+                            <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scroll h-[40vh] md:h-[60vh] rounded-3xl">
+                                {allImgs.length > 0 ? allImgs.map((img, i) => (
+                                    <div key={i} className="min-w-full md:min-w-[80%] h-full shrink-0 snap-center relative rounded-3xl overflow-hidden bg-slate-200 border border-slate-100">
+                                        <img src={img} className="w-full h-full object-cover" />
+                                        {i === 0 && (
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent flex flex-col justify-end p-6 md:p-10">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{getVal(property, "Property Type") || 'Apartment'}</div>
+                                                <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-white mb-2">{getVal(property, "Property Name")}</h1>
+                                                <p className="text-white/80 font-medium text-sm md:text-base">📍 {getVal(property, "Location")}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )) : (
+                                    <div className="w-full h-full bg-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-400">
+                                        <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-slate-500 mb-2">{getVal(property, "Property Name")}</h1>
+                                        <p className="text-sm font-bold uppercase tracking-widest">Images Coming Soon</p>
+                                    </div>
+                                )}
+                            </div>
+                            {allImgs.length > 1 && (
+                                <>
+                                    <button onClick={() => scrollGallery('left')} className="hidden md:flex absolute top-1/2 -left-4 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur rounded-full items-center justify-center shadow-lg text-slate-800 hover:bg-white transition hover:scale-110 z-10 border border-slate-100">←</button>
+                                    <button onClick={() => scrollGallery('right')} className="hidden md:flex absolute top-1/2 -right-4 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur rounded-full items-center justify-center shadow-lg text-slate-800 hover:bg-white transition hover:scale-110 z-10 border border-slate-100">→</button>
+                                    <div className="md:hidden text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2 animate-pulse">Swipe for more images →</div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Main Content */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+                            <div className="lg:col-span-2 space-y-10">
+                                <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 relative">
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div><div className="text-sm md:text-lg font-black text-slate-900 mt-1">{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div></div>
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_sta") || 'N/A'}</div></div>
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Possession</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : 'On Request'}</div></div>
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">RERA Status</div><div className="text-sm md:text-base font-black text-green-600 mt-1">Verified ✓</div></div>
+                                </div>
+
+                                <div>
+                                    <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-slate-900 mb-4 border-b border-slate-200 pb-2">About The Project</h2>
+                                    <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
+                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${getVal(property, "bhk") || "premium"} homes.`}
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {projectUsps && (
+                                        <div className="bg-blue-50 p-6 md:p-8 rounded-3xl border border-blue-100">
+                                            <h3 className="text-sm font-black uppercase tracking-widest text-blue-900 mb-6">Key Highlights</h3>
+                                            <ul className="space-y-4">
+                                                {String(projectUsps).split('\n').filter(u => u.trim() !== "").map((u, i) => (
+                                                    <li key={i} className="flex items-start text-xs md:text-sm text-blue-800 font-medium leading-relaxed"><span className="mr-3 text-blue-500 mt-0.5">✦</span> {u.trim()}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {getVal(property, "Amenities") && (
+                                        <div className="bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-800">
+                                            <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">World-Class Amenities</h3>
+                                            <ul className="space-y-4">
+                                                {String(getVal(property, "Amenities")).split(',').filter(u => u.trim() !== "").map((u, i) => (
+                                                    <li key={i} className="flex items-start text-xs md:text-sm text-slate-300 font-medium leading-relaxed"><span className="mr-3 text-blue-400 mt-0.5">✓</span> {u.trim()}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="lg:col-span-1">
+                                <div className="sticky top-24 space-y-6">
+                                    <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
+                                        <div className="mb-6 pb-6 border-b border-slate-100">
+                                            <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Starting Price</div>
+                                            <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">{getVal(property, "Price") || 'On Request'}</div>
+                                        </div>
+                                        
+                                        <div className="bg-[#fffbeb] border border-[#fde68a] p-4 rounded-2xl text-[#92400e] mb-4">
+                                            <h4 className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-80">Commission</h4>
+                                            <p className="text-2xl font-black">{formatPercent(getVal(property, "commision_deta") || getVal(property, "commission"))}</p>
+                                        </div>
+
+                                        <div className="bg-[#f0f9ff] border border-[#bae6fd] p-4 rounded-2xl text-[#0369a1] mb-6">
+                                            <h4 className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-80">Internal Info</h4>
+                                            <p className="text-[10px] font-bold mb-1">POC: {getVal(property, "point_of_contact") || "N/A"}</p>
+                                            <p className="text-[10px] font-bold">Avail: {getVal(property, "availability") || "N/A"}</p>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <button onClick={() => openLink(getVal(property, "website_link"))} className="w-full bg-slate-100 text-slate-700 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-200 transition-colors shadow-sm text-[10px] border border-slate-200">
+                                                🌐 Builder Website
+                                            </button>
+                                            <button onClick={() => openLink(getVal(property, "lead_registration") || getVal(property, "lead_registration_link_or_email_id"))} className="w-full bg-slate-900 text-white font-black py-3 rounded-xl uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-md text-[10px]">
+                                                📝 Register Lead
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button onClick={() => openLink(getVal(property, "brochure"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">📥</span> Brochure</button>
+                                        <button onClick={() => openLink(getVal(property, "cost_sheet"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">📄</span> Cost Sheet</button>
+                                        <button onClick={() => openLink(getVal(property, "map_link"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1 col-span-2"><span className="text-lg">📍</span> Location Map</button>
+                                    </div>
+
+                                    <EMICalculator propertyPriceStr={getVal(property, "Price")} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APP COMPONENT ---
         function AdminApp() {
             const [session, setSession] = useState(null);
             const [leads, setLeads] = useState([]);
@@ -56,11 +347,9 @@
                 window.onmousemove = resetTimer;
                 window.onkeydown = resetTimer;
                 resetTimer();
-
                 return () => clearTimeout(idleTimer);
             }, [session]);
 
-            // FIX: Added the onAuthStateChange listener back in so the app knows when you login/logout
             useEffect(() => {
                 supabase.auth.getSession().then(({ data: { session } }) => {
                     setSession(session);
@@ -71,7 +360,6 @@
                     setSession(session);
                     if (session && view === 'dashboard') fetchLeads();
                 });
-
                 return () => subscription.unsubscribe();
             }, [leadCategory, view]);
 
@@ -122,6 +410,26 @@
                 if (!error) setLeads(prev => prev.map(l => l.id === lead.id ? {...l, ...updates} : l));
             }
 
+            // COLOR CODING HELPERS
+            const getStatusColor = (status) => {
+                switch(status) {
+                    case 'Called': return 'bg-blue-100 text-blue-800 border-blue-300';
+                    case 'RNR': return 'bg-orange-100 text-orange-800 border-orange-300';
+                    case 'Details Shared': return 'bg-purple-100 text-purple-800 border-purple-300';
+                    case 'SV Scheduled': return 'bg-teal-100 text-teal-800 border-teal-300';
+                    case 'Converted': return 'bg-green-100 text-green-800 border-green-300';
+                    case 'Rejected': return 'bg-red-100 text-red-800 border-red-300';
+                    default: return 'bg-slate-100 text-slate-800 border-slate-300'; // Un called
+                }
+            };
+            const getPriorityColor = (priority) => {
+                switch(priority) {
+                    case 'Hot': return 'bg-red-100 text-red-800 border-red-500';
+                    case 'Cold': return 'bg-blue-100 text-blue-800 border-blue-500';
+                    default: return 'bg-amber-100 text-amber-800 border-amber-500'; // Warm
+                }
+            };
+
             if (!session) return <LoginForm supabase={supabase} />;
 
             return (
@@ -149,17 +457,10 @@
                     <main className="p-3 md:p-8 max-w-7xl mx-auto w-full">
                         {view === 'dashboard' && (
                             <div className="space-y-6">
-                                {/* Lead Status Summary Block */}
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
                                     <table className="w-full text-sm text-left min-w-[450px]">
                                         <thead className="bg-slate-50 border-b uppercase text-[9px] md:text-[10px] font-black text-slate-400 tracking-widest">
-                                            <tr>
-                                                <th className="p-3 md:p-5">Team Metric (Tharun)</th>
-                                                <th className="p-3 md:p-5 text-center">Total</th>
-                                                <th className="p-3 md:p-5 text-center">Uncalled</th>
-                                                <th className="p-3 md:p-5 text-center">Working</th>
-                                                <th className="p-3 md:p-5 text-center">Rejected</th>
-                                            </tr>
+                                            <tr><th className="p-3 md:p-5">Team Metric (Tharun)</th><th className="p-3 md:p-5 text-center">Total</th><th className="p-3 md:p-5 text-center">Uncalled</th><th className="p-3 md:p-5 text-center">Working</th><th className="p-3 md:p-5 text-center">Rejected</th></tr>
                                         </thead>
                                         <tbody className="font-bold text-slate-700">
                                             <tr>
@@ -205,23 +506,28 @@
                                                         </div>
                                                     </td>
                                                     <td className="p-4 min-w-[140px]">
-                                                        <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className="w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[10px] bg-white outline-none">
-                                                            <option>Un called</option><option>Called</option><option>Details Shared</option><option>SV Scheduled</option><option>Converted</option><option>Rejected</option><option>RNR</option>
+                                                        <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[10px] outline-none ${getStatusColor(l.lead_status)}`}>
+                                                            {(!l.lead_status || l.lead_status === 'Un called') && <option value="Un called">Un called</option>}
+                                                            <option value="Called">Called</option><option value="Details Shared">Details Shared</option><option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option><option>RNR</option>
                                                         </select>
-                                                        <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className="w-full p-2 border rounded-lg font-bold uppercase text-[10px] bg-white outline-none">
-                                                            <option>Hot</option><option>Warm</option><option>Cold</option>
+                                                        <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className={`w-full p-2 border rounded-lg font-bold uppercase text-[10px] outline-none ${getPriorityColor(l.lead_priority)}`}>
+                                                            <option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option>
                                                         </select>
                                                     </td>
                                                     <td className="p-4 min-w-[160px]">
                                                         <div className="space-y-3">
-                                                            <div>
-                                                                <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">Call Back Date</span>
-                                                                <input type="datetime-local" className="w-full p-2 border border-blue-200 bg-blue-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
-                                                            </div>
-                                                            <div>
-                                                                <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">Site Visit Date</span>
-                                                                <input type="date" className="w-full p-2 border border-teal-200 bg-teal-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
-                                                            </div>
+                                                            {['Called', 'RNR', 'Details Shared'].includes(l.lead_status) && (
+                                                                <div>
+                                                                    <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">Call Back Date</span>
+                                                                    <input type="datetime-local" className="w-full p-2 border border-blue-200 bg-blue-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
+                                                                </div>
+                                                            )}
+                                                            {l.lead_status === 'SV Scheduled' && (
+                                                                <div className="mt-2 pt-2 border-t border-slate-100">
+                                                                    <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">Site Visit Date</span>
+                                                                    <input type="date" className="w-full p-2 border border-teal-200 bg-teal-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </td>
                                                     <td className="p-4">
@@ -231,7 +537,7 @@
                                                             </div>
                                                             <div className="flex gap-2">
                                                                 <textarea id={`note-d-${l.id}`} rows="1" placeholder="Type note & hit save..." className="flex-1 p-2 border border-slate-200 rounded-lg text-[10px] outline-none focus:ring-2 focus:ring-blue-500 shadow-sm resize-none" />
-                                                                <button onClick={() => { const el = document.getElementById(`note-d-${l.id}`); if(el.value.trim()){ updateLead(l, 'add_note', el.value); el.value=''; } }} className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest">Save</button>
+                                                                <button onClick={() => { const el = document.getElementById(`note-d-${l.id}`); const val = el.value; if(val.trim()){ updateLead(l, 'add_note', val); el.value=''; } }} className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition">Save</button>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -262,27 +568,32 @@
                                             <div className="mt-4 grid grid-cols-2 gap-2">
                                                 <div className="flex flex-col gap-1">
                                                     <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</label>
-                                                    <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className="p-2 border rounded-xl font-bold uppercase text-[9px] outline-none">
-                                                        <option>Un called</option><option>Called</option><option>Details Shared</option><option>SV Scheduled</option><option>Converted</option><option>Rejected</option><option>RNR</option>
+                                                    <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none ${getStatusColor(l.lead_status)}`}>
+                                                        {(!l.lead_status || l.lead_status === 'Un called') && <option value="Un called">Un called</option>}
+                                                        <option value="Called">Called</option><option value="Details Shared">Details Shared</option><option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option><option value="RNR">RNR</option>
                                                     </select>
                                                 </div>
                                                 <div className="flex flex-col gap-1">
                                                     <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Priority</label>
-                                                    <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className="p-2 border rounded-xl font-bold uppercase text-[9px] outline-none">
-                                                        <option>Hot</option><option>Warm</option><option>Cold</option>
+                                                    <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none ${getPriorityColor(l.lead_priority)}`}>
+                                                        <option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option>
                                                     </select>
                                                 </div>
                                             </div>
 
                                             <div className="mt-3 grid grid-cols-1 gap-2 pt-3 border-t border-slate-100">
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[8px] font-black text-blue-600 uppercase tracking-widest">Callback Date</label>
-                                                    <input type="datetime-local" className="p-2 border border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
-                                                </div>
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[8px] font-black text-teal-600 uppercase tracking-widest">Site Visit Date</label>
-                                                    <input type="date" className="p-2 border border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
-                                                </div>
+                                                {['Called', 'RNR', 'Details Shared'].includes(l.lead_status) && (
+                                                    <div className="flex flex-col gap-1">
+                                                        <label className="text-[8px] font-black text-blue-600 uppercase tracking-widest">Callback Date</label>
+                                                        <input type="datetime-local" className="p-2 border border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
+                                                    </div>
+                                                )}
+                                                {l.lead_status === 'SV Scheduled' && (
+                                                    <div className="flex flex-col gap-1 mt-1">
+                                                        <label className="text-[8px] font-black text-teal-600 uppercase tracking-widest">Site Visit Date</label>
+                                                        <input type="date" className="p-2 border border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="mt-4 pt-3 border-t border-slate-100">
@@ -291,7 +602,7 @@
                                                 </div>
                                                 <div className="flex gap-2 mt-2">
                                                     <textarea className="w-full p-2 border border-slate-200 rounded-xl text-[10px] resize-none focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" placeholder="Type note..." id={`note-m-${l.id}`} rows="1" />
-                                                    <button onClick={() => { const el = document.getElementById(`note-m-${l.id}`); if(el.value.trim()){ updateLead(l, 'add_note', el.value); el.value=''; } }} className="bg-slate-900 text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md">Save</button>
+                                                    <button onClick={() => { const el = document.getElementById(`note-m-${l.id}`); const val = el.value; if(val.trim()){ updateLead(l, 'add_note', val); el.value=''; } }} className="bg-slate-900 text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-blue-600 transition">Save</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -309,7 +620,7 @@
             );
         }
 
-        // --- FULL PAGE PROJECT LIBRARY ---
+        // --- FULL PAGE PROJECT LIBRARY (ADMIN VARIANT) ---
         function ProjectLibrary({ supabase }) {
             const [data, setData] = useState([]);
             const [loading, setLoading] = useState(true);
@@ -322,99 +633,23 @@
                 }); 
             }, []);
 
-            const getVal = (obj, searchKey) => {
-                if (!obj) return "";
-                if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
-                const cleanKey = searchKey.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                for (let k in obj) {
-                    if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k];
-                }
-                return "";
-            };
-
-            const formatPercent = (val) => {
-                let num = parseFloat(val);
-                if (isNaN(num)) return String(val || "0%");
-                return (num < 1 && num > 0) ? (num * 100).toFixed(1) + "%" : num + "%";
-            };
-
             const openLink = (rawLink) => {
-                if (!rawLink || rawLink.trim() === '') {
-                    alert("This link was not provided for this property.");
-                    return;
-                }
-                let link = String(rawLink).trim();
-                if (link.includes('@') && !link.startsWith('mailto:')) link = `mailto:${link}`;
-                else if (!link.startsWith('http') && !link.includes('@')) link = `https://${link}`;
-                window.open(link, '_blank');
+                if (!rawLink || rawLink.trim() === '') return alert("This link was not provided for this property.");
+                window.open(getSafeLink(rawLink), '_blank');
             };
 
             if (loading) return <div className="text-center py-20 animate-pulse font-black text-slate-400 tracking-widest uppercase">Loading Master Library...</div>;
 
-            // FULL PAGE DETAIL VIEW
             if (selectedProperty) {
-                return (
-                    <div className="animate-fadeIn bg-white rounded-3xl md:rounded-[40px] shadow-sm border border-slate-200 overflow-hidden flex flex-col w-full">
-                        <div className="flex justify-between items-center p-4 md:p-6 border-b border-slate-100 bg-white sticky top-0 z-20 shadow-sm">
-                            <button onClick={() => setSelectedProperty(null)} className="text-blue-600 font-black uppercase tracking-widest text-[10px] md:text-xs flex items-center hover:text-blue-800 transition bg-blue-50 px-4 py-2 rounded-full">
-                                ← Back to Library
-                            </button>
-                        </div>
-                        
-                        <div className="flex overflow-x-auto snap-x snap-mandatory h-64 md:h-[450px] bg-slate-100 hide-scroll">
-                            {(() => {
-                                const cover = getVal(selectedProperty, "cover_image") || getVal(selectedProperty, "cover-image");
-                                const galRaw = getVal(selectedProperty, "gallery-images") || getVal(selectedProperty, "gallery_images");
-                                const imgs = (typeof galRaw === 'string' && galRaw.length > 5) ? galRaw.split(',').map(l => l.trim()) : [];
-                                const allImgs = [cover, ...imgs].filter(i => i && !i.includes('undefined')); 
-                                return allImgs.length > 0 ? allImgs.map((img, idx) => (
-                                    <img key={idx} src={img} className="w-full h-full object-cover shrink-0 snap-center" />
-                                )) : <div className="w-full h-full flex items-center justify-center font-bold text-slate-400">No Images Available</div>;
-                            })()}
-                        </div>
-
-                        <div className="p-6 md:p-10">
-                            <div className="flex flex-col md:flex-row justify-between mb-8 border-b border-gray-100 pb-8">
-                                <div>
-                                    <div className="text-[10px] md:text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">{getVal(selectedProperty, "property_type") || 'Property'} • {getVal(selectedProperty, "construction_sta") || 'Status'}</div>
-                                    <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-tight text-slate-900">{getVal(selectedProperty, "property_name") || 'Property Details'}</h1>
-                                    <p className="text-gray-500 text-sm md:text-lg italic mt-1">📍 {getVal(selectedProperty, "location") || 'Bengaluru'}</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                                <div className="bg-[#fffbeb] border border-[#fde68a] p-5 md:p-6 rounded-2xl md:rounded-3xl text-[#92400e]">
-                                    <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-2">Commission & Payout</h4>
-                                    <p className="text-3xl md:text-4xl font-black">{formatPercent(getVal(selectedProperty, "commision_deta") || getVal(selectedProperty, "commission"))}</p>
-                                </div>
-                                <div className="bg-[#f0f9ff] border border-[#bae6fd] p-5 md:p-6 rounded-2xl md:rounded-3xl text-[#0369a1]">
-                                    <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-3">Internal Details</h4>
-                                    <p className="text-xs md:text-sm font-bold mb-1">POC: {getVal(selectedProperty, "point_of_contact") || "N/A"}</p>
-                                    <p className="text-xs md:text-sm font-bold">Availability: {getVal(selectedProperty, "availability") || "N/A"}</p>
-                                </div>
-                            </div>
-
-                            <div className="bg-slate-50 border border-slate-100 p-6 md:p-8 rounded-2xl md:rounded-[35px]">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <button onClick={() => openLink(getVal(selectedProperty, "website_link"))} className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm hover:bg-slate-100 transition">Builder Site</button>
-                                    <button onClick={() => openLink(getVal(selectedProperty, "lead_registration") || getVal(selectedProperty, "lead_registration_link_or_email_id"))} className="bg-[#0f172a] text-white p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-md hover:bg-blue-600 transition">Register Lead</button>
-                                    <button onClick={() => openLink(getVal(selectedProperty, "brochure"))} className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm hover:bg-slate-100 transition">Share Brochure</button>
-                                    <button onClick={() => openLink(getVal(selectedProperty, "cost_sheet"))} className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm hover:bg-slate-100 transition">Share Cost Sheet</button>
-                                    <button onClick={() => openLink(getVal(selectedProperty, "map_link"))} className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm md:col-span-2 hover:bg-slate-100 transition">Share Location Map</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
+                return <PropertyDetailsPage property={selectedProperty} allProperties={data} onBack={() => setSelectedProperty(null)} />;
             }
 
-            // DEFAULT LIBRARY GRID VIEW
             return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
                     {data.map(p => (
                         <div key={p.id} onClick={() => setSelectedProperty(p)} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col">
                             <div className="relative h-48 bg-slate-100 overflow-hidden">
-                                <img src={getVal(p, "cover_image") || getVal(p, "cover-image") || 'https://via.placeholder.com/600x300?text=No+Image'} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                                <img src={fixImageUrl(getVal(p, "cover_image") || getVal(p, "cover-image")) || 'https://via.placeholder.com/600x300?text=No+Image'} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                                 <div className="absolute top-4 left-0 bg-slate-900/90 backdrop-blur-sm text-white text-[10px] font-black px-3 py-1.5 rounded-r-lg uppercase tracking-widest shadow-md">
                                     {p.property_type || 'Property'}
                                 </div>
@@ -436,24 +671,187 @@
             );
         }
 
+        const PropertyDetailsPage = ({ property, allProperties, onBack }) => {
+            const galleryRef = useRef(null);
+            useEffect(() => { window.scrollTo(0, 0); }, [property]);
+
+            const scrollGallery = (dir) => {
+                if (galleryRef.current) {
+                    const scrollAmount = galleryRef.current.clientWidth * 0.8;
+                    galleryRef.current.scrollBy({ left: dir === 'right' ? scrollAmount : -scrollAmount, behavior: 'smooth' });
+                }
+            };
+
+            const cover = fixImageUrl(getVal(property, "cover_image") || getVal(property, "cover-image"));
+            const galRaw = getVal(property, "gallery_images") || getVal(property, "gallery-images") || "";
+            const imgs = (typeof galRaw === 'string' && galRaw.length > 5) ? galRaw.split(',').map(l => fixImageUrl(l.trim())) : [];
+            const allImgs = [cover, ...imgs].filter(i => i && !i.includes('undefined')); 
+
+            const projectUsps = getVal(property, "usp-details") || getVal(property, "usp_details") || getVal(property, "USP's") || getVal(property, "Project Highlights") || getVal(property, "usp_s");
+            
+            const openLink = (rawLink) => {
+                if (!rawLink || rawLink.trim() === '') return alert("This link was not provided for this property.");
+                window.open(getSafeLink(rawLink), '_blank');
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0">
+                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
+                        <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
+                            <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> Back to Search
+                        </button>
+                        <div className="hidden md:flex items-center gap-4">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-200 pr-4">
+                                {getVal(property, "Location")} • {getVal(property, "Builder Name")}
+                            </div>
+                            <a href={`tel:${getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER}`} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-slate-200">
+                                📞 Call Agent
+                            </a>
+                        </div>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto w-full p-4 md:p-8">
+                        {/* Scrollable Gallery */}
+                        <div className="relative mb-8">
+                            <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scroll h-[40vh] md:h-[60vh] rounded-3xl">
+                                {allImgs.length > 0 ? allImgs.map((img, i) => (
+                                    <div key={i} className="min-w-full md:min-w-[80%] h-full shrink-0 snap-center relative rounded-3xl overflow-hidden bg-slate-200 border border-slate-100">
+                                        <img src={img} className="w-full h-full object-cover" />
+                                        {i === 0 && (
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent flex flex-col justify-end p-6 md:p-10">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{getVal(property, "Property Type") || 'Apartment'}</div>
+                                                <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-white mb-2">{getVal(property, "Property Name")}</h1>
+                                                <p className="text-white/80 font-medium text-sm md:text-base">📍 {getVal(property, "Location")}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )) : (
+                                    <div className="w-full h-full bg-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-400">
+                                        <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-slate-500 mb-2">{getVal(property, "Property Name")}</h1>
+                                        <p className="text-sm font-bold uppercase tracking-widest">Images Coming Soon</p>
+                                    </div>
+                                )}
+                            </div>
+                            {allImgs.length > 1 && (
+                                <>
+                                    <button onClick={() => scrollGallery('left')} className="hidden md:flex absolute top-1/2 -left-4 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur rounded-full items-center justify-center shadow-lg text-slate-800 hover:bg-white transition hover:scale-110 z-10 border border-slate-100">←</button>
+                                    <button onClick={() => scrollGallery('right')} className="hidden md:flex absolute top-1/2 -right-4 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur rounded-full items-center justify-center shadow-lg text-slate-800 hover:bg-white transition hover:scale-110 z-10 border border-slate-100">→</button>
+                                    <div className="md:hidden text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2 animate-pulse">Swipe for more images →</div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Main Content */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+                            <div className="lg:col-span-2 space-y-10">
+                                <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 relative">
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div><div className="text-sm md:text-lg font-black text-slate-900 mt-1">{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div></div>
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_sta") || 'N/A'}</div></div>
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Possession</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : 'On Request'}</div></div>
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">RERA Status</div><div className="text-sm md:text-base font-black text-green-600 mt-1">Verified ✓</div></div>
+                                </div>
+
+                                <div>
+                                    <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-slate-900 mb-4 border-b border-slate-200 pb-2">About The Project</h2>
+                                    <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
+                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${getVal(property, "bhk") || "premium"} homes.`}
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {projectUsps && (
+                                        <div className="bg-blue-50 p-6 md:p-8 rounded-3xl border border-blue-100">
+                                            <h3 className="text-sm font-black uppercase tracking-widest text-blue-900 mb-6">Key Highlights</h3>
+                                            <ul className="space-y-4">
+                                                {String(projectUsps).split('\n').filter(u => u.trim() !== "").map((u, i) => (
+                                                    <li key={i} className="flex items-start text-xs md:text-sm text-blue-800 font-medium leading-relaxed"><span className="mr-3 text-blue-500 mt-0.5">✦</span> {u.trim()}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {getVal(property, "Amenities") && (
+                                        <div className="bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-800">
+                                            <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">World-Class Amenities</h3>
+                                            <ul className="space-y-4">
+                                                {String(getVal(property, "Amenities")).split(',').filter(u => u.trim() !== "").map((u, i) => (
+                                                    <li key={i} className="flex items-start text-xs md:text-sm text-slate-300 font-medium leading-relaxed"><span className="mr-3 text-blue-400 mt-0.5">✓</span> {u.trim()}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="lg:col-span-1">
+                                <div className="sticky top-24 space-y-6">
+                                    <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
+                                        <div className="mb-6 pb-6 border-b border-slate-100">
+                                            <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Starting Price</div>
+                                            <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">{getVal(property, "Price") || 'On Request'}</div>
+                                        </div>
+                                        
+                                        <div className="bg-[#fffbeb] border border-[#fde68a] p-4 rounded-2xl text-[#92400e] mb-4">
+                                            <h4 className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-80">Commission</h4>
+                                            <p className="text-2xl font-black">{formatPercent(getVal(property, "commision_deta") || getVal(property, "commission"))}</p>
+                                        </div>
+
+                                        <div className="bg-[#f0f9ff] border border-[#bae6fd] p-4 rounded-2xl text-[#0369a1] mb-6">
+                                            <h4 className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-80">Internal Info</h4>
+                                            <p className="text-[10px] font-bold mb-1">POC: {getVal(property, "point_of_contact") || "N/A"}</p>
+                                            <p className="text-[10px] font-bold">Avail: {getVal(property, "availability") || "N/A"}</p>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <button onClick={() => openLink(getVal(property, "website_link"))} className="w-full bg-slate-100 text-slate-700 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-200 transition-colors shadow-sm text-[10px] border border-slate-200">
+                                                🌐 Builder Website
+                                            </button>
+                                            <button onClick={() => openLink(getVal(property, "lead_registration") || getVal(property, "lead_registration_link_or_email_id"))} className="w-full bg-slate-900 text-white font-black py-3 rounded-xl uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-md text-[10px]">
+                                                📝 Register Lead
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button onClick={() => openLink(getVal(property, "brochure"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">📥</span> Brochure</button>
+                                        <button onClick={() => openLink(getVal(property, "cost_sheet"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">📄</span> Cost Sheet</button>
+                                        <button onClick={() => openLink(getVal(property, "map_link"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1 col-span-2"><span className="text-lg">📍</span> Location Map</button>
+                                    </div>
+
+                                    <EMICalculator propertyPriceStr={getVal(property, "Price")} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- UPDATED PROPERTY FORM ---
         function PropertyForm({ scriptUrl, supabase }) {
             const [form, setForm] = useState({
                 property_name: '', builder_name: '', location: '', price: '', bhk: '', 
                 super_built_up_a: '', possession_date: '', construction_sta: '',
-                amenities: '', brochure: '', cover_image: '', usp_s: '',
+                amenities: '', brochure: '', cover_image: '', gallery_images: '', floor_plan: '', video_link: '', usp_details: '',
                 commision_deta: '', point_of_contact: '', website_link: '', map_link: '',
                 lead_registration: '', cost_sheet: '', property_type: '', total_units: '', availability: ''
             });
 
-            async function upload(e, field) {
+            async function upload(e, field, append = false) {
                 const file = e.target.files[0];
+                if(!file) return;
+                
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = async () => {
-                    const res = await fetch(scriptUrl, { method: "POST", body: JSON.stringify({ base64: reader.result.split(',')[1], type: file.type, name: file.name, propertyName: form.property_name }) });
+                    const res = await fetch(scriptUrl, { method: "POST", body: JSON.stringify({ base64: reader.result.split(',')[1], type: file.type, name: file.name, propertyName: form.property_name || 'Uploads' }) });
                     const result = await res.json();
-                    if(result.status === "success") setForm(f => ({ ...f, [field]: result.url }));
+                    if(result.status === "success") {
+                        if(append) {
+                            setForm(f => ({ ...f, [field]: f[field] ? f[field] + ',' + result.url : result.url }));
+                        } else {
+                            setForm(f => ({ ...f, [field]: result.url }));
+                        }
+                    }
                 };
             }
 
@@ -461,7 +859,7 @@
                 const { error } = await supabase.from('properties').insert([form]);
                 if (!error) {
                     alert("Listing Live!");
-                    setForm({ property_name: '', builder_name: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', amenities: '', brochure: '', cover_image: '', usp_s: '', commision_deta: '', point_of_contact: '', website_link: '', map_link: '', lead_registration: '', cost_sheet: '', property_type: '', total_units: '', availability: ''});
+                    setForm({ property_name: '', builder_name: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', amenities: '', brochure: '', cover_image: '', gallery_images: '', floor_plan: '', video_link: '', usp_details: '', commision_deta: '', point_of_contact: '', website_link: '', map_link: '', lead_registration: '', cost_sheet: '', property_type: '', total_units: '', availability: ''});
                 } else alert(error.message);
             }
 
@@ -485,10 +883,11 @@
                         </select>
                         <input placeholder="Total Units" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, total_units: e.target.value})} value={form.total_units}/>
                         <input placeholder="Availability" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, availability: e.target.value})} value={form.availability}/>
+                        <input placeholder="Video URL (Drive/YouTube)" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, video_link: e.target.value})} value={form.video_link}/>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <textarea placeholder="USPs (Line by Line)" rows="3" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, usp_s: e.target.value})} value={form.usp_s}/>
+                        <textarea placeholder="USPs (Line by Line)" rows="3" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, usp_details: e.target.value})} value={form.usp_details}/>
                         <textarea placeholder="Amenities (Comma separated)" rows="3" className="p-4 bg-slate-50 border rounded-xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, amenities: e.target.value})} value={form.amenities}/>
                     </div>
 
@@ -501,10 +900,28 @@
                         <input placeholder="Map Link (Google Maps URL)" className="p-4 bg-slate-800 text-white border border-slate-700 rounded-xl font-bold text-sm md:col-span-2 outline-none focus:ring-2 focus:ring-blue-400" onChange={e => setForm({...form, map_link: e.target.value})} value={form.map_link}/>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-slate-100">
-                        <div><label className="text-[10px] font-black uppercase mb-2 block text-slate-500 tracking-widest">Cover Image</label><input type="file" onChange={e => upload(e, 'cover_image')} className="text-xs text-slate-600"/></div>
-                        <div><label className="text-[10px] font-black uppercase mb-2 block text-slate-500 tracking-widest">Brochure (PDF)</label><input type="file" onChange={e => upload(e, 'brochure')} className="text-xs text-slate-600"/></div>
-                        <div><label className="text-[10px] font-black uppercase mb-2 block text-slate-500 tracking-widest">Cost Sheet (PDF)</label><input type="file" onChange={e => upload(e, 'cost_sheet')} className="text-xs text-slate-600"/></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-slate-100">
+                        <div>
+                            <label className="text-[10px] font-black uppercase mb-2 block text-slate-500 tracking-widest">Cover Image</label>
+                            <input type="file" onChange={e => upload(e, 'cover_image')} className="text-xs text-slate-600 mb-2"/>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase mb-2 block text-slate-500 tracking-widest">Gallery Images (Upload one by one)</label>
+                            <input type="file" onChange={e => upload(e, 'gallery_images', true)} className="text-xs text-slate-600"/>
+                            <p className="text-[9px] text-blue-500 font-bold mt-1">Uploaded: {form.gallery_images ? form.gallery_images.split(',').length : 0}</p>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase mb-2 block text-slate-500 tracking-widest">Brochure (PDF)</label>
+                            <input type="file" onChange={e => upload(e, 'brochure')} className="text-xs text-slate-600"/>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase mb-2 block text-slate-500 tracking-widest">Cost Sheet (PDF)</label>
+                            <input type="file" onChange={e => upload(e, 'cost_sheet')} className="text-xs text-slate-600"/>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase mb-2 block text-slate-500 tracking-widest">Floor Plan (PDF/Img)</label>
+                            <input type="file" onChange={e => upload(e, 'floor_plan')} className="text-xs text-slate-600"/>
+                        </div>
                     </div>
                     
                     <button onClick={save} className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-xl transition mt-4">Publish Property</button>
@@ -514,13 +931,45 @@
 
         // --- MISC COMPONENTS ---
         function ManualLeadForm({ supabase, onSuccess }) {
-            const [form, setForm] = useState({ name: '', phone: '', source: 'Manual' });
+            const [form, setForm] = useState({ name: '', phone: '', email: '', project: '', reqs: '', source: 'Manual' });
+            const [loading, setLoading] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                const stamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
+                const remarks = form.reqs ? `[${stamp}] Note: ${form.reqs}` : null;
+
+                const { error } = await supabase.from('leads').insert([{ 
+                    customer_name: form.name, 
+                    phone_number: form.phone, 
+                    customer_email: form.email || null,
+                    project_interested_in: form.project,
+                    call_remark: remarks,
+                    lead_source: form.source, 
+                    lead_status: 'Un called' 
+                }]);
+
+                if (!error) onSuccess();
+                else alert(error.message);
+                setLoading(false);
+            };
+
             return (
-                <div className="space-y-4">
-                    <input placeholder="Client Name" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold" onChange={e => setForm({...form, name: e.target.value})} />
-                    <input placeholder="Phone Number" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold" onChange={e => setForm({...form, phone: e.target.value})} />
-                    <button onClick={async () => { await supabase.from('leads').insert([{ customer_name: form.name, phone_number: form.phone, lead_source: form.source, lead_status: 'Un called' }]); onSuccess(); }} className="w-full bg-blue-600 text-white p-4 rounded-2xl font-black uppercase tracking-widest">Inject Lead</button>
-                </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <input placeholder="Client Name *" required className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, name: e.target.value})} />
+                    <input placeholder="Phone Number *" required className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, phone: e.target.value})} />
+                    <input type="email" placeholder="Email ID (Optional)" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, email: e.target.value})} />
+                    <input placeholder="Interested Project" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, project: e.target.value})} />
+                    <textarea placeholder="Customer Requirements / Details..." rows="3" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, reqs: e.target.value})}></textarea>
+                    
+                    <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, source: e.target.value})} value={form.source}>
+                        <option>Manual</option><option>Walk-in</option><option>Referral</option><option>MagicBricks</option><option>Housing.com</option>
+                    </select>
+                    <button disabled={loading} className="w-full bg-blue-600 text-white p-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-md transition disabled:opacity-50">
+                        {loading ? "Injecting..." : "Inject Lead"}
+                    </button>
+                </form>
             );
         }
 
@@ -546,7 +995,7 @@
                         {errorMsg && <div className="text-red-500 text-xs font-bold mb-4">{errorMsg}</div>}
                         <input type="email" required placeholder="Email" className="w-full p-4 bg-slate-100 rounded-2xl mb-4 font-bold outline-none" onChange={e => setEmail(e.target.value)} />
                         <input type="password" required placeholder="Password" className="w-full p-4 bg-slate-100 rounded-2xl mb-8 font-bold outline-none" onChange={e => setPass(e.target.value)} />
-                        <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg disabled:opacity-50">
+                        <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg disabled:opacity-50 hover:bg-blue-700">
                             {loading ? "Authenticating..." : "Login"}
                         </button>
                     </form>
