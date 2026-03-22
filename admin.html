@@ -309,8 +309,8 @@
                                         </div>
                                         
                                         <div className="bg-[#fffbeb] border border-[#fde68a] p-4 rounded-2xl text-[#92400e] mb-4">
-                                            <h4 className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-80">Commission</h4>
-                                            <p className="text-2xl font-black">{formatPercent(getVal(property, "commission") || getVal(property, "commision_deta"))}</p>
+                                            <h4 className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-80">commission_details</h4>
+                                            <p className="text-2xl font-black">{formatPercent(getVal(property, "commission_details") || getVal(property, "commision_deta"))}</p>
                                         </div>
 
                                         <div className="bg-[#f0f9ff] border border-[#bae6fd] p-4 rounded-2xl text-[#0369a1] mb-6">
@@ -661,7 +661,7 @@
 
         // --- PROPERTY ADDITION FORM ---
         function PropertyForm({ supabase, scriptUrl }) {
-            const [form, setForm] = useState({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
+            const [form, setForm] = useState({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
             const [loading, setLoading] = useState(false);
             const [uploadingField, setUploadingField] = useState(null);
 
@@ -707,7 +707,7 @@
                 const { error } = await supabase.from('properties').insert([form]);
                 if (!error) {
                     alert("Listing Live!");
-                    setForm({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
+                    setForm({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
                 } else alert(error.message);
                 setLoading(false);
             };
@@ -772,8 +772,8 @@
                             <input className="w-full p-4 bg-slate-800 border-none rounded-xl font-bold mt-1 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Name / Phone" value={form.point_of_contact} onChange={e => setForm({...form, point_of_contact: e.target.value})} />
                         </div>
                         <div>
-                            <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-2">Commission Details</label>
-                            <input className="w-full p-4 bg-slate-800 border-none rounded-xl font-bold mt-1 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Commission %" value={form.commission} onChange={e => setForm({...form, commission: e.target.value})} />
+                            <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-2">commission_details Details</label>
+                            <input className="w-full p-4 bg-slate-800 border-none rounded-xl font-bold mt-1 outline-none focus:ring-1 focus:ring-blue-400" placeholder="commission_details %" value={form.commission_details} onChange={e => setForm({...form, commission_details: e.target.value})} />
                         </div>
                         
                         <input className="p-4 bg-slate-800 border-none rounded-xl font-bold md:col-span-2 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Video Link (YouTube/Drive URL)" value={form.video_link} onChange={e => setForm({...form, video_link: e.target.value})} />
