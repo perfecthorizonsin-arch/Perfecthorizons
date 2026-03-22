@@ -264,7 +264,7 @@
                             <div className="lg:col-span-2 space-y-10">
                                 <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 relative">
                                     <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div><div className="text-sm md:text-lg font-black text-slate-900 mt-1">{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div></div>
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_sta") || 'N/A'}</div></div>
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_status") || 'N/A'}</div></div>
                                     <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Possession</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : 'On Request'}</div></div>
                                     <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">RERA Status</div><div className="text-sm md:text-base font-black text-green-600 mt-1">Verified ✓</div></div>
                                 </div>
@@ -661,7 +661,7 @@
 
         // --- PROPERTY ADDITION FORM ---
         function PropertyForm({ supabase, scriptUrl }) {
-            const [form, setForm] = useState({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
+            const [form, setForm] = useState({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
             const [loading, setLoading] = useState(false);
             const [uploadingField, setUploadingField] = useState(null);
 
@@ -707,7 +707,7 @@
                 const { error } = await supabase.from('properties').insert([form]);
                 if (!error) {
                     alert("Listing Live!");
-                    setForm({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
+                    setForm({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
                 } else alert(error.message);
                 setLoading(false);
             };
@@ -748,7 +748,7 @@
                             <input type="date" className="w-full bg-transparent font-bold text-sm outline-none pt-4 pb-1 pl-16 text-slate-600" value={form.possession_date} onChange={e => setForm({...form, possession_date: e.target.value})} />
                         </div>
 
-                        <select className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" value={form.construction_sta} onChange={e => setForm({...form, construction_sta: e.target.value})}>
+                        <select className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" value={form.construction_status} onChange={e => setForm({...form, construction_status: e.target.value})}>
                             <option value="">Status</option><option>Ready to Move</option><option>Under Construction</option><option>New Launch</option>
                         </select>
 
