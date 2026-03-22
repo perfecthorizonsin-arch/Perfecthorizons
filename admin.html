@@ -208,7 +208,7 @@
                 window.open(getSafeLink(rawLink), '_blank');
             };
 
-            const regLink = getVal(property, "lead_registration") || getVal(property, "lead_registration_link_or_email_id");
+            const regLink = getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_link_or_email_id");
             const isEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
             const regText = isEmail ? "✉️ Email Lead Details" : "🌐 Direct to Website Link";
 
@@ -661,7 +661,7 @@
 
         // --- PROPERTY ADDITION FORM ---
         function PropertyForm({ supabase, scriptUrl }) {
-            const [form, setForm] = useState({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
+            const [form, setForm] = useState({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration_link: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
             const [loading, setLoading] = useState(false);
             const [uploadingField, setUploadingField] = useState(null);
 
@@ -707,7 +707,7 @@
                 const { error } = await supabase.from('properties').insert([form]);
                 if (!error) {
                     alert("Listing Live!");
-                    setForm({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
+                    setForm({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration_link: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
                 } else alert(error.message);
                 setLoading(false);
             };
@@ -778,7 +778,7 @@
                         
                         <input className="p-4 bg-slate-800 border-none rounded-xl font-bold md:col-span-2 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Video Link (YouTube/Drive URL)" value={form.video_link} onChange={e => setForm({...form, video_link: e.target.value})} />
                         <input className="p-4 bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-1 focus:ring-blue-400" placeholder="Builder Website Link" value={form.website_link} onChange={e => setForm({...form, website_link: e.target.value})} />
-                        <input className="p-4 bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-1 focus:ring-blue-400" placeholder="Lead Register Link / Email" value={form.lead_registration} onChange={e => setForm({...form, lead_registration: e.target.value})} />
+                        <input className="p-4 bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-1 focus:ring-blue-400" placeholder="Lead Register Link / Email" value={form.lead_registration_link} onChange={e => setForm({...form, lead_registration_link: e.target.value})} />
                         <input className="p-4 bg-slate-800 border-none rounded-xl font-bold md:col-span-2 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Map Link (Google Maps URL)" value={form.map_link} onChange={e => setForm({...form, map_link: e.target.value})} />
                     </div>
 
