@@ -186,7 +186,7 @@
             );
         };
 
-        // --- FULL PAGE PROPERTY VIEW (ADMIN LIBRARY) ---
+        // --- FULL PAGE PROPERTY VIEW (ADMIN) ---
         const PropertyDetailsPage = ({ property, onBack }) => {
             const galleryRef = useRef(null);
             useEffect(() => { window.scrollTo(0, 0); }, [property]);
@@ -201,9 +201,8 @@
             const cover = convertDriveLink(getVal(property, "cover_image") || getVal(property, "cover-image"));
             const galRaw = getVal(property, "gallery_images") || getVal(property, "gallery-images") || "";
             const imgs = [cover, ...(typeof galRaw === 'string' ? galRaw.split(',').map(l => convertDriveLink(l.trim())) : [])].filter(i => i); 
+            const projectUsps = getVal(property, "usp_details") || getVal(property, "usp_s") || getVal(property, "USP's");
 
-            const projectUsps = getVal(property, "usp-details") || getVal(property, "usp_details") || getVal(property, "USP's") || getVal(property, "Project Highlights") || getVal(property, "usp_s");
-            
             const openLink = (rawLink) => {
                 if (!rawLink || rawLink.trim() === '') return alert("This link was not provided for this property.");
                 window.open(getSafeLink(rawLink), '_blank');
@@ -217,7 +216,7 @@
                 <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0">
                     <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
                         <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
-                            <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> Back to Search
+                            <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> Back to Library
                         </button>
                         <div className="hidden md:flex items-center gap-4">
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-200 pr-4">
@@ -230,6 +229,7 @@
                     </div>
 
                     <div className="max-w-7xl mx-auto w-full p-4 md:p-8">
+                        {/* Scrollable Gallery */}
                         <div className="relative mb-8">
                             <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scroll h-[40vh] md:h-[60vh] rounded-3xl">
                                 {imgs.length > 0 ? imgs.map((img, i) => (
@@ -259,6 +259,7 @@
                             )}
                         </div>
 
+                        {/* Main Content */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                             <div className="lg:col-span-2 space-y-10">
                                 <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 relative">
@@ -271,7 +272,7 @@
                                 <div>
                                     <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-slate-900 mb-4 border-b border-slate-200 pb-2">About The Project</h2>
                                     <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${getVal(property, "bhk") || "premium"} homes.`}
+                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed homes.`}
                                     </p>
                                 </div>
 
@@ -301,7 +302,7 @@
 
                             <div className="lg:col-span-1">
                                 <div className="sticky top-24 space-y-6">
-                                    <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm">
+                                    <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
                                         <div className="mb-6 pb-6 border-b border-slate-100">
                                             <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Starting Price</div>
                                             <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">{getVal(property, "Price") || 'On Request'}</div>
@@ -309,7 +310,7 @@
                                         
                                         <div className="bg-[#fffbeb] border border-[#fde68a] p-4 rounded-2xl text-[#92400e] mb-4">
                                             <h4 className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-80">Commission</h4>
-                                            <p className="text-2xl font-black">{formatPercent(getVal(property, "commision_deta") || getVal(property, "commission"))}</p>
+                                            <p className="text-2xl font-black">{formatPercent(getVal(property, "commission") || getVal(property, "commision_deta"))}</p>
                                         </div>
 
                                         <div className="bg-[#f0f9ff] border border-[#bae6fd] p-4 rounded-2xl text-[#0369a1] mb-6">
@@ -323,7 +324,7 @@
                                                 🌐 Builder Website
                                             </button>
                                             <button onClick={() => openLink(regLink)} className="w-full bg-slate-900 text-white font-black py-3 rounded-xl uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-md text-[10px]">
-                                                {regText}
+                                                📝 {regText}
                                             </button>
                                         </div>
                                     </div>
@@ -349,7 +350,8 @@
             const [authChecking, setAuthChecking] = useState(true);
             const [leads, setLeads] = useState([]);
             const [properties, setProperties] = useState([]);
-            // Persist the active tab
+            
+            // Keeps you on the current tab even if you refresh!
             const [view, setView] = useState(() => localStorage.getItem('hz_admin_view') || 'dashboard'); 
             const [leadCategory, setLeadCategory] = useState('website'); 
             const [loading, setLoading] = useState(true);
@@ -377,7 +379,7 @@
             }, []);
 
             useEffect(() => {
-                if(session && view === 'dashboard') fetchLeads();
+                if(session) fetchLeads();
             }, [leadCategory]);
 
             async function fetchLeads() {
@@ -404,9 +406,10 @@
                 let updates = {};
                 const stamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
 
+                // SAFE HANDLING FOR add_note (Manual Remarks)
                 if (field === 'add_note') {
                     if (!value.trim()) return;
-                    updates.call_remark = `[${stamp}] Note: ${value}\n\n${lead.call_remark || ''}`;
+                    updates.add_note = value; // Saves ONLY to add_note, doesn't mess with call_remark auto-logs
                 } else if (field === 'lead_status') {
                     updates.lead_status = value;
                     updates.call_remark = `[${stamp}] Status Changed: ${value}\n\n${lead.call_remark || ''}`;
@@ -422,12 +425,16 @@
 
                 const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
                 
-                // Optimistic UI update (feels instant)
+                // Optimistic UI update
                 setLeads(prev => prev.map(l => l.id === lead.id ? {...l, ...updates} : l));
 
                 const { error } = await supabase.from(table).update(updates).eq('id', lead.id);
                 if (error) {
-                    alert("Error saving update: " + error.message);
+                    if (error.message.includes('add_note')) {
+                        alert("ERROR: Please create an 'add_note' text column in your Supabase 'leads' table to save manual remarks.");
+                    } else {
+                        alert("Error saving update: " + error.message);
+                    }
                     fetchLeads(); // Revert on failure
                 }
             }
@@ -539,12 +546,12 @@
                                                         )}
                                                     </td>
                                                     <td className="p-4">
-                                                        <div className="h-16 overflow-y-auto bg-slate-50 p-2 rounded-lg history-scroll whitespace-pre-wrap border border-slate-100 leading-relaxed font-medium text-slate-400 mb-2">
-                                                            {l.call_remark || <span className="italic">No system logs...</span>}
+                                                        <div className="h-12 overflow-y-auto bg-slate-50 p-2 rounded-t-lg text-[9px] font-medium text-slate-400 whitespace-pre-wrap border border-slate-100 mb-1">
+                                                            {l.call_remark || <span className="italic">System logs...</span>}
                                                         </div>
                                                         <div className="flex gap-2">
-                                                            <textarea id={`note-d-${l.id}`} rows="2" placeholder="Manual remarks/notes..." className="flex-1 p-2 border border-slate-200 rounded-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
-                                                            <button onClick={() => { const el = document.getElementById(`note-d-${l.id}`); updateLead(l, 'add_note', el.value); el.value=''; }} className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition">Save</button>
+                                                            <textarea id={`note-d-${l.id}`} defaultValue={l.add_note || ''} rows="2" placeholder="Manual remarks/notes..." className="flex-1 p-2 border border-slate-200 rounded-b-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
+                                                            <button onClick={() => { const el = document.getElementById(`note-d-${l.id}`); updateLead(l, 'add_note', el.value); }} className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition">Save</button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -556,17 +563,17 @@
                                 {/* MOBILE CARDS */}
                                 <div className="lg:hidden space-y-4">
                                     {displayedLeads.map(l => (
-                                        <div key={`m-${l.id}`} className={`bg-white p-4 rounded-2xl shadow-sm border-t-8 ${l.lead_priority === 'Hot' ? 'border-t-red-500' : l.lead_priority === 'Cold' ? 'border-t-blue-400' : 'border-t-amber-400'}`}>
-                                            <div className="flex justify-between items-start mb-4">
+                                        <div key={`m-${l.id}`} className={`bg-white p-4 rounded-2xl shadow-sm border border-t-8 ${l.lead_priority === 'Hot' ? 'border-t-red-500 bg-red-50/10' : l.lead_priority === 'Cold' ? 'border-t-blue-400' : 'border-t-amber-400'}`}>
+                                            <div className="flex justify-between items-start">
                                                 <div>
                                                     <h3 className="font-black text-sm uppercase">{l.customer_name}</h3>
-                                                    <p className="font-bold text-blue-600 text-xs">{l.phone_number}</p>
+                                                    <p className="font-bold text-blue-600">{l.phone_number}</p>
                                                     <p className="font-bold text-slate-400 text-[10px] truncate">{l.customer_email}</p>
                                                 </div>
                                                 <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 p-3 rounded-full">📞</a>
                                             </div>
                                             
-                                            <div className="grid grid-cols-2 gap-2 mb-4">
+                                            <div className="grid grid-cols-2 gap-2 mt-4 mb-4">
                                                 <div className="flex flex-col gap-1">
                                                     <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</label>
                                                     <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none ${getStatusStyles(l.lead_status)}`}>
@@ -586,21 +593,25 @@
                                                 {['Called', 'RNR', 'Details Shared'].includes(l.lead_status) && (
                                                     <div>
                                                         <label className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">Follow-up Date</label>
-                                                        <input type="datetime-local" className="w-full p-2 bg-blue-50 border border-blue-200 rounded-lg text-[10px] font-bold outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={e => updateLead(l, 'follow_up_at', e.target.value)} />
+                                                        <input type="datetime-local" className="w-full p-2 bg-blue-50 border border-blue-200 rounded-xl text-[10px] font-bold outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={e => updateLead(l, 'follow_up_at', e.target.value)} />
                                                     </div>
                                                 )}
                                                 {l.lead_status === 'SV Scheduled' && (
                                                     <div>
                                                         <label className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">Site Visit Date</label>
-                                                        <input type="date" className="w-full p-2 bg-teal-50 border border-teal-200 rounded-lg text-[10px] font-bold outline-none" value={l.site_visit_at || ''} onChange={e => updateLead(l, 'site_visit_at', e.target.value)} />
+                                                        <input type="date" className="w-full p-2 bg-teal-50 border border-teal-200 rounded-xl text-[10px] font-bold outline-none" value={l.site_visit_at || ''} onChange={e => updateLead(l, 'site_visit_at', e.target.value)} />
                                                     </div>
                                                 )}
                                             </div>
 
-                                            <div className="bg-slate-50 p-2 rounded-xl h-24 overflow-y-auto mb-2 whitespace-pre-wrap border font-medium text-slate-600 text-[9px]">{l.call_remark || 'No logs yet...'}</div>
-                                            <div className="flex gap-2 mt-2">
-                                                <textarea id={`m-note-${l.id}`} rows="2" className="w-full p-2 border border-slate-200 rounded-xl text-[10px] resize-none focus:ring-1 focus:ring-blue-500 outline-none shadow-sm" placeholder="Manual remarks..." />
-                                                <button onClick={() => { const el = document.getElementById(`m-note-${l.id}`); updateLead(l, 'add_note', el.value); el.value=''; }} className="bg-slate-900 text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-blue-600 transition">Save</button>
+                                            <div className="mt-4 pt-3 border-t border-slate-100">
+                                                <div className="bg-slate-50 p-2 rounded-t-xl h-16 overflow-y-auto text-[9px] font-medium whitespace-pre-wrap border border-slate-200 leading-relaxed text-slate-400">
+                                                    {l.call_remark || <span className="italic">System logs...</span>}
+                                                </div>
+                                                <div className="flex gap-2 mt-1">
+                                                    <textarea id={`m-note-${l.id}`} defaultValue={l.add_note || ''} rows="2" className="w-full p-2 border border-slate-200 rounded-b-xl text-[10px] resize-none focus:ring-1 focus:ring-blue-500 outline-none shadow-sm" placeholder="Manual remarks..." />
+                                                    <button onClick={() => { const el = document.getElementById(`m-note-${l.id}`); updateLead(l, 'add_note', el.value); }} className="bg-slate-900 text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-blue-600 transition">Save</button>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -650,13 +661,15 @@
 
         // --- PROPERTY ADDITION FORM ---
         function PropertyForm({ supabase, scriptUrl }) {
-            const [form, setForm] = useState({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commision_deta: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
+            const [form, setForm] = useState({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
             const [loading, setLoading] = useState(false);
+            const [uploadingField, setUploadingField] = useState(null);
 
             const upload = async (e, field, append = false) => {
                 const files = e.target.files; if(!files || files.length === 0) return;
-                setLoading(true);
+                setLoading(true); setUploadingField(field);
                 let newUrls = [];
+                
                 for(let i=0; i<files.length; i++) {
                     const file = files[i];
                     const reader = new FileReader();
@@ -670,73 +683,140 @@
                     });
                     if(url) newUrls.push(url);
                 }
+                
                 if(newUrls.length > 0) {
                     const joined = newUrls.join(',');
                     if(append) setForm(f => ({ ...f, [field]: f[field] ? f[field] + ',' + joined : joined }));
                     else setForm(f => ({ ...f, [field]: joined }));
                 }
-                setLoading(false);
+                setLoading(false); setUploadingField(null);
+            };
+
+            const removeFile = (field, isArray = false, idx = null) => {
+                if (isArray) {
+                    const arr = form[field].split(',').filter(Boolean);
+                    arr.splice(idx, 1);
+                    setForm(f => ({ ...f, [field]: arr.join(',') }));
+                } else {
+                    setForm(f => ({ ...f, [field]: '' }));
+                }
             };
 
             const save = async () => {
                 setLoading(true);
                 const { error } = await supabase.from('properties').insert([form]);
-                if (!error) { alert("Listing Live!"); setForm({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commision_deta: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' }); } 
-                else alert(error.message);
+                if (!error) {
+                    alert("Listing Live!");
+                    setForm({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_sta: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission: '', video_link: '', website_link: '', lead_registration: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
+                } else alert(error.message);
                 setLoading(false);
             };
+
+            const FileTag = ({ field, name, isArray=false, idx=null }) => (
+                <div className="flex justify-between items-center bg-blue-50 border border-blue-100 text-blue-700 p-2 rounded-lg mt-2 text-[10px] font-bold">
+                    <span className="truncate max-w-[150px]">{name}</span>
+                    <button onClick={() => removeFile(field, isArray, idx)} className="text-red-500 hover:text-red-700 px-2 text-xs">✕</button>
+                </div>
+            );
 
             return (
                 <div className="bg-white p-6 md:p-10 rounded-3xl shadow-sm max-w-4xl mx-auto space-y-6 animate-fadeIn border border-slate-200">
                     <h2 className="text-2xl font-black uppercase italic border-b pb-4 text-blue-900">Master Property Form</h2>
+                    
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Property Name" value={form.property_name} onChange={e => setForm({...form, property_name: e.target.value})} />
                         <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Builder Name" value={form.builder_name} onChange={e => setForm({...form, builder_name: e.target.value})} />
+                        
                         <select className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" value={form.property_region} onChange={e => setForm({...form, property_region: e.target.value})}>
-                            <option value="">Region</option><option>North</option><option>South</option><option>East</option><option>West</option>
+                            <option value="">Property Region</option><option>North</option><option>South</option><option>East</option><option>West</option>
                         </select>
                         <select className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" value={form.property_type} onChange={e => setForm({...form, property_type: e.target.value})}>
-                            <option value="">Type</option><option>Apartment</option><option>Villa</option><option>Villament</option><option>Plot</option><option>Others</option>
+                            <option value="">Property Type</option><option>Apartment</option><option>Villa</option><option>Villament</option><option>Plot</option><option>Others</option>
                         </select>
+
                         <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Location" value={form.location} onChange={e => setForm({...form, location: e.target.value})} />
                         <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Price (e.g. 1.2 Cr)" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
+                        
                         <select className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" value={form.bhk} onChange={e => setForm({...form, bhk: e.target.value})}>
                             <option value="">BHK Config</option><option>1 BHK</option><option>2 BHK</option><option>3 BHK</option><option>4 BHK</option><option>5+ BHK</option>
                         </select>
-                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Area (SqFt)" value={form.super_built_up_a} onChange={e => setForm({...form, super_built_up_a: e.target.value})} />
+                        
+                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Super Built-up Area (SqFt)" value={form.super_built_up_a} onChange={e => setForm({...form, super_built_up_a: e.target.value})} />
+
                         <div className="relative flex items-center bg-slate-50 border rounded-2xl px-4 focus-within:ring-2 focus-within:ring-blue-500 transition">
                             <span className="text-[10px] font-bold text-slate-400 absolute left-4 uppercase tracking-widest">Possession:</span>
                             <input type="date" className="w-full bg-transparent font-bold text-sm outline-none pt-4 pb-1 pl-16 text-slate-600" value={form.possession_date} onChange={e => setForm({...form, possession_date: e.target.value})} />
                         </div>
+
                         <select className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" value={form.construction_sta} onChange={e => setForm({...form, construction_sta: e.target.value})}>
                             <option value="">Status</option><option>Ready to Move</option><option>Under Construction</option><option>New Launch</option>
                         </select>
+
                         <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Approvals (e.g. BDA, RERA)" value={form.approval} onChange={e => setForm({...form, approval: e.target.value})} />
                         <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Total Units" value={form.total_units} onChange={e => setForm({...form, total_units: e.target.value})} />
                         <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 md:col-span-2" placeholder="Availability" value={form.availability} onChange={e => setForm({...form, availability: e.target.value})} />
                     </div>
+
                     <textarea className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm h-32 resize-none outline-none focus:ring-2 focus:ring-blue-500" placeholder="Property Description..." value={form.description} onChange={e => setForm({...form, description: e.target.value})}></textarea>
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <textarea placeholder="USPs / Highlights (Line by Line)" rows="3" className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, usp_details: e.target.value})} value={form.usp_details}/>
                         <textarea placeholder="Amenities (Comma separated)" rows="3" className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, amenities: e.target.value})} value={form.amenities}/>
                     </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-slate-900 rounded-3xl text-white">
                         <h3 className="col-span-1 md:col-span-2 text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2 border-b border-slate-700 pb-2">Internal Data & Links</h3>
-                        <div><label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-2">Internal POC</label><input className="w-full p-4 bg-slate-800 border-none rounded-xl font-bold mt-1 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Name / Phone" value={form.point_of_contact} onChange={e => setForm({...form, point_of_contact: e.target.value})} /></div>
-                        <div><label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-2">Commission Details</label><input className="w-full p-4 bg-slate-800 border-none rounded-xl font-bold mt-1 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Commission %" value={form.commision_deta} onChange={e => setForm({...form, commision_deta: e.target.value})} /></div>
+                        
+                        <div>
+                            <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-2">Internal POC</label>
+                            <input className="w-full p-4 bg-slate-800 border-none rounded-xl font-bold mt-1 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Name / Phone" value={form.point_of_contact} onChange={e => setForm({...form, point_of_contact: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-2">Commission Details</label>
+                            <input className="w-full p-4 bg-slate-800 border-none rounded-xl font-bold mt-1 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Commission %" value={form.commission} onChange={e => setForm({...form, commission: e.target.value})} />
+                        </div>
+                        
                         <input className="p-4 bg-slate-800 border-none rounded-xl font-bold md:col-span-2 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Video Link (YouTube/Drive URL)" value={form.video_link} onChange={e => setForm({...form, video_link: e.target.value})} />
                         <input className="p-4 bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-1 focus:ring-blue-400" placeholder="Builder Website Link" value={form.website_link} onChange={e => setForm({...form, website_link: e.target.value})} />
                         <input className="p-4 bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-1 focus:ring-blue-400" placeholder="Lead Register Link / Email" value={form.lead_registration} onChange={e => setForm({...form, lead_registration: e.target.value})} />
                         <input className="p-4 bg-slate-800 border-none rounded-xl font-bold md:col-span-2 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Map Link (Google Maps URL)" value={form.map_link} onChange={e => setForm({...form, map_link: e.target.value})} />
                     </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
-                        <div><label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Main Cover Image</label><input type="file" onChange={e => upload(e, 'cover_image')} className="text-xs font-bold text-slate-600"/></div>
-                        <div><label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Gallery Images (Select Multiple)</label><input type="file" multiple onChange={e => upload(e, 'gallery_images', true)} className="text-xs font-bold text-slate-600"/><span className="text-[9px] text-blue-600 font-bold block mt-1">Uploaded: {form.gallery_images ? form.gallery_images.split(',').length : 0}</span></div>
-                        <div><label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Brochure (PDF)</label><input type="file" onChange={e => upload(e, 'brochure')} className="text-xs font-bold text-slate-600"/></div>
-                        <div><label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Cost Sheet (Multiple)</label><input type="file" multiple onChange={e => upload(e, 'cost_sheet', true)} className="text-xs font-bold text-slate-600"/><span className="text-[9px] text-blue-600 font-bold block mt-1">Uploaded: {form.cost_sheet ? form.cost_sheet.split(',').length : 0}</span></div>
-                        <div><label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Floor Plan (PDF/Img)</label><input type="file" onChange={e => upload(e, 'floor_plan')} className="text-xs font-bold text-slate-600"/></div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Main Cover Image {uploadingField === 'cover_image' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
+                            <input type="file" onChange={e => upload(e, 'cover_image')} className="text-xs font-bold text-slate-600"/>
+                            {form.cover_image && <FileTag field="cover_image" name="Cover Image" />}
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Gallery Images (Select Multiple) {uploadingField === 'gallery_images' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
+                            <input type="file" multiple onChange={e => upload(e, 'gallery_images', true)} className="text-xs font-bold text-slate-600"/> 
+                            {form.gallery_images && form.gallery_images.split(',').filter(Boolean).map((img, idx) => (
+                                <FileTag key={idx} field="gallery_images" name={`Gallery Image ${idx + 1}`} isArray={true} idx={idx} />
+                            ))}
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Brochure (PDF) {uploadingField === 'brochure' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
+                            <input type="file" onChange={e => upload(e, 'brochure')} className="text-xs font-bold text-slate-600"/>
+                            {form.brochure && <FileTag field="brochure" name="Brochure PDF" />}
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Cost Sheet (PDF/Images - Multiple) {uploadingField === 'cost_sheet' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
+                            <input type="file" multiple onChange={e => upload(e, 'cost_sheet', true)} className="text-xs font-bold text-slate-600"/>
+                            {form.cost_sheet && form.cost_sheet.split(',').filter(Boolean).map((img, idx) => (
+                                <FileTag key={idx} field="cost_sheet" name={`Cost Sheet File ${idx + 1}`} isArray={true} idx={idx} />
+                            ))}
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Floor Plan (PDF/Img) {uploadingField === 'floor_plan' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
+                            <input type="file" onChange={e => upload(e, 'floor_plan')} className="text-xs font-bold text-slate-600"/>
+                            {form.floor_plan && <FileTag field="floor_plan" name="Floor Plan File" />}
+                        </div>
                     </div>
-                    <button onClick={save} disabled={loading} className="w-full bg-blue-600 text-white p-5 rounded-3xl font-black uppercase tracking-widest hover:bg-slate-900 transition shadow-xl mt-4">{loading ? 'Uploading & Publishing...' : 'Publish Listing'}</button>
+
+                    <button onClick={save} disabled={loading} className="w-full bg-blue-600 text-white p-5 rounded-3xl font-black uppercase tracking-widest hover:bg-slate-900 transition shadow-xl mt-4">
+                        {loading ? 'Uploading & Publishing...' : 'Publish Listing'}
+                    </button>
                 </div>
             );
         }
@@ -752,16 +832,17 @@
                 const stamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
                 const remarks = form.note ? `[${stamp}] Requirement: ${form.note}\n\n` : '';
 
+                // We send form.note ONLY to call_remark on creation so it doesn't crash if add_note isn't built yet
                 const { error } = await supabase.from('leads').insert([{ 
                     customer_name: form.name, phone_number: form.phone, customer_email: form.email || null,
                     project_interested_in: form.project, call_remark: remarks, lead_source: form.source, lead_status: 'Un called', psa_agent_name: 'Tharun'
                 }]);
 
                 if (!error) {
-                    // Send Email Notification Silently
+                    // Send Email Notification Silently to Admin
                     fetch("https://formsubmit.co/ajax/perfecthorizons.in@gmail.com", {
                         method: "POST", headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                        body: JSON.stringify({ _subject: `New Admin Lead: ${form.name}`, Name: form.name, Phone: form.phone, Email: form.email || 'N/A', Project: form.project, Source: form.source, Requirements: form.note || 'None' })
+                        body: JSON.stringify({ _subject: `New Lead: ${form.name}`, Name: form.name, Phone: form.phone, Email: form.email || 'N/A', Project: form.project, Source: form.source, Requirements: form.note || 'None' })
                     }).catch(err => console.log(err));
                     onSuccess(); 
                 } else alert(error.message);
