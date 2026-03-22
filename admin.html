@@ -661,7 +661,7 @@
 
         // --- PROPERTY ADDITION FORM ---
         function PropertyForm({ supabase, scriptUrl }) {
-            const [form, setForm] = useState({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration_link: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
+            const [form, setForm] = useState({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_area: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration_link: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
             const [loading, setLoading] = useState(false);
             const [uploadingField, setUploadingField] = useState(null);
 
@@ -707,7 +707,7 @@
                 const { error } = await supabase.from('properties').insert([form]);
                 if (!error) {
                     alert("Listing Live!");
-                    setForm({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_a: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration_link: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
+                    setForm({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_area: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration_link: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
                 } else alert(error.message);
                 setLoading(false);
             };
@@ -741,7 +741,7 @@
                             <option value="">BHK Config</option><option>1 BHK</option><option>2 BHK</option><option>3 BHK</option><option>4 BHK</option><option>5+ BHK</option>
                         </select>
                         
-                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Super Built-up Area (SqFt)" value={form.super_built_up_a} onChange={e => setForm({...form, super_built_up_a: e.target.value})} />
+                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Super Built-up Area (SqFt)" value={form.super_built_up_area} onChange={e => setForm({...form, super_built_up_area: e.target.value})} />
 
                         <div className="relative flex items-center bg-slate-50 border rounded-2xl px-4 focus-within:ring-2 focus-within:ring-blue-500 transition">
                             <span className="text-[10px] font-bold text-slate-400 absolute left-4 uppercase tracking-widest">Possession:</span>
