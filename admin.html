@@ -23,6 +23,10 @@
         .ring-hot { border-left: 5px solid #ef4444 !important; }
         .ring-warm { border-left: 5px solid #f59e0b !important; }
         .ring-cold { border-left: 5px solid #3b82f6 !important; }
+        input[type=range] { -webkit-appearance: none; background: transparent; width: 100%; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; background: #2563eb; cursor: pointer; margin-top: -7px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px; }
+        .pie-chart { border-radius: 50%; display: inline-block; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-900 pb-20 md:pb-0">
@@ -31,13 +35,12 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // --- SUPABASE CONFIG ---
         const supabaseUrl = 'https://uiiovtsktllvtecfokik.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, { auth: { storage: window.sessionStorage } });
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJOoh4meGBQOZYZpUWqK1DmDS_B8fXSC5NlwPcTX3GUfP7gzYQKvatgj9IFT3Txy-FCQ/exec";
+        const WHATSAPP_NUMBER = "919742353260";
 
-        // --- GLOBAL FORMATTING TOOLS ---
         const getVal = (obj, searchKey) => {
             if (!obj) return "";
             if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
@@ -112,7 +115,6 @@
             }
         };
 
-        // --- SHARED EMI CALCULATOR ---
         const EMICalculator = ({ propertyPriceStr }) => {
             const propertyValue = extractPriceInCr(propertyPriceStr) > 0 ? extractPriceInCr(propertyPriceStr) * 10000000 : 10000000; 
             const [loanAmount, setLoanAmount] = useState(propertyValue * 0.8);
@@ -184,7 +186,6 @@
             );
         };
 
-        // --- FULL PAGE PROPERTY VIEW (ADMIN) ---
         const PropertyDetailsPage = ({ property, onBack }) => {
             const galleryRef = useRef(null);
             useEffect(() => { window.scrollTo(0, 0); }, [property]);
@@ -206,7 +207,6 @@
                 window.open(getSafeLink(rawLink), '_blank');
             };
 
-            // SMART PREVIEW IMAGES LOGIC (Opens Folder)
             const handlePreviewImages = () => {
                 const gallery = getVal(property, "gallery_images") || getVal(property, "cover_image");
                 if (!gallery || gallery.trim() === '') return alert("No images available.");
@@ -215,7 +215,6 @@
                 window.open(folderLink, '_blank');
             };
 
-            // SMART LEAD REGISTRATION LINK LOGIC
             const regLink = getVal(property, "lead_registration") || getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_or_email_id");
             const isEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
             const regText = isEmail ? "✉️ Email Lead Details" : "🌐 Direct to Website Link";
@@ -232,6 +231,14 @@
                 }
             };
 
+            const shareViaWhatsApp = (type, link) => {
+                if (!link || link.trim() === '') return alert(`${type} is not available for this property.`);
+                let finalLink = link;
+                if (type === 'Images/Gallery' && link.includes(',')) { finalLink = link.split(',').join('\n'); }
+                const text = `Hello! Here is the ${type} for *${getVal(property, "Property Name")}*:\n\n${finalLink}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+            };
+
             return (
                 <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0">
                     <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
@@ -242,11 +249,13 @@
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-200 pr-4">
                                 {getVal(property, "Location")} • {getVal(property, "Builder Name")}
                             </div>
+                            <a href={`tel:${getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER}`} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-slate-200">
+                                📞 Call Agent
+                            </a>
                         </div>
                     </div>
 
                     <div className="max-w-7xl mx-auto w-full p-4 md:p-8">
-                        {/* Scrollable Gallery */}
                         <div className="relative mb-8">
                             <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scroll h-[40vh] md:h-[60vh] rounded-3xl">
                                 {imgs.length > 0 ? imgs.map((img, i) => (
@@ -276,10 +285,8 @@
                             )}
                         </div>
 
-                        {/* Main Content Layout Matches Front-End UI exactly */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                             <div className="lg:col-span-2 space-y-10">
-                                
                                 <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 relative">
                                     <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div><div className="text-sm md:text-lg font-black text-slate-900 mt-1">{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div></div>
                                     <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_status") || 'N/A'}</div></div>
@@ -337,24 +344,25 @@
                                             <p className="text-[10px] font-bold">Avail: {getVal(property, "availability") || "N/A"}</p>
                                         </div>
 
-                                        <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
-                                            <h4 className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-2">Admin Actions & Previews</h4>
+                                        <div className="bg-slate-900 text-white p-5 rounded-2xl">
+                                            <h4 className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-3 border-b border-slate-700 pb-2">Admin Tools</h4>
                                             
-                                            <div className="space-y-2 mb-4">
-                                                <button onClick={() => openLink(getVal(property, "website_link"))} className="w-full bg-white border border-slate-200 text-slate-700 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-100 transition-colors shadow-sm text-[10px]">
+                                            <div className="space-y-2 mb-5">
+                                                <button onClick={() => openLink(getVal(property, "website_link"))} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-2.5 rounded-xl uppercase tracking-widest transition-colors text-[9px] border border-slate-700">
                                                     🌐 Builder Website
                                                 </button>
-                                                <button onClick={handleRegisterLead} className="w-full bg-[#0f172a] text-white font-black py-3 rounded-xl uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-md text-[10px]">
+                                                <button onClick={handleRegisterLead} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-2.5 rounded-xl uppercase tracking-widest transition-colors shadow-md text-[9px]">
                                                     {regText}
                                                 </button>
                                             </div>
 
+                                            <h4 className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-2">Share With Client (WhatsApp)</h4>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <button onClick={() => openLink(getVal(property, "brochure"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">📥</span> Brochure</button>
-                                                <button onClick={() => openLink(getVal(property, "cost_sheet"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">📄</span> Cost Sheet</button>
-                                                <button onClick={() => openLink(getVal(property, "map_link"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">📍</span> Location</button>
-                                                <button onClick={() => openLink(getVal(property, "video_link"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">🎥</span> Video</button>
-                                                <button onClick={handlePreviewImages} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1 col-span-2"><span className="text-lg">🖼️</span> Preview Images (Drive)</button>
+                                                <button onClick={() => shareViaWhatsApp('Brochure', getVal(property, "brochure"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📥 Brochure</button>
+                                                <button onClick={() => shareViaWhatsApp('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
+                                                <button onClick={() => shareViaWhatsApp('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
+                                                <button onClick={() => shareViaWhatsApp('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
+                                                <button onClick={handlePreviewImages} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Preview Images (Drive)</button>
                                             </div>
                                         </div>
                                     </div>
@@ -367,7 +375,6 @@
             );
         };
 
-        // --- MAIN APP COMPONENT ---
         function AdminApp() {
             const [session, setSession] = useState(null);
             const [authChecking, setAuthChecking] = useState(true);
@@ -379,7 +386,6 @@
             const [loading, setLoading] = useState(true);
             const [showManualModal, setShowManualModal] = useState(false);
             
-            // Advanced Filters
             const [filterType, setFilterType] = useState('ALL'); 
             const [selectedProp, setSelectedProp] = useState(null);
 
@@ -393,12 +399,10 @@
                     setAuthChecking(false);
                     if (session) { fetchLeads(); fetchProperties(); } 
                 });
-                
                 const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { 
                     setSession(session); 
                     if (session) { fetchLeads(); fetchProperties(); } 
                 });
-                
                 return () => subscription.unsubscribe();
             }, []);
 
@@ -427,11 +431,10 @@
             }
 
             async function updateLead(lead, field, value) {
-                // BLOCK STATUS CHANGE IF NO PSA AGENT
                 if (field === 'lead_status') {
                     if (!lead.psa_agent_name || lead.psa_agent_name.trim() === '') {
                         alert("ERROR: You must assign a PSA Agent (Tharun or Shivaji) before changing the lead status.");
-                        fetchLeads(); // Force re-render to revert dropdown
+                        fetchLeads(); 
                         return;
                     }
                 }
@@ -450,8 +453,8 @@
                     updates.call_remark = `[${stamp}] SV Booked: ${value}\n\n${lead.call_remark || ''}`;
                 } else if (field === 'add_note') {
                     if (!value.trim()) return;
-                    updates.add_note = value; // Persists in text box
-                    updates.call_remark = `[${stamp}] Manual Note: ${value}\n\n${lead.call_remark || ''}`; // Appends to log
+                    updates.add_note = value; 
+                    updates.call_remark = `[${stamp}] Manual Note: ${value}\n\n${lead.call_remark || ''}`; 
                 } else if (field === 'reject_reason') {
                     updates.reject_reason = value;
                     updates.call_remark = `[${stamp}] Rejected Reason: ${value}\n\n${lead.call_remark || ''}`;
@@ -460,8 +463,6 @@
                 }
 
                 const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-                
-                // Optimistic UI update
                 setLeads(prev => prev.map(l => l.id === lead.id ? {...l, ...updates} : l));
 
                 const { error } = await supabase.from(table).update(updates).eq('id', lead.id);
@@ -469,7 +470,7 @@
                     if (error.message.includes('add_note')) alert("ERROR: Please create an 'add_note' text column in your Supabase 'leads' table to save manual remarks.");
                     else if (error.message.includes('reject_reason')) alert("ERROR: Please create a 'reject_reason' text column in your Supabase 'leads' table.");
                     else alert("Error saving update: " + error.message);
-                    fetchLeads(); // Revert on failure
+                    fetchLeads(); 
                 }
             }
 
@@ -501,7 +502,6 @@
                 return { total, uncalled, called, rejected };
             }, [leads]);
 
-            // --- RENDER LOGIC ---
             if (authChecking) {
                 return (
                     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
@@ -529,7 +529,6 @@
                     <main className="p-3 md:p-8 max-w-7xl mx-auto w-full">
                         {view === 'dashboard' && (
                             <div className="space-y-6">
-                                {/* Lead Status Summary */}
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     <table className="w-full text-sm text-left">
                                         <thead className="bg-slate-50 border-b uppercase text-[9px] font-black text-slate-400 tracking-widest">
@@ -580,7 +579,6 @@
                                     </div>
                                 </div>
 
-                                {/* DESKTOP TABLE */}
                                 <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     <table className="w-full text-left text-xs">
                                         <thead className="bg-slate-50 text-slate-400 font-black uppercase text-[9px] tracking-widest border-b">
@@ -644,11 +642,11 @@
                                                     </td>
                                                     <td className="p-4">
                                                         <div className="flex flex-col gap-2">
-                                                            <div className="h-16 overflow-y-auto bg-slate-50 p-2 rounded-t-lg text-[9px] font-medium text-slate-400 whitespace-pre-wrap border border-slate-100 mb-1">
-                                                                {l.call_remark || <span className="italic">System auto-capture records...</span>}
+                                                            <div className="h-16 overflow-y-auto bg-slate-50 p-2 rounded-lg history-scroll whitespace-pre-wrap border border-slate-100 leading-relaxed font-medium text-slate-400 mb-1">
+                                                                {l.call_remark || <span className="italic">System logs...</span>}
                                                             </div>
                                                             <div className="flex gap-2">
-                                                                <textarea id={`note-d-${l.id}`} defaultValue={l.add_note || ''} rows="2" placeholder="Manual notes / requirements..." className="flex-1 p-2 border border-slate-200 rounded-b-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
+                                                                <textarea id={`note-d-${l.id}`} defaultValue={l.add_note || ''} rows="2" placeholder="Manual notes / requirements..." className="flex-1 p-2 border border-slate-200 rounded-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
                                                                 <button onClick={() => { const el = document.getElementById(`note-d-${l.id}`); updateLead(l, 'add_note', el.value); }} className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition">Save</button>
                                                             </div>
                                                         </div>
@@ -659,11 +657,10 @@
                                     </table>
                                 </div>
 
-                                {/* MOBILE CARDS */}
                                 <div className="lg:hidden space-y-4">
                                     {displayedLeads.map(l => (
                                         <div key={`m-${l.id}`} className={`bg-white p-4 rounded-2xl shadow-sm border border-t-8 ${l.lead_priority === 'Hot' ? 'border-t-red-500 bg-red-50/10' : l.lead_priority === 'Cold' ? 'border-t-blue-400' : 'border-t-amber-400'}`}>
-                                            <div className="flex justify-between items-start mb-4">
+                                            <div className="flex justify-between items-start">
                                                 <div>
                                                     <h3 className="font-black text-sm uppercase">{l.customer_name}</h3>
                                                     <p className="font-bold text-blue-600">{l.phone_number}</p>
@@ -761,9 +758,7 @@
                 if (!obj) return "";
                 if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
                 const cleanKey = searchKey.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                for (let k in obj) {
-                    if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k];
-                }
+                for (let k in obj) { if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k]; }
                 return "";
             };
 
@@ -818,15 +813,18 @@
             const upload = async (e, field, append = false) => {
                 const files = e.target.files; if(!files || files.length === 0) return;
                 setLoading(true); setUploadingField(field);
-                let newUrls = [];
                 
+                const categoryMap = { 'cover_image': 'Cover Image', 'gallery_images': 'Gallery', 'brochure': 'Brochures', 'cost_sheet': 'Cost Sheets', 'floor_plan': 'Floor Plans' };
+                const category = categoryMap[field] || 'General';
+
+                let newUrls = [];
                 for(let i=0; i<files.length; i++) {
                     const file = files[i];
                     const reader = new FileReader();
                     const url = await new Promise(resolve => {
                         reader.readAsDataURL(file);
                         reader.onload = async () => {
-                            const res = await fetch(scriptUrl, { method: "POST", body: JSON.stringify({ base64: reader.result.split(',')[1], type: file.type, name: file.name, propertyName: form.property_name || 'Uploads' }) });
+                            const res = await fetch(scriptUrl, { method: "POST", body: JSON.stringify({ base64: reader.result.split(',')[1], type: file.type, name: file.name, propertyName: form.property_name || 'Uploads', category: category }) });
                             const resJson = await res.json();
                             resolve(resJson.status === 'success' ? resJson.url : null);
                         };
@@ -992,15 +990,14 @@
                 e.preventDefault();
                 setLoading(true);
                 const stamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
-                const remarks = form.note ? `[${stamp}] Requirement: ${form.note}\n\n` : '';
-
+                
                 const { error } = await supabase.from('leads').insert([{ 
                     customer_name: form.name, 
                     phone_number: form.phone, 
                     customer_email: form.email || null,
                     project_interested_in: form.project,
                     add_note: form.note, 
-                    call_remark: remarks,
+                    call_remark: form.note ? `[${stamp}] Requirement: ${form.note}\n\n` : '',
                     lead_source: form.source, 
                     lead_status: 'Un called' 
                 }]);
