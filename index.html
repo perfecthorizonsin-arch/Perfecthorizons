@@ -36,17 +36,16 @@
 
         /* Splash Animation Styles */
         .splash-house-path { stroke-dasharray: 300; stroke-dashoffset: 300; animation: drawHouse 1.5s ease-in-out forwards; }
-        .splash-ph { opacity: 0; animation: fadeInPH 0.5s 1.2s ease-in-out forwards; }
         @keyframes drawHouse { to { stroke-dashoffset: 0; } }
-        @keyframes fadeInPH { to { opacity: 1; } }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans pb-24 md:pb-0">
     
     <div id="native-splash" style="position: fixed; inset: 0; z-index: 99999; background-color: #f8fafc; display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.5s ease;">
-        <svg width="120" height="120" viewBox="0 0 100 100" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 20px;">
-            <path class="splash-house-path" d="M10 50 L50 15 L90 50 M20 42 V85 H80 V42 M40 85 V60 H60 V85" />
-            <text class="splash-ph" x="50" y="47" font-family="Arial, sans-serif" font-size="22" font-weight="900" font-style="italic" fill="#1e3a8a" stroke="none" dominant-baseline="middle" text-anchor="middle">PH</text>
+        <svg width="120" height="120" viewBox="0 0 100 100" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 20px;">
+            <path class="splash-house-path" d="M10 50 L50 15 L90 50" stroke="#f59e0b" />
+            <path class="splash-house-path" d="M20 42 V85 H80 V42" stroke="#3b82f6" />
+            <path class="splash-house-path" d="M40 85 V60 H60 V85" stroke="#10b981" />
         </svg>
         <div class="splash-title">Perfect Horizons</div>
         <div class="splash-sub">Curating Properties...</div>
@@ -70,7 +69,7 @@
         const { useState, useEffect, useMemo, useRef } = React;
         const WHATSAPP_NUMBER = "919742353260";
 
-        // GLOBAL TOOLS
+        // GLOBAL TOOLS 
         const formatPercent = (val) => {
             let num = parseFloat(val);
             if (isNaN(num)) return String(val || "0%");
@@ -117,13 +116,6 @@
                 if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k];
             }
             return "";
-        };
-
-        const fixImageUrl = (u) => {
-            if (!u || typeof u !== 'string') return '';
-            let url = u.split(',')[0].trim();
-            let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
-            return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1000` : url;
         };
 
         const extractPriceInCr = (priceString) => {
@@ -236,7 +228,7 @@
         };
 
         // --- FULL PAGE PROPERTY DETAILS ---
-        const PropertyDetailsPage = ({ property, allProperties, onBack, onSubmitLead, isAdmin }) => {
+        const PropertyDetailsPage = ({ property, allProperties, onBack, onSubmitLead, isAdmin, onSelectProperty }) => {
             const [actionModal, setActionModal] = useState(null); 
             const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
             const [isSubmitting, setIsSubmitting] = useState(false);
@@ -290,7 +282,7 @@
             }, [property, allProperties]);
 
             return (
-                <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0">
+                <div className="min-h-screen bg-slate-50 animate-fadeIn pb-28 md:pb-0">
                     
                     <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
                         <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
@@ -467,9 +459,9 @@
                                 <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-900 mb-6 border-l-4 border-blue-500 pl-4">Similar Properties You Might Like</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     {similarProperties.map((simProp, i) => (
-                                        <div key={i} onClick={() => { window.location.hash = ''; setTimeout(() => {setSelectedProperty(simProp);}, 50) }} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col">
+                                        <div key={i} onClick={() => { window.scrollTo(0,0); onSelectProperty(simProp); }} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col">
                                             <div className="relative h-40 w-full overflow-hidden shrink-0 bg-slate-100">
-                                                <img src={fixImageUrl(getVal(simProp, "Cover Image") || getVal(simProp, "cover_image")) || 'https://via.placeholder.com/600x300'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                <img src={convertDriveLink(getVal(simProp, "Cover Image") || getVal(simProp, "cover_image")) || 'https://via.placeholder.com/600x300'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                             </div>
                                             <div className="p-5 flex-grow flex flex-col">
                                                 <h3 className="text-lg font-black text-slate-900 leading-tight truncate uppercase">{getVal(simProp, "Property Name")}</h3>
@@ -598,20 +590,6 @@
 
                     if (error) throw error; 
 
-                    // Trigger the Apps Script Email Alert
-                    fetch(GOOGLE_SCRIPT_URL, {
-                        method: "POST",
-                        body: JSON.stringify({
-                            action: "sendLead",
-                            Name: data.name,
-                            Phone: data.phone,
-                            Email: data.email || 'N/A',
-                            Project: project,
-                            Source: sourceContext,
-                            Requirements: 'None'
-                        })
-                    }).catch(err => console.log("Email Error:", err));
-
                     if (!dataToSubmit) {
                         alert("Interest Registered! Our advisor will contact you shortly.");
                         setShowLeadForm(false); 
@@ -666,7 +644,7 @@
             };
 
             if (selectedProperty) {
-                return <PropertyDetailsPage property={selectedProperty} allProperties={safeProperties} onBack={() => setSelectedProperty(null)} onSubmitLead={handleLeadSubmit} isAdmin={isAdmin} />;
+                return <PropertyDetailsPage property={selectedProperty} allProperties={safeProperties} onBack={() => setSelectedProperty(null)} onSubmitLead={handleLeadSubmit} isAdmin={isAdmin} onSelectProperty={setSelectedProperty} />;
             }
 
             return (
@@ -680,7 +658,7 @@
                                 <div className="hidden lg:flex flex-1 justify-center px-4 max-w-2xl">
                                     <div className="relative w-full group">
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm z-10 transition-colors group-focus-within:text-blue-400">🔍</span>
-                                        <input type="text" placeholder="Search Location, Project or Builder..." className="w-full bg-slate-900 text-white placeholder-slate-400 border-2 border-blue-500/50 rounded-full pl-10 pr-5 py-2 text-xs font-bold outline-none focus:border-blue-500 focus:bg-slate-800 shadow-[0_0_15px_rgba(59,130,246,0.15)] focus:shadow-[0_0_25px_rgba(59,130,246,0.3)] transition-all" value={search} onChange={e => setSearch(e.target.value)} />
+                                        <input type="text" placeholder="Search Location, Project or Builder..." className="w-full bg-slate-900 text-white placeholder-slate-400 border-2 border-blue-500 rounded-full pl-10 pr-5 py-2 text-xs font-bold outline-none focus:bg-slate-800 shadow-[0_0_20px_rgba(59,130,246,0.4)] focus:shadow-[0_0_30px_rgba(59,130,246,0.6)] transition-all" value={search} onChange={e => setSearch(e.target.value)} />
                                     </div>
                                 </div>
                             )}
@@ -713,7 +691,9 @@
                             
                             <div className="md:hidden flex items-center gap-3 shrink-0">
                                 {activePage === 'home' && (
-                                    <button onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)} className={`p-2 rounded-full transition-colors ${isMobileSearchOpen ? 'bg-blue-500 text-white' : 'text-slate-300'}`}>🔍</button>
+                                    <button onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)} className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-full shadow-sm text-[10px] font-black uppercase tracking-widest transition">
+                                        <span className="text-sm">🔍</span> Search
+                                    </button>
                                 )}
                                 <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-white focus:outline-none ml-1">
                                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}></path></svg>
@@ -731,10 +711,10 @@
                                         </div>
                                     )}
                                     
-                                    <div className="md:hidden w-full flex justify-end mb-2">
-                                        <button onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)} className="text-[10px] font-black uppercase tracking-widest text-slate-600 bg-slate-100 border border-slate-200 px-3 py-2 rounded-lg flex items-center gap-2 shadow-sm">
-                                            <span className="text-blue-500">⚙️</span> {isMobileFilterOpen ? 'Hide Filters' : 'Show Filters'}
-                                        </button>
+                                    <div className="md:hidden w-full flex justify-end mb-2 px-2">
+                                        <span onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)} className="text-[10px] font-black uppercase tracking-widest text-slate-500 cursor-pointer flex items-center gap-1 bg-white px-2 py-1">
+                                            Filters <span className="text-blue-500 text-xs">{isMobileFilterOpen ? '▲' : '▼'}</span>
+                                        </span>
                                     </div>
 
                                     <div className={`${isMobileFilterOpen ? 'grid' : 'hidden'} md:grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 w-full animate-fadeIn`}>
@@ -784,7 +764,7 @@
                                     )}
                                 </div>
 
-                                <div onClick={() => navTo('advisor')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Meet Advisor</div>
+                                <div onClick={() => navTo('advisor')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Advisors</div>
                                 <div onClick={() => navTo('blogs')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Insights</div>
                                 <div onClick={() => navTo('customers')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Reviews</div>
                             </div>
@@ -792,14 +772,14 @@
                     </div>
 
                     {activePage === 'home' && (
-                        <div className="bg-white border-b border-gray-200 py-6 md:py-8 overflow-hidden marquee-container shadow-sm flex flex-col items-center">
-                            <p className="text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6">Associated With</p>
+                        <div className="bg-white border-b border-gray-200 py-3 md:py-4 overflow-hidden marquee-container shadow-sm flex flex-col items-center">
+                            <p className="text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-3">Associated With</p>
                             <div className="animate-marquee flex items-center">
                                 {AUTHORIZED_PARTNERS.map((logo, index) => (
-                                    <img key={index} src={logo} className="h-8 md:h-12 w-auto object-contain mx-6 md:mx-10 transition-all cursor-default" />
+                                    <img key={index} src={logo} className="h-6 md:h-8 w-auto object-contain mx-6 md:mx-10 transition-all cursor-default" />
                                 ))}
                                 {AUTHORIZED_PARTNERS.map((logo, index) => (
-                                    <img key={`dup-${index}`} src={logo} className="h-8 md:h-12 w-auto object-contain mx-6 md:mx-10 transition-all cursor-default" />
+                                    <img key={`dup-${index}`} src={logo} className="h-6 md:h-8 w-auto object-contain mx-6 md:mx-10 transition-all cursor-default" />
                                 ))}
                             </div>
                         </div>
