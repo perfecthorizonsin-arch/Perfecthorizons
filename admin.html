@@ -220,23 +220,12 @@
                 if (!regLink || regLink.trim() === '') return alert("No lead registration details provided.");
                 if (isEmail) {
                     let email = regLink.replace('mailto:', '').trim();
-                    window.location.href = `mailto:${email}?subject=New Lead Registration: ${getVal(property, "Property Name")}`;
+                    window.location.href = `mailto:${email}?subject=New Lead Registration: ${getVal(property, "property_name")}`;
                 } else {
                     let link = regLink.trim();
                     if (!link.startsWith('http')) link = `https://${link}`;
                     window.open(link, '_blank');
                 }
-            };
-
-            // WHATSAPP SHARE LOGIC
-            const shareViaWhatsApp = (type, link) => {
-                if (!link || link.trim() === '') return alert(`${type} is not available for this property.`);
-                let finalLink = link;
-                if (type === 'Images/Gallery' && link.includes(',')) {
-                    finalLink = link.split(',').join('\n'); // Format multiple links nicely
-                }
-                const text = `Hello! Here is the ${type} for *${getVal(property, "Property Name")}*:\n\n${finalLink}`;
-                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
             };
 
             return (
@@ -249,6 +238,9 @@
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-200 pr-4">
                                 {getVal(property, "Location")} • {getVal(property, "Builder Name")}
                             </div>
+                            <a href={`tel:${getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER}`} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-slate-200">
+                                📞 Call Agent
+                            </a>
                         </div>
                     </div>
 
@@ -283,10 +275,9 @@
                             )}
                         </div>
 
-                        {/* Main Content Layout Matches Front-End UI exactly */}
+                        {/* Main Content Layout */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                             <div className="lg:col-span-2 space-y-10">
-                                
                                 <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 relative">
                                     <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div><div className="text-sm md:text-lg font-black text-slate-900 mt-1">{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div></div>
                                     <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_status") || 'N/A'}</div></div>
@@ -297,7 +288,7 @@
                                 <div>
                                     <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-slate-900 mb-4 border-b border-slate-200 pb-2">About The Project</h2>
                                     <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${getVal(property, "bhk") || "premium"} homes.`}
+                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}.`}
                                     </p>
                                 </div>
 
@@ -344,25 +335,24 @@
                                             <p className="text-[10px] font-bold">Avail: {getVal(property, "availability") || "N/A"}</p>
                                         </div>
 
-                                        <div className="bg-slate-900 text-white p-5 rounded-2xl">
-                                            <h4 className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-3 border-b border-slate-700 pb-2">Admin Tools</h4>
+                                        <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
+                                            <h4 className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-2">Admin Actions & Previews</h4>
                                             
-                                            <div className="space-y-2 mb-5">
-                                                <button onClick={() => openLink(getVal(property, "website_link"))} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-2.5 rounded-xl uppercase tracking-widest transition-colors text-[9px] border border-slate-700">
+                                            <div className="space-y-2 mb-4">
+                                                <button onClick={() => openLink(getVal(property, "website_link"))} className="w-full bg-white border border-slate-200 text-slate-700 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-100 transition-colors shadow-sm text-[10px]">
                                                     🌐 Builder Website
                                                 </button>
-                                                <button onClick={handleRegisterLead} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-2.5 rounded-xl uppercase tracking-widest transition-colors shadow-md text-[9px]">
+                                                <button onClick={handleRegisterLead} className="w-full bg-[#0f172a] text-white font-black py-3 rounded-xl uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-md text-[10px]">
                                                     {regText}
                                                 </button>
                                             </div>
 
-                                            <h4 className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-2">Share With Client (WhatsApp)</h4>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <button onClick={() => shareViaWhatsApp('Brochure', getVal(property, "brochure"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📥 Brochure</button>
-                                                <button onClick={() => shareViaWhatsApp('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
-                                                <button onClick={() => shareViaWhatsApp('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
-                                                <button onClick={() => shareViaWhatsApp('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
-                                                <button onClick={() => shareViaWhatsApp('Images/Gallery', getVal(property, "gallery_images") || getVal(property, "cover_image"))} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🖼️ Share Images</button>
+                                                <button onClick={() => openLink(getVal(property, "brochure"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">📥</span> Brochure</button>
+                                                <button onClick={() => openLink(getVal(property, "cost_sheet"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">📄</span> Cost Sheet</button>
+                                                <button onClick={() => openLink(getVal(property, "map_link"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">📍</span> Location</button>
+                                                <button onClick={() => openLink(getVal(property, "video_link"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">🎥</span> Video</button>
+                                                <button onClick={() => openLink((getVal(property, "gallery_images") || getVal(property, "cover_image") || '').split(',')[0])} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1 col-span-2"><span className="text-lg">🖼️</span> Preview Images</button>
                                             </div>
                                         </div>
                                     </div>
@@ -382,7 +372,6 @@
             const [leads, setLeads] = useState([]);
             const [properties, setProperties] = useState([]);
             
-            // Keeps you on the current tab even if you refresh!
             const [view, setView] = useState(() => localStorage.getItem('hz_admin_view') || 'dashboard'); 
             const [leadCategory, setLeadCategory] = useState('website'); 
             const [loading, setLoading] = useState(true);
@@ -438,7 +427,7 @@
                 if (field === 'lead_status') {
                     if (!lead.psa_agent_name || lead.psa_agent_name.trim() === '') {
                         alert("ERROR: You must assign a PSA Agent (Tharun or Shivaji) before changing the lead status.");
-                        setLeads([...leads]); // Force re-render to revert dropdown
+                        fetchLeads(); // Force re-render to revert dropdown
                         return;
                     }
                 }
@@ -446,11 +435,11 @@
                 let updates = { [field]: value };
                 const stamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
 
-                if (field === 'lead_status') updates.call_remark = `[${stamp}] Status Changed: ${value}\n${lead.call_remark || ''}`;
-                if (field === 'follow_up_at') updates.call_remark = `[${stamp}] Callback Set: ${value}\n${lead.call_remark || ''}`;
-                if (field === 'site_visit_at') updates.call_remark = `[${stamp}] SV Booked: ${value}\n${lead.call_remark || ''}`;
+                if (field === 'lead_status') updates.call_remark = `[${stamp}] Status Changed: ${value}\n\n${lead.call_remark || ''}`;
+                if (field === 'follow_up_at') updates.call_remark = `[${stamp}] Callback Set: ${new Date(value).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}\n\n${lead.call_remark || ''}`;
+                if (field === 'site_visit_at') updates.call_remark = `[${stamp}] SV Booked: ${value}\n\n${lead.call_remark || ''}`;
                 
-                // ENSURE NOTE SAVES TO DB AND REMAINS IN BOX
+                // ENSURE NOTE SAVES TO DB AND REMAINS IN BOX (Does NOT overwrite call_remark)
                 if (field === 'add_note') {
                     updates.add_note = value; 
                 }
@@ -549,13 +538,19 @@
                                         <tbody className="divide-y divide-slate-100">
                                             {displayedLeads.map(l => (
                                                 <tr key={l.id} className={`hover:bg-slate-50 transition border-l-4 ${l.lead_priority === 'Hot' ? 'border-l-red-500' : l.lead_priority === 'Cold' ? 'border-l-blue-400' : 'border-l-amber-400'}`}>
-                                                    <td className="p-4 uppercase font-bold">
-                                                        {l.customer_name} <div className="text-blue-600 lowercase font-medium">{l.customer_email || ''}</div>
-                                                        <div className="text-slate-900 font-black mt-1">{l.phone_number}</div>
-                                                        <div className="text-[8px] text-slate-400 mt-2">Log: {new Date(l.created_at).toLocaleDateString()}</div>
+                                                    <td className="p-4 uppercase font-bold min-w-[180px]">
+                                                        {l.customer_name}
+                                                        <div className="text-blue-600 mt-1">{l.phone_number}</div>
+                                                        <div className="text-slate-400 text-[10px] mt-1 lowercase truncate font-medium">{l.customer_email || ''}</div>
+                                                        {(leadCategory === 'website' || leadCategory === 'manual') && l.created_at && (
+                                                            <div className="text-[8px] text-slate-400 font-bold mt-2 tracking-widest uppercase">Logged: {new Date(l.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</div>
+                                                        )}
+                                                        <div className="mt-3 flex gap-2">
+                                                            <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-green-500 text-white text-[8px] font-black px-3 py-1.5 rounded uppercase tracking-widest shadow-sm hover:scale-105 transition">WhatsApp 💬</a>
+                                                        </div>
                                                     </td>
-                                                    <td className="p-4">
-                                                        <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none bg-slate-50 border-slate-300">
+                                                    <td className="p-4 min-w-[140px]">
+                                                        <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none bg-slate-50 border-slate-300 text-blue-800">
                                                             <option value="" disabled>Assign Agent</option>
                                                             <option value="Tharun">Tharun</option>
                                                             <option value="Shivaji">Shivaji</option>
@@ -568,27 +563,31 @@
                                                             <option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option>
                                                         </select>
                                                     </td>
-                                                    <td className="p-4">
-                                                        {['Called', 'RNR', 'Details Shared'].includes(l.lead_status) && (
-                                                            <div className="mb-2">
-                                                                <label className="text-[8px] font-black text-blue-600 uppercase block mb-1">Follow-up</label>
-                                                                <input type="datetime-local" className="w-full p-2 bg-blue-50 border border-blue-200 rounded-lg text-[10px] font-bold" value={l.follow_up_at?.slice(0,16) || ''} onChange={e => updateLead(l, 'follow_up_at', e.target.value)} />
-                                                            </div>
-                                                        )}
-                                                        {l.lead_status === 'SV Scheduled' && (
-                                                            <div>
-                                                                <label className="text-[8px] font-black text-teal-600 uppercase block mb-1">Site Visit</label>
-                                                                <input type="date" className="w-full p-2 bg-teal-50 border border-teal-200 rounded-lg text-[10px] font-bold" value={l.site_visit_at || ''} onChange={e => updateLead(l, 'site_visit_at', e.target.value)} />
-                                                            </div>
-                                                        )}
+                                                    <td className="p-4 min-w-[160px]">
+                                                        <div className="space-y-3">
+                                                            {['Called', 'RNR', 'Details Shared'].includes(l.lead_status) && (
+                                                                <div>
+                                                                    <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">Call Back Date</span>
+                                                                    <input type="datetime-local" className="w-full p-2 border border-blue-200 bg-blue-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
+                                                                </div>
+                                                            )}
+                                                            {l.lead_status === 'SV Scheduled' && (
+                                                                <div className="mt-2 pt-2 border-t border-slate-100">
+                                                                    <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">Site Visit Date</span>
+                                                                    <input type="date" className="w-full p-2 border border-teal-200 bg-teal-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td className="p-4">
-                                                        <div className="h-16 overflow-y-auto bg-slate-50 p-2 rounded-t-lg text-[9px] font-medium text-slate-400 whitespace-pre-wrap border border-slate-100 mb-1">
-                                                            {l.call_remark || <span className="italic">System auto-capture records...</span>}
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <textarea id={`note-d-${l.id}`} defaultValue={l.add_note || ''} rows="2" placeholder="Manual notes / requirements..." className="flex-1 p-2 border border-slate-200 rounded-b-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
-                                                            <button onClick={() => { const el = document.getElementById(`note-d-${l.id}`); updateLead(l, 'add_note', el.value); }} className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase hover:bg-blue-600 transition">Save</button>
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="h-16 overflow-y-auto text-[9px] bg-slate-50 p-2 rounded-lg history-scroll whitespace-pre-wrap border border-slate-100 leading-relaxed font-medium text-slate-400">
+                                                                {l.call_remark || <span className="italic">System auto-capture records...</span>}
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <textarea id={`note-d-${l.id}`} defaultValue={l.add_note || ''} rows="2" placeholder="Manual notes / requirements..." className="flex-1 p-2 border border-slate-200 rounded-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
+                                                                <button onClick={() => { const el = document.getElementById(`note-d-${l.id}`); updateLead(l, 'add_note', el.value); }} className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition">Save</button>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -611,15 +610,15 @@
                                                     )}
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 border border-blue-100 p-2.5 rounded-full shadow-sm">📞</a>
-                                                    <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="bg-green-50 text-green-600 border border-green-100 p-2.5 rounded-full shadow-sm">💬</a>
+                                                    <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 p-3 rounded-full">📞</a>
+                                                    <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="bg-green-50 text-green-600 p-3 rounded-full">💬</a>
                                                 </div>
                                             </div>
                                             
                                             <div className="grid grid-cols-2 gap-2 mb-4 mt-2">
                                                 <div className="flex flex-col gap-1 col-span-2">
                                                     <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">PSA Agent</label>
-                                                    <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="p-2 border border-slate-300 bg-slate-50 rounded-xl font-bold uppercase text-[9px] outline-none">
+                                                    <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="p-2 border border-slate-300 bg-slate-50 rounded-xl font-bold uppercase text-[9px] outline-none text-blue-800">
                                                         <option value="" disabled>Assign Agent</option>
                                                         <option value="Tharun">Tharun</option>
                                                         <option value="Shivaji">Shivaji</option>
@@ -644,20 +643,20 @@
                                                 {['Called', 'RNR', 'Details Shared'].includes(l.lead_status) && (
                                                     <div className="flex flex-col gap-1">
                                                         <label className="text-[8px] font-black text-blue-600 uppercase tracking-widest">Callback Date</label>
-                                                        <input type="datetime-local" className="p-2 border border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
+                                                        <input type="datetime-local" className="p-2 border border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
                                                     </div>
                                                 )}
                                                 {l.lead_status === 'SV Scheduled' && (
                                                     <div className="flex flex-col gap-1 mt-2">
                                                         <label className="text-[8px] font-black text-teal-600 uppercase tracking-widest">Site Visit Date</label>
-                                                        <input type="date" className="p-2 border border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
+                                                        <input type="date" className="p-2 border border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
                                                     </div>
                                                 )}
                                             </div>
 
                                             <div className="mt-4 pt-3 border-t border-slate-100">
                                                 <div className="bg-slate-50 p-2 rounded-t-xl h-16 overflow-y-auto text-[9px] font-medium whitespace-pre-wrap border border-slate-200 leading-relaxed text-slate-400 mb-1">
-                                                    {l.call_remark || <span className="italic">System auto-capture records...</span>}
+                                                    {l.call_remark || <span className="italic">System logs...</span>}
                                                 </div>
                                                 <div className="flex gap-2">
                                                     <textarea id={`m-note-${l.id}`} defaultValue={l.add_note || ''} rows="2" className="w-full p-2 border border-slate-200 rounded-b-xl text-[10px] resize-none focus:ring-1 focus:ring-blue-500 outline-none shadow-sm" placeholder="Manual notes / requirements..." />
@@ -674,14 +673,32 @@
                         {view === 'add' && <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} />}
                     </main>
 
-                    {showManualModal && <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"><div className="bg-white p-8 rounded-[30px] w-full max-w-md shadow-2xl animate-fadeIn"><div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black uppercase italic">Manual Entry</h2><button onClick={()=>setShowManualModal(false)} className="text-2xl text-gray-400 hover:text-slate-900">&times;</button></div><ManualLeadForm properties={properties} supabase={supabase} onSuccess={() => {setShowManualModal(false); fetchLeads();}} /></div></div>}
+                    {showManualModal && <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"><div className="bg-white p-8 rounded-[30px] w-full max-w-md shadow-2xl animate-fadeIn"><div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black uppercase italic">New Lead</h2><button onClick={()=>setShowManualModal(false)} className="text-2xl text-gray-400 hover:text-slate-900">&times;</button></div><ManualLeadForm properties={properties} supabase={supabase} onSuccess={() => {setShowManualModal(false); fetchLeads();}} /></div></div>}
                 </div>
             );
         }
 
         // --- PROJECT LIBRARY ---
         function ProjectLibrary({ properties, setProp }) {
-            if (properties.length === 0) return <div className="text-center py-20 animate-pulse font-black text-slate-400 tracking-widest uppercase">Loading Library...</div>;
+            const getVal = (obj, searchKey) => {
+                if (!obj) return "";
+                if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
+                const cleanKey = searchKey.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                for (let k in obj) {
+                    if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k];
+                }
+                return "";
+            };
+
+            const convertDriveLink = (url) => {
+                if (!url || typeof url !== 'string') return url;
+                let idMatch = url.match(/\/d\/(.*?)\//) || url.match(/id=(.*?)(&|$)/);
+                return idMatch ? `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1000` : url;
+            };
+
+            const fixImageUrl = (u) => u ? convertDriveLink(String(u).split(',')[0].trim()) : 'https://via.placeholder.com/600x300?text=No+Image';
+
+            if (!properties || properties.length === 0) return <div className="text-center py-20 font-black text-slate-400 tracking-widest uppercase animate-pulse">Library Empty...</div>;
 
             return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
@@ -701,7 +718,7 @@
                                         <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Starting Price</div>
                                         <div className="text-lg font-black text-blue-900">{getVal(p, "price")}</div>
                                     </div>
-                                    <button className="bg-slate-900 text-white text-[10px] font-bold px-4 py-2 rounded-lg hover:bg-blue-600 transition">View Details</button>
+                                    <button className="bg-slate-900 text-white text-[10px] font-bold px-4 py-2 rounded-lg hover:bg-blue-600 transition">Preview Details</button>
                                 </div>
                             </div>
                         </div>
