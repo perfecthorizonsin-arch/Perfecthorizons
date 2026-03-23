@@ -23,11 +23,6 @@
         .ring-hot { border-left: 5px solid #ef4444 !important; }
         .ring-warm { border-left: 5px solid #f59e0b !important; }
         .ring-cold { border-left: 5px solid #3b82f6 !important; }
-        
-        input[type=range] { -webkit-appearance: none; background: transparent; width: 100%; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; background: #2563eb; cursor: pointer; margin-top: -7px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px; }
-        .pie-chart { border-radius: 50%; display: inline-block; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-900 pb-20 md:pb-0">
@@ -36,11 +31,11 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
+        // --- SUPABASE CONFIG ---
         const supabaseUrl = 'https://uiiovtsktllvtecfokik.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, { auth: { storage: window.sessionStorage } });
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJOoh4meGBQOZYZpUWqK1DmDS_B8fXSC5NlwPcTX3GUfP7gzYQKvatgj9IFT3Txy-FCQ/exec";
-        const WHATSAPP_NUMBER = "919742353260";
 
         // --- GLOBAL FORMATTING TOOLS ---
         const getVal = (obj, searchKey) => {
@@ -211,6 +206,15 @@
                 window.open(getSafeLink(rawLink), '_blank');
             };
 
+            // SMART PREVIEW IMAGES LOGIC (Opens Folder)
+            const handlePreviewImages = () => {
+                const gallery = getVal(property, "gallery_images") || getVal(property, "cover_image");
+                if (!gallery || gallery.trim() === '') return alert("No images available.");
+                let firstLink = gallery.split(',')[0].trim();
+                let folderLink = firstLink.replace('thumbnail?id=', 'file/d/').replace('&sz=w1000', '/view');
+                window.open(folderLink, '_blank');
+            };
+
             // SMART LEAD REGISTRATION LINK LOGIC
             const regLink = getVal(property, "lead_registration") || getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_or_email_id");
             const isEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
@@ -238,9 +242,6 @@
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-200 pr-4">
                                 {getVal(property, "Location")} • {getVal(property, "Builder Name")}
                             </div>
-                            <a href={`tel:${getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER}`} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-slate-200">
-                                📞 Call Agent
-                            </a>
                         </div>
                     </div>
 
@@ -275,9 +276,10 @@
                             )}
                         </div>
 
-                        {/* Main Content Layout */}
+                        {/* Main Content Layout Matches Front-End UI exactly */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                             <div className="lg:col-span-2 space-y-10">
+                                
                                 <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 relative">
                                     <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div><div className="text-sm md:text-lg font-black text-slate-900 mt-1">{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div></div>
                                     <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_status") || 'N/A'}</div></div>
@@ -288,7 +290,7 @@
                                 <div>
                                     <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-slate-900 mb-4 border-b border-slate-200 pb-2">About The Project</h2>
                                     <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}.`}
+                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${getVal(property, "bhk") || "premium"} homes.`}
                                     </p>
                                 </div>
 
@@ -352,7 +354,7 @@
                                                 <button onClick={() => openLink(getVal(property, "cost_sheet"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">📄</span> Cost Sheet</button>
                                                 <button onClick={() => openLink(getVal(property, "map_link"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">📍</span> Location</button>
                                                 <button onClick={() => openLink(getVal(property, "video_link"))} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1"><span className="text-lg">🎥</span> Video</button>
-                                                <button onClick={() => openLink((getVal(property, "gallery_images") || getVal(property, "cover_image") || '').split(',')[0])} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1 col-span-2"><span className="text-lg">🖼️</span> Preview Images</button>
+                                                <button onClick={handlePreviewImages} className="bg-white border border-slate-200 text-slate-800 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm text-[9px] flex flex-col items-center gap-1 col-span-2"><span className="text-lg">🖼️</span> Preview Images (Drive)</button>
                                             </div>
                                         </div>
                                     </div>
@@ -376,7 +378,9 @@
             const [leadCategory, setLeadCategory] = useState('website'); 
             const [loading, setLoading] = useState(true);
             const [showManualModal, setShowManualModal] = useState(false);
-            const [showTodayOnly, setShowTodayOnly] = useState(false);
+            
+            // Advanced Filters
+            const [filterType, setFilterType] = useState('ALL'); 
             const [selectedProp, setSelectedProp] = useState(null);
 
             useEffect(() => {
@@ -432,16 +436,27 @@
                     }
                 }
 
-                let updates = { [field]: value };
+                let updates = {};
                 const stamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
 
-                if (field === 'lead_status') updates.call_remark = `[${stamp}] Status Changed: ${value}\n\n${lead.call_remark || ''}`;
-                if (field === 'follow_up_at') updates.call_remark = `[${stamp}] Callback Set: ${new Date(value).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}\n\n${lead.call_remark || ''}`;
-                if (field === 'site_visit_at') updates.call_remark = `[${stamp}] SV Booked: ${value}\n\n${lead.call_remark || ''}`;
-                
-                // ENSURE NOTE SAVES TO DB AND REMAINS IN BOX (Does NOT overwrite call_remark)
-                if (field === 'add_note') {
-                    updates.add_note = value; 
+                if (field === 'lead_status') {
+                    updates.lead_status = value;
+                    updates.call_remark = `[${stamp}] Status Changed: ${value}\n\n${lead.call_remark || ''}`;
+                } else if (field === 'follow_up_at') {
+                    updates.follow_up_at = value;
+                    updates.call_remark = `[${stamp}] Callback Set: ${new Date(value).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}\n\n${lead.call_remark || ''}`;
+                } else if (field === 'site_visit_at') {
+                    updates.site_visit_at = value;
+                    updates.call_remark = `[${stamp}] SV Booked: ${value}\n\n${lead.call_remark || ''}`;
+                } else if (field === 'add_note') {
+                    if (!value.trim()) return;
+                    updates.add_note = value; // Persists in text box
+                    updates.call_remark = `[${stamp}] Manual Note: ${value}\n\n${lead.call_remark || ''}`; // Appends to log
+                } else if (field === 'reject_reason') {
+                    updates.reject_reason = value;
+                    updates.call_remark = `[${stamp}] Rejected Reason: ${value}\n\n${lead.call_remark || ''}`;
+                } else {
+                    updates[field] = value;
                 }
 
                 const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
@@ -451,20 +466,32 @@
 
                 const { error } = await supabase.from(table).update(updates).eq('id', lead.id);
                 if (error) {
-                    if (error.message.includes('add_note')) {
-                        alert("ERROR: Please create an 'add_note' text column in your Supabase 'leads' table to save manual remarks.");
-                    } else {
-                        alert("Error saving update: " + error.message);
-                    }
+                    if (error.message.includes('add_note')) alert("ERROR: Please create an 'add_note' text column in your Supabase 'leads' table to save manual remarks.");
+                    else if (error.message.includes('reject_reason')) alert("ERROR: Please create a 'reject_reason' text column in your Supabase 'leads' table.");
+                    else alert("Error saving update: " + error.message);
                     fetchLeads(); // Revert on failure
                 }
             }
 
             const displayedLeads = useMemo(() => {
-                if (!showTodayOnly) return leads;
-                const today = new Date().toISOString().split('T')[0];
-                return leads.filter(l => l.follow_up_at && l.follow_up_at.startsWith(today));
-            }, [leads, showTodayOnly]);
+                let filtered = leads;
+                const todayStr = new Date().toISOString().split('T')[0];
+                
+                if (filterType === 'TODAY_CB') {
+                    filtered = leads.filter(l => l.follow_up_at && l.follow_up_at.startsWith(todayStr) && !['Rejected', 'Converted'].includes(l.lead_status));
+                } else if (filterType === 'TODAY_SV') {
+                    filtered = leads.filter(l => l.site_visit_at && l.site_visit_at === todayStr && !['Rejected', 'Converted'].includes(l.lead_status));
+                } else if (filterType === 'MISSED_CB') {
+                    filtered = leads.filter(l => l.follow_up_at && l.follow_up_at < todayStr && !['Rejected', 'Converted'].includes(l.lead_status));
+                } else if (filterType === 'MISSED_SV') {
+                    filtered = leads.filter(l => l.site_visit_at && l.site_visit_at < todayStr && !['Rejected', 'Converted'].includes(l.lead_status));
+                } else if (filterType.startsWith('STATUS_')) {
+                    const statusTarget = filterType.replace('STATUS_', '');
+                    filtered = leads.filter(l => (l.lead_status || 'Un called') === statusTarget);
+                }
+                
+                return filtered;
+            }, [leads, filterType]);
 
             const stats = useMemo(() => {
                 const total = leads.length;
@@ -520,13 +547,37 @@
                                     </table>
                                 </div>
 
-                                <div className="flex justify-between items-center gap-4">
+                                <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-b pb-4">
                                     <div className="flex gap-4">
                                         {['website', 'bulk', 'manual'].map(c => (
                                             <button key={c} onClick={() => setLeadCategory(c)} className={`pb-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${leadCategory === c ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>{c}</button>
                                         ))}
                                     </div>
-                                    <button onClick={() => setShowManualModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded-full text-[9px] font-black uppercase shadow-sm">+ Manual Lead</button>
+                                    <div className="flex gap-3 items-center w-full md:w-auto">
+                                        <select 
+                                            value={filterType} 
+                                            onChange={(e) => setFilterType(e.target.value)} 
+                                            className="px-4 py-2 rounded-full text-[9px] font-black uppercase border bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-auto"
+                                        >
+                                            <option value="ALL">All Leads</option>
+                                            <optgroup label="Schedule Filters">
+                                                <option value="TODAY_CB">📅 Today's Callbacks</option>
+                                                <option value="TODAY_SV">📅 Today's Site Visits</option>
+                                                <option value="MISSED_CB">⚠️ Missed Callbacks</option>
+                                                <option value="MISSED_SV">⚠️ Missed Site Visits</option>
+                                            </optgroup>
+                                            <optgroup label="Status Bucket">
+                                                <option value="STATUS_Un called">Bucket: Uncalled</option>
+                                                <option value="STATUS_Called">Bucket: Called</option>
+                                                <option value="STATUS_RNR">Bucket: RNR</option>
+                                                <option value="STATUS_Details Shared">Bucket: Details Shared</option>
+                                                <option value="STATUS_SV Scheduled">Bucket: SV Scheduled</option>
+                                                <option value="STATUS_Converted">Bucket: Converted</option>
+                                                <option value="STATUS_Rejected">Bucket: Rejected</option>
+                                            </optgroup>
+                                        </select>
+                                        <button onClick={() => setShowManualModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded-full text-[9px] font-black uppercase shadow-sm shrink-0">+ Manual Lead</button>
+                                    </div>
                                 </div>
 
                                 {/* DESKTOP TABLE */}
@@ -545,6 +596,7 @@
                                                         {(leadCategory === 'website' || leadCategory === 'manual') && l.created_at && (
                                                             <div className="text-[8px] text-slate-400 font-bold mt-2 tracking-widest uppercase">Logged: {new Date(l.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</div>
                                                         )}
+                                                        <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate max-w-[150px]">Inq: {l.project_interested_in || 'General'}</div>
                                                         <div className="mt-3 flex gap-2">
                                                             <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-green-500 text-white text-[8px] font-black px-3 py-1.5 rounded uppercase tracking-widest shadow-sm hover:scale-105 transition">WhatsApp 💬</a>
                                                         </div>
@@ -559,6 +611,17 @@
                                                             {(!l.lead_status || l.lead_status === 'Un called') && <option value="Un called">Un called</option>}
                                                             <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option><option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
                                                         </select>
+                                                        
+                                                        {l.lead_status === 'Rejected' && (
+                                                            <select onChange={(e) => updateLead(l, 'reject_reason', e.target.value)} value={l.reject_reason || ''} className="w-full p-2 mb-2 border border-red-300 rounded-lg font-bold uppercase text-[9px] outline-none bg-red-50 text-red-800">
+                                                                <option value="" disabled>Select Reason</option>
+                                                                <option value="Not Interested">Not Interested</option>
+                                                                <option value="No Response">No Response</option>
+                                                                <option value="Wrong Number">Wrong Number</option>
+                                                                <option value="No Incoming Call">No Incoming Call</option>
+                                                            </select>
+                                                        )}
+
                                                         <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className={`w-full p-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 ${getPriorityColor(l.lead_priority)}`}>
                                                             <option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option>
                                                         </select>
@@ -581,11 +644,11 @@
                                                     </td>
                                                     <td className="p-4">
                                                         <div className="flex flex-col gap-2">
-                                                            <div className="h-16 overflow-y-auto text-[9px] bg-slate-50 p-2 rounded-lg history-scroll whitespace-pre-wrap border border-slate-100 leading-relaxed font-medium text-slate-400">
+                                                            <div className="h-16 overflow-y-auto bg-slate-50 p-2 rounded-t-lg text-[9px] font-medium text-slate-400 whitespace-pre-wrap border border-slate-100 mb-1">
                                                                 {l.call_remark || <span className="italic">System auto-capture records...</span>}
                                                             </div>
                                                             <div className="flex gap-2">
-                                                                <textarea id={`note-d-${l.id}`} defaultValue={l.add_note || ''} rows="2" placeholder="Manual notes / requirements..." className="flex-1 p-2 border border-slate-200 rounded-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
+                                                                <textarea id={`note-d-${l.id}`} defaultValue={l.add_note || ''} rows="2" placeholder="Manual notes / requirements..." className="flex-1 p-2 border border-slate-200 rounded-b-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
                                                                 <button onClick={() => { const el = document.getElementById(`note-d-${l.id}`); updateLead(l, 'add_note', el.value); }} className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition">Save</button>
                                                             </div>
                                                         </div>
@@ -600,18 +663,19 @@
                                 <div className="lg:hidden space-y-4">
                                     {displayedLeads.map(l => (
                                         <div key={`m-${l.id}`} className={`bg-white p-4 rounded-2xl shadow-sm border border-t-8 ${l.lead_priority === 'Hot' ? 'border-t-red-500 bg-red-50/10' : l.lead_priority === 'Cold' ? 'border-t-blue-400' : 'border-t-amber-400'}`}>
-                                            <div className="flex justify-between items-start">
+                                            <div className="flex justify-between items-start mb-4">
                                                 <div>
                                                     <h3 className="font-black text-sm uppercase">{l.customer_name}</h3>
                                                     <p className="font-bold text-blue-600">{l.phone_number}</p>
                                                     <p className="font-bold text-slate-400 text-[10px] truncate mt-1">{l.customer_email}</p>
+                                                    <p className="text-[10px] text-slate-500 font-bold mt-1 tracking-widest uppercase">Inq: {l.project_interested_in || 'General'}</p>
                                                     {(leadCategory === 'website' || leadCategory === 'manual') && l.created_at && (
                                                         <div className="text-[8px] text-slate-400 font-bold mt-1 tracking-widest uppercase">Logged: {new Date(l.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</div>
                                                     )}
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 p-3 rounded-full">📞</a>
-                                                    <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="bg-green-50 text-green-600 p-3 rounded-full">💬</a>
+                                                    <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 border border-blue-100 p-2.5 rounded-full shadow-sm">📞</a>
+                                                    <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="bg-green-50 text-green-600 border border-green-100 p-2.5 rounded-full shadow-sm">💬</a>
                                                 </div>
                                             </div>
                                             
@@ -637,6 +701,19 @@
                                                         <option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option>
                                                     </select>
                                                 </div>
+                                                
+                                                {l.lead_status === 'Rejected' && (
+                                                    <div className="flex flex-col gap-1 col-span-2 mt-1">
+                                                        <label className="text-[8px] font-black text-red-600 uppercase tracking-widest">Reject Reason</label>
+                                                        <select onChange={(e) => updateLead(l, 'reject_reason', e.target.value)} value={l.reject_reason || ''} className="p-2 border border-red-300 bg-red-50 text-red-800 rounded-xl font-bold uppercase text-[9px] outline-none">
+                                                            <option value="" disabled>Select Reason</option>
+                                                            <option value="Not Interested">Not Interested</option>
+                                                            <option value="No Response">No Response</option>
+                                                            <option value="Wrong Number">Wrong Number</option>
+                                                            <option value="No Incoming Call">No Incoming Call</option>
+                                                        </select>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="mb-4 space-y-2">
@@ -673,7 +750,7 @@
                         {view === 'add' && <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} />}
                     </main>
 
-                    {showManualModal && <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"><div className="bg-white p-8 rounded-[30px] w-full max-w-md shadow-2xl animate-fadeIn"><div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black uppercase italic">New Lead</h2><button onClick={()=>setShowManualModal(false)} className="text-2xl text-gray-400 hover:text-slate-900">&times;</button></div><ManualLeadForm properties={properties} supabase={supabase} onSuccess={() => {setShowManualModal(false); fetchLeads();}} /></div></div>}
+                    {showManualModal && <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"><div className="bg-white p-8 rounded-[30px] w-full max-w-md shadow-2xl animate-fadeIn"><div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black uppercase italic">Manual Entry</h2><button onClick={()=>setShowManualModal(false)} className="text-2xl text-gray-400 hover:text-slate-900 transition">&times;</button></div><ManualLeadForm properties={properties} supabase={supabase} onSuccess={() => {setShowManualModal(false); fetchLeads();}} /></div></div>}
                 </div>
             );
         }
@@ -915,14 +992,15 @@
                 e.preventDefault();
                 setLoading(true);
                 const stamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
-                
+                const remarks = form.note ? `[${stamp}] Requirement: ${form.note}\n\n` : '';
+
                 const { error } = await supabase.from('leads').insert([{ 
                     customer_name: form.name, 
                     phone_number: form.phone, 
                     customer_email: form.email || null,
                     project_interested_in: form.project,
                     add_note: form.note, 
-                    call_remark: form.note ? `[${stamp}] Requirement: ${form.note}\n\n` : '',
+                    call_remark: remarks,
                     lead_source: form.source, 
                     lead_status: 'Un called' 
                 }]);
