@@ -433,7 +433,7 @@
             async function updateLead(lead, field, value) {
                 if (field === 'lead_status') {
                     if (!lead.psa_agent_name || lead.psa_agent_name.trim() === '') {
-                        alert("ERROR: You must assign a PSA Agent (Tharun or Shivaji) before changing the lead status.");
+                        alert("ERROR: You must assign a PSA Agent (Tharun or Shivaji or Ramswami) before changing the lead status.");
                         fetchLeads(); 
                         return;
                     }
@@ -604,6 +604,7 @@
                                                             <option value="" disabled>Assign Agent</option>
                                                             <option value="Tharun">Tharun</option>
                                                             <option value="Shivaji">Shivaji</option>
+                                                            <option value="Ramswami">Ramswami</option>
                                                         </select>
                                                         <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 ${getStatusStyles(l.lead_status)}`}>
                                                             {(!l.lead_status || l.lead_status === 'Un called') && <option value="Un called">Un called</option>}
@@ -683,6 +684,7 @@
                                                         <option value="" disabled>Assign Agent</option>
                                                         <option value="Tharun">Tharun</option>
                                                         <option value="Shivaji">Shivaji</option>
+                                                        <option value="Ramswami">Ramswami</option>
                                                     </select>
                                                 </div>
                                                 <div className="flex flex-col gap-1">
