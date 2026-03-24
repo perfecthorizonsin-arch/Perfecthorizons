@@ -35,12 +35,11 @@
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px; }
         .pie-chart { border-radius: 50%; display: inline-block; }
 
-        /* Splash Animation Styles */
         .splash-house-path { stroke-dasharray: 300; stroke-dashoffset: 300; animation: drawHouse 1.5s ease-in-out forwards; }
         @keyframes drawHouse { to { stroke-dashoffset: 0; } }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans overflow-x-hidden w-full max-w-[100vw]">
+<body class="bg-gray-50 text-gray-900 font-sans pb-24 md:pb-0 overflow-x-hidden w-full max-w-[100vw]">
     
     <div id="native-splash" style="position: fixed; inset: 0; z-index: 99999; background-color: #f8fafc; display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.4s ease;">
         <svg width="120" height="120" viewBox="0 0 100 100" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 15px;">
@@ -62,18 +61,14 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // SUPABASE CONNECTION
+        const { useState, useEffect, useMemo, useRef } = React;
+        const WHATSAPP_NUMBER = "919742353260";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJOoh4meGBQOZYZpUWqK1DmDS_B8fXSC5NlwPcTX3GUfP7gzYQKvatgj9IFT3Txy-FCQ/exec";
+        
         const supabaseUrl = 'https://uiiovtsktllvtecfokik.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        const { useState, useEffect, useMemo, useRef } = React;
-        const WHATSAPP_NUMBER = "919742353260";
-        
-        // SCRIPT URL FOR EMAILS
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJOoh4meGBQOZYZpUWqK1DmDS_B8fXSC5NlwPcTX3GUfP7gzYQKvatgj9IFT3Txy-FCQ/exec";
-
-        // GLOBAL TOOLS
         const formatPercent = (val) => {
             let num = parseFloat(val);
             if (isNaN(num)) return String(val || "0%");
@@ -98,24 +93,6 @@
             }
             return url;
         };
-
-        // 🟢 PASTE YOUR GOOGLE DRIVE IMAGE LINKS HERE
-        const AUTHORIZED_PARTNERS = [
-            convertDriveLink("https://drive.google.com/file/d/1IsWpoHNh1Wj0toMnzXc4FFvqCHxMoK85/view?usp=drive_link"),
-            convertDriveLink("https://drive.google.com/file/d/11r3Bj7QF_RrKZTvY3q9l4VjJqJZudIl6/view?usp=drive_link"),
-            convertDriveLink("https://drive.google.com/file/d/1vVS6Sy8qhAGX7P6Q6nzwRU3dDGlgLMmG/view?usp=drive_link"),
-            convertDriveLink("https://drive.google.com/file/d/1uMynHYKnkK1g4zyWkBhSagNfv0JzXzJy/view?usp=drive_link"),
-            convertDriveLink("https://drive.google.com/file/d/1dl7PKPuDw6Cdoh1ZDpaTxHDCJE5Y8Fej/view?usp=drive_link"),
-            convertDriveLink("https://drive.google.com/file/d/1SOkZTC6wYSOBrm87knHFhkAFuxFXpmoD/view?usp=drive_link"),
-            convertDriveLink("https://drive.google.com/file/d/1a-ekJ7mVoDG5Yp9K1-nAtw8qCMWU7tXC/view?usp=drive_link")
-        ];
-
-        const BLOG_ARTICLES = [
-            { id: 1, tag: "Legal Guide", title: "What is UDS (Undivided Share) and Why Does it Matter?", excerpt: "When you buy an apartment, you aren't just buying the flat; you are buying a piece of the land it sits on. Understanding your UDS is critical.", content: `<p>When purchasing an apartment in Bengaluru, many buyers focus entirely on the super built-up area and the amenities. However, the most critical element of your investment is the <strong>Undivided Share of Land (UDS)</strong>.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is UDS?</h3><p>UDS is your personal share of the land on which the entire apartment complex is built. Since you cannot physically mark out your exact piece of land in a high-rise, it is expressed as a fraction or percentage.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">Why is it so important?</h3><ul style="list-style-type: disc; margin-left: 20px;"><li><strong>Future Resale Value:</strong> The building structure depreciates over time, but the land appreciates. Your property's true resale value is determined by the UDS.</li><li><strong>Redevelopment:</strong> If the building is demolished or redeveloped 40 years from now, your compensation or new apartment allocation will be based strictly on your UDS.</li></ul><br/><p><strong>The Rule of Thumb:</strong> Always ask the builder for the exact UDS before booking. If the UDS is unusually low compared to the size of your flat, it means the builder is over-utilizing the land, which dilutes your investment.</p>` },
-            { id: 2, tag: "Finance Hack", title: "5 Hidden Charges Builders Don't Tell You About", excerpt: "The 'Base Price' is never the final price. From Club House charges to BESCOM deposits, learn how to calculate the actual landed cost.", content: `<p>You see an ad for a luxury 3BHK for "₹1.2 Cr Onwards." You visit the site, fall in love, and sit down to book it—only to realize the final cost is suddenly ₹1.45 Cr. What happened?</p><br/><p>Builders use a "Base Price" for marketing, but the "Landed Cost" includes mandatory hidden fees. Here is what you need to watch out for:</p><br/><ol style="list-style-type: decimal; margin-left: 20px;"><li><strong>BESCOM & BWSSB Charges:</strong> Fees for setting up the electricity and water infrastructure. This can add ₹200-₹300 per sq.ft.</li><li><strong>Clubhouse & Amenity Fees:</strong> Builders often charge a hefty one-time premium (anywhere from ₹2 Lakhs to ₹5 Lakhs) just to use the amenities they advertised.</li><li><strong>Advance Maintenance:</strong> You will typically have to pay 1 to 2 years of maintenance upfront at the time of possession.</li><li><strong>Legal & Documentation Charges:</strong> Builders charge for preparing your sale agreement and legal vetting, usually around ₹30,000 to ₹75,000.</li><li><strong>Floor Rise Premium (PLC):</strong> Prefer a higher floor? Expect to pay an extra ₹15 to ₹50 per sq.ft. for every floor you go up.</li></ol><br/><p>Always demand a comprehensive <strong>Cost Sheet</strong> before paying any token amount so you know exactly what you are paying for.</p>` },
-            { id: 3, tag: "Property Types", title: "Carpet Area vs. Super Built-up Area: What Are You Actually Paying For?", excerpt: "Don't be fooled by big numbers. Learn how builders calculate space and why RERA Carpet Area is the only metric that matters.", content: `<p>One of the biggest confusions for home buyers is the difference between the area advertised and the actual livable space they get.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">1. RERA Carpet Area</h3><p>This is the actual usable floor area inside your apartment. Imagine laying a carpet wall-to-wall inside your house—that is the carpet area. Under the RERA act, builders <strong>must</strong> quote this area to buyers.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">2. Built-up Area</h3><p>This includes the Carpet Area PLUS the space taken up by the internal and external walls, and the balconies. It is usually 10-15% more than the Carpet Area.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">3. Super Built-up Area (SBA) / Saleable Area</h3><p>This is the number builders use to calculate your final price. It includes the Built-up Area PLUS a proportionate share of the common areas (lobbies, lifts, staircases, clubhouse). The difference between Carpet Area and SBA is called the "Loading Factor."</p><br/><p><strong>The Trap:</strong> Some builders apply a loading factor of 30-35%. This means if you buy a 1000 sq.ft. apartment (SBA), your actual livable space might only be 650 sq.ft. Always check the RERA Carpet Area to know what you are actually getting.</p>` },
-            { id: 4, tag: "Legal Guide", title: "A Khata vs B Khata in Bengaluru: The Ultimate Buyer's Guide", excerpt: "Confused about Khatas? Buying a 'B Khata' property can lead to loan rejections and legal trouble. Here is how to verify property records.", content: `<p>If you are buying property in Bengaluru (especially plots or independent houses), the word "Khata" will come up immediately. It is a BBMP (Bruhat Bengaluru Mahanagara Palike) document assessing the property for tax records.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is 'A' Khata?</h3><p>An 'A' Khata certificate means the property is completely legal, fully approved by the BBMP, BDA, or BMRDA, and all property taxes have been paid. <strong>You can easily get home loans and building plan approvals with an 'A' Khata.</strong></p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is 'B' Khata?</h3><p>A 'B' Khata is technically not a certificate; it's just an entry in a register. It signifies that the property is illegal or built in violation of government regulations (e.g., built on unauthorized layouts or lacking DC conversion), but the government is collecting tax on it anyway.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">Why you should avoid B Khata:</h3><ul style="list-style-type: disc; margin-left: 20px;"><li>Nationalized banks (SBI, HDFC) will <strong>not</strong> give you a home loan.</li><li>You cannot get an official building plan approval to construct a house.</li><li>Selling the property later will be extremely difficult.</li></ul><br/><p>Never fall for the "we will upgrade it to A Khata later" promise without verifying with a legal expert.</p>` }
-        ];
 
         const getVal = (obj, searchKey) => {
             if (!obj) return "";
@@ -154,6 +131,23 @@
             if (num >= 100000) return '₹' + (num / 100000).toFixed(2).replace(/\.00$/, '') + ' L';
             return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
         };
+
+        const AUTHORIZED_PARTNERS = [
+            convertDriveLink("https://drive.google.com/file/d/1IsWpoHNh1Wj0toMnzXc4FFvqCHxMoK85/view?usp=drive_link"),
+            convertDriveLink("https://drive.google.com/file/d/11r3Bj7QF_RrKZTvY3q9l4VjJqJZudIl6/view?usp=drive_link"),
+            convertDriveLink("https://drive.google.com/file/d/1vVS6Sy8qhAGX7P6Q6nzwRU3dDGlgLMmG/view?usp=drive_link"),
+            convertDriveLink("https://drive.google.com/file/d/1uMynHYKnkK1g4zyWkBhSagNfv0JzXzJy/view?usp=drive_link"),
+            convertDriveLink("https://drive.google.com/file/d/1dl7PKPuDw6Cdoh1ZDpaTxHDCJE5Y8Fej/view?usp=drive_link"),
+            convertDriveLink("https://drive.google.com/file/d/1SOkZTC6wYSOBrm87knHFhkAFuxFXpmoD/view?usp=drive_link"),
+            convertDriveLink("https://drive.google.com/file/d/1a-ekJ7mVoDG5Yp9K1-nAtw8qCMWU7tXC/view?usp=drive_link")
+        ];
+
+        const BLOG_ARTICLES = [
+            { id: 1, tag: "Legal Guide", title: "What is UDS (Undivided Share) and Why Does it Matter?", excerpt: "When you buy an apartment, you aren't just buying the flat; you are buying a piece of the land it sits on. Understanding your UDS is critical.", content: `<p>When purchasing an apartment in Bengaluru, many buyers focus entirely on the super built-up area and the amenities. However, the most critical element of your investment is the <strong>Undivided Share of Land (UDS)</strong>.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is UDS?</h3><p>UDS is your personal share of the land on which the entire apartment complex is built. Since you cannot physically mark out your exact piece of land in a high-rise, it is expressed as a fraction or percentage.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">Why is it so important?</h3><ul style="list-style-type: disc; margin-left: 20px;"><li><strong>Future Resale Value:</strong> The building structure depreciates over time, but the land appreciates. Your property's true resale value is determined by the UDS.</li><li><strong>Redevelopment:</strong> If the building is demolished or redeveloped 40 years from now, your compensation or new apartment allocation will be based strictly on your UDS.</li></ul><br/><p><strong>The Rule of Thumb:</strong> Always ask the builder for the exact UDS before booking. If the UDS is unusually low compared to the size of your flat, it means the builder is over-utilizing the land, which dilutes your investment.</p>` },
+            { id: 2, tag: "Finance Hack", title: "5 Hidden Charges Builders Don't Tell You About", excerpt: "The 'Base Price' is never the final price. From Club House charges to BESCOM deposits, learn how to calculate the actual landed cost.", content: `<p>You see an ad for a luxury 3BHK for "₹1.2 Cr Onwards." You visit the site, fall in love, and sit down to book it—only to realize the final cost is suddenly ₹1.45 Cr. What happened?</p><br/><p>Builders use a "Base Price" for marketing, but the "Landed Cost" includes mandatory hidden fees. Here is what you need to watch out for:</p><br/><ol style="list-style-type: decimal; margin-left: 20px;"><li><strong>BESCOM & BWSSB Charges:</strong> Fees for setting up the electricity and water infrastructure. This can add ₹200-₹300 per sq.ft.</li><li><strong>Clubhouse & Amenity Fees:</strong> Builders often charge a hefty one-time premium (anywhere from ₹2 Lakhs to ₹5 Lakhs) just to use the amenities they advertised.</li><li><strong>Advance Maintenance:</strong> You will typically have to pay 1 to 2 years of maintenance upfront at the time of possession.</li><li><strong>Legal & Documentation Charges:</strong> Builders charge for preparing your sale agreement and legal vetting, usually around ₹30,000 to ₹75,000.</li><li><strong>Floor Rise Premium (PLC):</strong> Prefer a higher floor? Expect to pay an extra ₹15 to ₹50 per sq.ft. for every floor you go up.</li></ol><br/><p>Always demand a comprehensive <strong>Cost Sheet</strong> before paying any token amount so you know exactly what you are paying for.</p>` },
+            { id: 3, tag: "Property Types", title: "Carpet Area vs. Super Built-up Area: What Are You Actually Paying For?", excerpt: "Don't be fooled by big numbers. Learn how builders calculate space and why RERA Carpet Area is the only metric that matters.", content: `<p>One of the biggest confusions for home buyers is the difference between the area advertised and the actual livable space they get.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">1. RERA Carpet Area</h3><p>This is the actual usable floor area inside your apartment. Imagine laying a carpet wall-to-wall inside your house—that is the carpet area. Under the RERA act, builders <strong>must</strong> quote this area to buyers.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">2. Built-up Area</h3><p>This includes the Carpet Area PLUS the space taken up by the internal and external walls, and the balconies. It is usually 10-15% more than the Carpet Area.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">3. Super Built-up Area (SBA) / Saleable Area</h3><p>This is the number builders use to calculate your final price. It includes the Built-up Area PLUS a proportionate share of the common areas (lobbies, lifts, staircases, clubhouse). The difference between Carpet Area and SBA is called the "Loading Factor."</p><br/><p><strong>The Trap:</strong> Some builders apply a loading factor of 30-35%. This means if you buy a 1000 sq.ft. apartment (SBA), your actual livable space might only be 650 sq.ft. Always check the RERA Carpet Area to know what you are actually getting.</p>` },
+            { id: 4, tag: "Legal Guide", title: "A Khata vs B Khata in Bengaluru: The Ultimate Buyer's Guide", excerpt: "Confused about Khatas? Buying a 'B Khata' property can lead to loan rejections and legal trouble. Here is how to verify property records.", content: `<p>If you are buying property in Bengaluru (especially plots or independent houses), the word "Khata" will come up immediately. It is a BBMP (Bruhat Bengaluru Mahanagara Palike) document assessing the property for tax records.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is 'A' Khata?</h3><p>An 'A' Khata certificate means the property is completely legal, fully approved by the BBMP, BDA, or BMRDA, and all property taxes have been paid. <strong>You can easily get home loans and building plan approvals with an 'A' Khata.</strong></p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is 'B' Khata?</h3><p>A 'B' Khata is technically not a certificate; it's just an entry in a register. It signifies that the property is illegal or built in violation of government regulations (e.g., built on unauthorized layouts or lacking DC conversion), but the government is collecting tax on it anyway.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">Why you should avoid B Khata:</h3><ul style="list-style-type: disc; margin-left: 20px;"><li>Nationalized banks (SBI, HDFC) will <strong>not</strong> give you a home loan.</li><li>You cannot get an official building plan approval to construct a house.</li><li>Selling the property later will be extremely difficult.</li></ul><br/><p>Never fall for the "we will upgrade it to A Khata later" promise without verifying with a legal expert.</p>` }
+        ];
 
         // --- ADVANCED EMI CALCULATOR ---
         const EMICalculator = ({ propertyPriceStr, onApplyAction }) => {
@@ -297,37 +291,8 @@
                     .slice(0, 3);
             }, [property, allProperties]);
 
-            const handlePreviewImages = () => {
-                const gallery = getVal(property, "gallery_images") || getVal(property, "cover_image");
-                if (!gallery || gallery.trim() === '') return alert("No images available.");
-                let firstLink = gallery.split(',')[0].trim();
-                let folderLink = firstLink.replace('thumbnail?id=', 'file/d/').replace('&sz=w1000', '/view');
-                window.open(folderLink, '_blank');
-            };
-
-            const openLink = (rawLink) => {
-                if (!rawLink || rawLink.trim() === '') return alert("This link was not provided for this property.");
-                window.open(getSafeLink(rawLink), '_blank');
-            };
-
-            const regLink = getVal(property, "lead_registration") || getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_or_email_id");
-            const isEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
-            const regText = isEmail ? "✉️ Email Lead Details" : "🌐 Direct to Website Link";
-
-            const handleRegisterLead = () => {
-                if (!regLink || regLink.trim() === '') return alert("No lead registration details provided.");
-                if (isEmail) {
-                    let email = regLink.replace('mailto:', '').trim();
-                    window.location.href = `mailto:${email}?subject=New Lead Registration: ${getVal(property, "property_name")}`;
-                } else {
-                    let link = regLink.trim();
-                    if (!link.startsWith('http')) link = `https://${link}`;
-                    window.open(link, '_blank');
-                }
-            };
-
             return (
-                <div className="min-h-screen bg-slate-50 animate-fadeIn overflow-x-hidden w-full max-w-[100vw]">
+                <div className="min-h-screen bg-slate-50 overflow-x-hidden w-full max-w-[100vw]">
                     
                     <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center shadow-sm w-full">
                         <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
@@ -344,7 +309,7 @@
                         </div>
                     </div>
 
-                    <div className="max-w-7xl mx-auto w-full p-4 md:p-8">
+                    <div className="max-w-7xl mx-auto w-full p-4 md:p-8 animate-fadeIn">
                         
                         {/* Scrollable Gallery */}
                         <div className="relative mb-8 w-full max-w-full overflow-hidden rounded-3xl">
@@ -505,9 +470,9 @@
                                     {similarProperties.map((simProp, i) => (
                                         <div key={i} onClick={() => { window.scrollTo(0,0); onSelectProperty(simProp); }} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col relative z-10">
                                             <div className="relative h-40 w-full overflow-hidden shrink-0 bg-slate-100">
-                                                <img src={fixImageUrl(getVal(simProp, "Cover Image") || getVal(simProp, "cover_image")) || 'https://via.placeholder.com/600x300'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                <img src={fixImageUrl(getVal(simProp, "Cover Image") || getVal(simProp, "cover_image")) || 'https://via.placeholder.com/600x300'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none" />
                                             </div>
-                                            <div className="p-5 flex-grow flex flex-col">
+                                            <div className="p-5 flex-grow flex flex-col pointer-events-none">
                                                 <h3 className="text-lg font-black text-slate-900 leading-tight truncate uppercase">{getVal(simProp, "Property Name")}</h3>
                                                 <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">📍 {getVal(simProp, "Location")}</p>
                                                 <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-end">
@@ -693,7 +658,7 @@
             }
 
             return (
-                <div className="min-h-screen flex flex-col bg-gray-50">
+                <div className="min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
                     
                     <div className="sticky top-0 z-40 w-full shadow-sm flex flex-col bg-white">
                         <nav className="bg-slate-950 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center relative z-50 gap-4">
@@ -730,13 +695,11 @@
                                 <button onClick={() => navTo('advisor')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'advisor' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Advisors</button>
                                 <button onClick={() => navTo('blogs')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'blogs' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Insights</button>
                                 <button onClick={() => navTo('customers')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'customers' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Reviews</button>
-                                
-                                {isAdmin && <span className="bg-green-500 text-slate-900 text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest shadow-sm">Admin Mode</span>}
                             </div>
                             
                             <div className="md:hidden flex items-center gap-3 shrink-0">
                                 {activePage === 'home' && (
-                                    <button onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)} className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-700 text-slate-300 rounded-full hover:border-blue-500 hover:text-blue-400 transition text-[10px] font-black uppercase tracking-widest">
+                                    <button onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)} className="flex items-center gap-1 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-400 transition">
                                         <span className="text-sm">🔍</span> Search
                                     </button>
                                 )}
@@ -746,46 +709,53 @@
                             </div>
                         </nav>
 
-                       {activePage === 'home' && (
-    <>
-    {/* 1. Marquee sits directly under Nav - Zero Gap */}
-    <div className="bg-white border-b py-2 overflow-hidden flex flex-col items-center">
-        <p className="text-[8px] font-black uppercase text-slate-400 mb-1 tracking-widest">Associated With</p>
-        <div className="animate-marquee flex items-center">
-            {AUTHORIZED_PARTNERS.concat(AUTHORIZED_PARTNERS).map((logo, index) => (
-                <img key={index} src={logo} className="h-6 md:h-8 mx-6 md:mx-10 transition-all" />
-            ))}
-        </div>
-    </div>
+                        {activePage === 'home' && (
+                            <>
+                            <div className="bg-white border-b py-3 md:py-4 overflow-hidden flex flex-col items-center">
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Associated With</p>
+                                <div className="animate-marquee flex items-center">
+                                    {AUTHORIZED_PARTNERS.concat(AUTHORIZED_PARTNERS).map((logo, index) => (
+                                        <img key={index} src={logo} className="h-8 md:h-10 mx-8 md:mx-12" />
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className="bg-slate-50 border-b border-gray-200 py-2 px-4 relative z-40 shadow-sm w-full">
+                                <div className="max-w-7xl mx-auto w-full">
+                                    {isMobileSearchOpen && (
+                                        <div className="md:hidden w-full relative animate-fadeIn mb-2">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 text-sm">🔍</span>
+                                            <input type="text" placeholder="Search Location, Project..." className="w-full bg-white border-2 border-blue-400 rounded-xl pl-10 pr-4 py-2 text-xs font-bold outline-none shadow-sm" value={search} onChange={e => setSearch(e.target.value)} autoFocus />
+                                        </div>
+                                    )}
+                                    
+                                    <div className="md:hidden flex justify-between items-center h-5">
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Property Finder</span>
+                                        <button onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)} className="text-[10px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-1 active:scale-95 transition-transform">
+                                            FILTERS {isMobileFilterOpen ? '▲' : '▼'}
+                                        </button>
+                                    </div>
 
-    {/* 2. Sleek Filter Bar - Pro Look */}
-    <div className="bg-slate-50 border-b py-2 px-4 shadow-sm relative z-40">
-        <div className="max-w-7xl mx-auto">
-            {isMobileSearchOpen && (
-                <input type="text" placeholder="Search Project..." className="md:hidden w-full bg-white border-2 border-blue-400 rounded-xl p-3 text-xs font-bold mb-2 mt-1" value={search} onChange={e => setSearch(e.target.value)} autoFocus />
-            )}
-            
-            <div className="md:hidden flex justify-between items-center h-6">
-                <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Discover Luxury</span>
-                <button 
-                    onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)} 
-                    className="text-[10px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-1"
-                >
-                    Filters {isMobileFilterOpen ? '▲' : '▼'}
-                </button>
-            </div>
+                                    <div className={`${isMobileFilterOpen ? 'grid' : 'hidden'} md:grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 mt-3 md:mt-0 animate-fadeIn w-full`}>
+                                        <select className="w-full bg-white px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer" value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}>
+                                            <option value="">Configurations</option><option value="1">1 BHK</option><option value="2">2 BHK</option><option value="3">3 BHK</option><option value="4">4 BHK</option><option value="5">5+ BHK</option>
+                                        </select>
+                                        <select className="w-full bg-white px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer" value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
+                                            <option value="">Status</option><option value="Ready to Move">Ready</option><option value="Under Construction">Under Const.</option><option value="New Launch">New Launch</option>
+                                        </select>
+                                        <select className="w-full bg-white px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer" value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})}>
+                                            <option value="">Property Type</option><option value="Apartment">Apartment</option><option value="Villa">Villa</option><option value="Plot">Plot</option>
+                                        </select>
+                                        <select className="w-full bg-white px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer" value={filters.priceBracket} onChange={e => setFilters({...filters, priceBracket: e.target.value})}>
+                                            <option value="">Budget</option><option value="under1">Under 1 Cr</option><option value="1-2">1 - 2 Cr</option><option value="2-3">2 - 3 Cr</option><option value="3-4">3 - 4 Cr</option><option value="4-5">4 - 5 Cr</option><option value="5plus">5 Cr & Above</option>
+                                        </select>
+                                        <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:"", priceBracket:""}); setIsMobileSearchOpen(false); setIsMobileFilterOpen(false);}} className="w-full col-span-2 md:col-span-1 text-slate-500 font-black text-[10px] md:text-xs uppercase tracking-widest border border-slate-200 bg-white rounded-lg md:rounded-xl shadow-sm py-2.5">Reset</button>
+                                    </div>
+                                </div>
+                            </div>
+                            </>
+                        )}
 
-            {/* Hidden dropdowns that only show when button is clicked */}
-            <div className={`${isMobileFilterOpen ? 'grid' : 'hidden'} md:grid grid-cols-2 md:grid-cols-5 gap-2 mt-2 md:mt-0 animate-fadeIn`}>
-                <select className="bg-white p-2 rounded-lg text-[10px] font-bold border border-slate-200" value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}><option value="">Configs</option><option value="2">2 BHK</option><option value="3">3 BHK</option></select>
-                <select className="bg-white p-2 rounded-lg text-[10px] font-bold border border-slate-200" value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}><option value="">Status</option><option value="Ready">Ready</option></select>
-                <select className="bg-white p-2 rounded-lg text-[10px] font-bold border border-slate-200" value={filters.priceBracket} onChange={e => setFilters({...filters, priceBracket: e.target.value})}><option value="">Budget</option><option value="under1">Under 1Cr</option></select>
-                <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", priceBracket:""}); setIsMobileFilterOpen(false);}} className="text-slate-500 font-black text-[9px] uppercase border bg-white rounded-lg p-2">Reset</button>
-            </div>
-        </div>
-    </div>
-    </>
-)}
                         {isMobileMenuOpen && (
                             <div className="md:hidden bg-slate-900 border-t border-slate-800 py-6 px-6 space-y-4 shadow-2xl absolute w-full left-0 top-[60px] animate-fadeIn z-50 flex flex-col items-end">
                                 <div onClick={() => navTo('home')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Properties</div>
@@ -820,20 +790,6 @@
                             </div>
                         )}
                     </div>
-
-                    {activePage === 'home' && (
-                        <div className="bg-white border-b border-gray-200 py-3 md:py-4 overflow-hidden marquee-container shadow-sm flex flex-col items-center">
-                            <p className="text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Associated With</p>
-                            <div className="animate-marquee flex items-center">
-                                {AUTHORIZED_PARTNERS.map((logo, index) => (
-                                    <img key={index} src={logo} className="h-6 md:h-8 w-auto object-contain mx-6 md:mx-10 transition-all cursor-default" />
-                                ))}
-                                {AUTHORIZED_PARTNERS.map((logo, index) => (
-                                    <img key={`dup-${index}`} src={logo} className="h-6 md:h-8 w-auto object-contain mx-6 md:mx-10 transition-all cursor-default" />
-                                ))}
-                            </div>
-                        </div>
-                    )}
 
                     <main className="max-w-7xl mx-auto p-4 md:p-8 flex-grow w-full animate-fadeIn">
                         {activePage === 'home' && (
@@ -995,23 +951,23 @@
 
                         {activePage === 'what-we-do' && (
                             <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
-                                <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">Our Services</h1>
+                                <h1 className="text-2xl md:text-5xl font-black text-green-700 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">Our Services</h1>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
-                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 hover:shadow-lg transition">
-                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">Project Discovery & Shortlisting</h4>
-                                        <p className="text-gray-600 text-xs md:text-sm leading-relaxed">We filter out the noise. We sit with you to understand your lifestyle and budget, then show you only the properties that match your specific requirements and have clear legal titles.</p>
+                                    <div className="bg-green-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-green-100 hover:shadow-lg transition">
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-green-900">Project Discovery & Shortlisting</h4>
+                                        <p className="text-green-800/80 text-xs md:text-sm leading-relaxed">We filter out the noise. We sit with you to understand your lifestyle and budget, then show you only the properties that match your specific requirements and have clear legal titles.</p>
                                     </div>
-                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 hover:shadow-lg transition">
-                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">Guided Site Visits</h4>
-                                        <p className="text-gray-600 text-xs md:text-sm leading-relaxed">We assist you in site visits, accompanying you on-site to provide honest insights about construction quality, location pros and cons, and floor plan efficiency.</p>
+                                    <div className="bg-green-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-green-100 hover:shadow-lg transition">
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-green-900">Guided Site Visits</h4>
+                                        <p className="text-green-800/80 text-xs md:text-sm leading-relaxed">We assist you in site visits, accompanying you on-site to provide honest insights about construction quality, location pros and cons, and floor plan efficiency.</p>
                                     </div>
-                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 hover:shadow-lg transition">
-                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">Inventory Selection & Negotiation</h4>
-                                        <p className="text-gray-600 text-xs md:text-sm leading-relaxed">We help you pick the best unit (Vastu, ventilation, views) and sit across the table from the builders to negotiate the absolute best price and payment plan on your behalf.</p>
+                                    <div className="bg-green-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-green-100 hover:shadow-lg transition">
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-green-900">Inventory Selection & Negotiation</h4>
+                                        <p className="text-green-800/80 text-xs md:text-sm leading-relaxed">We help you pick the best unit (Vastu, ventilation, views) and sit across the table from the builders to negotiate the absolute best price and payment plan on your behalf.</p>
                                     </div>
-                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 hover:shadow-lg transition">
-                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">End-to-End Post-Sales Support</h4>
-                                        <p className="text-gray-600 text-xs md:text-sm leading-relaxed">Our relationship doesn't end at booking. We assist with home loan coordination, legal document verification, and support you all the way until the final handover of your keys.</p>
+                                    <div className="bg-green-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-green-100 hover:shadow-lg transition">
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-green-900">End-to-End Post-Sales Support</h4>
+                                        <p className="text-green-800/80 text-xs md:text-sm leading-relaxed">Our relationship doesn't end at booking. We assist with home loan coordination, legal document verification, and support you all the way until the final handover of your keys.</p>
                                     </div>
                                 </div>
                             </div>
@@ -1146,8 +1102,6 @@
                                     <span>|</span>
                                     <button onClick={() => setLegalModal('privacy')} className="hover:text-slate-300 transition">Privacy Policy</button>
                                 </div>
-
-                              
                             </div>
                             <div className="space-y-3">
                                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Contact Us</h3>
