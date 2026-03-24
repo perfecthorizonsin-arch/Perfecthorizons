@@ -190,13 +190,6 @@
             const galleryRef = useRef(null);
             useEffect(() => { window.scrollTo(0, 0); }, [property]);
 
-            const scrollGallery = (dir) => {
-                if (galleryRef.current) {
-                    const scrollAmount = galleryRef.current.clientWidth * 0.8;
-                    galleryRef.current.scrollBy({ left: dir === 'right' ? scrollAmount : -scrollAmount, behavior: 'smooth' });
-                }
-            };
-
             const cover = convertDriveLink(getVal(property, "cover_image") || getVal(property, "cover-image"));
             const galRaw = getVal(property, "gallery_images") || getVal(property, "gallery-images") || "";
             const imgs = [cover, ...(typeof galRaw === 'string' ? galRaw.split(',').map(l => convertDriveLink(l.trim())) : [])].filter(i => i); 
@@ -239,6 +232,9 @@
                 window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
             };
 
+            // Use Point of Contact if available, otherwise fallback to main number
+            const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
+
             return (
                 <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0">
                     <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
@@ -249,8 +245,8 @@
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-200 pr-4">
                                 {getVal(property, "Location")} • {getVal(property, "Builder Name")}
                             </div>
-                            <a href={`tel:${getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER}`} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-slate-200">
-                                📞 Call Agent
+                            <a href={`tel:${pocNumber}`} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-slate-200">
+                                📞 Call Us
                             </a>
                         </div>
                     </div>
@@ -276,13 +272,6 @@
                                     </div>
                                 )}
                             </div>
-                            {imgs.length > 1 && (
-                                <>
-                                    <button onClick={() => scrollGallery('left')} className="hidden md:flex absolute top-1/2 -left-4 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur rounded-full items-center justify-center shadow-lg text-slate-800 hover:bg-white transition hover:scale-110 z-10 border border-slate-100">←</button>
-                                    <button onClick={() => scrollGallery('right')} className="hidden md:flex absolute top-1/2 -right-4 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur rounded-full items-center justify-center shadow-lg text-slate-800 hover:bg-white transition hover:scale-110 z-10 border border-slate-100">→</button>
-                                    <div className="md:hidden text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2 animate-pulse">Swipe for more images →</div>
-                                </>
-                            )}
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
@@ -295,7 +284,7 @@
                                 </div>
 
                                 <div>
-                                    <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-slate-900 mb-4 border-b border-slate-200 pb-2">About The Project</h2>
+                                    <h2 className="text-xl md:text-2xl font-black uppercase tracking-wide text-slate-900 mb-4 border-b border-slate-200 pb-2">About The Project</h2>
                                     <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
                                         {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${getVal(property, "bhk") || "premium"} homes.`}
                                     </p>
@@ -387,6 +376,7 @@
             const [showManualModal, setShowManualModal] = useState(false);
             
             const [filterType, setFilterType] = useState('ALL'); 
+            const [summaryAgent, setSummaryAgent] = useState('All');
             const [selectedProp, setSelectedProp] = useState(null);
 
             useEffect(() => {
@@ -417,9 +407,13 @@
                 if (!error) {
                     let raw = data || [];
                     if (table === 'leads') {
-                        setLeads(leadCategory === 'website' 
-                            ? raw.filter(l => !l.lead_source || l.lead_source.trim() === '' || l.lead_source.toLowerCase() === 'website')
-                            : raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && l.lead_source.toLowerCase() !== 'website'));
+                        if (leadCategory === 'website') {
+                            // Empty source or contains 'website' goes to Website tab
+                            setLeads(raw.filter(l => !l.lead_source || l.lead_source.trim() === '' || l.lead_source.toLowerCase().includes('website')));
+                        } else if (leadCategory === 'manual') {
+                            // Contains 'manual' or definitely not a website lead goes to Manual tab
+                            setLeads(raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && !l.lead_source.toLowerCase().includes('website')));
+                        }
                     } else { setLeads(raw); }
                 }
                 setLoading(false);
@@ -495,12 +489,16 @@
             }, [leads, filterType]);
 
             const stats = useMemo(() => {
-                const total = leads.length;
-                const uncalled = leads.filter(l => l.lead_status === 'Un called' || !l.lead_status).length;
-                const called = leads.filter(l => l.lead_status && l.lead_status !== 'Un called' && l.lead_status !== 'Rejected').length;
-                const rejected = leads.filter(l => l.lead_status === 'Rejected').length;
+                let targetLeads = leads;
+                if (summaryAgent !== 'All') {
+                    targetLeads = leads.filter(l => l.psa_agent_name === summaryAgent);
+                }
+                const total = targetLeads.length;
+                const uncalled = targetLeads.filter(l => l.lead_status === 'Un called' || !l.lead_status).length;
+                const called = targetLeads.filter(l => l.lead_status && l.lead_status !== 'Un called' && l.lead_status !== 'Rejected').length;
+                const rejected = targetLeads.filter(l => l.lead_status === 'Rejected').length;
                 return { total, uncalled, called, rejected };
-            }, [leads]);
+            }, [leads, summaryAgent]);
 
             if (authChecking) {
                 return (
@@ -536,7 +534,14 @@
                                         </thead>
                                         <tbody className="font-bold text-slate-700">
                                             <tr className="divide-x divide-slate-100">
-                                                <td className="p-4 text-[10px] uppercase font-black">Staff: Tharun</td>
+                                                <td className="p-4 text-[10px] uppercase font-black">
+                                                    <select className="bg-transparent outline-none cursor-pointer border-b border-slate-300 pb-1 text-slate-700" value={summaryAgent} onChange={e => setSummaryAgent(e.target.value)}>
+                                                        <option value="All">Total (All Agents)</option>
+                                                        <option value="Tharun">Tharun</option>
+                                                        <option value="Shivaji">Shivaji</option>
+                                                        <option value="Ramswami">Ramswami</option>
+                                                    </select>
+                                                </td>
                                                 <td className="p-4 text-center">{stats.total}</td>
                                                 <td className="p-4 text-center text-green-600">{stats.uncalled}</td>
                                                 <td className="p-4 text-center text-blue-600">{stats.called}</td>
@@ -565,14 +570,14 @@
                                                 <option value="MISSED_CB">⚠️ Missed Callbacks</option>
                                                 <option value="MISSED_SV">⚠️ Missed Site Visits</option>
                                             </optgroup>
-                                            <optgroup label="Status Bucket">
-                                                <option value="STATUS_Un called">Bucket: Uncalled</option>
-                                                <option value="STATUS_Called">Bucket: Called</option>
-                                                <option value="STATUS_RNR">Bucket: RNR</option>
-                                                <option value="STATUS_Details Shared">Bucket: Details Shared</option>
-                                                <option value="STATUS_SV Scheduled">Bucket: SV Scheduled</option>
-                                                <option value="STATUS_Converted">Bucket: Converted</option>
-                                                <option value="STATUS_Rejected">Bucket: Rejected</option>
+                                            <optgroup label="Status Filters">
+                                                <option value="STATUS_Un called">Un called</option>
+                                                <option value="STATUS_Called">Called</option>
+                                                <option value="STATUS_RNR">RNR</option>
+                                                <option value="STATUS_Details Shared">Details Shared</option>
+                                                <option value="STATUS_SV Scheduled">SV Scheduled</option>
+                                                <option value="STATUS_Converted">Converted</option>
+                                                <option value="STATUS_Rejected">Rejected</option>
                                             </optgroup>
                                         </select>
                                         <button onClick={() => setShowManualModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded-full text-[9px] font-black uppercase shadow-sm shrink-0">+ Manual Lead</button>
@@ -807,7 +812,7 @@
                 property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', 
                 super_built_up_area: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '',
                 description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '',
-                website_link: '', lead_registration_link: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: ''
+                website_link: '', lead_registration_link: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '', miscellaneous: ''
             });
             const [loading, setLoading] = useState(false);
             const [uploadingField, setUploadingField] = useState(null);
@@ -816,7 +821,7 @@
                 const files = e.target.files; if(!files || files.length === 0) return;
                 setLoading(true); setUploadingField(field);
                 
-                const categoryMap = { 'cover_image': 'Cover Image', 'gallery_images': 'Gallery', 'brochure': 'Brochures', 'cost_sheet': 'Cost Sheets', 'floor_plan': 'Floor Plans' };
+                const categoryMap = { 'cover_image': 'Cover Image', 'gallery_images': 'Gallery', 'brochure': 'Brochures', 'cost_sheet': 'Cost Sheets', 'floor_plan': 'Floor Plans', 'miscellaneous': 'Miscellaneous' };
                 const category = categoryMap[field] || 'General';
 
                 let newUrls = [];
@@ -861,7 +866,7 @@
                 const { error } = await supabase.from('properties').insert([form]);
                 if (!error) {
                     alert("Listing Live!");
-                    setForm({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_area: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration_link: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '' });
+                    setForm({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_area: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration_link: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '', miscellaneous: '' });
                 } else alert(error.message);
                 setLoading(false);
             };
@@ -891,11 +896,22 @@
                         <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Location" value={form.location} onChange={e => setForm({...form, location: e.target.value})} />
                         <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 border-blue-200" placeholder="Price (e.g. 1.2 Cr) *" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
                         
-                        <select className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" value={form.bhk} onChange={e => setForm({...form, bhk: e.target.value})}>
-                            <option value="">BHK Config</option><option>1 BHK</option><option>2 BHK</option><option>3 BHK</option><option>4 BHK</option><option>5+ BHK</option>
-                        </select>
+                        <div className="flex flex-col">
+                            <select multiple className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600 h-28" value={form.bhk ? form.bhk.split(',') : []} onChange={e => {
+                                const options = [...e.target.selectedOptions];
+                                const values = options.map(opt => opt.value);
+                                setForm({...form, bhk: values.join(',')});
+                            }}>
+                                <option value="1 BHK">1 BHK</option>
+                                <option value="2 BHK">2 BHK</option>
+                                <option value="3 BHK">3 BHK</option>
+                                <option value="4 BHK">4 BHK</option>
+                                <option value="5+ BHK">5+ BHK</option>
+                            </select>
+                            <span className="text-[9px] text-slate-400 mt-1 ml-2 font-bold uppercase tracking-widest">Hold Ctrl/Cmd to select multiple</span>
+                        </div>
                         
-                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Super Built-up Area (SqFt)" value={form.super_built_up_area} onChange={e => setForm({...form, super_built_up_area: e.target.value})} />
+                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 h-[52px]" placeholder="Super Built-up Area (SqFt)" value={form.super_built_up_area} onChange={e => setForm({...form, super_built_up_area: e.target.value})} />
 
                         <div className="relative flex items-center bg-slate-50 border rounded-2xl px-4 focus-within:ring-2 focus-within:ring-blue-500 transition">
                             <span className="text-[10px] font-bold text-slate-400 absolute left-4 uppercase tracking-widest">Possession:</span>
@@ -908,7 +924,7 @@
 
                         <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Approvals (e.g. BDA, RERA)" value={form.approval} onChange={e => setForm({...form, approval: e.target.value})} />
                         <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Total Units" value={form.total_units} onChange={e => setForm({...form, total_units: e.target.value})} />
-                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 md:col-span-2" placeholder="Availability" value={form.availability} onChange={e => setForm({...form, availability: e.target.value})} />
+                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 md:col-span-4" placeholder="Availability" value={form.availability} onChange={e => setForm({...form, availability: e.target.value})} />
                     </div>
 
                     <textarea className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm h-32 resize-none outline-none focus:ring-2 focus:ring-blue-500" placeholder="Property Description..." value={form.description} onChange={e => setForm({...form, description: e.target.value})}></textarea>
@@ -955,16 +971,23 @@
                             {form.brochure && <FileTag field="brochure" name="Brochure PDF" />}
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Cost Sheet (PDF/Images - Multiple) {uploadingField === 'cost_sheet' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Cost Sheet (PDF/Images) {uploadingField === 'cost_sheet' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
                             <input type="file" multiple onChange={e => upload(e, 'cost_sheet', true)} className="text-xs font-bold text-slate-600"/>
                             {form.cost_sheet && form.cost_sheet.split(',').filter(Boolean).map((img, idx) => (
                                 <FileTag key={idx} field="cost_sheet" name={`Cost Sheet File ${idx + 1}`} isArray={true} idx={idx} />
                             ))}
                         </div>
-                        <div className="md:col-span-2">
+                        <div>
                             <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Floor Plan (PDF/Img) {uploadingField === 'floor_plan' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
                             <input type="file" onChange={e => upload(e, 'floor_plan')} className="text-xs font-bold text-slate-600"/>
                             {form.floor_plan && <FileTag field="floor_plan" name="Floor Plan File" />}
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Miscellaneous (PDF/Img) {uploadingField === 'miscellaneous' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
+                            <input type="file" multiple onChange={e => upload(e, 'miscellaneous', true)} className="text-xs font-bold text-slate-600"/>
+                            {form.miscellaneous && form.miscellaneous.split(',').filter(Boolean).map((img, idx) => (
+                                <FileTag key={idx} field="miscellaneous" name={`Misc File ${idx + 1}`} isArray={true} idx={idx} />
+                            ))}
                         </div>
                     </div>
 
@@ -1005,9 +1028,9 @@
                 }]);
 
                 if (!error) {
-                    fetch("https://formsubmit.co/ajax/perfecthorizons.in@gmail.com", {
+                    fetch(GOOGLE_SCRIPT_URL, {
                         method: "POST", headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                        body: JSON.stringify({ _subject: `New Lead: ${form.name}`, Name: form.name, Phone: form.phone, Email: form.email || 'N/A', Project: form.project, Source: form.source, Requirements: form.note || 'None' })
+                        body: JSON.stringify({ action: "sendLead", Name: form.name, Phone: form.phone, Email: form.email || 'N/A', Project: form.project, Source: form.source, Requirements: form.note || 'None' })
                     }).catch(err => console.log(err));
                     onSuccess(); 
                 } else alert(error.message);
