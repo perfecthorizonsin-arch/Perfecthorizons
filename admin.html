@@ -39,7 +39,7 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, { auth: { storage: window.sessionStorage } });
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwaOLlqAQZMZczkAWuyK2F2DEHZ2ILgxlJnlDDZrrDNBSdszBZpX3M0f_p9mVtUePobDQ/exec";
-        const WHATSAPP_NUMBER = "919742353260";
+        const WHATSAPP_NUMBER = "9113261205";
 
         const getVal = (obj, searchKey) => {
             if (!obj) return "";
@@ -232,7 +232,6 @@
                 window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
             };
 
-            // Use Point of Contact if available, otherwise fallback to main number
             const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
 
             return (
@@ -246,7 +245,7 @@
                                 {getVal(property, "Location")} • {getVal(property, "Builder Name")}
                             </div>
                             <a href={`tel:${pocNumber}`} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-slate-200">
-                                📞 Call Us
+                                📞 Call Agent
                             </a>
                         </div>
                     </div>
@@ -369,19 +368,22 @@
             const [authChecking, setAuthChecking] = useState(true);
             const [leads, setLeads] = useState([]);
             const [properties, setProperties] = useState([]);
-            
             const [view, setView] = useState(() => localStorage.getItem('hz_admin_view') || 'dashboard'); 
             const [leadCategory, setLeadCategory] = useState('website'); 
             const [loading, setLoading] = useState(true);
             const [showManualModal, setShowManualModal] = useState(false);
-            
             const [filterType, setFilterType] = useState('ALL'); 
             const [summaryAgent, setSummaryAgent] = useState('All');
             const [selectedProp, setSelectedProp] = useState(null);
+            const [visibleCount, setVisibleCount] = useState(50);
 
             useEffect(() => {
                 localStorage.setItem('hz_admin_view', view);
             }, [view]);
+
+            useEffect(() => {
+                setVisibleCount(50);
+            }, [leadCategory, filterType, summaryAgent]);
 
             useEffect(() => {
                 supabase.auth.getSession().then(({ data: { session } }) => { 
@@ -408,10 +410,8 @@
                     let raw = data || [];
                     if (table === 'leads') {
                         if (leadCategory === 'website') {
-                            // Empty source or contains 'website' goes to Website tab
                             setLeads(raw.filter(l => !l.lead_source || l.lead_source.trim() === '' || l.lead_source.toLowerCase().includes('website')));
                         } else if (leadCategory === 'manual') {
-                            // Contains 'manual' or definitely not a website lead goes to Manual tab
                             setLeads(raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && !l.lead_source.toLowerCase().includes('website')));
                         }
                     } else { setLeads(raw); }
@@ -487,6 +487,8 @@
                 
                 return filtered;
             }, [leads, filterType]);
+
+            const visibleLeads = displayedLeads.slice(0, visibleCount);
 
             const stats = useMemo(() => {
                 let targetLeads = leads;
@@ -590,7 +592,7 @@
                                             <tr><th className="p-4">Customer</th><th className="p-4">Status & Agent</th><th className="p-4">Scheduling</th><th className="p-4 min-w-[250px]">Activity & Notes</th></tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {displayedLeads.map(l => (
+                                            {visibleLeads.map(l => (
                                                 <tr key={l.id} className={`hover:bg-slate-50 transition border-l-4 ${l.lead_priority === 'Hot' ? 'border-l-red-500' : l.lead_priority === 'Cold' ? 'border-l-blue-400' : 'border-l-amber-400'}`}>
                                                     <td className="p-4 uppercase font-bold min-w-[180px]">
                                                         {l.customer_name}
@@ -600,7 +602,7 @@
                                                             <div className="text-[8px] text-slate-400 font-bold mt-2 tracking-widest uppercase">Logged: {new Date(l.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</div>
                                                         )}
                                                         {leadCategory === 'bulk' ? (
-                                                            session.user.email === 'saishetty1623@gmail.com' ? (
+                                                            session?.user?.email === 'saishetty1623@gmail.com' ? (
                                                                 <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate max-w-[150px]">
                                                                     Inq: {l.project_interested_in || 'General'}
                                                                 </div>
@@ -675,10 +677,17 @@
                                             ))}
                                         </tbody>
                                     </table>
+                                    {visibleCount < displayedLeads.length && (
+                                        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-center">
+                                            <button onClick={() => setVisibleCount(v => v + 50)} className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition shadow-sm">
+                                                Load More Leads ({displayedLeads.length - visibleCount} hidden)
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="lg:hidden space-y-4">
-                                    {displayedLeads.map(l => (
+                                    {visibleLeads.map(l => (
                                         <div key={`m-${l.id}`} className={`bg-white p-4 rounded-2xl shadow-sm border border-t-8 ${l.lead_priority === 'Hot' ? 'border-t-red-500 bg-red-50/10' : l.lead_priority === 'Cold' ? 'border-t-blue-400' : 'border-t-amber-400'}`}>
                                             <div className="flex justify-between items-start">
                                                 <div>
@@ -686,7 +695,7 @@
                                                     <p className="font-bold text-blue-600">{l.phone_number}</p>
                                                     <p className="font-bold text-slate-400 text-[10px] truncate mt-1">{l.customer_email}</p>
                                                     <p className="text-[10px] text-slate-500 font-bold mt-1 tracking-widest uppercase">
-                                                        Inq: {leadCategory === 'bulk' && session.user.email !== 'saishetty1623@gmail.com' 
+                                                        Inq: {leadCategory === 'bulk' && session?.user?.email !== 'saishetty1623@gmail.com' 
                                                             ? '[Restricted]' 
                                                             : (l.project_interested_in || 'General')}
                                                     </p>
@@ -764,6 +773,12 @@
                                             </div>
                                         </div>
                                     ))}
+                                    
+                                    {visibleCount < displayedLeads.length && (
+                                        <button onClick={() => setVisibleCount(v => v + 50)} className="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition mt-4 shadow-sm border border-blue-200">
+                                            Load More Leads ({displayedLeads.length - visibleCount} hidden)
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -777,7 +792,6 @@
             );
         }
 
-        // --- PROJECT LIBRARY ---
         function ProjectLibrary({ properties, setProp }) {
             const getVal = (obj, searchKey) => {
                 if (!obj) return "";
@@ -824,7 +838,6 @@
             );
         }
 
-        // --- PROPERTY ADDITION FORM ---
         function PropertyForm({ supabase, scriptUrl }) {
             const [form, setForm] = useState({
                 property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', 
@@ -1016,7 +1029,6 @@
             );
         }
 
-        // --- MANUAL LEAD FORM ---
         function ManualLeadForm({ supabase, properties, onSuccess }) {
             const [form, setForm] = useState({ name: '', phone: '', email: '', project: 'General Enquiry', note: '', source: 'Manual Entry' });
             const [loading, setLoading] = useState(false);
@@ -1075,7 +1087,6 @@
             );
         }
 
-        // --- LOGIN FORM ---
         function LoginForm({ supabase }) {
             const [email, setEmail] = useState(""); const [pass, setPass] = useState(""); const [loading, setLoading] = useState(false); const [errorMsg, setErrorMsg] = useState("");
             const handleLogin = async (e) => {
