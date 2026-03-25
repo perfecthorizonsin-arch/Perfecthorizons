@@ -453,14 +453,14 @@
                             setLeads(raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && !l.lead_source.toLowerCase().includes('website')));
                         }
                     } else { 
-    // This is for Bulk Leads specifically
-    const bulkData = raw.map(l => ({
-        ...l,
-        // If it's the bulk tab, we use the text exactly as it is in Supabase
-        display_date: l.created_at || 'N/A'
-    }));
-    setLeads(bulkData); 
-}
+                        // This is for Bulk Leads specifically
+                        const bulkData = raw.map(l => ({
+                            ...l,
+                            // If it's the bulk tab, we use the text exactly as it is in Supabase
+                            display_date: l.created_at || 'N/A'
+                        }));
+                        setLeads(bulkData); 
+                    }
                 }
                 setLoading(false);
             }
@@ -667,26 +667,19 @@
                                                         {l.customer_name}
                                                         <div className="text-blue-600 mt-1">{l.phone_number}</div>
                                                         <div className="text-slate-400 text-[10px] mt-1 lowercase truncate font-medium">{l.customer_email || ''}</div>
-                                                        {(leadCategory === 'website' || leadCategory === 'manual') && l.created_at && (
-                                                            <div className="text-[8px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
-    Logged: {leadCategory === 'bulk' ? l.created_at : l.display_date}
-</div>
-                                                        )}
-                                                        {leadCategory === 'bulk' ? (
-                                                            session?.user?.email === 'saishetty1623@gmail.com' ? (
-                                                                <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate max-w-[150px]">
-                                                                    Inq: {l.project_interested_in || 'General'}
-                                                                </div>
-                                                            ) : (
-                                                                <div className="text-[8px] text-slate-400 italic mt-1 tracking-widest uppercase">
-                                                                    Inq: [Restricted]
-                                                                </div>
-                                                            )
-                                                        ) : (
-                                                            <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate max-w-[150px]">
-                                                                Inq: {l.project_interested_in || 'General'}
+                                                        
+                                                        {l.created_at && (
+                                                            <div className="text-[8px] text-slate-400 font-bold mt-2 tracking-widest uppercase">
+                                                                Logged: {leadCategory === 'bulk' ? l.created_at : l.display_date}
                                                             </div>
                                                         )}
+                                                        
+                                                        <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate max-w-[150px]">
+                                                            Inq: {leadCategory === 'bulk' && session?.user?.email !== 'saishetty1623@gmail.com' 
+                                                                ? '[Restricted]' 
+                                                                : (l.project_interested_in || 'General')}
+                                                        </div>
+
                                                         <div className="mt-3 flex gap-2">
                                                             <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-green-500 text-white text-[8px] font-black px-3 py-1.5 rounded uppercase tracking-widest shadow-sm hover:scale-105 transition">WhatsApp 💬</a>
                                                         </div>
@@ -765,15 +758,17 @@
                                                     <h3 className="font-black text-sm uppercase">{l.customer_name}</h3>
                                                     <p className="font-bold text-blue-600">{l.phone_number}</p>
                                                     <p className="font-bold text-slate-400 text-[10px] truncate mt-1">{l.customer_email}</p>
+                                                    
                                                     <p className="text-[10px] text-slate-500 font-bold mt-1 tracking-widest uppercase">
                                                         Inq: {leadCategory === 'bulk' && session?.user?.email !== 'saishetty1623@gmail.com' 
                                                             ? '[Restricted]' 
                                                             : (l.project_interested_in || 'General')}
                                                     </p>
-                                                    {(leadCategory === 'website' || leadCategory === 'manual') && l.created_at && (
-                                                        <div className="text-[8px] text-slate-400 font-bold uppercase">
-    Logged: {leadCategory === 'bulk' ? l.created_at : l.display_date}
-</div>
+                                                    
+                                                    {l.created_at && (
+                                                        <div className="text-[8px] text-slate-400 font-bold mt-1 tracking-widest uppercase">
+                                                            Logged: {leadCategory === 'bulk' ? l.created_at : l.display_date}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className="flex gap-2">
