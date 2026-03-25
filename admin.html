@@ -39,7 +39,7 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, { auth: { storage: window.sessionStorage } });
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwaOLlqAQZMZczkAWuyK2F2DEHZ2ILgxlJnlDDZrrDNBSdszBZpX3M0f_p9mVtUePobDQ/exec";
-        const WHATSAPP_NUMBER = "919742353260";
+        const WHATSAPP_NUMBER = "9113261205";
 
         const getVal = (obj, searchKey) => {
             if (!obj) return "";
@@ -126,20 +126,14 @@
                 const r = interestRate / 12 / 100;
                 const n = tenureYears * 12;
                 if (p === 0 || r === 0 || n === 0) return { emi: 0, totalInterest: 0, principalPct: 100 };
-                
                 const emiValue = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
                 const totalPay = emiValue * n;
-                const totalInt = totalPay - p;
-                const pct = (p / totalPay) * 100;
-
-                return { emi: Math.round(emiValue), totalInterest: Math.round(totalInt), principalPct: pct.toFixed(1) };
+                return { emi: Math.round(emiValue), totalInterest: Math.round(totalPay - p), principalPct: ((p / totalPay) * 100).toFixed(1) };
             }, [loanAmount, interestRate, tenureYears]);
 
             return (
                 <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm mt-6">
-                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-6 flex items-center">
-                        <span className="mr-2 text-xl">📊</span> EMI Calculator
-                    </h3>
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-6 flex items-center"><span className="mr-2 text-xl">📊</span> EMI Calculator</h3>
                     <div className="flex items-center gap-6 mb-8">
                         <div className="w-16 h-16 pie-chart shrink-0 shadow-inner" style={{ background: `conic-gradient(#2563eb ${principalPct}%, #e2e8f0 ${principalPct}% 100%)` }}></div>
                         <div className="flex flex-col gap-2 w-full">
@@ -154,32 +148,11 @@
                         </div>
                     </div>
                     <div className="space-y-5">
-                        <div>
-                            <div className="flex justify-between mb-2">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Loan Amount</label>
-                                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{formatIndianCurrencyCompact(loanAmount)}</span>
-                            </div>
-                            <input type="range" min="1000000" max="50000000" step="100000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} />
-                        </div>
-                        <div>
-                            <div className="flex justify-between mb-2">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Interest Rate</label>
-                                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{interestRate}%</span>
-                            </div>
-                            <input type="range" min="6" max="15" step="0.1" value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))} />
-                        </div>
-                        <div>
-                            <div className="flex justify-between mb-2">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tenure</label>
-                                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{tenureYears} Yrs</span>
-                            </div>
-                            <input type="range" min="5" max="30" step="1" value={tenureYears} onChange={(e) => setTenureYears(Number(e.target.value))} />
-                        </div>
-                        <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
-                            <div>
-                                <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">Estimated EMI</div>
-                                <div className="text-xl font-black text-slate-900 tracking-tighter">{formatIndianCurrencyCompact(emi)} <span className="text-[10px] text-slate-400 font-bold tracking-normal uppercase">/mo</span></div>
-                            </div>
+                        <input type="range" min="1000000" max="50000000" step="100000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} />
+                        <input type="range" min="6" max="15" step="0.1" value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))} />
+                        <input type="range" min="5" max="30" step="1" value={tenureYears} onChange={(e) => setTenureYears(Number(e.target.value))} />
+                        <div className="pt-4 border-t flex justify-between items-center">
+                            <div className="text-xl font-black text-slate-900">{formatIndianCurrencyCompact(emi)} <span className="text-[10px] text-slate-400 uppercase">/mo</span></div>
                         </div>
                     </div>
                 </div>
@@ -189,174 +162,39 @@
         const PropertyDetailsPage = ({ property, onBack }) => {
             const galleryRef = useRef(null);
             useEffect(() => { window.scrollTo(0, 0); }, [property]);
-
             const cover = convertDriveLink(getVal(property, "cover_image") || getVal(property, "cover-image"));
-            const galRaw = getVal(property, "gallery_images") || getVal(property, "gallery-images") || "";
+            const galRaw = getVal(property, "gallery_images") || "";
             const imgs = [cover, ...(typeof galRaw === 'string' ? galRaw.split(',').map(l => convertDriveLink(l.trim())) : [])].filter(i => i); 
-            const projectUsps = getVal(property, "usp_details") || getVal(property, "usp_s") || getVal(property, "USP's");
-
-            const openLink = (rawLink) => {
-                if (!rawLink || rawLink.trim() === '') return alert("This link was not provided for this property.");
-                window.open(getSafeLink(rawLink), '_blank');
-            };
-
-            const handlePreviewImages = () => {
-                const gallery = getVal(property, "gallery_images") || getVal(property, "cover_image");
-                if (!gallery || gallery.trim() === '') return alert("No images available.");
-                let firstLink = gallery.split(',')[0].trim();
-                let folderLink = firstLink.replace('thumbnail?id=', 'file/d/').replace('&sz=w1000', '/view');
-                window.open(folderLink, '_blank');
-            };
-
-            const regLink = getVal(property, "lead_registration") || getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_or_email_id");
-            const isEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
-            const regText = isEmail ? "✉️ Email Lead Details" : "🌐 Direct to Website Link";
-
-            const handleRegisterLead = () => {
-                if (!regLink || regLink.trim() === '') return alert("No lead registration details provided.");
-                if (isEmail) {
-                    let email = regLink.replace('mailto:', '').trim();
-                    window.location.href = `mailto:${email}?subject=New Lead Registration: ${getVal(property, "property_name")}`;
-                } else {
-                    let link = regLink.trim();
-                    if (!link.startsWith('http')) link = `https://${link}`;
-                    window.open(link, '_blank');
-                }
-            };
-
-            const shareViaWhatsApp = (type, link) => {
-                if (!link || link.trim() === '') return alert(`${type} is not available for this property.`);
-                let finalLink = link;
-                if (type === 'Images/Gallery' && link.includes(',')) { finalLink = link.split(',').join('\n'); }
-                const text = `Hello! Here is the ${type} for *${getVal(property, "Property Name")}*:\n\n${finalLink}`;
-                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-            };
-
-            // Use Point of Contact if available, otherwise fallback to main number
             const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
 
             return (
-                <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0">
-                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
-                        <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
-                            <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> Back to Search
-                        </button>
-                        <div className="hidden md:flex items-center gap-4">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-200 pr-4">
-                                {getVal(property, "Location")} • {getVal(property, "Builder Name")}
-                            </div>
-                            <a href={`tel:${pocNumber}`} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-slate-200">
-                                📞 Call Us
-                            </a>
-                        </div>
+                <div className="min-h-screen bg-slate-50 animate-fadeIn overflow-x-hidden">
+                    <div className="bg-white border-b sticky top-0 z-40 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center shadow-sm">
+                        <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group"><span className="mr-2 text-lg">←</span> Back</button>
+                        <a href={`tel:${pocNumber}`} className="bg-white text-slate-700 px-3 py-1.5 rounded-full font-black uppercase text-[9px] border border-slate-300 transition shadow-sm flex items-center gap-1.5"><span className="text-sm">📞</span> Call Us</a>
                     </div>
-
-                    <div className="max-w-7xl mx-auto w-full p-4 md:p-8">
-                        <div className="relative mb-8">
-                            <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scroll h-[40vh] md:h-[60vh] rounded-3xl">
-                                {imgs.length > 0 ? imgs.map((img, i) => (
-                                    <div key={i} className="min-w-full md:min-w-[80%] h-full shrink-0 snap-center relative rounded-3xl overflow-hidden bg-slate-200 border border-slate-100">
-                                        <img src={img} className="w-full h-full object-cover" />
-                                        {i === 0 && (
-                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent flex flex-col justify-end p-6 md:p-10">
-                                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{getVal(property, "Property Type") || 'Apartment'}</div>
-                                                <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-white mb-2">{getVal(property, "Property Name")}</h1>
-                                                <p className="text-white/80 font-medium text-sm md:text-base">📍 {getVal(property, "Location")}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )) : (
-                                    <div className="w-full h-full bg-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-400">
-                                        <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-slate-500 mb-2">{getVal(property, "Property Name")}</h1>
-                                        <p className="text-sm font-bold uppercase tracking-widest">Images Coming Soon</p>
-                                    </div>
-                                )}
-                            </div>
+                    <div className="max-w-7xl mx-auto w-full p-4 md:p-8 animate-fadeIn">
+                        <div className="relative mb-8 w-full overflow-hidden rounded-3xl h-[40vh] md:h-[60vh] bg-slate-200">
+                             <div className="flex overflow-x-auto snap-x snap-mandatory h-full hide-scroll">
+                                {imgs.map((img, i) => (
+                                    <div key={i} className="min-w-full h-full shrink-0 snap-center"><img src={img} className="w-full h-full object-cover" /></div>
+                                ))}
+                             </div>
                         </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <div className="lg:col-span-2 space-y-10">
-                                <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 relative">
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div><div className="text-sm md:text-lg font-black text-slate-900 mt-1">{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div></div>
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_status") || 'N/A'}</div></div>
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Possession</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : 'On Request'}</div></div>
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">RERA Status</div><div className="text-sm md:text-base font-black text-green-600 mt-1">Verified ✓</div></div>
+                                <div className="bg-white p-6 md:p-8 rounded-3xl border shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6">
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 mb-1">Configs</div><div className="text-sm font-black text-slate-900">{getVal(property, "bhk")} BHK</div></div>
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 mb-1">Status</div><div className="text-sm font-black text-slate-900">{getVal(property, "Construction Status")}</div></div>
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 mb-1">Possession</div><div className="text-sm font-black text-slate-900">{getVal(property, "Possession Date")}</div></div>
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 mb-1">Approvals</div><div className="text-sm font-black text-slate-900">{getVal(property, "approval")}</div></div>
                                 </div>
-
-                                <div>
-                                    <h2 className="text-xl md:text-2xl font-black uppercase tracking-wide text-slate-900 mb-4 border-b border-slate-200 pb-2">About The Project</h2>
-                                    <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${getVal(property, "bhk") || "premium"} homes.`}
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {projectUsps && (
-                                        <div className="bg-blue-50 p-6 md:p-8 rounded-3xl border border-blue-100">
-                                            <h3 className="text-sm font-black uppercase tracking-widest text-blue-900 mb-6">Key Highlights</h3>
-                                            <ul className="space-y-4">
-                                                {String(projectUsps).split('\n').filter(u => u.trim() !== "").map((u, i) => (
-                                                    <li key={i} className="flex items-start text-xs md:text-sm text-blue-800 font-medium leading-relaxed"><span className="mr-3 text-blue-500 mt-0.5">✦</span> {u.trim()}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                    {getVal(property, "Amenities") && (
-                                        <div className="bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-800">
-                                            <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">World-Class Amenities</h3>
-                                            <ul className="space-y-4">
-                                                {String(getVal(property, "Amenities")).split(',').filter(u => u.trim() !== "").map((u, i) => (
-                                                    <li key={i} className="flex items-start text-xs md:text-sm text-slate-300 font-medium leading-relaxed"><span className="mr-3 text-blue-400 mt-0.5">✓</span> {u.trim()}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
+                                <h2 className="text-xl font-black uppercase text-slate-900 border-b pb-2 tracking-wide">About The Project</h2>
+                                <p className="text-slate-600 whitespace-pre-wrap">{getVal(property, "description")}</p>
                             </div>
-
-                            <div className="lg:col-span-1">
-                                <div className="sticky top-24 space-y-6">
-                                    <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
-                                        <div className="mb-6 pb-6 border-b border-slate-100">
-                                            <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Starting Price</div>
-                                            <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">{getVal(property, "Price") || 'On Request'}</div>
-                                        </div>
-                                        
-                                        <div className="bg-[#fffbeb] border border-[#fde68a] p-4 rounded-2xl text-[#92400e] mb-4">
-                                            <h4 className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-80">Commission</h4>
-                                            <p className="text-2xl font-black">{formatPercent(getVal(property, "commission") || getVal(property, "commision_deta") || getVal(property, "commission_details"))}</p>
-                                        </div>
-
-                                        <div className="bg-[#f0f9ff] border border-[#bae6fd] p-4 rounded-2xl text-[#0369a1] mb-6">
-                                            <h4 className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-80">Internal Info</h4>
-                                            <p className="text-[10px] font-bold mb-1">POC: {getVal(property, "point_of_contact") || "N/A"}</p>
-                                            <p className="text-[10px] font-bold">Avail: {getVal(property, "availability") || "N/A"}</p>
-                                        </div>
-
-                                        <div className="bg-slate-900 text-white p-5 rounded-2xl">
-                                            <h4 className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-3 border-b border-slate-700 pb-2">Admin Tools</h4>
-                                            
-                                            <div className="space-y-2 mb-5">
-                                                <button onClick={() => openLink(getVal(property, "website_link"))} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-2.5 rounded-xl uppercase tracking-widest transition-colors text-[9px] border border-slate-700">
-                                                    🌐 Builder Website
-                                                </button>
-                                                <button onClick={handleRegisterLead} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-2.5 rounded-xl uppercase tracking-widest transition-colors shadow-md text-[9px]">
-                                                    {regText}
-                                                </button>
-                                            </div>
-
-                                            <h4 className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-2">Share With Client (WhatsApp)</h4>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <button onClick={() => shareViaWhatsApp('Brochure', getVal(property, "brochure"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📥 Brochure</button>
-                                                <button onClick={() => shareViaWhatsApp('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
-                                                <button onClick={() => shareViaWhatsApp('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
-                                                <button onClick={() => shareViaWhatsApp('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
-                                                <button onClick={handlePreviewImages} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Preview Images (Drive)</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <EMICalculator propertyPriceStr={getVal(property, "Price")} />
-                                </div>
+                            <div className="lg:col-span-1 space-y-6">
+                                <div className="bg-white p-6 rounded-3xl border shadow-sm"><div className="mb-4 pb-4 border-b"><div className="text-3xl font-black text-slate-900">{getVal(property, "Price")}</div></div></div>
+                                <EMICalculator propertyPriceStr={getVal(property, "Price")} />
                             </div>
                         </div>
                     </div>
@@ -369,182 +207,115 @@
             const [authChecking, setAuthChecking] = useState(true);
             const [leads, setLeads] = useState([]);
             const [properties, setProperties] = useState([]);
-            
             const [view, setView] = useState(() => localStorage.getItem('hz_admin_view') || 'dashboard'); 
             const [leadCategory, setLeadCategory] = useState('website'); 
             const [loading, setLoading] = useState(true);
             const [showManualModal, setShowManualModal] = useState(false);
-            
             const [filterType, setFilterType] = useState('ALL'); 
             const [summaryAgent, setSummaryAgent] = useState('All');
             const [selectedProp, setSelectedProp] = useState(null);
+
+            // Lazy Rendering State (Fixes slow loading)
+            const [visibleCount, setVisibleCount] = useState(50);
 
             useEffect(() => {
                 localStorage.setItem('hz_admin_view', view);
             }, [view]);
 
+            // Reset visible count whenever filters change
+            useEffect(() => {
+                setVisibleCount(50);
+            }, [leadCategory, filterType, summaryAgent]);
+
             useEffect(() => {
                 supabase.auth.getSession().then(({ data: { session } }) => { 
                     setSession(session); 
                     setAuthChecking(false);
-                    if (session) { fetchLeads(); fetchProperties(); } 
+                    if (session) { fetchData(); } 
                 });
-                const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { 
-                    setSession(session); 
-                    if (session) { fetchLeads(); fetchProperties(); } 
-                });
-                return () => subscription.unsubscribe();
             }, []);
 
-            useEffect(() => {
-                if(session && view === 'dashboard') fetchLeads();
-            }, [leadCategory]);
-
-            async function fetchLeads() {
+            async function fetchData() {
                 setLoading(true);
-                const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-                const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false });
-                if (!error) {
-                    let raw = data || [];
-                    if (table === 'leads') {
-                        if (leadCategory === 'website') {
-                            // Empty source or contains 'website' goes to Website tab
-                            setLeads(raw.filter(l => !l.lead_source || l.lead_source.trim() === '' || l.lead_source.toLowerCase().includes('website')));
-                        } else if (leadCategory === 'manual') {
-                            // Contains 'manual' or definitely not a website lead goes to Manual tab
-                            setLeads(raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && !l.lead_source.toLowerCase().includes('website')));
-                        }
-                    } else { setLeads(raw); }
-                }
+                const [leadsRes, propsRes] = await Promise.all([
+                    supabase.from('leads').select('*').order('created_at', { ascending: false }),
+                    supabase.from('properties').select('*').order('created_at', { ascending: false })
+                ]);
+                setLeads(leadsRes.data || []);
+                setProperties(propsRes.data || []);
                 setLoading(false);
             }
 
-            async function fetchProperties() {
-                const { data } = await supabase.from('properties').select('*').order('created_at', { ascending: false });
-                setProperties(data || []);
-            }
-
             async function updateLead(lead, field, value) {
-                if (field === 'lead_status') {
-                    if (!lead.psa_agent_name || lead.psa_agent_name.trim() === '') {
-                        alert("ERROR: You must assign a PSA Agent (Tharun or Shivaji or Ramswami) before changing the lead status.");
-                        fetchLeads(); 
-                        return;
-                    }
+                if (field === 'lead_status' && (!lead.psa_agent_name)) {
+                    alert("ERROR: Assign a PSA Agent first."); return;
                 }
-
-                let updates = {};
-                const stamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
-
-                if (field === 'lead_status') {
-                    updates.lead_status = value;
-                    updates.call_remark = `[${stamp}] Status Changed: ${value}\n\n${lead.call_remark || ''}`;
-                } else if (field === 'follow_up_at') {
-                    updates.follow_up_at = value;
-                    updates.call_remark = `[${stamp}] Callback Set: ${new Date(value).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}\n\n${lead.call_remark || ''}`;
-                } else if (field === 'site_visit_at') {
-                    updates.site_visit_at = value;
-                    updates.call_remark = `[${stamp}] SV Booked: ${value}\n\n${lead.call_remark || ''}`;
-                } else if (field === 'add_note') {
-                    if (!value.trim()) return;
-                    updates.add_note = value; 
-                    updates.call_remark = `[${stamp}] Manual Note: ${value}\n\n${lead.call_remark || ''}`; 
-                } else if (field === 'reject_reason') {
-                    updates.reject_reason = value;
-                    updates.call_remark = `[${stamp}] Rejected Reason: ${value}\n\n${lead.call_remark || ''}`;
-                } else {
-                    updates[field] = value;
-                }
-
-                const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-                setLeads(prev => prev.map(l => l.id === lead.id ? {...l, ...updates} : l));
-
-                const { error } = await supabase.from(table).update(updates).eq('id', lead.id);
-                if (error) {
-                    if (error.message.includes('add_note')) alert("ERROR: Please create an 'add_note' text column in your Supabase 'leads' table to save manual remarks.");
-                    else if (error.message.includes('reject_reason')) alert("ERROR: Please create a 'reject_reason' text column in your Supabase 'leads' table.");
-                    else alert("Error saving update: " + error.message);
-                    fetchLeads(); 
+                let updates = { [field]: value };
+                const { error } = await supabase.from('leads').update(updates).eq('id', lead.id);
+                if (!error) {
+                    setLeads(prev => prev.map(l => l.id === lead.id ? {...l, ...updates} : l));
                 }
             }
+
+            const categoryFilteredLeads = useMemo(() => {
+                if (leadCategory === 'bulk') return leads.filter(l => l.lead_source === 'Bulk');
+                if (leadCategory === 'manual') return leads.filter(l => l.lead_source === 'Manual Entry');
+                return leads.filter(l => !l.lead_source || l.lead_source.toLowerCase().includes('website'));
+            }, [leads, leadCategory]);
 
             const displayedLeads = useMemo(() => {
-                let filtered = leads;
-                const todayStr = new Date().toISOString().split('T')[0];
-                
-                if (filterType === 'TODAY_CB') {
-                    filtered = leads.filter(l => l.follow_up_at && l.follow_up_at.startsWith(todayStr) && !['Rejected', 'Converted'].includes(l.lead_status));
-                } else if (filterType === 'TODAY_SV') {
-                    filtered = leads.filter(l => l.site_visit_at && l.site_visit_at === todayStr && !['Rejected', 'Converted'].includes(l.lead_status));
-                } else if (filterType === 'MISSED_CB') {
-                    filtered = leads.filter(l => l.follow_up_at && l.follow_up_at < todayStr && !['Rejected', 'Converted'].includes(l.lead_status));
-                } else if (filterType === 'MISSED_SV') {
-                    filtered = leads.filter(l => l.site_visit_at && l.site_visit_at < todayStr && !['Rejected', 'Converted'].includes(l.lead_status));
-                } else if (filterType.startsWith('STATUS_')) {
-                    const statusTarget = filterType.replace('STATUS_', '');
-                    filtered = leads.filter(l => (l.lead_status || 'Un called') === statusTarget);
-                }
-                
-                return filtered;
-            }, [leads, filterType]);
+                if (filterType === 'ALL') return categoryFilteredLeads;
+                if (filterType.startsWith('STATUS_')) return categoryFilteredLeads.filter(l => l.lead_status === filterType.replace('STATUS_', ''));
+                return categoryFilteredLeads;
+            }, [categoryFilteredLeads, filterType]);
+
+            // Pagination slice
+            const visibleLeads = displayedLeads.slice(0, visibleCount);
 
             const stats = useMemo(() => {
-                let targetLeads = leads;
-                if (summaryAgent !== 'All') {
-                    targetLeads = leads.filter(l => l.psa_agent_name === summaryAgent);
-                }
-                const total = targetLeads.length;
-                const uncalled = targetLeads.filter(l => l.lead_status === 'Un called' || !l.lead_status).length;
-                const called = targetLeads.filter(l => l.lead_status && l.lead_status !== 'Un called' && l.lead_status !== 'Rejected').length;
-                const rejected = targetLeads.filter(l => l.lead_status === 'Rejected').length;
-                return { total, uncalled, called, rejected };
+                const target = summaryAgent === 'All' ? leads : leads.filter(l => l.psa_agent_name === summaryAgent);
+                return {
+                    total: target.length,
+                    uncalled: target.filter(l => !l.lead_status || l.lead_status === 'Un called').length,
+                    working: target.filter(l => l.lead_status && l.lead_status !== 'Un called' && l.lead_status !== 'Rejected').length,
+                    rejected: target.filter(l => l.lead_status === 'Rejected').length
+                };
             }, [leads, summaryAgent]);
 
-            if (authChecking) {
-                return (
-                    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
-                        <div className="text-3xl font-black italic text-white uppercase tracking-widest animate-pulse mb-4">Horizon CRM</div>
-                        <div className="text-blue-500 text-xs font-bold uppercase tracking-widest">Verifying Access...</div>
-                    </div>
-                );
-            }
-
+            if (authChecking) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white font-black uppercase tracking-widest animate-pulse">Horizon CRM</div>;
             if (!session) return <LoginForm supabase={supabase} />;
             if (selectedProp) return <PropertyDetailsPage property={selectedProp} onBack={() => setSelectedProp(null)} />;
 
             return (
                 <div className="min-h-screen flex flex-col animate-fadeIn">
-                    <nav className="bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
-                        <h1 className="font-black tracking-tighter text-xl uppercase italic">Horizon <span className="text-blue-500">CRM</span></h1>
-                        <div className="flex gap-4 md:gap-6 text-[10px] md:text-[11px] font-bold uppercase tracking-widest items-center">
-                            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'text-blue-400' : 'hover:text-slate-300 transition'}>CRM</button>
-                            <button onClick={() => setView('library')} className={view === 'library' ? 'text-blue-400' : 'hover:text-slate-300 transition'}>Library</button>
-                            <button onClick={() => setView('add')} className={view === 'add' ? 'text-blue-400' : 'hover:text-slate-300 transition'}>+ Project</button>
-                            <button onClick={() => supabase.auth.signOut()} className="text-red-400 border border-red-900 px-3 py-1.5 rounded hover:bg-red-900/50 transition font-bold uppercase">Logout</button>
+                    <nav className="bg-slate-950 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-lg">
+                        <h1 className="font-black text-xl uppercase italic">Horizon <span className="text-blue-500">CRM</span></h1>
+                        <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest items-center">
+                            <button onClick={() => setView('dashboard')} className={view === 'dashboard' ? 'text-blue-400' : ''}>CRM</button>
+                            <button onClick={() => setView('library')} className={view === 'library' ? 'text-blue-400' : ''}>Library</button>
+                            <button onClick={() => setView('add')} className={view === 'add' ? 'text-blue-400' : ''}>+ Project</button>
+                            <button onClick={() => supabase.auth.signOut()} className="text-red-400 border border-red-900 px-3 py-1 rounded">Logout</button>
                         </div>
                     </nav>
 
                     <main className="p-3 md:p-8 max-w-7xl mx-auto w-full">
                         {view === 'dashboard' && (
                             <div className="space-y-6">
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                                <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
                                     <table className="w-full text-sm text-left">
                                         <thead className="bg-slate-50 border-b uppercase text-[9px] font-black text-slate-400 tracking-widest">
-                                            <tr><th className="p-4">Volume ({leadCategory})</th><th className="p-4 text-center">Total</th><th className="p-4 text-center text-green-600">Uncalled</th><th className="p-4 text-center text-blue-600">Working</th><th className="p-4 text-center text-red-600">Rejected</th></tr>
+                                            <tr><th className="p-4">Volume</th><th className="p-4 text-center">Total</th><th className="p-4 text-center text-green-600">Uncalled</th><th className="p-4 text-center text-blue-600">Working</th><th className="p-4 text-center text-red-600">Rejected</th></tr>
                                         </thead>
                                         <tbody className="font-bold text-slate-700">
                                             <tr className="divide-x divide-slate-100">
                                                 <td className="p-4 text-[10px] uppercase font-black">
-                                                    <select className="bg-transparent outline-none cursor-pointer border-b border-slate-300 pb-1 text-slate-700" value={summaryAgent} onChange={e => setSummaryAgent(e.target.value)}>
-                                                        <option value="All">Total (All Agents)</option>
-                                                        <option value="Tharun">Tharun</option>
-                                                        <option value="Shivaji">Shivaji</option>
-                                                        <option value="Ramswami">Ramswami</option>
+                                                    <select className="bg-transparent outline-none cursor-pointer border-b pb-1" value={summaryAgent} onChange={e => setSummaryAgent(e.target.value)}>
+                                                        <option value="All">Total (All)</option><option value="Tharun">Tharun</option><option value="Shivaji">Shivaji</option><option value="Ramswami">Ramswami</option>
                                                     </select>
                                                 </td>
                                                 <td className="p-4 text-center">{stats.total}</td>
                                                 <td className="p-4 text-center text-green-600">{stats.uncalled}</td>
-                                                <td className="p-4 text-center text-blue-600">{stats.called}</td>
+                                                <td className="p-4 text-center text-blue-600">{stats.working}</td>
                                                 <td className="p-4 text-center text-red-600">{stats.rejected}</td>
                                             </tr>
                                         </tbody>
@@ -558,39 +329,26 @@
                                         ))}
                                     </div>
                                     <div className="flex gap-3 items-center w-full md:w-auto">
-                                        <select 
-                                            value={filterType} 
-                                            onChange={(e) => setFilterType(e.target.value)} 
-                                            className="px-4 py-2 rounded-full text-[9px] font-black uppercase border bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-auto"
-                                        >
+                                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="px-4 py-2 rounded-full text-[9px] font-black uppercase border outline-none w-full md:w-auto">
                                             <option value="ALL">All Leads</option>
-                                            <optgroup label="Schedule Filters">
-                                                <option value="TODAY_CB">📅 Today's Callbacks</option>
-                                                <option value="TODAY_SV">📅 Today's Site Visits</option>
-                                                <option value="MISSED_CB">⚠️ Missed Callbacks</option>
-                                                <option value="MISSED_SV">⚠️ Missed Site Visits</option>
-                                            </optgroup>
                                             <optgroup label="Status Filters">
-                                                <option value="STATUS_Un called">Un called</option>
-                                                <option value="STATUS_Called">Called</option>
-                                                <option value="STATUS_RNR">RNR</option>
-                                                <option value="STATUS_Details Shared">Details Shared</option>
-                                                <option value="STATUS_SV Scheduled">SV Scheduled</option>
-                                                <option value="STATUS_Converted">Converted</option>
-                                                <option value="STATUS_Rejected">Rejected</option>
+                                                <option value="STATUS_Un called">Un called</option><option value="STATUS_Called">Called</option><option value="STATUS_RNR">RNR</option>
+                                                <option value="STATUS_Details Shared">Details Shared</option><option value="STATUS_SV Scheduled">SV Scheduled</option>
+                                                <option value="STATUS_Converted">Converted</option><option value="STATUS_Rejected">Rejected</option>
                                             </optgroup>
                                         </select>
                                         <button onClick={() => setShowManualModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded-full text-[9px] font-black uppercase shadow-sm shrink-0">+ Manual Lead</button>
                                     </div>
                                 </div>
 
+                                {/* DESKTOP TABLE */}
                                 <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     <table className="w-full text-left text-xs">
                                         <thead className="bg-slate-50 text-slate-400 font-black uppercase text-[9px] tracking-widest border-b">
                                             <tr><th className="p-4">Customer</th><th className="p-4">Status & Agent</th><th className="p-4">Scheduling</th><th className="p-4 min-w-[250px]">Activity & Notes</th></tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {displayedLeads.map(l => (
+                                            {visibleLeads.map(l => (
                                                 <tr key={l.id} className={`hover:bg-slate-50 transition border-l-4 ${l.lead_priority === 'Hot' ? 'border-l-red-500' : l.lead_priority === 'Cold' ? 'border-l-blue-400' : 'border-l-amber-400'}`}>
                                                     <td className="p-4 uppercase font-bold min-w-[180px]">
                                                         {l.customer_name}
@@ -600,7 +358,7 @@
                                                             <div className="text-[8px] text-slate-400 font-bold mt-2 tracking-widest uppercase">Logged: {new Date(l.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</div>
                                                         )}
                                                         {leadCategory === 'bulk' ? (
-                                                            session.user.email === 'saishetty1623@gmail.com' ? (
+                                                            session?.user?.email === 'saishetty1623@gmail.com' ? (
                                                                 <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate max-w-[150px]">
                                                                     Inq: {l.project_interested_in || 'General'}
                                                                 </div>
@@ -675,10 +433,19 @@
                                             ))}
                                         </tbody>
                                     </table>
+                                    {/* Desktop Load More Button */}
+                                    {visibleCount < displayedLeads.length && (
+                                        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-center">
+                                            <button onClick={() => setVisibleCount(v => v + 50)} className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition">
+                                                Load More Leads ({displayedLeads.length - visibleCount} hidden)
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
+                                {/* MOBILE CARDS */}
                                 <div className="lg:hidden space-y-4">
-                                    {displayedLeads.map(l => (
+                                    {visibleLeads.map(l => (
                                         <div key={`m-${l.id}`} className={`bg-white p-4 rounded-2xl shadow-sm border border-t-8 ${l.lead_priority === 'Hot' ? 'border-t-red-500 bg-red-50/10' : l.lead_priority === 'Cold' ? 'border-t-blue-400' : 'border-t-amber-400'}`}>
                                             <div className="flex justify-between items-start">
                                                 <div>
@@ -686,7 +453,7 @@
                                                     <p className="font-bold text-blue-600">{l.phone_number}</p>
                                                     <p className="font-bold text-slate-400 text-[10px] truncate mt-1">{l.customer_email}</p>
                                                     <p className="text-[10px] text-slate-500 font-bold mt-1 tracking-widest uppercase">
-                                                        Inq: {leadCategory === 'bulk' && session.user.email !== 'saishetty1623@gmail.com' 
+                                                        Inq: {leadCategory === 'bulk' && session?.user?.email !== 'saishetty1623@gmail.com' 
                                                             ? '[Restricted]' 
                                                             : (l.project_interested_in || 'General')}
                                                     </p>
@@ -764,6 +531,13 @@
                                             </div>
                                         </div>
                                     ))}
+                                    
+                                    {/* Mobile Load More Button */}
+                                    {visibleCount < displayedLeads.length && (
+                                        <button onClick={() => setVisibleCount(v => v + 50)} className="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition mt-4 shadow-sm border border-blue-200">
+                                            Load More Leads ({displayedLeads.length - visibleCount} hidden)
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -772,7 +546,7 @@
                         {view === 'add' && <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} />}
                     </main>
 
-                    {showManualModal && <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"><div className="bg-white p-8 rounded-[30px] w-full max-w-md shadow-2xl animate-fadeIn"><div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black uppercase italic">Manual Entry</h2><button onClick={()=>setShowManualModal(false)} className="text-2xl text-gray-400 hover:text-slate-900 transition">&times;</button></div><ManualLeadForm properties={properties} supabase={supabase} onSuccess={() => {setShowManualModal(false); fetchLeads();}} /></div></div>}
+                    {showManualModal && <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"><div className="bg-white p-8 rounded-[30px] w-full max-w-md shadow-2xl animate-fadeIn"><div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black uppercase italic">Manual Entry</h2><button onClick={()=>setShowManualModal(false)} className="text-2xl text-gray-400 hover:text-slate-900 transition">&times;</button></div><ManualLeadForm properties={properties} supabase={supabase} onSuccess={() => {setShowManualModal(false); fetchData();}} /></div></div>}
                 </div>
             );
         }
@@ -1016,7 +790,6 @@
             );
         }
 
-        // --- MANUAL LEAD FORM ---
         function ManualLeadForm({ supabase, properties, onSuccess }) {
             const [form, setForm] = useState({ name: '', phone: '', email: '', project: 'General Enquiry', note: '', source: 'Manual Entry' });
             const [loading, setLoading] = useState(false);
@@ -1075,7 +848,6 @@
             );
         }
 
-        // --- LOGIN FORM ---
         function LoginForm({ supabase }) {
             const [email, setEmail] = useState(""); const [pass, setPass] = useState(""); const [loading, setLoading] = useState(false); const [errorMsg, setErrorMsg] = useState("");
             const handleLogin = async (e) => {
