@@ -1174,9 +1174,9 @@
 
                 if (!error) {
                     fetch(GOOGLE_SCRIPT_URL, {
-                        method: "POST", headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                        body: JSON.stringify({ action: "sendLead", Name: form.name, Phone: form.phone, Email: form.email || 'N/A', Project: form.project, Source: form.source, Requirements: form.note || 'None' })
-                    }).catch(err => console.log(err));
+    method: "POST", 
+    body: JSON.stringify({ action: "sendLead", Name: form.name, Phone: form.phone, Email: form.email || 'N/A', Project: form.project, Source: form.source, Requirements: form.note || 'None' })
+}).catch(err => console.log(err));
                     onSuccess(); 
                 } else alert(error.message);
                 setLoading(false);
