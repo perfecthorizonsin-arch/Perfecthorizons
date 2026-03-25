@@ -599,7 +599,21 @@
                                                         {(leadCategory === 'website' || leadCategory === 'manual') && l.created_at && (
                                                             <div className="text-[8px] text-slate-400 font-bold mt-2 tracking-widest uppercase">Logged: {new Date(l.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</div>
                                                         )}
-                                                        <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate max-w-[150px]">Inq: {l.project_interested_in || 'General'}</div>
+                                                        {leadCategory === 'bulk' ? (
+                                                            session.user.email === 'saishetty1623@gmail.com' ? (
+                                                                <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate max-w-[150px]">
+                                                                    Inq: {l.project_interested_in || 'General'}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-[8px] text-slate-400 italic mt-1 tracking-widest uppercase">
+                                                                    Inq: [Restricted]
+                                                                </div>
+                                                            )
+                                                        ) : (
+                                                            <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate max-w-[150px]">
+                                                                Inq: {l.project_interested_in || 'General'}
+                                                            </div>
+                                                        )}
                                                         <div className="mt-3 flex gap-2">
                                                             <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-green-500 text-white text-[8px] font-black px-3 py-1.5 rounded uppercase tracking-widest shadow-sm hover:scale-105 transition">WhatsApp 💬</a>
                                                         </div>
@@ -671,7 +685,11 @@
                                                     <h3 className="font-black text-sm uppercase">{l.customer_name}</h3>
                                                     <p className="font-bold text-blue-600">{l.phone_number}</p>
                                                     <p className="font-bold text-slate-400 text-[10px] truncate mt-1">{l.customer_email}</p>
-                                                    <p className="text-[10px] text-slate-500 font-bold mt-1 tracking-widest uppercase">Inq: {l.project_interested_in || 'General'}</p>
+                                                    <p className="text-[10px] text-slate-500 font-bold mt-1 tracking-widest uppercase">
+                                                        Inq: {leadCategory === 'bulk' && session.user.email !== 'saishetty1623@gmail.com' 
+                                                            ? '[Restricted]' 
+                                                            : (l.project_interested_in || 'General')}
+                                                    </p>
                                                     {(leadCategory === 'website' || leadCategory === 'manual') && l.created_at && (
                                                         <div className="text-[8px] text-slate-400 font-bold mt-1 tracking-widest uppercase">Logged: {new Date(l.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</div>
                                                     )}
