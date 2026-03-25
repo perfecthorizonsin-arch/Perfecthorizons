@@ -237,12 +237,24 @@
                 }
             };
 
-            const shareViaWhatsApp = (type, link) => {
-                if (!link || link.trim() === '') return alert(`${type} is not available for this property.`);
-                let finalLink = link;
-                if (type === 'Images/Gallery' && link.includes(',')) { finalLink = link.split(',').join('\n'); }
-                const text = `Hello! Here is the ${type} for *${getVal(property, "Property Name")}*:\n\n${finalLink}`;
-                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+            const handlePreview = (type, rawLink) => {
+                if (!rawLink || rawLink.trim() === '') return alert(`${type} is not available for this property.`);
+                const links = rawLink.split(',').map(l => l.trim()).filter(Boolean);
+                
+                if (links.length > 1) {
+                    alert(`There are ${links.length} files here. Opening the first file in Drive (you can view the folder from there).`);
+                }
+                
+                let viewLink = links[0];
+                // Automatically convert Drive 'open?id=' links to standard view links for a better native folder preview experience
+                if(viewLink.includes('drive.google.com') && viewLink.includes('id=')) {
+                    const idMatch = viewLink.match(/id=(.*?)(&|$)/);
+                    if(idMatch) {
+                        viewLink = `https://drive.google.com/file/d/${idMatch[1]}/view`;
+                    }
+                }
+                
+                window.open(getSafeLink(viewLink), '_blank');
             };
 
             const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
@@ -357,13 +369,13 @@
                                                 </button>
                                             </div>
 
-                                            <h4 className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-2">Share With Client (WhatsApp)</h4>
+                                            <h4 className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-2">Preview Documents</h4>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <button onClick={() => shareViaWhatsApp('Brochure', getVal(property, "brochure"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📥 Brochure</button>
-                                                <button onClick={() => shareViaWhatsApp('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
-                                                <button onClick={() => shareViaWhatsApp('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
-                                                <button onClick={() => shareViaWhatsApp('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
-                                                <button onClick={handlePreviewImages} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Preview Images (Drive)</button>
+                                                <button onClick={() => handlePreview('Brochure', getVal(property, "brochure"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📥 Brochure</button>
+                                                <button onClick={() => handlePreview('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
+                                                <button onClick={() => handlePreview('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
+                                                <button onClick={() => handlePreview('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
+                                                <button onClick={handlePreviewImages} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Preview Images</button>
                                             </div>
                                         </div>
                                     </div>
@@ -711,13 +723,13 @@
                                                         </div>
                                                     </td>
                                                     <td className="p-4 min-w-[140px]">
-                                                        <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none bg-slate-50 border-slate-300 text-blue-800">
+                                                        <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none bg-white/60 border-slate-300 text-blue-800">
                                                             <option value="" disabled>Assign Agent</option>
                                                             <option value="Tharun">Tharun</option>
                                                             <option value="Shivaji">Shivaji</option>
                                                             <option value="Ramswami">Ramswami</option>
                                                         </select>
-                                                        <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 ${getStatusStyles(l.lead_status)}`}>
+                                                        <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 bg-white/60 ${getStatusStyles(l.lead_status)}`}>
                                                             {(!l.lead_status || l.lead_status === 'Un called') && <option value="Un called">Un called</option>}
                                                             <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option><option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
                                                         </select>
@@ -732,7 +744,7 @@
                                                             </select>
                                                         )}
 
-                                                        <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className={`w-full p-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 ${getPriorityColor(l.lead_priority)}`}>
+                                                        <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className={`w-full p-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 bg-white/60 ${getPriorityColor(l.lead_priority)}`}>
                                                             <option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option>
                                                         </select>
                                                     </td>
@@ -741,24 +753,24 @@
                                                             {['Called', 'RNR', 'Details Shared'].includes(l.lead_status) && (
                                                                 <div>
                                                                     <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">Call Back Date</span>
-                                                                    <input type="datetime-local" className="w-full p-2 border border-blue-200 bg-blue-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
+                                                                    <input type="datetime-local" className="w-full p-2 border border-blue-200 bg-white/60 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
                                                                 </div>
                                                             )}
                                                             {l.lead_status === 'SV Scheduled' && (
-                                                                <div className="mt-2 pt-2 border-t border-slate-100">
+                                                                <div className="mt-2 pt-2 border-t border-slate-200/50">
                                                                     <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">Site Visit Date</span>
-                                                                    <input type="date" className="w-full p-2 border border-teal-200 bg-teal-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
+                                                                    <input type="date" className="w-full p-2 border border-teal-200 bg-white/60 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
                                                                 </div>
                                                             )}
                                                         </div>
                                                     </td>
                                                     <td className="p-4">
                                                         <div className="flex flex-col gap-2">
-                                                            <div className="h-16 overflow-y-auto bg-slate-50 p-2 rounded-lg history-scroll whitespace-pre-wrap border border-slate-100 leading-relaxed font-medium text-slate-400 mb-1">
-                                                                {l.call_remark || <span className="italic">System logs...</span>}
+                                                            <div className="h-16 overflow-y-auto bg-white/60 p-2 rounded-lg history-scroll whitespace-pre-wrap border border-slate-200/50 leading-relaxed font-medium text-slate-500 mb-1">
+                                                                {l.call_remark || <span className="italic opacity-50">System logs...</span>}
                                                             </div>
                                                             <div className="flex gap-2">
-                                                                <textarea id={`note-d-${l.id}`} defaultValue={l.add_note || ''} rows="2" placeholder="Manual notes / requirements..." className="flex-1 p-2 border border-slate-200 rounded-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
+                                                                <textarea id={`note-d-${l.id}`} defaultValue={l.add_note || ''} rows="2" placeholder="Manual notes / requirements..." className="flex-1 p-2 border border-slate-200 bg-white/80 rounded-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
                                                                 <button onClick={() => { const el = document.getElementById(`note-d-${l.id}`); updateLead(l, 'add_note', el.value); }} className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition">Save</button>
                                                             </div>
                                                         </div>
@@ -778,35 +790,35 @@
 
                                 <div className="lg:hidden space-y-4">
                                     {visibleLeads.map(l => (
-                                        <div key={`m-${l.id}`} className={`p-4 rounded-2xl shadow-sm border border-t-8 transition-colors ${l.lead_priority === 'Hot' ? 'border-t-red-500' : l.lead_priority === 'Cold' ? 'border-t-blue-400' : 'border-t-amber-400'} ${getCardTint(l.lead_status)}`}>
+                                        <div key={`m-${l.id}`} className={`p-4 rounded-2xl shadow-sm border border-t-8 transition-colors ${l.lead_priority === 'Hot' ? 'border-t-red-500 border-red-200/50' : l.lead_priority === 'Cold' ? 'border-t-blue-400 border-blue-200/50' : 'border-t-amber-400 border-amber-200/50'} ${getCardTint(l.lead_status)}`}>
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <h3 className="font-black text-sm uppercase">{l.customer_name}</h3>
+                                                    <h3 className="font-black text-sm uppercase text-slate-800">{l.customer_name}</h3>
                                                     <p className="font-bold text-blue-600">{l.phone_number}</p>
-                                                    <p className="font-bold text-slate-400 text-[10px] truncate mt-1">{l.customer_email}</p>
+                                                    <p className="font-bold text-slate-500 text-[10px] truncate mt-1">{l.customer_email}</p>
                                                     
-                                                    <p className="text-[10px] text-slate-500 font-bold mt-1 tracking-widest uppercase">
+                                                    <p className="text-[10px] text-slate-600 font-bold mt-1 tracking-widest uppercase">
                                                         Inq: {leadCategory === 'bulk' && session?.user?.email !== 'saishetty1623@gmail.com' 
                                                             ? '[Restricted]' 
                                                             : (l.project_interested_in || 'General')}
                                                     </p>
                                                     
                                                     {l.created_at && (
-                                                        <div className="text-[8px] text-slate-400 font-bold mt-1 tracking-widest uppercase">
+                                                        <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase">
                                                             Logged: {leadCategory === 'bulk' ? l.created_at : l.display_date}
                                                         </div>
                                                     )}
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 border border-blue-100 p-2.5 rounded-full shadow-sm">📞</a>
-                                                    <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="bg-green-50 text-green-600 border border-green-100 p-2.5 rounded-full shadow-sm">💬</a>
+                                                    <a href={`tel:${l.phone_number}`} className="bg-white/80 text-blue-600 border border-blue-100 p-2.5 rounded-full shadow-sm hover:scale-105 transition">📞</a>
+                                                    <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="bg-white/80 text-green-600 border border-green-100 p-2.5 rounded-full shadow-sm hover:scale-105 transition">💬</a>
                                                 </div>
                                             </div>
                                             
                                             <div className="grid grid-cols-2 gap-2 mb-4 mt-2">
                                                 <div className="flex flex-col gap-1 col-span-2">
-                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">PSA Agent</label>
-                                                    <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="p-2 border border-slate-300 bg-slate-50 rounded-xl font-bold uppercase text-[9px] outline-none text-blue-800">
+                                                    <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest">PSA Agent</label>
+                                                    <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="p-2 border border-slate-300 bg-white/60 rounded-xl font-bold uppercase text-[9px] outline-none text-blue-800">
                                                         <option value="" disabled>Assign Agent</option>
                                                         <option value="Tharun">Tharun</option>
                                                         <option value="Shivaji">Shivaji</option>
@@ -814,15 +826,15 @@
                                                     </select>
                                                 </div>
                                                 <div className="flex flex-col gap-1">
-                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</label>
-                                                    <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none ${getStatusStyles(l.lead_status)}`}>
+                                                    <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Status</label>
+                                                    <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none bg-white/60 ${getStatusStyles(l.lead_status)}`}>
                                                         {(!l.lead_status || l.lead_status === 'Un called') && <option value="Un called">Un called</option>}
                                                         <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option><option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
                                                     </select>
                                                 </div>
                                                 <div className="flex flex-col gap-1">
-                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Priority</label>
-                                                    <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none ${getPriorityColor(l.lead_priority)}`}>
+                                                    <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Priority</label>
+                                                    <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none bg-white/60 ${getPriorityColor(l.lead_priority)}`}>
                                                         <option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option>
                                                     </select>
                                                 </div>
@@ -845,23 +857,23 @@
                                                 {['Called', 'RNR', 'Details Shared'].includes(l.lead_status) && (
                                                     <div className="flex flex-col gap-1">
                                                         <label className="text-[8px] font-black text-blue-600 uppercase tracking-widest">Callback Date</label>
-                                                        <input type="datetime-local" className="p-2 border border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
+                                                        <input type="datetime-local" className="p-2 border border-blue-200 bg-white/60 rounded-xl text-[10px] font-bold outline-none text-slate-800" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
                                                     </div>
                                                 )}
                                                 {l.lead_status === 'SV Scheduled' && (
                                                     <div className="flex flex-col gap-1 mt-2">
                                                         <label className="text-[8px] font-black text-teal-600 uppercase tracking-widest">Site Visit Date</label>
-                                                        <input type="date" className="p-2 border border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
+                                                        <input type="date" className="p-2 border border-teal-200 bg-white/60 rounded-xl text-[10px] font-bold outline-none text-slate-800" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
                                                     </div>
                                                 )}
                                             </div>
 
-                                            <div className="mt-4 pt-3 border-t border-slate-100">
-                                                <div className="bg-slate-50 p-2 rounded-t-xl h-16 overflow-y-auto text-[9px] font-medium whitespace-pre-wrap border border-slate-200 leading-relaxed text-slate-400 mb-1">
-                                                    {l.call_remark || <span className="italic">System logs...</span>}
+                                            <div className="mt-4 pt-3 border-t border-slate-200/50">
+                                                <div className="bg-white/50 p-2 rounded-t-xl h-16 overflow-y-auto text-[9px] font-medium whitespace-pre-wrap border border-slate-200/50 leading-relaxed text-slate-600 mb-1">
+                                                    {l.call_remark || <span className="italic opacity-50">System logs...</span>}
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <textarea id={`m-note-${l.id}`} defaultValue={l.add_note || ''} rows="2" className="w-full p-2 border border-slate-200 rounded-b-xl text-[10px] resize-none focus:ring-1 focus:ring-blue-500 outline-none shadow-sm" placeholder="Manual notes / requirements..." />
+                                                    <textarea id={`m-note-${l.id}`} defaultValue={l.add_note || ''} rows="2" className="w-full p-2 border border-slate-200/80 bg-white/80 rounded-b-xl text-[10px] resize-none focus:ring-1 focus:ring-blue-500 outline-none shadow-sm" placeholder="Manual notes / requirements..." />
                                                     <button onClick={() => { const el = document.getElementById(`m-note-${l.id}`); updateLead(l, 'add_note', el.value); }} className="bg-slate-900 text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-blue-600 transition">Save</button>
                                                 </div>
                                             </div>
