@@ -3,61 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Horizon CRM | Command Center</title>
-    <link rel="icon" type="image/png" href="favicon.png" />
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <title>Perfect Horizons | Luxury Property Portal</title>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%22 y=%2254%22 font-family=%22Arial, sans-serif%22 font-size=%2260%22 font-weight=%22900%22 font-style=%22italic%22 fill=%22%233b82f6%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22>PH</text></svg>">
+    
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        .animate-fadeIn { animation: fadeIn 0.15s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        body { overflow-x: hidden; width: 100%; position: relative; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .history-scroll::-webkit-scrollbar { width: 4px; }
-        .history-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
-        .toggle-active { background-color: #f59e0b; color: white; border-color: #f59e0b; }
-        .ring-hot { border-left: 5px solid #ef4444 !important; }
-        .ring-warm { border-left: 5px solid #f59e0b !important; }
-        .ring-cold { border-left: 5px solid #3b82f6 !important; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+        .dropdown-arrow { display: inline-block; margin-left: 4px; width: 0; height: 0; vertical-align: middle; border-top: 4px solid currentColor; border-right: 4px solid transparent; border-left: 4px solid transparent; }
+        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        @keyframes pulse-fast { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.98); } }
+        .splash-title { font-family: sans-serif; color: #1e3a8a; font-size: 2rem; font-weight: 900; font-style: italic; text-transform: uppercase; animation: pulse-fast 1.2s ease-in-out infinite; }
+        .splash-sub { font-family: sans-serif; color: #64748b; font-size: 0.75rem; margin-top: 1rem; font-weight: bold; letter-spacing: 0.15em; text-transform: uppercase; }
+
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .animate-marquee { display: flex; white-space: nowrap; animation: marquee 20s linear infinite; }
+        .marquee-container:hover .animate-marquee { animation-play-state: paused; }
+        
         input[type=range] { -webkit-appearance: none; background: transparent; width: 100%; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; background: #2563eb; cursor: pointer; margin-top: -7px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px; }
         .pie-chart { border-radius: 50%; display: inline-block; }
+
+        .splash-house-path { stroke-dasharray: 300; stroke-dashoffset: 300; animation: drawHouse 1.5s ease-in-out forwards; }
+        @keyframes drawHouse { to { stroke-dashoffset: 0; } }
     </style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-900 pb-20 md:pb-0">
+<body class="bg-gray-50 text-gray-900 font-sans pb-24 md:pb-0 overflow-x-hidden w-full max-w-[100vw]">
+    
+    <div id="native-splash" style="position: fixed; inset: 0; z-index: 99999; background-color: #f8fafc; display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.4s ease;">
+        <svg width="120" height="120" viewBox="0 0 100 100" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 15px;">
+            <path class="splash-house-path" d="M10 50 L50 15 L90 50" stroke="#f59e0b" />
+            <path class="splash-house-path" d="M20 42 V85 H80 V42" stroke="#3b82f6" />
+            <path class="splash-house-path" d="M40 85 V60 H60 V85" stroke="#10b981" />
+        </svg>
+        <div class="splash-title">Perfect Horizons</div>
+        <div class="splash-sub">Curating Properties...</div>
+    </div>
+
+    <script>
+        setTimeout(function() {
+            var splash = document.getElementById('native-splash');
+            if (splash) { splash.style.opacity = '0'; setTimeout(function() { splash.remove(); }, 400); }
+        }, 1800);
+    </script>
+
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
-
+        const WHATSAPP_NUMBER = "919113261205";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJOoh4meGBQOZYZpUWqK1DmDS_B8fXSC5NlwPcTX3GUfP7gzYQKvatgj9IFT3Txy-FCQ/exec";
+        
         const supabaseUrl = 'https://uiiovtsktllvtecfokik.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, { auth: { storage: window.sessionStorage } });
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwaOLlqAQZMZczkAWuyK2F2DEHZ2ILgxlJnlDDZrrDNBSdszBZpX3M0f_p9mVtUePobDQ/exec";
-        const WHATSAPP_NUMBER = "9113261205";
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        const formatPercent = (val) => {
+            let num = parseFloat(val);
+            if (isNaN(num)) return String(val || "0%");
+            return (num < 1 && num > 0) ? (num * 100).toFixed(1) + "%" : num + "%";
+        };
+
+        const getSafeLink = (rawLink) => {
+            if (!rawLink) return "#";
+            const link = String(rawLink).trim();
+            if (link === "#") return "#";
+            if (link.includes('@') && !link.startsWith('mailto:')) return `mailto:${link}`;
+            if (!link.startsWith('http') && !link.includes('@')) return `https://${link}`;
+            return link;
+        };
+
+        const convertDriveLink = (url) => {
+            if (!url || typeof url !== 'string') return url;
+            let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
+            if (id) {
+                id = id.split('&')[0];
+                return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+            }
+            return url;
+        };
 
         const getVal = (obj, searchKey) => {
             if (!obj) return "";
             if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
             const cleanKey = searchKey.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-            for (let k in obj) { if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k]; }
+            for (let k in obj) {
+                if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k];
+            }
             return "";
         };
 
-        const convertDriveLink = (url) => {
-            if (!url || typeof url !== 'string') return url;
-            let idMatch = url.match(/\/d\/(.*?)\//) || url.match(/id=(.*?)(&|$)/);
-            let id = idMatch ? idMatch[1] : null;
-            if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
-            return url;
+        const fixImageUrl = (u) => {
+            if (!u || typeof u !== 'string') return '';
+            let url = u.split(',')[0].trim();
+            let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
+            return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1000` : url;
         };
-
-        const fixImageUrl = (u) => u ? convertDriveLink(u.split(',')[0].trim()) : 'https://via.placeholder.com/600x300?text=No+Image';
 
         const extractPriceInCr = (priceString) => {
             if (!priceString) return 0;
@@ -80,59 +132,52 @@
             return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
         };
 
-        const formatPercent = (val) => {
-            let num = parseFloat(val);
-            if (isNaN(num)) return String(val || "0%");
-            return (num < 1 && num > 0) ? (num * 100).toFixed(1) + "%" : num + "%";
-        };
+        const AUTHORIZED_PARTNERS = [
+            convertDriveLink("https://drive.google.com/file/d/1IsWpoHNh1Wj0toMnzXc4FFvqCHxMoK85/view?usp=drive_link"),
+            convertDriveLink("https://drive.google.com/file/d/11r3Bj7QF_RrKZTvY3q9l4VjJqJZudIl6/view?usp=drive_link"),
+            convertDriveLink("https://drive.google.com/file/d/1vVS6Sy8qhAGX7P6Q6nzwRU3dDGlgLMmG/view?usp=drive_link"),
+            convertDriveLink("https://drive.google.com/file/d/1uMynHYKnkK1g4zyWkBhSagNfv0JzXzJy/view?usp=drive_link"),
+            convertDriveLink("https://drive.google.com/file/d/1dl7PKPuDw6Cdoh1ZDpaTxHDCJE5Y8Fej/view?usp=drive_link"),
+            convertDriveLink("https://drive.google.com/file/d/1SOkZTC6wYSOBrm87knHFhkAFuxFXpmoD/view?usp=drive_link"),
+            convertDriveLink("https://drive.google.com/file/d/1a-ekJ7mVoDG5Yp9K1-nAtw8qCMWU7tXC/view?usp=drive_link")
+        ];
 
-        const getSafeLink = (rawLink) => {
-            if (!rawLink) return "#";
-            const link = String(rawLink).trim();
-            if (link === "#") return "#";
-            if (link.includes('@') && !link.startsWith('mailto:')) return `mailto:${link}`;
-            if (!link.startsWith('http') && !link.includes('@')) return `https://${link}`;
-            return link;
-        };
+        const BLOG_ARTICLES = [
+            { id: 1, tag: "Legal Guide", title: "What is UDS (Undivided Share) and Why Does it Matter?", excerpt: "When you buy an apartment, you aren't just buying the flat; you are buying a piece of the land it sits on. Understanding your UDS is critical.", content: `<p>When purchasing an apartment in Bengaluru, many buyers focus entirely on the super built-up area and the amenities. However, the most critical element of your investment is the <strong>Undivided Share of Land (UDS)</strong>.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is UDS?</h3><p>UDS is your personal share of the land on which the entire apartment complex is built. Since you cannot physically mark out your exact piece of land in a high-rise, it is expressed as a fraction or percentage.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">Why is it so important?</h3><ul style="list-style-type: disc; margin-left: 20px;"><li><strong>Future Resale Value:</strong> The building structure depreciates over time, but the land appreciates. Your property's true resale value is determined by the UDS.</li><li><strong>Redevelopment:</strong> If the building is demolished or redeveloped 40 years from now, your compensation or new apartment allocation will be based strictly on your UDS.</li></ul><br/><p><strong>The Rule of Thumb:</strong> Always ask the builder for the exact UDS before booking. If the UDS is unusually low compared to the size of your flat, it means the builder is over-utilizing the land, which dilutes your investment.</p>` },
+            { id: 2, tag: "Finance Hack", title: "5 Hidden Charges Builders Don't Tell You About", excerpt: "The 'Base Price' is never the final price. From Club House charges to BESCOM deposits, learn how to calculate the actual landed cost.", content: `<p>You see an ad for a luxury 3BHK for "₹1.2 Cr Onwards." You visit the site, fall in love, and sit down to book it—only to realize the final cost is suddenly ₹1.45 Cr. What happened?</p><br/><p>Builders use a "Base Price" for marketing, but the "Landed Cost" includes mandatory hidden fees. Here is what you need to watch out for:</p><br/><ol style="list-style-type: decimal; margin-left: 20px;"><li><strong>BESCOM & BWSSB Charges:</strong> Fees for setting up the electricity and water infrastructure. This can add ₹200-₹300 per sq.ft.</li><li><strong>Clubhouse & Amenity Fees:</strong> Builders often charge a hefty one-time premium (anywhere from ₹2 Lakhs to ₹5 Lakhs) just to use the amenities they advertised.</li><li><strong>Advance Maintenance:</strong> You will typically have to pay 1 to 2 years of maintenance upfront at the time of possession.</li><li><strong>Legal & Documentation Charges:</strong> Builders charge for preparing your sale agreement and legal vetting, usually around ₹30,000 to ₹75,000.</li><li><strong>Floor Rise Premium (PLC):</strong> Prefer a higher floor? Expect to pay an extra ₹15 to ₹50 per sq.ft. for every floor you go up.</li></ol><br/><p>Always demand a comprehensive <strong>Cost Sheet</strong> before paying any token amount so you know exactly what you are paying for.</p>` },
+            { id: 3, tag: "Property Types", title: "Carpet Area vs. Super Built-up Area: What Are You Actually Paying For?", excerpt: "Don't be fooled by big numbers. Learn how builders calculate space and why RERA Carpet Area is the only metric that matters.", content: `<p>One of the biggest confusions for home buyers is the difference between the area advertised and the actual livable space they get.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">1. RERA Carpet Area</h3><p>This is the actual usable floor area inside your apartment. Imagine laying a carpet wall-to-wall inside your house—that is the carpet area. Under the RERA act, builders <strong>must</strong> quote this area to buyers.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">2. Built-up Area</h3><p>This includes the Carpet Area PLUS the space taken up by the internal and external walls, and the balconies. It is usually 10-15% more than the Carpet Area.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">3. Super Built-up Area (SBA) / Saleable Area</h3><p>This is the number builders use to calculate your final price. It includes the Built-up Area PLUS a proportionate share of the common areas (lobbies, lifts, staircases, clubhouse). The difference between Carpet Area and SBA is called the "Loading Factor."</p><br/><p><strong>The Trap:</strong> Some builders apply a loading factor of 30-35%. This means if you buy a 1000 sq.ft. apartment (SBA), your actual livable space might only be 650 sq.ft. Always check the RERA Carpet Area to know what you are actually getting.</p>` },
+            { id: 4, tag: "Legal Guide", title: "A Khata vs B Khata in Bengaluru: The Ultimate Buyer's Guide", excerpt: "Confused about Khatas? Buying a 'B Khata' property can lead to loan rejections and legal trouble. Here is how to verify property records.", content: `<p>If you are buying property in Bengaluru (especially plots or independent houses), the word "Khata" will come up immediately. It is a BBMP (Bruhat Bengaluru Mahanagara Palike) document assessing the property for tax records.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is 'A' Khata?</h3><p>An 'A' Khata certificate means the property is completely legal, fully approved by the BBMP, BDA, or BMRDA, and all property taxes have been paid. <strong>You can easily get home loans and building plan approvals with an 'A' Khata.</strong></p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is 'B' Khata?</h3><p>A 'B' Khata is technically not a certificate; it's just an entry in a register. It signifies that the property is illegal or built in violation of government regulations (e.g., built on unauthorized layouts or lacking DC conversion), but the government is collecting tax on it anyway.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">Why you should avoid B Khata:</h3><ul style="list-style-type: disc; margin-left: 20px;"><li>Nationalized banks (SBI, HDFC) will <strong>not</strong> give you a home loan.</li><li>You cannot get an official building plan approval to construct a house.</li><li>Selling the property later will be extremely difficult.</li></ul><br/><p>Never fall for the "we will upgrade it to A Khata later" promise without verifying with a legal expert.</p>` }
+        ];
 
-        const getStatusStyles = (status) => {
-            switch(status) {
-                case 'Called': return 'bg-blue-100 text-blue-800 border-blue-300';
-                case 'RNR': return 'bg-orange-100 text-orange-800 border-orange-300';
-                case 'Details Shared': return 'bg-purple-100 text-purple-800 border-purple-300';
-                case 'SV Scheduled': return 'bg-teal-100 text-teal-800 border-teal-300';
-                case 'Converted': return 'bg-green-100 text-green-800 border-green-400';
-                case 'Rejected': return 'bg-red-100 text-red-800 border-red-300';
-                default: return 'bg-slate-50 text-slate-600 border-slate-200';
-            }
-        };
+        // --- ADVANCED EMI CALCULATOR ---
+        const EMICalculator = ({ propertyPriceStr, onApplyAction }) => {
+            const extractRawNumber = (str) => {
+                const val = extractPriceInCr(str);
+                return val > 0 ? val * 10000000 : 10000000; 
+            };
 
-        const getPriorityColor = (priority) => {
-            switch(priority) {
-                case 'Hot': return 'bg-red-50 text-red-700 border-red-400';
-                case 'Cold': return 'bg-blue-50 text-blue-700 border-blue-400';
-                default: return 'bg-amber-50 text-amber-700 border-amber-400';
-            }
-        };
-
-        const EMICalculator = ({ propertyPriceStr }) => {
-            const propertyValue = extractPriceInCr(propertyPriceStr) > 0 ? extractPriceInCr(propertyPriceStr) * 10000000 : 10000000; 
+            const propertyValue = extractRawNumber(propertyPriceStr);
             const [loanAmount, setLoanAmount] = useState(propertyValue * 0.8);
             const [interestRate, setInterestRate] = useState(8.5);
             const [tenureYears, setTenureYears] = useState(20);
 
-            const { emi, totalInterest, principalPct } = useMemo(() => {
+            const { emi, totalPayment, totalInterest, principalPct } = useMemo(() => {
                 const p = loanAmount;
                 const r = interestRate / 12 / 100;
                 const n = tenureYears * 12;
-                if (p === 0 || r === 0 || n === 0) return { emi: 0, totalInterest: 0, principalPct: 100 };
+                if (p === 0 || r === 0 || n === 0) return { emi: 0, totalPayment: 0, totalInterest: 0, principalPct: 100 };
                 
                 const emiValue = (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
                 const totalPay = emiValue * n;
                 const totalInt = totalPay - p;
                 const pct = (p / totalPay) * 100;
 
-                return { emi: Math.round(emiValue), totalInterest: Math.round(totalInt), principalPct: pct.toFixed(1) };
+                return { 
+                    emi: Math.round(emiValue), 
+                    totalPayment: Math.round(totalPay), 
+                    totalInterest: Math.round(totalInt), 
+                    principalPct: pct.toFixed(1) 
+                };
             }, [loanAmount, interestRate, tenureYears]);
 
             return (
@@ -140,8 +185,9 @@
                     <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-6 flex items-center">
                         <span className="mr-2 text-xl">📊</span> EMI Calculator
                     </h3>
+                    
                     <div className="flex items-center gap-6 mb-8">
-                        <div className="w-16 h-16 pie-chart shrink-0 shadow-inner" style={{ background: `conic-gradient(#2563eb ${principalPct}%, #e2e8f0 ${principalPct}% 100%)` }}></div>
+                        <div className="w-20 h-20 pie-chart shrink-0 shadow-inner" style={{ background: `conic-gradient(#2563eb ${principalPct}%, #e2e8f0 ${principalPct}% 100%)` }}></div>
                         <div className="flex flex-col gap-2 w-full">
                             <div className="flex justify-between items-center border-b border-slate-100 pb-1">
                                 <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span><span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Principal</span></div>
@@ -153,7 +199,8 @@
                             </div>
                         </div>
                     </div>
-                    <div className="space-y-5">
+
+                    <div className="space-y-6">
                         <div>
                             <div className="flex justify-between mb-2">
                                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Loan Amount</label>
@@ -161,6 +208,7 @@
                             </div>
                             <input type="range" min="1000000" max="50000000" step="100000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} />
                         </div>
+
                         <div>
                             <div className="flex justify-between mb-2">
                                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Interest Rate</label>
@@ -168,6 +216,7 @@
                             </div>
                             <input type="range" min="6" max="15" step="0.1" value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))} />
                         </div>
+
                         <div>
                             <div className="flex justify-between mb-2">
                                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tenure</label>
@@ -175,85 +224,97 @@
                             </div>
                             <input type="range" min="5" max="30" step="1" value={tenureYears} onChange={(e) => setTenureYears(Number(e.target.value))} />
                         </div>
-                        <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+
+                        <div className="pt-5 border-t border-slate-100 flex justify-between items-center">
                             <div>
                                 <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">Estimated EMI</div>
-                                <div className="text-xl font-black text-slate-900 tracking-tighter">{formatIndianCurrencyCompact(emi)} <span className="text-[10px] text-slate-400 font-bold tracking-normal uppercase">/mo</span></div>
+                                <div className="text-2xl font-black text-slate-900 tracking-tighter">{formatIndianCurrencyCompact(emi)} <span className="text-[10px] text-slate-400 font-bold tracking-normal uppercase">/mo</span></div>
                             </div>
+                            <button onClick={onApplyAction} className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-5 py-3 rounded-xl hover:bg-blue-600 transition shadow-md">Apply Now</button>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        const PropertyDetailsPage = ({ property, onBack }) => {
+        // --- FULL PAGE PROPERTY DETAILS ---
+        const PropertyDetailsPage = ({ property, allProperties, onBack, onSubmitLead, isAdmin, onSelectProperty }) => {
+            const [actionModal, setActionModal] = useState(null); 
+            const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
+            const [isSubmitting, setIsSubmitting] = useState(false);
+            
             const galleryRef = useRef(null);
+
             useEffect(() => { window.scrollTo(0, 0); }, [property]);
 
-            const cover = convertDriveLink(getVal(property, "cover_image") || getVal(property, "cover-image"));
-            const galRaw = getVal(property, "gallery_images") || getVal(property, "gallery-images") || "";
-            const imgs = [cover, ...(typeof galRaw === 'string' ? galRaw.split(',').map(l => convertDriveLink(l.trim())) : [])].filter(i => i); 
-            const projectUsps = getVal(property, "usp_details") || getVal(property, "usp_s") || getVal(property, "USP's");
-
-            const openLink = (rawLink) => {
-                if (!rawLink || rawLink.trim() === '') return alert("This link was not provided for this property.");
-                window.open(getSafeLink(rawLink), '_blank');
-            };
-
-            const handlePreviewImages = () => {
-                const gallery = getVal(property, "gallery_images") || getVal(property, "cover_image");
-                if (!gallery || gallery.trim() === '') return alert("No images available.");
-                let firstLink = gallery.split(',')[0].trim();
-                let folderLink = firstLink.replace('thumbnail?id=', 'file/d/').replace('&sz=w1000', '/view');
-                window.open(folderLink, '_blank');
-            };
-
-            const regLink = getVal(property, "lead_registration") || getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_or_email_id");
-            const isEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
-            const regText = isEmail ? "✉️ Email Lead Details" : "🌐 Direct to Website Link";
-
-            const handleRegisterLead = () => {
-                if (!regLink || regLink.trim() === '') return alert("No lead registration details provided.");
-                if (isEmail) {
-                    let email = regLink.replace('mailto:', '').trim();
-                    window.location.href = `mailto:${email}?subject=New Lead Registration: ${getVal(property, "property_name")}`;
-                } else {
-                    let link = regLink.trim();
-                    if (!link.startsWith('http')) link = `https://${link}`;
-                    window.open(link, '_blank');
+            const scrollGallery = (dir) => {
+                if (galleryRef.current) {
+                    const scrollAmount = galleryRef.current.clientWidth * 0.8;
+                    galleryRef.current.scrollBy({ left: dir === 'right' ? scrollAmount : -scrollAmount, behavior: 'smooth' });
                 }
             };
 
-            const shareViaWhatsApp = (type, link) => {
-                if (!link || link.trim() === '') return alert(`${type} is not available for this property.`);
-                let finalLink = link;
-                if (type === 'Images/Gallery' && link.includes(',')) { finalLink = link.split(',').join('\n'); }
-                const text = `Hello! Here is the ${type} for *${getVal(property, "Property Name")}*:\n\n${finalLink}`;
-                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+            const openAction = (type) => {
+                setActionModal(type);
+                setLeadData({ name: "", phone: "", email: "" });
             };
 
-            const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
+            const handleActionSubmit = async (e) => {
+                e.preventDefault();
+                if (!/^[6-9]\d{9}$/.test(leadData.phone)) return alert("Enter valid 10-digit number");
+                setIsSubmitting(true);
+                
+                const success = await onSubmitLead(leadData, getVal(property, "Property Name"), actionModal);
+                setIsSubmitting(false);
+                
+                if (success) {
+                    if (actionModal === 'brochure' && getVal(property, "brochure")) {
+                        window.open(getVal(property, "brochure"), '_blank');
+                    } else if (actionModal === 'cost_sheet' && getVal(property, "cost_sheet")) {
+                        window.open(getVal(property, "cost_sheet"), '_blank');
+                    }
+                    setActionModal(null);
+                }
+            };
+
+            const cover = convertDriveLink(getVal(property, "cover_image") || getVal(property, "cover-image"));
+            const galRaw = getVal(property, "gallery_images") || getVal(property, "gallery-images") || getVal(property, "Images and short videos \nif any") || "";
+            const imgs = (typeof galRaw === 'string' && galRaw.length > 5) ? galRaw.split(',').map(l => convertDriveLink(l.trim())) : [];
+            const allImgs = [cover, ...imgs].filter(i => i && !i.includes('undefined')); 
+
+            const projectUsps = getVal(property, "usp-details") || getVal(property, "usp_details") || getVal(property, "USP's") || getVal(property, "Project Highlights");
+
+            const similarProperties = useMemo(() => {
+                if (!allProperties || allProperties.length === 0) return [];
+                return allProperties
+                    .filter(p => p.id !== property.id && (getVal(p, "Location") === getVal(property, "Location") || getVal(p, "Property Type") === getVal(property, "Property Type")))
+                    .slice(0, 3);
+            }, [property, allProperties]);
 
             return (
-                <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0">
-                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
+                <div className="min-h-screen bg-slate-50 overflow-x-hidden w-full max-w-[100vw]">
+                    
+                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center shadow-sm w-full">
                         <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
-                            <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> Back to Search
+                            <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> <span className="hidden sm:inline">Back to Search</span><span className="sm:hidden">Back</span>
                         </button>
-                        <div className="hidden md:flex items-center gap-4">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-200 pr-4">
+                        
+                        <div className="flex items-center gap-4">
+                            <div className="hidden md:block text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-200 pr-4">
                                 {getVal(property, "Location")} • {getVal(property, "Builder Name")}
                             </div>
-                            <a href={`tel:${pocNumber}`} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-slate-200">
-                                📞 Call Agent
+                            <a href={`tel:${String(getVal(property, "point_of_contact")).replace(/\D/g,'') || WHATSAPP_NUMBER}`} className="bg-white text-slate-700 px-3 md:px-4 py-1.5 md:py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:border-blue-500 hover:text-blue-600 transition shadow-sm border border-slate-300 flex items-center gap-1.5">
+                                <span className="text-sm">📞</span> Call Us
                             </a>
                         </div>
                     </div>
 
-                    <div className="max-w-7xl mx-auto w-full p-4 md:p-8">
-                        <div className="relative mb-8">
-                            <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scroll h-[40vh] md:h-[60vh] rounded-3xl">
-                                {imgs.length > 0 ? imgs.map((img, i) => (
+                    <div className="max-w-7xl mx-auto w-full p-4 md:p-8 animate-fadeIn">
+                        
+                        {/* Scrollable Gallery */}
+                        <div className="relative mb-8 w-full max-w-full overflow-hidden rounded-3xl">
+                            <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 hide-scroll h-[40vh] md:h-[60vh]">
+                                {allImgs.length > 0 ? allImgs.map((img, i) => (
                                     <div key={i} className="min-w-full md:min-w-[80%] h-full shrink-0 snap-center relative rounded-3xl overflow-hidden bg-slate-200 border border-slate-100">
                                         <img src={img} className="w-full h-full object-cover" />
                                         {i === 0 && (
@@ -271,21 +332,47 @@
                                     </div>
                                 )}
                             </div>
+                            
+                            {allImgs.length > 1 && (
+                                <>
+                                    <button onClick={() => scrollGallery('left')} className="hidden md:flex absolute top-1/2 -left-4 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur rounded-full items-center justify-center shadow-lg text-slate-800 hover:bg-white transition hover:scale-110 z-10 border border-slate-100">←</button>
+                                    <button onClick={() => scrollGallery('right')} className="hidden md:flex absolute top-1/2 -right-4 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur rounded-full items-center justify-center shadow-lg text-slate-800 hover:bg-white transition hover:scale-110 z-10 border border-slate-100">→</button>
+                                </>
+                            )}
                         </div>
 
+                        {/* Main Content Layout */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+                            
+                            {/* Left Column */}
                             <div className="lg:col-span-2 space-y-10">
+                                
+                                {/* Quick Overview */}
                                 <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 relative">
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div><div className="text-sm md:text-lg font-black text-slate-900 mt-1">{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div></div>
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_status") || 'N/A'}</div></div>
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Possession</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : 'On Request'}</div></div>
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">RERA Status</div><div className="text-sm md:text-base font-black text-green-600 mt-1">Verified ✓</div></div>
+                                    <div>
+                                        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div>
+                                        <div className="text-sm md:text-lg font-black text-slate-900 mt-1">{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div>
+                                        <div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_sta") || 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Possession</div>
+                                        <div className="text-sm md:text-base font-black text-slate-900 mt-1">
+                                            {getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : 'On Request'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Approvals</div>
+                                        <div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "approval") || getVal(property, "approvals") || 'N/A'}</div>
+                                    </div>
                                 </div>
 
                                 <div>
                                     <h2 className="text-xl md:text-2xl font-black uppercase tracking-wide text-slate-900 mb-4 border-b border-slate-200 pb-2">About The Project</h2>
                                     <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${getVal(property, "bhk") || "premium"} homes.`}
+                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${getVal(property, "bhk") || "premium"} homes. Discover a lifestyle defined by modern architecture, vast open spaces, and world-class connectivity.`}
                                     </p>
                                 </div>
 
@@ -295,7 +382,9 @@
                                             <h3 className="text-sm font-black uppercase tracking-widest text-blue-900 mb-6">Key Highlights</h3>
                                             <ul className="space-y-4">
                                                 {String(projectUsps).split('\n').filter(u => u.trim() !== "").map((u, i) => (
-                                                    <li key={i} className="flex items-start text-xs md:text-sm text-blue-800 font-medium leading-relaxed"><span className="mr-3 text-blue-500 mt-0.5">✦</span> {u.trim()}</li>
+                                                    <li key={i} className="flex items-start text-xs md:text-sm text-blue-800 font-medium leading-relaxed">
+                                                        <span className="mr-3 text-blue-500 mt-0.5">✦</span> {u.trim()}
+                                                    </li>
                                                 ))}
                                             </ul>
                                         </div>
@@ -305,565 +394,771 @@
                                             <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">World-Class Amenities</h3>
                                             <ul className="space-y-4">
                                                 {String(getVal(property, "Amenities")).split(',').filter(u => u.trim() !== "").map((u, i) => (
-                                                    <li key={i} className="flex items-start text-xs md:text-sm text-slate-300 font-medium leading-relaxed"><span className="mr-3 text-blue-400 mt-0.5">✓</span> {u.trim()}</li>
+                                                    <li key={i} className="flex items-start text-xs md:text-sm text-slate-300 font-medium leading-relaxed">
+                                                        <span className="mr-3 text-blue-400 mt-0.5">✓</span> {u.trim()}
+                                                    </li>
                                                 ))}
                                             </ul>
                                         </div>
                                     )}
                                 </div>
+
+                                {/* ADMIN PROTECTED SECRETS */}
+                                {isAdmin && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-8 border-t border-slate-200">
+                                        <div className="bg-[#fffbeb] border border-[#fde68a] p-5 md:p-6 rounded-2xl md:rounded-3xl text-[#92400e]">
+                                            <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-2">Commission & Payout</h4>
+                                            <p className="text-3xl md:text-4xl font-black">{formatPercent(getVal(property, "commision_deta") || getVal(property, "commission"))}</p>
+                                        </div>
+                                        <div className="bg-[#f0f9ff] border border-[#bae6fd] p-5 md:p-6 rounded-2xl md:rounded-3xl text-[#0369a1]">
+                                            <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-3">Internal Details</h4>
+                                            <p className="text-xs md:text-sm font-bold mb-1">POC: {getVal(property, "point_of_contact") || "N/A"}</p>
+                                            <p className="text-[10px] font-bold">Avail: {getVal(property, "availability") || "N/A"}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {isAdmin && (
+                                    <div className="bg-slate-50 border border-slate-100 p-6 md:p-8 rounded-2xl md:rounded-[35px] mt-4">
+                                        <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-3 text-slate-400">Admin Actions</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <a href={getSafeLink(getVal(property, "website_link"))} target="_blank" className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm hover:bg-slate-100 transition">Builder Site</a>
+                                            <a href={getSafeLink(getVal(property, "lead_registration") || getVal(property, "lead_registration_link_or_email_id"))} target="_blank" className="bg-[#0f172a] text-white p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-md hover:bg-blue-600 transition">Register Lead</a>
+                                            <a href={getSafeLink(getVal(property, "map_link"))} target="_blank" className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm md:col-span-2 hover:bg-slate-100 transition">Share Location Map</a>
+                                        </div>
+                                    </div>
+                                )}
+
                             </div>
 
+                            {/* Right Column (Sticky Sidebar) */}
                             <div className="lg:col-span-1">
                                 <div className="sticky top-24 space-y-6">
-                                    <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
+                                    
+                                    {/* Action Box */}
+                                    <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm">
                                         <div className="mb-6 pb-6 border-b border-slate-100">
                                             <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Starting Price</div>
                                             <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">{getVal(property, "Price") || 'On Request'}</div>
                                         </div>
-                                        
-                                        <div className="bg-[#fffbeb] border border-[#fde68a] p-4 rounded-2xl text-[#92400e] mb-4">
-                                            <h4 className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-80">Commission</h4>
-                                            <p className="text-2xl font-black">{formatPercent(getVal(property, "commission") || getVal(property, "commision_deta") || getVal(property, "commission_details"))}</p>
-                                        </div>
 
-                                        <div className="bg-[#f0f9ff] border border-[#bae6fd] p-4 rounded-2xl text-[#0369a1] mb-6">
-                                            <h4 className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-80">Internal Info</h4>
-                                            <p className="text-[10px] font-bold mb-1">POC: {getVal(property, "point_of_contact") || "N/A"}</p>
-                                            <p className="text-[10px] font-bold">Avail: {getVal(property, "availability") || "N/A"}</p>
-                                        </div>
-
-                                        <div className="bg-slate-900 text-white p-5 rounded-2xl">
-                                            <h4 className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-3 border-b border-slate-700 pb-2">Admin Tools</h4>
-                                            
-                                            <div className="space-y-2 mb-5">
-                                                <button onClick={() => openLink(getVal(property, "website_link"))} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-2.5 rounded-xl uppercase tracking-widest transition-colors text-[9px] border border-slate-700">
-                                                    🌐 Builder Website
-                                                </button>
-                                                <button onClick={handleRegisterLead} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-2.5 rounded-xl uppercase tracking-widest transition-colors shadow-md text-[9px]">
-                                                    {regText}
-                                                </button>
-                                            </div>
-
-                                            <h4 className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-2">Share With Client (WhatsApp)</h4>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <button onClick={() => shareViaWhatsApp('Brochure', getVal(property, "brochure"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📥 Brochure</button>
-                                                <button onClick={() => shareViaWhatsApp('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
-                                                <button onClick={() => shareViaWhatsApp('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
-                                                <button onClick={() => shareViaWhatsApp('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
-                                                <button onClick={handlePreviewImages} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Preview Images (Drive)</button>
-                                            </div>
+                                        <div className="space-y-3">
+                                            <button onClick={() => openAction('interest')} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg hover:-translate-y-1 transition-all text-xs md:text-sm mb-2">
+                                                I Am Interested
+                                            </button>
+                                            <button onClick={() => openAction('cost_sheet')} className="w-full bg-slate-900 text-white font-black py-3.5 rounded-xl uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-sm flex justify-center items-center gap-2 text-[10px] md:text-xs">
+                                                <span className="text-sm">📄</span> Request Cost Sheet
+                                            </button>
+                                            <button onClick={() => openAction('brochure')} className="w-full bg-white border border-slate-200 text-slate-900 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors flex justify-center items-center gap-2 text-[10px] md:text-xs shadow-sm">
+                                                <span className="text-sm">📥</span> Download Brochure
+                                            </button>
                                         </div>
                                     </div>
-                                    <EMICalculator propertyPriceStr={getVal(property, "Price")} />
+
+                                    {/* EMI Calculator */}
+                                    <EMICalculator propertyPriceStr={getVal(property, "Price")} onApplyAction={() => openAction('apply_now')} />
+
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            );
-        };
 
-        // URL ROUTER LOGIC
-        const getInitialRoute = () => {
-            const hash = window.location.hash.replace('#', '');
-            if (hash.startsWith('/library')) return { v: 'library', c: 'website' };
-            if (hash.startsWith('/add')) return { v: 'add', c: 'website' };
-            if (hash.startsWith('/crm/bulk')) return { v: 'dashboard', c: 'bulk' };
-            if (hash.startsWith('/crm/manual')) return { v: 'dashboard', c: 'manual' };
-            return { v: 'dashboard', c: 'website' };
-        };
-
-        function AdminApp() {
-            const initRoute = getInitialRoute();
-            const [session, setSession] = useState(null);
-            const [authChecking, setAuthChecking] = useState(true);
-            const [leads, setLeads] = useState([]);
-            const [properties, setProperties] = useState([]);
-            
-            // View and Category states tied to Router
-            const [view, setView] = useState(initRoute.v); 
-            const [leadCategory, setLeadCategory] = useState(initRoute.c); 
-            
-            const [loading, setLoading] = useState(true);
-            const [showManualModal, setShowManualModal] = useState(false);
-            const [filterType, setFilterType] = useState('ALL'); 
-            const [summaryAgent, setSummaryAgent] = useState('All');
-            const [selectedProp, setSelectedProp] = useState(null);
-            const [visibleCount, setVisibleCount] = useState(50);
-            const [searchTerm, setSearchTerm] = useState("");
-
-            // Router Event Listener
-            useEffect(() => {
-                const onHashChange = () => {
-                    const r = getInitialRoute();
-                    setView(r.v);
-                    setLeadCategory(r.c);
-                };
-                window.addEventListener('hashchange', onHashChange);
-                return () => window.removeEventListener('hashchange', onHashChange);
-            }, []);
-
-            // Navigation Function
-            const handleNavigate = (newView, newCat = 'website') => {
-                setView(newView);
-                if (newView === 'dashboard') setLeadCategory(newCat);
-                
-                let path = '';
-                if (newView === 'dashboard') path = `/crm/${newCat}`;
-                else if (newView === 'library') path = `/library`;
-                else if (newView === 'add') path = `/add`;
-                
-                window.location.hash = path;
-            };
-
-            useEffect(() => {
-                setVisibleCount(50);
-            }, [leadCategory, filterType, summaryAgent, searchTerm]);
-
-            // AUTH SETUP
-            useEffect(() => {
-                supabase.auth.getSession().then(({ data: { session } }) => { 
-                    setSession(session); 
-                    setAuthChecking(false);
-                });
-                const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { 
-                    setSession(session); 
-                });
-                return () => subscription.unsubscribe();
-            }, []);
-
-            // DATA FETCHING (Tied securely to current tab state)
-            useEffect(() => {
-                if (session) {
-                    fetchProperties();
-                    if (view === 'dashboard') fetchLeads();
-                }
-            }, [session, view, leadCategory]);
-
-            async function fetchLeads() {
-                setLoading(true);
-                const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-                const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false });
-                if (!error) {
-                    let raw = data || [];
-                    if (table === 'leads') {
-                        if (leadCategory === 'website') {
-                            setLeads(raw.filter(l => !l.lead_source || l.lead_source.trim() === '' || l.lead_source.toLowerCase().includes('website')));
-                        } else if (leadCategory === 'manual') {
-                            setLeads(raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && !l.lead_source.toLowerCase().includes('website')));
-                        }
-                   } else { 
-    // This is for Bulk Leads specifically
-    const bulkData = raw.map(l => ({
-        ...l,
-        // If it's the bulk tab, we use the text exactly as it is in Supabase
-        display_date: l.created_at || 'N/A'
-    }));
-    setLeads(bulkData); 
-}
-                }
-                setLoading(false);
-            }
-
-            async function fetchProperties() {
-                const { data } = await supabase.from('properties').select('*').order('created_at', { ascending: false });
-                setProperties(data || []);
-            }
-
-            async function updateLead(lead, field, value) {
-                if (field === 'lead_status') {
-                    if (!lead.psa_agent_name || lead.psa_agent_name.trim() === '') {
-                        alert("ERROR: You must assign a PSA Agent (Tharun or Shivaji or Ramswami) before changing the lead status.");
-                        fetchLeads(); 
-                        return;
-                    }
-                }
-
-                let updates = {};
-                const stamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
-
-                if (field === 'lead_status') {
-                    updates.lead_status = value;
-                    updates.call_remark = `[${stamp}] Status Changed: ${value}\n\n${lead.call_remark || ''}`;
-                } else if (field === 'follow_up_at') {
-                    updates.follow_up_at = value;
-                    updates.call_remark = `[${stamp}] Callback Set: ${new Date(value).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}\n\n${lead.call_remark || ''}`;
-                } else if (field === 'site_visit_at') {
-                    updates.site_visit_at = value;
-                    updates.call_remark = `[${stamp}] SV Booked: ${value}\n\n${lead.call_remark || ''}`;
-                } else if (field === 'add_note') {
-                    if (!value.trim()) return;
-                    updates.add_note = value; 
-                    updates.call_remark = `[${stamp}] Manual Note: ${value}\n\n${lead.call_remark || ''}`; 
-                } else if (field === 'reject_reason') {
-                    updates.reject_reason = value;
-                    updates.call_remark = `[${stamp}] Rejected Reason: ${value}\n\n${lead.call_remark || ''}`;
-                } else {
-                    updates[field] = value;
-                }
-
-                const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-                setLeads(prev => prev.map(l => l.id === lead.id ? {...l, ...updates} : l));
-
-                const { error } = await supabase.from(table).update(updates).eq('id', lead.id);
-                if (error) {
-                    if (error.message.includes('add_note')) alert("ERROR: Please create an 'add_note' text column in your Supabase 'leads' table to save manual remarks.");
-                    else if (error.message.includes('reject_reason')) alert("ERROR: Please create a 'reject_reason' text column in your Supabase 'leads' table.");
-                    else alert("Error saving update: " + error.message);
-                    fetchLeads(); 
-                }
-            }
-
-            const displayedLeads = useMemo(() => {
-                let filtered = leads;
-                const todayStr = new Date().toISOString().split('T')[0];
-                
-                if (filterType === 'TODAY_CB') {
-                    filtered = leads.filter(l => l.follow_up_at && l.follow_up_at.startsWith(todayStr) && !['Rejected', 'Converted'].includes(l.lead_status));
-                } else if (filterType === 'TODAY_SV') {
-                    filtered = leads.filter(l => l.site_visit_at && l.site_visit_at === todayStr && !['Rejected', 'Converted'].includes(l.lead_status));
-                } else if (filterType === 'MISSED_CB') {
-                    filtered = leads.filter(l => l.follow_up_at && l.follow_up_at < todayStr && !['Rejected', 'Converted'].includes(l.lead_status));
-                } else if (filterType === 'MISSED_SV') {
-                    filtered = leads.filter(l => l.site_visit_at && l.site_visit_at < todayStr && !['Rejected', 'Converted'].includes(l.lead_status));
-                } else if (filterType.startsWith('STATUS_')) {
-                    const statusTarget = filterType.replace('STATUS_', '');
-                    filtered = leads.filter(l => (l.lead_status || 'Un called') === statusTarget);
-                }
-
-                if (searchTerm.trim() !== '') {
-                    const term = searchTerm.toLowerCase();
-                    filtered = filtered.filter(l => 
-                        (l.customer_name && l.customer_name.toLowerCase().includes(term)) ||
-                        (l.phone_number && l.phone_number.toLowerCase().includes(term)) ||
-                        (l.project_interested_in && l.project_interested_in.toLowerCase().includes(term))
-                    );
-                }
-                
-                return filtered;
-            }, [leads, filterType, searchTerm]);
-
-            const visibleLeads = displayedLeads.slice(0, visibleCount);
-
-            const stats = useMemo(() => {
-                let targetLeads = leads;
-                if (summaryAgent !== 'All') {
-                    targetLeads = leads.filter(l => l.psa_agent_name === summaryAgent);
-                }
-                const total = targetLeads.length;
-                const uncalled = targetLeads.filter(l => l.lead_status === 'Un called' || !l.lead_status).length;
-                const called = targetLeads.filter(l => l.lead_status && l.lead_status !== 'Un called' && l.lead_status !== 'Rejected').length;
-                const rejected = targetLeads.filter(l => l.lead_status === 'Rejected').length;
-                return { total, uncalled, called, rejected };
-            }, [leads, summaryAgent]);
-
-            if (authChecking) {
-                return (
-                    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
-                        <div className="text-3xl font-black italic text-white uppercase tracking-widest animate-pulse mb-4">Horizon CRM</div>
-                        <div className="text-blue-500 text-xs font-bold uppercase tracking-widest">Verifying Access...</div>
-                    </div>
-                );
-            }
-
-            if (!session) return <LoginForm supabase={supabase} />;
-            if (selectedProp) return <PropertyDetailsPage property={selectedProp} onBack={() => setSelectedProp(null)} />;
-
-            return (
-                <div className="min-h-screen flex flex-col animate-fadeIn">
-                    <nav className="bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
-                        <h1 className="font-black tracking-tighter text-xl uppercase italic">Horizon <span className="text-blue-500">CRM</span></h1>
-                        <div className="flex gap-4 md:gap-6 text-[10px] md:text-[11px] font-bold uppercase tracking-widest items-center">
-                            <button onClick={() => handleNavigate('dashboard', leadCategory)} className={view === 'dashboard' ? 'text-blue-400' : 'hover:text-slate-300 transition'}>CRM</button>
-                            <button onClick={() => handleNavigate('library')} className={view === 'library' ? 'text-blue-400' : 'hover:text-slate-300 transition'}>Library</button>
-                            <button onClick={() => handleNavigate('add')} className={view === 'add' ? 'text-blue-400' : 'hover:text-slate-300 transition'}>+ Project</button>
-                            <button onClick={() => supabase.auth.signOut()} className="text-red-400 border border-red-900 px-3 py-1.5 rounded hover:bg-red-900/50 transition font-bold uppercase">Logout</button>
-                        </div>
-                    </nav>
-
-                    <main className="p-3 md:p-8 max-w-7xl mx-auto w-full">
-                        {view === 'dashboard' && (
-                            <div className="space-y-6">
-                                
-                                {/* IMPROVED RESPONSIVE STATS BAR */}
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-                                    <div className="flex flex-wrap justify-between md:grid md:grid-cols-5 gap-4 items-center">
-                                        <div className="w-full md:w-auto border-b md:border-none pb-2 md:pb-0">
-                                            <select className="bg-transparent outline-none cursor-pointer text-slate-700 text-[10px] font-black uppercase w-full md:w-auto" value={summaryAgent} onChange={e => setSummaryAgent(e.target.value)}>
-                                                <option value="All">Total (All Agents)</option>
-                                                <option value="Tharun">Tharun</option>
-                                                <option value="Shivaji">Shivaji</option>
-                                                <option value="Ramswami">Ramswami</option>
-                                            </select>
-                                        </div>
-                                        <div className="flex flex-col items-center flex-1"><span className="text-[9px] uppercase font-black text-slate-400">Total</span><span className="font-bold text-slate-700 text-lg">{stats.total}</span></div>
-                                        <div className="flex flex-col items-center flex-1"><span className="text-[9px] uppercase font-black text-green-600">Uncalled</span><span className="font-bold text-green-600 text-lg">{stats.uncalled}</span></div>
-                                        <div className="flex flex-col items-center flex-1"><span className="text-[9px] uppercase font-black text-blue-600">Working</span><span className="font-bold text-blue-600 text-lg">{stats.called}</span></div>
-                                        <div className="flex flex-col items-center flex-1"><span className="text-[9px] uppercase font-black text-red-600">Rejected</span><span className="font-bold text-red-600 text-lg">{stats.rejected}</span></div>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-b pb-4">
-                                    <div className="flex gap-4">
-                                        {['website', 'bulk', 'manual'].map(c => (
-                                            <button key={c} onClick={() => { handleNavigate('dashboard', c); setVisibleCount(50); }} className={`pb-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${leadCategory === c ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>{c}</button>
-                                        ))}
-                                    </div>
-                                    <div className="flex gap-3 items-center w-full md:w-auto">
-                                        <select 
-                                            value={filterType} 
-                                            onChange={(e) => setFilterType(e.target.value)} 
-                                            className="px-4 py-2 rounded-full text-[9px] font-black uppercase border bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-auto"
-                                        >
-                                            <option value="ALL">All Leads</option>
-                                            <optgroup label="Schedule Filters">
-                                                <option value="TODAY_CB">📅 Today's Callbacks</option>
-                                                <option value="TODAY_SV">📅 Today's Site Visits</option>
-                                                <option value="MISSED_CB">⚠️ Missed Callbacks</option>
-                                                <option value="MISSED_SV">⚠️ Missed Site Visits</option>
-                                            </optgroup>
-                                            <optgroup label="Status Filters">
-                                                <option value="STATUS_Un called">Un called</option>
-                                                <option value="STATUS_Called">Called</option>
-                                                <option value="STATUS_RNR">RNR</option>
-                                                <option value="STATUS_Details Shared">Details Shared</option>
-                                                <option value="STATUS_SV Scheduled">SV Scheduled</option>
-                                                <option value="STATUS_Converted">Converted</option>
-                                                <option value="STATUS_Rejected">Rejected</option>
-                                            </optgroup>
-                                        </select>
-                                        <button onClick={() => setShowManualModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded-full text-[9px] font-black uppercase shadow-sm shrink-0">+ Manual Lead</button>
-                                    </div>
-                                </div>
-
-                                <div className="mb-4 relative">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Search Name, Phone or Project..." 
-                                        className="w-full p-4 pl-12 bg-white border border-slate-200 rounded-2xl text-xs font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
-                                    <span className="absolute left-4 top-4 opacity-50 text-lg">🔍</span>
-                                    {searchTerm && (
-                                        <button 
-                                            onClick={() => setSearchTerm("")}
-                                            className="absolute right-4 top-4 text-[10px] font-black text-slate-400 hover:text-red-500 uppercase bg-slate-100 px-3 py-1 rounded-lg transition"
-                                        >
-                                            Clear
-                                        </button>
-                                    )}
-                                </div>
-
-                                <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                                    <table className="w-full text-left text-xs">
-                                        <thead className="bg-slate-50 text-slate-400 font-black uppercase text-[9px] tracking-widest border-b">
-                                            <tr><th className="p-4">Customer</th><th className="p-4">Status & Agent</th><th className="p-4">Scheduling</th><th className="p-4 min-w-[250px]">Activity & Notes</th></tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {visibleLeads.map(l => (
-                                                <tr key={l.id} className={`hover:bg-slate-50 transition border-l-4 ${l.lead_priority === 'Hot' ? 'border-l-red-500' : l.lead_priority === 'Cold' ? 'border-l-blue-400' : 'border-l-amber-400'}`}>
-                                                    <td className="p-4 uppercase font-bold min-w-[180px]">
-                                                        {l.customer_name}
-                                                        <div className="text-blue-600 mt-1">{l.phone_number}</div>
-                                                        <div className="text-slate-400 text-[10px] mt-1 lowercase truncate font-medium">{l.customer_email || ''}</div>
-                                                        {(leadCategory === 'website' || leadCategory === 'manual') && l.created_at && (
-                                                            <div className="text-[8px] text-slate-400 font-bold mt-2 tracking-widest uppercase">Logged: {new Date(l.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</div>
-                                                        )}
-                                                        {leadCategory === 'bulk' ? (
-                                                            session?.user?.email === 'saishetty1623@gmail.com' ? (
-                                                                <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate max-w-[150px]">
-                                                                    Inq: {l.project_interested_in || 'General'}
-                                                                </div>
-                                                            ) : (
-                                                                <div className="text-[8px] text-slate-400 italic mt-1 tracking-widest uppercase">
-                                                                    Inq: [Restricted]
-                                                                </div>
-                                                            )
-                                                        ) : (
-                                                            <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate max-w-[150px]">
-                                                                Inq: {l.project_interested_in || 'General'}
-                                                            </div>
-                                                        )}
-                                                        <div className="mt-3 flex gap-2">
-                                                            <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-green-500 text-white text-[8px] font-black px-3 py-1.5 rounded uppercase tracking-widest shadow-sm hover:scale-105 transition">WhatsApp 💬</a>
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-4 min-w-[140px]">
-                                                        <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none bg-slate-50 border-slate-300 text-blue-800">
-                                                            <option value="" disabled>Assign Agent</option>
-                                                            <option value="Tharun">Tharun</option>
-                                                            <option value="Shivaji">Shivaji</option>
-                                                            <option value="Ramswami">Ramswami</option>
-                                                        </select>
-                                                        <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 ${getStatusStyles(l.lead_status)}`}>
-                                                            {(!l.lead_status || l.lead_status === 'Un called') && <option value="Un called">Un called</option>}
-                                                            <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option><option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
-                                                        </select>
-                                                        
-                                                        {l.lead_status === 'Rejected' && (
-                                                            <select onChange={(e) => updateLead(l, 'reject_reason', e.target.value)} value={l.reject_reason || ''} className="w-full p-2 mb-2 border border-red-300 rounded-lg font-bold uppercase text-[9px] outline-none bg-red-50 text-red-800">
-                                                                <option value="" disabled>Select Reason</option>
-                                                                <option value="Not Interested">Not Interested</option>
-                                                                <option value="No Response">No Response</option>
-                                                                <option value="Wrong Number">Wrong Number</option>
-                                                                <option value="No Incoming Call">No Incoming Call</option>
-                                                            </select>
-                                                        )}
-
-                                                        <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className={`w-full p-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 ${getPriorityColor(l.lead_priority)}`}>
-                                                            <option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option>
-                                                        </select>
-                                                    </td>
-                                                    <td className="p-4 min-w-[160px]">
-                                                        <div className="space-y-3">
-                                                            {['Called', 'RNR', 'Details Shared'].includes(l.lead_status) && (
-                                                                <div>
-                                                                    <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">Call Back Date</span>
-                                                                    <input type="datetime-local" className="w-full p-2 border border-blue-200 bg-blue-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
-                                                                </div>
-                                                            )}
-                                                            {l.lead_status === 'SV Scheduled' && (
-                                                                <div className="mt-2 pt-2 border-t border-slate-100">
-                                                                    <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">Site Visit Date</span>
-                                                                    <input type="date" className="w-full p-2 border border-teal-200 bg-teal-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <div className="flex flex-col gap-2">
-                                                            <div className="h-16 overflow-y-auto bg-slate-50 p-2 rounded-lg history-scroll whitespace-pre-wrap border border-slate-100 leading-relaxed font-medium text-slate-400 mb-1">
-                                                                {l.call_remark || <span className="italic">System logs...</span>}
-                                                            </div>
-                                                            <div className="flex gap-2">
-                                                                <textarea id={`note-d-${l.id}`} defaultValue={l.add_note || ''} rows="2" placeholder="Manual notes / requirements..." className="flex-1 p-2 border border-slate-200 rounded-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
-                                                                <button onClick={() => { const el = document.getElementById(`note-d-${l.id}`); updateLead(l, 'add_note', el.value); }} className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition">Save</button>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                    {visibleCount < displayedLeads.length && (
-                                        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-center">
-                                            <button onClick={() => setVisibleCount(v => v + 50)} className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition shadow-sm">
-                                                Load More Leads ({displayedLeads.length - visibleCount} hidden)
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="lg:hidden space-y-4">
-                                    {visibleLeads.map(l => (
-                                        <div key={`m-${l.id}`} className={`bg-white p-4 rounded-2xl shadow-sm border border-t-8 ${l.lead_priority === 'Hot' ? 'border-t-red-500 bg-red-50/10' : l.lead_priority === 'Cold' ? 'border-t-blue-400' : 'border-t-amber-400'}`}>
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <h3 className="font-black text-sm uppercase">{l.customer_name}</h3>
-                                                    <p className="font-bold text-blue-600">{l.phone_number}</p>
-                                                    <p className="font-bold text-slate-400 text-[10px] truncate mt-1">{l.customer_email}</p>
-                                                    <p className="text-[10px] text-slate-500 font-bold mt-1 tracking-widest uppercase">
-                                                        Inq: {leadCategory === 'bulk' && session?.user?.email !== 'saishetty1623@gmail.com' 
-                                                            ? '[Restricted]' 
-                                                            : (l.project_interested_in || 'General')}
-                                                    </p>
-                                                    {(leadCategory === 'website' || leadCategory === 'manual') && l.created_at && (
-                                                        <div className="text-[8px] text-slate-400 font-bold mt-1 tracking-widest uppercase">Logged: {new Date(l.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}</div>
-                                                    )}
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 border border-blue-100 p-2.5 rounded-full shadow-sm">📞</a>
-                                                    <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="bg-green-50 text-green-600 border border-green-100 p-2.5 rounded-full shadow-sm">💬</a>
-                                                </div>
+                        {/* Similar Properties Section */}
+                        {similarProperties.length > 0 && (
+                            <div className="mt-16 pt-8 border-t border-slate-200 relative z-0">
+                                <h2 className="text-xl md:text-2xl font-black uppercase tracking-wide text-slate-900 mb-6 border-l-4 border-blue-500 pl-4">Similar Properties</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {similarProperties.map((simProp, i) => (
+                                        <div key={i} onClick={() => { window.scrollTo(0,0); onSelectProperty(simProp); }} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col relative z-10">
+                                            <div className="relative h-40 w-full overflow-hidden shrink-0 bg-slate-100">
+                                                <img src={fixImageUrl(getVal(simProp, "Cover Image") || getVal(simProp, "cover_image")) || 'https://via.placeholder.com/600x300'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none" />
                                             </div>
-                                            
-                                            <div className="grid grid-cols-2 gap-2 mb-4 mt-2">
-                                                <div className="flex flex-col gap-1 col-span-2">
-                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">PSA Agent</label>
-                                                    <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="p-2 border border-slate-300 bg-slate-50 rounded-xl font-bold uppercase text-[9px] outline-none text-blue-800">
-                                                        <option value="" disabled>Assign Agent</option>
-                                                        <option value="Tharun">Tharun</option>
-                                                        <option value="Shivaji">Shivaji</option>
-                                                        <option value="Ramswami">Ramswami</option>
-                                                    </select>
-                                                </div>
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</label>
-                                                    <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none ${getStatusStyles(l.lead_status)}`}>
-                                                        {(!l.lead_status || l.lead_status === 'Un called') && <option value="Un called">Un called</option>}
-                                                        <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option><option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
-                                                    </select>
-                                                </div>
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Priority</label>
-                                                    <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none ${getPriorityColor(l.lead_priority)}`}>
-                                                        <option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option>
-                                                    </select>
-                                                </div>
-                                                
-                                                {l.lead_status === 'Rejected' && (
-                                                    <div className="flex flex-col gap-1 col-span-2 mt-1">
-                                                        <label className="text-[8px] font-black text-red-600 uppercase tracking-widest">Reject Reason</label>
-                                                        <select onChange={(e) => updateLead(l, 'reject_reason', e.target.value)} value={l.reject_reason || ''} className="p-2 border border-red-300 bg-red-50 text-red-800 rounded-xl font-bold uppercase text-[9px] outline-none">
-                                                            <option value="" disabled>Select Reason</option>
-                                                            <option value="Not Interested">Not Interested</option>
-                                                            <option value="No Response">No Response</option>
-                                                            <option value="Wrong Number">Wrong Number</option>
-                                                            <option value="No Incoming Call">No Incoming Call</option>
-                                                        </select>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="mb-4 space-y-2">
-                                                {['Called', 'RNR', 'Details Shared'].includes(l.lead_status) && (
-                                                    <div className="flex flex-col gap-1">
-                                                        <label className="text-[8px] font-black text-blue-600 uppercase tracking-widest">Callback Date</label>
-                                                        <input type="datetime-local" className="p-2 border border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
-                                                    </div>
-                                                )}
-                                                {l.lead_status === 'SV Scheduled' && (
-                                                    <div className="flex flex-col gap-1 mt-2">
-                                                        <label className="text-[8px] font-black text-teal-600 uppercase tracking-widest">Site Visit Date</label>
-                                                        <input type="date" className="p-2 border border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="mt-4 pt-3 border-t border-slate-100">
-                                                <div className="bg-slate-50 p-2 rounded-t-xl h-16 overflow-y-auto text-[9px] font-medium whitespace-pre-wrap border border-slate-200 leading-relaxed text-slate-400 mb-1">
-                                                    {l.call_remark || <span className="italic">System logs...</span>}
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <textarea id={`m-note-${l.id}`} defaultValue={l.add_note || ''} rows="2" className="w-full p-2 border border-slate-200 rounded-b-xl text-[10px] resize-none focus:ring-1 focus:ring-blue-500 outline-none shadow-sm" placeholder="Manual notes / requirements..." />
-                                                    <button onClick={() => { const el = document.getElementById(`m-note-${l.id}`); updateLead(l, 'add_note', el.value); }} className="bg-slate-900 text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-blue-600 transition">Save</button>
+                                            <div className="p-5 flex-grow flex flex-col pointer-events-none">
+                                                <h3 className="text-lg font-black text-slate-900 leading-tight truncate uppercase">{getVal(simProp, "Property Name")}</h3>
+                                                <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">📍 {getVal(simProp, "Location")}</p>
+                                                <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-end">
+                                                    <span className="text-blue-600 font-black text-lg">{getVal(simProp, "Price")}</span>
+                                                    <span className="bg-slate-100 px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest">{getVal(simProp, "bhk")} BHK</span>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Dynamic Action Modal */}
+                    {actionModal && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setActionModal(null)}>
+                            <div className="bg-white rounded-3xl md:rounded-[40px] p-8 md:p-10 w-full max-w-sm shadow-2xl text-center relative" onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setActionModal(null)} className="absolute top-4 right-6 text-2xl text-slate-400 hover:text-slate-900">&times;</button>
+                                <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-2 italic tracking-tighter uppercase">
+                                    {actionModal === 'brochure' ? "Get The Brochure" : actionModal === 'cost_sheet' ? "Get Cost Sheet" : actionModal === 'apply_now' ? "Apply for Loan" : "Enquiry"}
+                                </h2>
+                                <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">Please enter details to proceed</p>
+                                
+                                <form onSubmit={handleActionSubmit} className="space-y-4 text-left">
+                                    <input type="text" placeholder="Full Name" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
+                                    <input type="tel" placeholder="Mobile Number (10 Digits)" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
+                                    <input type="email" placeholder="Email Address (Optional)" className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.email} onChange={e => setLeadData({...leadData, email: e.target.value})} />
                                     
-                                    {visibleCount < displayedLeads.length && (
-                                        <button onClick={() => setVisibleCount(v => v + 50)} className="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition mt-4 shadow-sm border border-blue-200">
-                                            Load More Leads ({displayedLeads.length - visibleCount} hidden)
-                                        </button>
+                                    <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg mt-4 active:scale-95 transition-transform">
+                                        {isSubmitting ? "Processing..." : actionModal === 'apply_now' ? "Submit Application" : actionModal === 'interest' ? "Submit Interest" : "Unlock Download"}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        function App() {
+            const [properties, setProperties] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [selectedProperty, setSelectedProperty] = useState(null);
+            
+            const [search, setSearch] = useState("");
+            const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+            const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+            
+            const [filters, setFilters] = useState({ bhk: "", status: "", type: "", priceBracket: "" });
+            const [showLeadForm, setShowLeadForm] = useState(false);
+            const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
+            const [isSubmitting, setIsSubmitting] = useState(false);
+            
+            const [activePage, setActivePage] = useState(() => window.location.hash.replace('#', '') || 'home'); 
+            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+            const [mobileAboutOpen, setMobileAboutOpen] = useState(false);
+            const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
+            const [activeBlog, setActiveBlog] = useState(null);
+
+            // Legal Modals State
+            const [legalModal, setLegalModal] = useState(null); // 'terms', 'privacy'
+
+            useEffect(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get("key") === "admin123") setIsAdmin(true);
+
+                const handleHashChange = () => {
+                    const hash = window.location.hash.replace('#', '');
+                    setActivePage(hash || 'home');
+                    if(hash !== 'home') setSelectedProperty(null);
+                    if(hash !== 'blogs') setActiveBlog(null);
+                };
+                window.addEventListener('hashchange', handleHashChange);
+                
+                const fetchProperties = async () => {
+                    try {
+                        const { data, error } = await supabase.from('properties').select('*');
+                        if (!error) setProperties(data || []);
+                    } catch (error) { console.error(error); } 
+                    finally { setLoading(false); }
+                };
+                fetchProperties();
+                return () => window.removeEventListener('hashchange', handleHashChange);
+            }, []);
+
+            const handleLeadSubmit = async (dataToSubmit, projectName, actionType = "General Enquiry", event = null) => {
+                if(event) event.preventDefault(); 
+
+                const data = dataToSubmit || leadData;
+                const project = projectName || "General Enquiry";
+                const sourceContext = actionType === 'brochure' ? "Website - Brochure Download" 
+                                    : actionType === 'cost_sheet' ? "Website - Cost Sheet Request" 
+                                    : actionType === 'apply_now' ? "Website - EMI Apply" 
+                                    : "Website - General";
+                
+                if (!/^[6-9]\d{9}$/.test(data.phone)) { alert("Enter valid 10-digit number"); return false; }
+                if (!dataToSubmit) setIsSubmitting(true);
+
+                try {
+                    const { error } = await supabase.from('leads').insert([{
+                        customer_name: data.name, 
+                        phone_number: data.phone,
+                        customer_email: data.email || null,
+                        project_interested_in: project, 
+                        lead_status: "Un called", 
+                        lead_source: sourceContext, 
+                        psa_agent_name: "Tharun" 
+                    }]);
+
+                    if (error) throw error; 
+
+                    // Trigger Email Alert
+                    fetch(GOOGLE_SCRIPT_URL, {
+                        method: "POST",
+                        body: JSON.stringify({
+                            action: "sendLead",
+                            Name: data.name,
+                            Phone: data.phone,
+                            Email: data.email || 'N/A',
+                            Project: project,
+                            Source: sourceContext,
+                            Requirements: 'None'
+                        })
+                    }).catch(err => console.log("Email Error:", err));
+
+                    if (!dataToSubmit) {
+                        alert("Interest Registered! Our advisor will contact you shortly.");
+                        setShowLeadForm(false); 
+                        setLeadData({ name: "", phone: "", email: "" });
+                    }
+                    return true;
+                } catch (error) {
+                    alert("Error saving details. Please try again.");
+                    return false;
+                } finally {
+                    if (!dataToSubmit) setIsSubmitting(false);
+                }
+            };
+
+            const safeProperties = Array.isArray(properties) ? properties : [];
+            const filtered = safeProperties.filter(p => {
+                if (!p || typeof p !== 'object') return false; 
+                const term = search.toLowerCase();
+                const pName = String(getVal(p, "Property Name")).toLowerCase();
+                const pLoc = String(getVal(p, "Location")).toLowerCase();
+                const pBuild = String(getVal(p, "Builder Name")).toLowerCase();
+                
+                const matchSearch = !term || pName.includes(term) || pLoc.includes(term) || pBuild.includes(term);
+                const matchBHK = !filters.bhk || String(getVal(p, "No of BHK's") || getVal(p, "bhk")).includes(filters.bhk);
+                const matchStatus = !filters.status || String(getVal(p, "Construction Status")).includes(filters.status);
+                const matchType = !filters.type || String(getVal(p, "Property Type")).includes(filters.type);
+                
+                const priceInCr = extractPriceInCr(getVal(p, "Price"));
+                let matchPrice = true;
+                if (filters.priceBracket) {
+                    if (priceInCr > 0) {
+                        if (filters.priceBracket === "under1") matchPrice = priceInCr < 1;
+                        else if (filters.priceBracket === "1-2") matchPrice = priceInCr >= 1 && priceInCr < 2;
+                        else if (filters.priceBracket === "2-3") matchPrice = priceInCr >= 2 && priceInCr < 3;
+                        else if (filters.priceBracket === "3-4") matchPrice = priceInCr >= 3 && priceInCr < 4;
+                        else if (filters.priceBracket === "4-5") matchPrice = priceInCr >= 4 && priceInCr < 5;
+                        else if (filters.priceBracket === "5plus") matchPrice = priceInCr >= 5;
+                    } else { matchPrice = false; }
+                }
+
+                return matchSearch && matchBHK && matchStatus && matchType && matchPrice;
+            });
+
+            const navTo = (page) => {
+                setIsMobileMenuOpen(false);
+                setMobileAboutOpen(false);
+                setMobileServicesOpen(false);
+                setActiveBlog(null);
+                setSelectedProperty(null);
+                window.location.hash = page;
+                window.scrollTo(0,0);
+            };
+
+            if (selectedProperty) {
+                return <PropertyDetailsPage property={selectedProperty} allProperties={safeProperties} onBack={() => setSelectedProperty(null)} onSubmitLead={handleLeadSubmit} isAdmin={isAdmin} onSelectProperty={setSelectedProperty} />;
+            }
+
+            return (
+                <div className="min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
+                    
+                    <div className="sticky top-0 z-40 w-full shadow-sm flex flex-col bg-white">
+                        <nav className="bg-slate-950 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center relative z-50 gap-4">
+                            <h1 onClick={() => navTo('home')} className="text-xl md:text-2xl font-black text-white tracking-tighter uppercase italic cursor-pointer hover:text-blue-400 transition shrink-0">Perfect Horizons</h1>
+                            
+                            {activePage === 'home' && (
+                                <div className="hidden lg:flex flex-1 justify-center px-4 max-w-2xl">
+                                    <div className="relative w-full group">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm z-10 transition-colors group-focus-within:text-blue-400">🔍</span>
+                                        <input type="text" placeholder="Search Location, Project or Builder..." className="w-full bg-slate-900 text-white placeholder-slate-400 border border-slate-700 rounded-full pl-10 pr-5 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all" value={search} onChange={e => setSearch(e.target.value)} />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="hidden md:flex gap-4 lg:gap-6 items-center shrink-0">
+                                <button onClick={() => navTo('home')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'home' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Properties</button>
+                                
+                                <div className="relative group cursor-pointer py-2">
+                                    <span className={`text-xs font-black uppercase tracking-widest transition flex items-center ${['about-us', 'our-journey'].includes(activePage) ? 'text-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>About <span className="dropdown-arrow"></span></span>
+                                    <div className="absolute hidden group-hover:block top-full right-0 mt-0 w-48 bg-slate-800 border border-slate-700 shadow-2xl rounded-xl overflow-hidden z-50 animate-fadeIn text-right">
+                                        <div onClick={() => navTo('about-us')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition">About Us</div>
+                                        <div onClick={() => navTo('our-journey')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition border-t border-slate-700">Our Journey</div>
+                                    </div>
+                                </div>
+
+                                <div className="relative group cursor-pointer py-2">
+                                    <span className={`text-xs font-black uppercase tracking-widest transition flex items-center ${['what-we-do', 'what-we-dont-do'].includes(activePage) ? 'text-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Services <span className="dropdown-arrow"></span></span>
+                                    <div className="absolute hidden group-hover:block top-full right-0 mt-0 w-56 bg-slate-800 border border-slate-700 shadow-2xl rounded-xl overflow-hidden z-50 animate-fadeIn text-right">
+                                        <div onClick={() => navTo('what-we-do')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition">What We Do</div>
+                                        <div onClick={() => navTo('what-we-dont-do')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition border-t border-slate-700">What We Don't Do</div>
+                                    </div>
+                                </div>
+
+                                <button onClick={() => navTo('advisor')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'advisor' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Advisors</button>
+                                <button onClick={() => navTo('blogs')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'blogs' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Insights</button>
+                                <button onClick={() => navTo('customers')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'customers' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Reviews</button>
+                            </div>
+                            
+                            <div className="md:hidden flex items-center gap-3 shrink-0">
+                                {activePage === 'home' && (
+                                    <button onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)} className="flex items-center gap-1 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-400 transition">
+                                        <span className="text-sm">🔍</span> Search
+                                    </button>
+                                )}
+                                <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-white focus:outline-none ml-1">
+                                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}></path></svg>
+                                </button>
+                            </div>
+                        </nav>
+
+                        {activePage === 'home' && (
+                            <>
+                            <div className="bg-white border-b py-3 md:py-4 overflow-hidden flex flex-col items-center">
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Associated With</p>
+                                <div className="animate-marquee flex items-center">
+                                    {AUTHORIZED_PARTNERS.concat(AUTHORIZED_PARTNERS).map((logo, index) => (
+                                        <img key={index} src={logo} className="h-8 md:h-10 mx-8 md:mx-12" />
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className="bg-slate-50 border-b border-gray-200 py-2 px-4 relative z-40 shadow-sm w-full">
+                                <div className="max-w-7xl mx-auto w-full">
+                                    {isMobileSearchOpen && (
+                                        <div className="md:hidden w-full relative animate-fadeIn mb-2">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 text-sm">🔍</span>
+                                            <input type="text" placeholder="Search Location, Project..." className="w-full bg-white border-2 border-blue-400 rounded-xl pl-10 pr-4 py-2 text-xs font-bold outline-none shadow-sm" value={search} onChange={e => setSearch(e.target.value)} autoFocus />
+                                        </div>
                                     )}
+                                    
+                                    <div className="md:hidden flex justify-between items-center h-5">
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Property Finder</span>
+                                        <button onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)} className="text-[10px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-1 active:scale-95 transition-transform">
+                                            FILTERS {isMobileFilterOpen ? '▲' : '▼'}
+                                        </button>
+                                    </div>
+
+                                    <div className={`${isMobileFilterOpen ? 'grid' : 'hidden'} md:grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 mt-3 md:mt-0 animate-fadeIn w-full`}>
+                                        <select className="w-full bg-white px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer" value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}>
+                                            <option value="">Configurations</option><option value="1">1 BHK</option><option value="2">2 BHK</option><option value="3">3 BHK</option><option value="4">4 BHK</option><option value="5">5+ BHK</option>
+                                        </select>
+                                        <select className="w-full bg-white px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer" value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
+                                            <option value="">Status</option><option value="Ready to Move">Ready</option><option value="Under Construction">Under Const.</option><option value="New Launch">New Launch</option>
+                                        </select>
+                                        <select className="w-full bg-white px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer" value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})}>
+                                            <option value="">Property Type</option><option value="Apartment">Apartment</option><option value="Villa">Villa</option><option value="Plot">Plot</option>
+                                        </select>
+                                        <select className="w-full bg-white px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer" value={filters.priceBracket} onChange={e => setFilters({...filters, priceBracket: e.target.value})}>
+                                            <option value="">Budget</option><option value="under1">Under 1 Cr</option><option value="1-2">1 - 2 Cr</option><option value="2-3">2 - 3 Cr</option><option value="3-4">3 - 4 Cr</option><option value="4-5">4 - 5 Cr</option><option value="5plus">5 Cr & Above</option>
+                                        </select>
+                                        <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:"", priceBracket:""}); setIsMobileSearchOpen(false); setIsMobileFilterOpen(false);}} className="w-full col-span-2 md:col-span-1 text-slate-500 font-black text-[10px] md:text-xs uppercase tracking-widest border border-slate-200 bg-white rounded-lg md:rounded-xl shadow-sm py-2.5">Reset</button>
+                                    </div>
+                                </div>
+                            </div>
+                            </>
+                        )}
+
+                        {isMobileMenuOpen && (
+                            <div className="md:hidden bg-slate-900 border-t border-slate-800 py-6 px-6 space-y-4 shadow-2xl absolute w-full left-0 top-[60px] animate-fadeIn z-50 flex flex-col items-end">
+                                <div onClick={() => navTo('home')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Properties</div>
+                                
+                                <div className="w-full flex flex-col items-end">
+                                    <div onClick={() => setMobileAboutOpen(!mobileAboutOpen)} className="text-sm font-black uppercase tracking-widest text-slate-300 cursor-pointer hover:text-blue-400 flex items-center gap-2">
+                                        About <span className="text-xs">{mobileAboutOpen ? '▲' : '▼'}</span>
+                                    </div>
+                                    {mobileAboutOpen && (
+                                        <div className="flex flex-col items-end mt-3 space-y-3 pr-4 border-r-2 border-slate-700 animate-fadeIn">
+                                            <div onClick={() => navTo('about-us')} className="text-xs font-bold uppercase tracking-widest text-slate-400 cursor-pointer hover:text-blue-400">About Us</div>
+                                            <div onClick={() => navTo('our-journey')} className="text-xs font-bold uppercase tracking-widest text-slate-400 cursor-pointer hover:text-blue-400">Our Journey</div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="w-full flex flex-col items-end">
+                                    <div onClick={() => setMobileServicesOpen(!mobileServicesOpen)} className="text-sm font-black uppercase tracking-widest text-slate-300 cursor-pointer hover:text-blue-400 flex items-center gap-2">
+                                        Services <span className="text-xs">{mobileServicesOpen ? '▲' : '▼'}</span>
+                                    </div>
+                                    {mobileServicesOpen && (
+                                        <div className="flex flex-col items-end mt-3 space-y-3 pr-4 border-r-2 border-slate-700 animate-fadeIn">
+                                            <div onClick={() => navTo('what-we-do')} className="text-xs font-bold uppercase tracking-widest text-slate-400 cursor-pointer hover:text-blue-400">What We Do</div>
+                                            <div onClick={() => navTo('what-we-dont-do')} className="text-xs font-bold uppercase tracking-widest text-slate-400 cursor-pointer hover:text-blue-400">What We Don't Do</div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div onClick={() => navTo('advisor')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Advisors</div>
+                                <div onClick={() => navTo('blogs')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Insights</div>
+                                <div onClick={() => navTo('customers')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Reviews</div>
+                            </div>
+                        )}
+                    </div>
+
+                    <main className="max-w-7xl mx-auto p-4 md:p-8 flex-grow w-full animate-fadeIn">
+                        {activePage === 'home' && (
+                            <>
+                                {loading ? (
+                                    <div className="text-center py-20 animate-pulse font-black text-blue-900 tracking-widest uppercase">Curating Properties...</div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mt-2 md:mt-0">
+                                        {filtered.length === 0 ? (
+                                             <div className="col-span-1 md:col-span-3 text-center py-20">
+                                                <h3 className="text-xl font-black text-slate-400 uppercase tracking-widest">No Properties Found</h3>
+                                                <p className="text-sm text-slate-500 mt-2">Adjust your filters or try a different search.</p>
+                                            </div>
+                                        ) : (
+                                            filtered.map((p, i) => (
+                                                <div key={i} onClick={() => setSelectedProperty(p)} className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] transition-all duration-300 group flex flex-col">
+                                                    
+                                                    <div className="relative h-56 md:h-64 w-full overflow-hidden shrink-0 bg-slate-100">
+                                                        <img src={fixImageUrl(getVal(p, "Cover Image") || getVal(p, "cover_image"))} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                                        <div className="absolute top-4 left-0 bg-slate-900/90 backdrop-blur-sm text-white text-[10px] font-black px-4 py-1.5 rounded-r-lg shadow-md uppercase tracking-widest">
+                                                            {getVal(p, "Property Type") || 'Apartment'}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="p-6 flex-grow flex flex-col">
+                                                        <h2 className="text-xl md:text-2xl font-black text-slate-900 leading-tight mb-1 uppercase tracking-tighter truncate">
+                                                            {getVal(p, "Property Name") || "Listed Property"}
+                                                        </h2>
+                                                        <p className="text-sm text-blue-600 mb-4 truncate font-bold">{getVal(p, "Builder Name") || "Premium Builder"}</p>
+                                                        
+                                                        <div className="flex flex-wrap gap-2 text-[10px] font-bold text-slate-600 mb-6">
+                                                            <span className="bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100 uppercase tracking-widest">📍 {getVal(p, "Location")}</span>
+                                                            <span className="bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100 uppercase tracking-widest">🔑 {getVal(p, "Construction Status") || "Status"}</span>
+                                                        </div>
+
+                                                        <div className="flex justify-between items-end border-t border-slate-100 pt-5 mt-auto">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[9px] text-slate-400 font-bold mb-1 uppercase tracking-widest">Starting from</span>
+                                                                <span className="text-xl md:text-2xl font-black text-slate-900 leading-none">{getVal(p, "Price") || "On Request"}</span>
+                                                            </div>
+                                                            <button className="bg-slate-900 text-white text-[10px] md:text-xs font-bold px-4 py-2 md:px-5 md:py-2.5 rounded-xl hover:bg-blue-600 transition-colors shadow-md uppercase tracking-widest group-hover:bg-blue-600">
+                                                                View Details
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {activePage === 'about-us' && (
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
+                                <div className="text-center mb-10 md:mb-16">
+                                    <span className="text-blue-600 font-black uppercase tracking-[0.2em] text-[10px] md:text-xs bg-blue-50 px-4 py-2 rounded-full">About Perfect Horizons</span>
+                                    <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic mt-6 mb-4 leading-tight">A Luxury Standard in Real Estate Advisory</h1>
+                                    <p className="text-gray-500 max-w-2xl mx-auto text-sm md:text-base">We redefine what it means to buy a home.</p>
+                                </div>
+                                
+                                <div className="text-gray-600 text-sm md:text-base leading-relaxed space-y-6 max-w-3xl mx-auto mb-16">
+                                    <p>In a market driven by aggressive sales and overwhelming choices, we stand apart as a premium, trust-first advisory — where every recommendation is made with precision, integrity, and your long-term vision in mind.</p>
+                                    <p>We don’t believe in selling properties. We believe in curating the right living experience and investment for you.</p>
+                                    <p>Every project we present is carefully evaluated — not just for its appeal, but for its true value, quality, and future potential.</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 max-w-5xl mx-auto">
+                                    <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100">
+                                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest mb-4">Our Philosophy</h3>
+                                        <p className="text-gray-600 text-sm leading-relaxed mb-4">Luxury is not just about price — it’s about clarity, confidence, and peace of mind. That’s exactly what we deliver.</p>
+                                        <p className="text-gray-600 text-sm leading-relaxed mb-4">We eliminate confusion, filter out noise, and guide you with clear, honest insights so that every decision you make is backed by knowledge, not pressure.</p>
+                                        <p className="text-blue-600 font-bold italic text-sm border-l-4 border-blue-600 pl-4 py-1">"The right home for you matters more than any commission for us."</p>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-8 rounded-3xl border border-slate-100">
+                                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest mb-4">A Relationship Beyond Transactions</h3>
+                                        <p className="text-gray-600 text-sm leading-relaxed mb-4">At Perfect Horizons, you are not a lead, not a deal, and not a number. You are part of a circle built on trust.</p>
+                                        <p className="text-gray-600 text-sm leading-relaxed mb-4">We believe in creating relationships that extend beyond the purchase — where every client becomes a valued member of the Perfect Horizons family.</p>
+                                        <p className="text-blue-600 font-bold italic text-sm border-l-4 border-blue-600 pl-4 py-1">"True success for us is not closing a deal — it is earning your trust for life."</p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-16 text-center max-w-4xl mx-auto">
+                                    <h3 className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tighter mb-8">Precision. Transparency. Commitment.</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                                        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
+                                            <h4 className="font-black text-sm uppercase text-blue-900 mb-2">Uncompromising Transparency</h4>
+                                            <p className="text-xs text-gray-500">No hidden facts. No biased push.</p>
+                                        </div>
+                                        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
+                                            <h4 className="font-black text-sm uppercase text-blue-900 mb-2">Strategic Guidance</h4>
+                                            <p className="text-xs text-gray-500">Backed by deep market understanding.</p>
+                                        </div>
+                                        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
+                                            <h4 className="font-black text-sm uppercase text-blue-900 mb-2">End-to-End Presence</h4>
+                                            <p className="text-xs text-gray-500">From first interaction to final handover.</p>
+                                        </div>
+                                        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
+                                            <h4 className="font-black text-sm uppercase text-blue-900 mb-2">Negotiation Excellence</h4>
+                                            <p className="text-xs text-gray-500">Ensuring maximum value for your investment.</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {view === 'library' && <ProjectLibrary supabase={supabase} setProp={setSelectedProp} properties={properties} />}
-                        {view === 'add' && <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} />}
+                        {activePage === 'our-journey' && (
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
+                                <h1 className="text-3xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-4">The Perfect Horizons Story</h1>
+                                <p className="text-gray-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-8 md:mb-12">A platform where honesty comes before profit.</p>
+                                
+                                <div className="space-y-8 md:space-y-12 max-w-3xl mx-auto">
+                                    <div className="border-l-4 border-blue-600 pl-4 md:pl-6">
+                                        <p className="text-gray-700 leading-relaxed text-sm md:text-base font-medium">Perfect Horizons was built on a simple but powerful realization — The real estate market is filled with noise, pressure, and misinformation, leaving buyers confused and vulnerable while making one of the biggest decisions of their lives.</p>
+                                    </div>
+                                    <div className="border-l-4 border-blue-600 pl-4 md:pl-6">
+                                        <p className="text-gray-700 leading-relaxed text-sm md:text-base">Having closely observed how buyers were often pushed into the wrong projects for the sake of commissions, the vision behind Perfect Horizons was clear: To create a platform where honesty comes before profit.</p>
+                                    </div>
+                                    <div className="border-l-4 border-blue-600 pl-4 md:pl-6">
+                                        <p className="text-gray-700 leading-relaxed text-sm md:text-base">What started as a mission to guide a few buyers the right way has now evolved into a trusted advisory where every client receives genuine, unbiased, and thoughtful guidance.</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="mt-16 bg-slate-50 p-6 md:p-12 rounded-3xl border border-slate-100 max-w-4xl mx-auto text-center">
+                                    <h3 className="text-sm md:text-lg font-black text-slate-900 uppercase tracking-widest mb-6 md:mb-8">The foundation of Perfect Horizons is built on three core values:</h3>
+                                    <div className="flex flex-col md:flex-row justify-center gap-3 md:gap-8">
+                                        <div className="bg-white px-4 py-3 md:px-6 md:py-4 rounded-xl border border-gray-100 shadow-sm font-bold text-blue-900 uppercase text-[10px] md:text-xs tracking-widest">Trust over transactions</div>
+                                        <div className="bg-white px-4 py-3 md:px-6 md:py-4 rounded-xl border border-gray-100 shadow-sm font-bold text-blue-900 uppercase text-[10px] md:text-xs tracking-widest">Clarity over confusion</div>
+                                        <div className="bg-white px-4 py-3 md:px-6 md:py-4 rounded-xl border border-gray-100 shadow-sm font-bold text-blue-900 uppercase text-[10px] md:text-xs tracking-widest">Relationships over gains</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activePage === 'advisor' && (
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border flex flex-col-reverse md:flex-row gap-8 md:gap-12 items-center animate-fadeIn">
+                                <div className="w-full md:w-1/2">
+                                    <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic mb-2 md:mb-4 leading-tight">Meet Your Advisor</h1>
+                                    <h3 className="text-[10px] md:text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-6 md:mb-8">Tharun | Lead Luxury Advisor</h3>
+                                    
+                                    <div className="text-gray-600 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6">
+                                        <p>Hi, I'm Tharun. I built Perfect Horizons because I saw how confusing and overwhelming buying a home in Bengaluru can be.</p>
+                                        <p>As your dedicated channel partner, I don't just show you brochures. I provide you with complete, unbiased analysis of floor plans, builder histories, and locality growth potential.</p>
+                                        <p>My goal isn't just to help you buy a house; it's to ensure you make the smartest, safest financial decision for your family's future.</p>
+                                    </div>
+
+                                    <button onClick={() => setShowLeadForm(true)} className="w-full md:w-auto mt-6 md:mt-8 bg-slate-900 text-white font-black py-4 px-10 rounded-xl md:rounded-2xl uppercase tracking-widest shadow-xl hover:bg-blue-600 transition-all active:scale-95">
+                                        Schedule Consultation
+                                    </button>
+                                </div>
+                                <div className="w-full md:w-1/2 flex justify-center mb-4 md:mb-0">
+                                    <div className="w-56 h-56 md:w-96 md:h-96 bg-slate-100 rounded-full md:rounded-[40px] border-4 md:border-8 border-white shadow-2xl overflow-hidden relative">
+                                        <img src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w1000" alt="Tharun Profile" className="w-full h-full object-cover object-top" onError={(e) => { e.target.src = 'https://i.ibb.co/Y7Y6K3r/professional-placeholder.jpg'; }} />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activePage === 'what-we-do' && (
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
+                                <h1 className="text-2xl md:text-5xl font-black text-green-700 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">Our Services</h1>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
+                                    <div className="bg-green-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-green-100 hover:shadow-lg transition">
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-green-900">Project Discovery & Shortlisting</h4>
+                                        <p className="text-green-800/80 text-xs md:text-sm leading-relaxed">We filter out the noise. We sit with you to understand your lifestyle and budget, then show you only the properties that match your specific requirements and have clear legal titles.</p>
+                                    </div>
+                                    <div className="bg-green-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-green-100 hover:shadow-lg transition">
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-green-900">Guided Site Visits</h4>
+                                        <p className="text-green-800/80 text-xs md:text-sm leading-relaxed">We assist you in site visits, accompanying you on-site to provide honest insights about construction quality, location pros and cons, and floor plan efficiency.</p>
+                                    </div>
+                                    <div className="bg-green-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-green-100 hover:shadow-lg transition">
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-green-900">Inventory Selection & Negotiation</h4>
+                                        <p className="text-green-800/80 text-xs md:text-sm leading-relaxed">We help you pick the best unit (Vastu, ventilation, views) and sit across the table from the builders to negotiate the absolute best price and payment plan on your behalf.</p>
+                                    </div>
+                                    <div className="bg-green-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-green-100 hover:shadow-lg transition">
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-green-900">End-to-End Post-Sales Support</h4>
+                                        <p className="text-green-800/80 text-xs md:text-sm leading-relaxed">Our relationship doesn't end at booking. We assist with home loan coordination, legal document verification, and support you all the way until the final handover of your keys.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activePage === 'what-we-dont-do' && (
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
+                                <h1 className="text-2xl md:text-5xl font-black text-red-700 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">What We Don't Do</h1>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
+                                    <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">We Don't Charge Buyers</h4>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed">As authorized channel partners, we are compensated by the developers out of their marketing budgets. Our premium advisory services are 100% free for home buyers.</p>
+                                    </div>
+                                    <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">We Don't Push Bad Projects</h4>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed">If a project has legal issues, poor construction quality, or a bad track record, we refuse to list it or recommend it. We protect your money above all else.</p>
+                                    </div>
+                                    <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">We Don't Spam Call</h4>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed">We respect your privacy. Once you register interest, we provide the facts and step back to let you decide. No aggressive sales tactics or relentless follow-up calls.</p>
+                                    </div>
+                                    <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
+                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">We Don't Hide Facts</h4>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed">Every project has pros and cons. We will tell you the absolute truth about a property's downsides—like traffic bottlenecks or water issues—not just the marketing highlights.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activePage === 'customers' && (
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
+                                <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-2 md:mb-4 text-center">Happy Homeowners</h1>
+                                <p className="text-gray-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-8 md:mb-12 text-center">Don't just take our word for it.</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
+                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 relative">
+                                        <div className="text-yellow-400 text-sm md:text-base mb-3 md:mb-4">★★★★★</div>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed italic mb-4 md:mb-6">"We were completely lost trying to find a 3BHK in East Bangalore. Tharun didn't just show us properties; he explained the actual ROI and negotiated a price we couldn't have gotten directly from the builder."</p>
+                                        <div className="flex items-center gap-3 md:gap-4">
+                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-600 text-sm md:text-base">SK</div>
+                                            <div>
+                                                <h5 className="font-black text-xs md:text-sm uppercase tracking-widest text-slate-900">Sandeep & Kavya</h5>
+                                                <p className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-widest">Bought in Sarjapur</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 relative">
+                                        <div className="text-yellow-400 text-sm md:text-base mb-3 md:mb-4">★★★★★</div>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed italic mb-4 md:mb-6">"We were looking for a budget-friendly plot in Chandapura. Tharun provided a clear legal vetting report and made sure the khata transfer was smooth. Highly reliable!"</p>
+                                        <div className="flex items-center gap-3 md:gap-4">
+                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-600 text-sm md:text-base">AN</div>
+                                            <div>
+                                                <h5 className="font-black text-xs md:text-sm uppercase tracking-widest text-slate-900">Arjun Nair</h5>
+                                                <p className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-widest">Bought in Chandapura</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 relative">
+                                        <div className="text-yellow-400 text-sm md:text-base mb-3 md:mb-4">★★★★★</div>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed italic mb-4 md:mb-6">"Excellent experience buying our weekend home near Marsur. Perfect Horizons handles all the site visits and documentation. Zero brokerage but 100% premium service."</p>
+                                        <div className="flex items-center gap-3 md:gap-4">
+                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-600 text-sm md:text-base">PS</div>
+                                            <div>
+                                                <h5 className="font-black text-xs md:text-sm uppercase tracking-widest text-slate-900">Priya Sharma</h5>
+                                                <p className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-widest">Bought in Marsur</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 relative">
+                                        <div className="text-yellow-400 text-sm md:text-base mb-3 md:mb-4">★★★★★</div>
+                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed italic mb-4 md:mb-6">"From the free site visits to handling the endless paperwork with the bank and the builder, the team made the entire process stress-free. Highly recommend them to any first-time buyer."</p>
+                                        <div className="flex items-center gap-3 md:gap-4">
+                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-600 text-sm md:text-base">AT</div>
+                                            <div>
+                                                <h5 className="font-black text-xs md:text-sm uppercase tracking-widest text-slate-900">Ananya T.</h5>
+                                                <p className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-widest">Bought in Whitefield</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activePage === 'blogs' && !activeBlog && (
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
+                                <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-2 md:mb-4">Real Estate Insights</h1>
+                                <p className="text-gray-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-8 md:mb-12">Expert guides for Bengaluru buyers</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                                    {BLOG_ARTICLES.map((blog) => (
+                                        <div key={blog.id} onClick={() => { setActiveBlog(blog); window.scrollTo(0,0); }} className="bg-gray-50 rounded-[20px] md:rounded-[30px] border overflow-hidden hover:shadow-lg transition group flex flex-col cursor-pointer hover:-translate-y-1">
+                                            <div className="p-6 md:p-8 flex-grow">
+                                                <span className="text-slate-900 text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-gray-200 px-3 py-1 rounded-lg mb-4 inline-block">{blog.tag}</span>
+                                                <h3 className="font-black text-base md:text-lg uppercase tracking-tighter leading-tight mb-3 text-blue-900 group-hover:text-blue-600 transition">{blog.title}</h3>
+                                                <p className="text-gray-600 text-xs md:text-sm line-clamp-3 leading-relaxed">{blog.excerpt}</p>
+                                            </div>
+                                            <div className="px-6 md:px-8 pb-6 md:pb-8 border-t border-gray-200 pt-4 mt-auto">
+                                                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest group-hover:text-blue-800 transition flex items-center">
+                                                    Read Article <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {activePage === 'blogs' && activeBlog && (
+                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border max-w-4xl mx-auto animate-fadeIn">
+                                <button onClick={() => setActiveBlog(null)} className="text-gray-400 text-xs font-bold uppercase tracking-widest hover:text-blue-600 transition mb-8 flex items-center">
+                                    ← Back to Insights
+                                </button>
+                                <span className="text-slate-900 text-[10px] font-black uppercase tracking-widest bg-gray-200 px-3 py-1 rounded-lg mb-4 inline-block">{activeBlog.tag}</span>
+                                <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase leading-tight mb-8">{activeBlog.title}</h1>
+                                <div className="text-gray-700 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6" dangerouslySetInnerHTML={{__html: activeBlog.content}}></div>
+                                <div className="mt-12 pt-8 border-t border-gray-100 text-center">
+                                    <p className="text-gray-500 text-[10px] md:text-xs uppercase font-black tracking-widest mb-4">Get off the internet; trust a professional.</p>
+                                    <button onClick={() => setShowLeadForm(true)} className="bg-slate-900 text-white font-black py-4 px-10 rounded-xl uppercase tracking-widest shadow-xl hover:bg-blue-600 transition-all active:scale-95">
+                                        Talk with Advisor
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </main>
 
-                    {showManualModal && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-start justify-center p-4 pt-24 overflow-y-auto">
-                            <div className="bg-white p-8 rounded-[30px] w-full max-w-md shadow-2xl animate-fadeIn mb-10">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-xl font-black uppercase italic">Manual Entry</h2>
-                                    <button onClick={()=>setShowManualModal(false)} className="text-2xl text-gray-400 hover:text-slate-900 transition">&times;</button>
+                    <footer className="bg-slate-950 text-white p-8 md:p-12 mt-auto border-t border-slate-900 relative z-10">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center md:items-start gap-8 text-center md:text-left">
+                            <div className="flex flex-col items-center md:items-start">
+                                <h1 className="text-xl font-black italic uppercase text-slate-300 tracking-tighter">Perfect Horizons</h1>
+                                <p className="text-slate-600 text-xs mt-2 font-medium">© 2026 Perfect Horizons. All rights reserved.</p>
+                                
+                                <div className="flex gap-4 mt-4 text-[9px] text-slate-500 uppercase tracking-widest font-bold">
+                                    <button onClick={() => setLegalModal('terms')} className="hover:text-slate-300 transition">Terms & Conditions</button>
+                                    <span>|</span>
+                                    <button onClick={() => setLegalModal('privacy')} className="hover:text-slate-300 transition">Privacy Policy</button>
                                 </div>
-                                <ManualLeadForm properties={properties} supabase={supabase} onSuccess={() => {setShowManualModal(false); fetchLeads();}} />
+                            </div>
+                            <div className="space-y-3">
+                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Contact Us</h3>
+                                <p className="text-sm font-medium text-slate-300">📞 +91 9113261205</p>
+                                <a href="mailto:perfecthorizons.in@gmail.com" className="text-sm font-medium text-slate-300 hover:text-blue-400 transition block">✉️ perfecthorizons.in@gmail.com</a>
+                                <p className="text-sm text-slate-500 italic">📍 Bengaluru, Karnataka</p>
+                            </div>
+                        </div>
+                    </footer>
+
+                    {/* AI ASSISTANT WHATSAPP BUTTON (Hidden on mobile when viewing a property) */}
+                    {!(window.innerWidth < 768 && selectedProperty) && (
+                        <div className="fixed bottom-6 right-6 z-[55] flex flex-col items-end animate-fadeIn group">
+                            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, what properties are available?`} target="_blank" className="bg-gradient-to-tr from-green-500 to-green-400 text-white p-4 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-transform flex items-center justify-center">
+                                <svg className="w-7 h-7 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.12.553 4.148 1.603 5.946L.2 24l6.195-1.62c1.737.947 3.69 1.445 5.636 1.445 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.615 0 12.031 0zm0 21.846c-1.802 0-3.568-.484-5.115-1.402l-.366-.217-3.805.996.996-3.805-.217-.366a9.92 9.92 0 0 1-1.402-5.115c0-5.514 4.486-10 10-10 5.514 0 10 4.486 10 10 0 5.514-4.486 10-10 10zm5.496-7.518c-.301-.15-1.785-.885-2.062-.986-.277-.1-.478-.15-.678.15-.201.301-.778.986-.954 1.187-.176.201-.351.226-.653.076-1.609-.816-2.73-1.637-3.784-3.411-.176-.301.176-.277.453-.827.076-.15-.038-.277-.038-.427-.076-.15-.678-1.631-.929-2.233-.251-.602-.502-.527-.678-.527-.176 0-.377 0-.578 0-.201 0-.527.076-.803.427-.276.351-1.054 1.028-1.054 2.508 0 1.48 1.079 2.91 1.229 3.111.15.201 2.133 3.262 5.169 4.566.726.301 1.28.478 1.731.628.728.227 1.381.194 1.905.118.578-.084 1.785-.728 2.036-1.431.251-.703.251-1.305.176-1.431-.076-.126-.277-.201-.578-.352z"/></svg>
+                            </a>
+                        </div>
+                    )}
+
+                    {/* Legal Modals */}
+                    {legalModal && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setLegalModal(null)}>
+                            <div className="bg-white rounded-3xl p-8 max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setLegalModal(null)} className="absolute top-4 right-6 text-2xl text-slate-400 hover:text-slate-900">&times;</button>
+                                <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-6 uppercase tracking-widest border-b border-slate-100 pb-4">
+                                    {legalModal === 'terms' ? "Terms & Conditions" : "Privacy Policy"}
+                                </h2>
+                                <div className="text-xs md:text-sm text-slate-600 leading-relaxed space-y-4">
+                                    <p className="font-bold text-slate-800 bg-amber-50 p-4 rounded-xl border border-amber-100">
+                                        Disclaimer: Perfect Horizons acts solely as an authorized channel partner and real estate advisory. We are not the developers or builders of the properties listed on this website. 
+                                    </p>
+                                    <p><strong>Logos & Trademarks:</strong> Any builder logos used on this platform are for representative and associative purposes only and remain the absolute property of their respective trademark owners.</p>
+                                    <p><strong>Information Accuracy:</strong> All images, layouts, pricing, and project details displayed are for informational and representational purposes only, sourced from respective developers under fair use policy. We do not guarantee the absolute accuracy of builder-provided data and advise clients to verify all legal and RERA documents independently before making a financial commitment.</p>
+                                    <p><strong>Liability:</strong> Perfect Horizons shall not be held liable for any disputes, delays in possession, or discrepancies between the builder's promised specifications and the final delivered product.</p>
+                                    <p><strong>Data Privacy:</strong> Any information submitted through our enquiry forms is kept strictly confidential. We do not sell your personal data to third-party marketing agencies. It is used exclusively by our internal advisors to assist you with your property search.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* General Lead Form */}
+                    {showLeadForm && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setShowLeadForm(false)}>
+                            <div className="bg-white rounded-3xl md:rounded-[40px] p-8 md:p-10 w-full max-w-sm shadow-2xl text-center relative" onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setShowLeadForm(false)} className="absolute top-4 right-6 text-2xl text-slate-400 hover:text-slate-900">&times;</button>
+                                <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-2 italic tracking-tighter uppercase">Enquiry</h2>
+                                <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">Please enter details to proceed</p>
+                                
+                                <form onSubmit={(e) => handleLeadSubmit(null, "General Enquiry", "Website - General", e)} className="space-y-4 text-left">
+                                    <input type="text" placeholder="Full Name" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
+                                    <input type="tel" placeholder="Mobile Number (10 Digits)" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
+                                    <input type="email" placeholder="Email Address (Optional)" className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.email} onChange={e => setLeadData({...leadData, email: e.target.value})} />
+                                    
+                                    <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg mt-4 active:scale-95 transition-transform">
+                                        {isSubmitting ? "Processing..." : "Submit Interest"}
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     )}
@@ -871,326 +1166,8 @@
             );
         }
 
-        function ProjectLibrary({ properties, setProp }) {
-            const getVal = (obj, searchKey) => {
-                if (!obj) return "";
-                if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
-                const cleanKey = searchKey.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                for (let k in obj) { if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k]; }
-                return "";
-            };
-
-            const convertDriveLink = (url) => {
-                if (!url || typeof url !== 'string') return url;
-                let idMatch = url.match(/\/d\/(.*?)\//) || url.match(/id=(.*?)(&|$)/);
-                return idMatch ? `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1000` : url;
-            };
-
-            const fixImageUrl = (u) => u ? convertDriveLink(String(u).split(',')[0].trim()) : 'https://via.placeholder.com/600x300?text=No+Image';
-
-            if (!properties || properties.length === 0) return <div className="text-center py-20 font-black text-slate-400 tracking-widest uppercase animate-pulse">Library Empty...</div>;
-
-            return (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
-                    {properties.map(p => (
-                        <div key={p.id} onClick={() => setProp(p)} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col">
-                            <div className="relative h-48 bg-slate-100 overflow-hidden">
-                                <img src={fixImageUrl(getVal(p, "cover_image") || getVal(p, "cover-image"))} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                                <div className="absolute top-4 left-0 bg-slate-900/90 backdrop-blur-sm text-white text-[10px] font-black px-3 py-1.5 rounded-r-lg uppercase tracking-widest shadow-md">
-                                    {getVal(p, "property_type") || 'Property'}
-                                </div>
-                            </div>
-                            <div className="p-5 flex-grow flex flex-col">
-                                <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 leading-tight truncate">{getVal(p, "property_name")}</h3>
-                                <p className="text-slate-500 text-xs font-bold mt-1 truncate">📍 {getVal(p, "location")}</p>
-                                <div className="mt-4 flex justify-between items-end pt-4 border-t border-slate-100">
-                                    <div>
-                                        <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Starting Price</div>
-                                        <div className="text-lg font-black text-blue-900">{getVal(p, "price")}</div>
-                                    </div>
-                                    <button className="bg-slate-900 text-white text-[10px] font-bold px-4 py-2 rounded-lg hover:bg-blue-600 transition">Preview Details</button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            );
-        }
-
-        function PropertyForm({ supabase, scriptUrl }) {
-            const [form, setForm] = useState({
-                property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', 
-                super_built_up_area: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '',
-                description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '',
-                website_link: '', lead_registration_link: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '', miscellaneous: ''
-            });
-            const [loading, setLoading] = useState(false);
-            const [uploadingField, setUploadingField] = useState(null);
-
-            const upload = async (e, field, append = false) => {
-                const files = e.target.files; if(!files || files.length === 0) return;
-                setLoading(true); setUploadingField(field);
-                
-                const categoryMap = { 'cover_image': 'Cover Image', 'gallery_images': 'Gallery', 'brochure': 'Brochures', 'cost_sheet': 'Cost Sheets', 'floor_plan': 'Floor Plans', 'miscellaneous': 'Miscellaneous' };
-                const category = categoryMap[field] || 'General';
-
-                let newUrls = [];
-                for(let i=0; i<files.length; i++) {
-                    const file = files[i];
-                    const reader = new FileReader();
-                    const url = await new Promise(resolve => {
-                        reader.readAsDataURL(file);
-                        reader.onload = async () => {
-                            const res = await fetch(scriptUrl, { method: "POST", body: JSON.stringify({ base64: reader.result.split(',')[1], type: file.type, name: file.name, propertyName: form.property_name || 'Uploads', category: category }) });
-                            const resJson = await res.json();
-                            resolve(resJson.status === 'success' ? resJson.url : null);
-                        };
-                    });
-                    if(url) newUrls.push(url);
-                }
-                
-                if(newUrls.length > 0) {
-                    const joined = newUrls.join(',');
-                    if(append) setForm(f => ({ ...f, [field]: f[field] ? f[field] + ',' + joined : joined }));
-                    else setForm(f => ({ ...f, [field]: joined }));
-                }
-                setLoading(false); setUploadingField(null);
-            };
-
-            const removeFile = (field, isArray = false, idx = null) => {
-                if (isArray) {
-                    const arr = form[field].split(',').filter(Boolean);
-                    arr.splice(idx, 1);
-                    setForm(f => ({ ...f, [field]: arr.join(',') }));
-                } else {
-                    setForm(f => ({ ...f, [field]: '' }));
-                }
-            };
-
-            const save = async () => {
-                if (!form.property_name || !form.price || !form.cover_image) {
-                    alert("Please fill the mandatory fields: Property Name, Price, and Main Cover Image.");
-                    return;
-                }
-                setLoading(true);
-                const { error } = await supabase.from('properties').insert([form]);
-                if (!error) {
-                    alert("Listing Live!");
-                    setForm({ property_name: '', builder_name: '', property_region: '', property_type: '', location: '', price: '', bhk: '', super_built_up_area: '', possession_date: '', construction_status: '', approval: '', total_units: '', availability: '', description: '', usp_details: '', amenities: '', point_of_contact: '', commission_details: '', video_link: '', website_link: '', lead_registration_link: '', map_link: '', cover_image: '', gallery_images: '', floor_plan: '', brochure: '', cost_sheet: '', miscellaneous: '' });
-                } else alert(error.message);
-                setLoading(false);
-            };
-
-            const FileTag = ({ field, name, isArray=false, idx=null }) => (
-                <div className="flex justify-between items-center bg-blue-50 border border-blue-100 text-blue-700 p-2 rounded-lg mt-2 text-[10px] font-bold">
-                    <span className="truncate max-w-[150px]">{name}</span>
-                    <button onClick={() => removeFile(field, isArray, idx)} className="text-red-500 hover:text-red-700 px-2 text-xs">✕</button>
-                </div>
-            );
-
-            return (
-                <div className="bg-white p-6 md:p-10 rounded-3xl shadow-sm max-w-4xl mx-auto space-y-6 animate-fadeIn border border-slate-200">
-                    <h2 className="text-2xl font-black uppercase italic border-b pb-4 text-blue-900">Master Property Form</h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 border-blue-200" placeholder="Property Name *" value={form.property_name} onChange={e => setForm({...form, property_name: e.target.value})} />
-                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Builder Name" value={form.builder_name} onChange={e => setForm({...form, builder_name: e.target.value})} />
-                        
-                        <select className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" value={form.property_region} onChange={e => setForm({...form, property_region: e.target.value})}>
-                            <option value="">Property Region</option><option>North</option><option>South</option><option>East</option><option>West</option>
-                        </select>
-                        <select className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" value={form.property_type} onChange={e => setForm({...form, property_type: e.target.value})}>
-                            <option value="">Property Type</option><option>Apartment</option><option>Villa</option><option>Villament</option><option>Plot</option><option>Others</option>
-                        </select>
-
-                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Location" value={form.location} onChange={e => setForm({...form, location: e.target.value})} />
-                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 border-blue-200" placeholder="Price (e.g. 1.2 Cr) *" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
-                        
-                        <div className="flex flex-col">
-                            <select multiple className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600 h-28" value={form.bhk ? form.bhk.split(',') : []} onChange={e => {
-                                const options = [...e.target.selectedOptions];
-                                const values = options.map(opt => opt.value);
-                                setForm({...form, bhk: values.join(',')});
-                            }}>
-                                <option value="1 BHK">1 BHK</option>
-                                <option value="2 BHK">2 BHK</option>
-                                <option value="3 BHK">3 BHK</option>
-                                <option value="4 BHK">4 BHK</option>
-                                <option value="5+ BHK">5+ BHK</option>
-                            </select>
-                            <span className="text-[9px] text-slate-400 mt-1 ml-2 font-bold uppercase tracking-widest">Hold Ctrl/Cmd to select multiple</span>
-                        </div>
-                        
-                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 h-[52px]" placeholder="Super Built-up Area (SqFt)" value={form.super_built_up_area} onChange={e => setForm({...form, super_built_up_area: e.target.value})} />
-
-                        <div className="relative flex items-center bg-slate-50 border rounded-2xl px-4 focus-within:ring-2 focus-within:ring-blue-500 transition">
-                            <span className="text-[10px] font-bold text-slate-400 absolute left-4 uppercase tracking-widest">Possession:</span>
-                            <input type="date" className="w-full bg-transparent font-bold text-sm outline-none pt-4 pb-1 pl-16 text-slate-600" value={form.possession_date} onChange={e => setForm({...form, possession_date: e.target.value})} />
-                        </div>
-
-                        <select className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" value={form.construction_status} onChange={e => setForm({...form, construction_status: e.target.value})}>
-                            <option value="">Status</option><option>Ready to Move</option><option>Under Construction</option><option>New Launch</option>
-                        </select>
-
-                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Approvals (e.g. BDA, RERA)" value={form.approval} onChange={e => setForm({...form, approval: e.target.value})} />
-                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Total Units" value={form.total_units} onChange={e => setForm({...form, total_units: e.target.value})} />
-                        <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 md:col-span-4" placeholder="Availability" value={form.availability} onChange={e => setForm({...form, availability: e.target.value})} />
-                    </div>
-
-                    <textarea className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm h-32 resize-none outline-none focus:ring-2 focus:ring-blue-500" placeholder="Property Description..." value={form.description} onChange={e => setForm({...form, description: e.target.value})}></textarea>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <textarea placeholder="USPs / Highlights (Line by Line)" rows="3" className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, usp_details: e.target.value})} value={form.usp_details}/>
-                        <textarea placeholder="Amenities (Comma separated)" rows="3" className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, amenities: e.target.value})} value={form.amenities}/>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-slate-900 rounded-3xl text-white">
-                        <h3 className="col-span-1 md:col-span-2 text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2 border-b border-slate-700 pb-2">Internal Data & Links</h3>
-                        
-                        <div>
-                            <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-2">Internal POC</label>
-                            <input className="w-full p-4 bg-slate-800 border-none rounded-xl font-bold mt-1 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Name / Phone" value={form.point_of_contact} onChange={e => setForm({...form, point_of_contact: e.target.value})} />
-                        </div>
-                        <div>
-                            <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 ml-2">Commission Details</label>
-                            <input className="w-full p-4 bg-slate-800 border-none rounded-xl font-bold mt-1 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Commission %" value={form.commission_details} onChange={e => setForm({...form, commission_details: e.target.value})} />
-                        </div>
-                        
-                        <input className="p-4 bg-slate-800 border-none rounded-xl font-bold md:col-span-2 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Video Link (YouTube/Drive URL)" value={form.video_link} onChange={e => setForm({...form, video_link: e.target.value})} />
-                        <input className="p-4 bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-1 focus:ring-blue-400" placeholder="Builder Website Link" value={form.website_link} onChange={e => setForm({...form, website_link: e.target.value})} />
-                        <input className="p-4 bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-1 focus:ring-blue-400" placeholder="Lead Register Link / Email" value={form.lead_registration_link} onChange={e => setForm({...form, lead_registration_link: e.target.value})} />
-                        <input className="p-4 bg-slate-800 border-none rounded-xl font-bold md:col-span-2 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Map Link (Google Maps URL)" value={form.map_link} onChange={e => setForm({...form, map_link: e.target.value})} />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
-                        <div>
-                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Main Cover Image * {uploadingField === 'cover_image' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
-                            <input type="file" onChange={e => upload(e, 'cover_image')} className="text-xs font-bold text-slate-600"/>
-                            {form.cover_image && <FileTag field="cover_image" name="Cover Image" />}
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Gallery Images (Select Multiple) {uploadingField === 'gallery_images' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
-                            <input type="file" multiple onChange={e => upload(e, 'gallery_images', true)} className="text-xs font-bold text-slate-600"/> 
-                            {form.gallery_images && form.gallery_images.split(',').filter(Boolean).map((img, idx) => (
-                                <FileTag key={idx} field="gallery_images" name={`Gallery Image ${idx + 1}`} isArray={true} idx={idx} />
-                            ))}
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Brochure (PDF) {uploadingField === 'brochure' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
-                            <input type="file" onChange={e => upload(e, 'brochure')} className="text-xs font-bold text-slate-600"/>
-                            {form.brochure && <FileTag field="brochure" name="Brochure PDF" />}
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Cost Sheet (PDF/Images) {uploadingField === 'cost_sheet' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
-                            <input type="file" multiple onChange={e => upload(e, 'cost_sheet', true)} className="text-xs font-bold text-slate-600"/>
-                            {form.cost_sheet && form.cost_sheet.split(',').filter(Boolean).map((img, idx) => (
-                                <FileTag key={idx} field="cost_sheet" name={`Cost Sheet File ${idx + 1}`} isArray={true} idx={idx} />
-                            ))}
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Floor Plan (PDF/Img) {uploadingField === 'floor_plan' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
-                            <input type="file" onChange={e => upload(e, 'floor_plan')} className="text-xs font-bold text-slate-600"/>
-                            {form.floor_plan && <FileTag field="floor_plan" name="Floor Plan File" />}
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Miscellaneous (PDF/Img) {uploadingField === 'miscellaneous' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
-                            <input type="file" multiple onChange={e => upload(e, 'miscellaneous', true)} className="text-xs font-bold text-slate-600"/>
-                            {form.miscellaneous && form.miscellaneous.split(',').filter(Boolean).map((img, idx) => (
-                                <FileTag key={idx} field="miscellaneous" name={`Misc File ${idx + 1}`} isArray={true} idx={idx} />
-                            ))}
-                        </div>
-                    </div>
-
-                    <button onClick={save} disabled={loading} className="w-full bg-blue-600 text-white p-5 rounded-3xl font-black uppercase tracking-widest hover:bg-slate-900 transition shadow-xl mt-4">
-                        {loading ? 'Uploading & Publishing...' : 'Publish Listing'}
-                    </button>
-                </div>
-            );
-        }
-
-        function ManualLeadForm({ supabase, properties, onSuccess }) {
-            const [form, setForm] = useState({ name: '', phone: '', email: '', project: 'General Enquiry', note: '', source: 'Manual Entry' });
-            const [loading, setLoading] = useState(false);
-
-            const getVal = (obj, searchKey) => {
-                if (!obj) return "";
-                if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
-                const cleanKey = searchKey.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                for (let k in obj) { if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k]; }
-                return "";
-            };
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                const stamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
-                
-                const { error } = await supabase.from('leads').insert([{ 
-                    customer_name: form.name, 
-                    phone_number: form.phone, 
-                    customer_email: form.email || null,
-                    project_interested_in: form.project,
-                    add_note: form.note, 
-                    call_remark: form.note ? `[${stamp}] Requirement: ${form.note}\n\n` : '',
-                    lead_source: form.source, 
-                    lead_status: 'Un called' 
-                }]);
-
-                if (!error) {
-                    fetch(GOOGLE_SCRIPT_URL, {
-                        method: "POST", headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                        body: JSON.stringify({ action: "sendLead", Name: form.name, Phone: form.phone, Email: form.email || 'N/A', Project: form.project, Source: form.source, Requirements: form.note || 'None' })
-                    }).catch(err => console.log(err));
-                    onSuccess(); 
-                } else alert(error.message);
-                setLoading(false);
-            };
-
-            return (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <input required className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Client Name *" onChange={e => setForm({...form, name: e.target.value})} />
-                    <input required className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Phone Number *" onChange={e => setForm({...form, phone: e.target.value})} />
-                    <input type="email" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Email ID (Optional)" onChange={e => setForm({...form, email: e.target.value})} />
-                    <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" onChange={e => setForm({...form, project: e.target.value})} value={form.project}>
-                        <option value="General Enquiry">General Enquiry</option>
-                        {properties?.map(p => <option key={p.id} value={getVal(p, "property_name")}>{getVal(p, "property_name")}</option>)}
-                    </select>
-                    <textarea className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500 h-24" placeholder="Customer Requirements / Enquiry Details..." onChange={e => setForm({...form, note: e.target.value})}></textarea>
-                    <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, source: e.target.value})} value={form.source}>
-                        <option>Manual Entry</option><option>Walk-in</option><option>Referral</option><option>MagicBricks</option><option>Housing.com</option>
-                    </select>
-                    <button disabled={loading} className="w-full bg-blue-600 text-white p-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-md transition disabled:opacity-50">
-                        {loading ? "Injecting..." : "Inject Lead"}
-                    </button>
-                </form>
-            );
-        }
-
-        function LoginForm({ supabase }) {
-            const [email, setEmail] = useState(""); const [pass, setPass] = useState(""); const [loading, setLoading] = useState(false); const [errorMsg, setErrorMsg] = useState("");
-            const handleLogin = async (e) => {
-                e.preventDefault(); setLoading(true); setErrorMsg("");
-                const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-                if (error) setErrorMsg(error.message);
-                setLoading(false);
-            };
-            return (
-                <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-                    <form onSubmit={handleLogin} className="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-sm text-center border-t-8 border-blue-500 relative">
-                        <h1 className="text-3xl font-black italic uppercase mb-8">Horizon CRM</h1>
-                        {errorMsg && <div className="text-red-500 text-xs font-bold mb-4 bg-red-50 p-2 rounded">{errorMsg}</div>}
-                        <input type="email" required placeholder="Email" className="w-full p-4 bg-slate-100 rounded-2xl mb-4 font-bold outline-none focus:ring-2 focus:ring-blue-500 transition" onChange={e => setEmail(e.target.value)} />
-                        <input type="password" required placeholder="Password" className="w-full p-4 bg-slate-100 rounded-2xl mb-8 font-bold outline-none focus:ring-2 focus:ring-blue-500 transition" onChange={e => setPass(e.target.value)} />
-                        <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg disabled:opacity-50 hover:bg-blue-700 transition">
-                            {loading ? "Authenticating..." : "Login"}
-                        </button>
-                    </form>
-                </div>
-            );
-        }
-
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<AdminApp />);
+        root.render(<App />);
     </script>
 </body>
 </html>
