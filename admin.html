@@ -213,12 +213,30 @@
                 window.open(getSafeLink(rawLink), '_blank');
             };
 
-            const handlePreviewImages = () => {
-                const gallery = getVal(property, "gallery_images") || getVal(property, "cover_image");
-                if (!gallery || gallery.trim() === '') return alert("No images available.");
-                let firstLink = gallery.split(',')[0].trim();
-                let folderLink = firstLink.replace('thumbnail?id=', 'file/d/').replace('&sz=w1000', '/view');
-                window.open(folderLink, '_blank');
+            const handlePreview = (type, rawLink) => {
+                if (!rawLink || rawLink.trim() === '') return alert(`${type} is not available for this property.`);
+                
+                // Split string by commas in case there are multiple files
+                const links = rawLink.split(',').map(l => l.trim()).filter(Boolean);
+                
+                if (links.length > 1) {
+                    alert(`Opening ${links.length} files. Please allow pop-ups if your browser asks. \n\nTip: To view the entire Google Drive folder, open one of the files and click the "Show File Location" folder icon at the top right of the screen!`);
+                }
+                
+                // Open all files (with a slight delay to bypass basic pop-up blockers)
+                links.forEach((link, index) => {
+                    let viewLink = link;
+                    // Automatically convert Drive 'open?id=' links to standard view links for a better native folder preview experience
+                    if(viewLink.includes('drive.google.com') && viewLink.includes('id=')) {
+                        const idMatch = viewLink.match(/id=(.*?)(&|$)/);
+                        if(idMatch) {
+                            viewLink = `https://drive.google.com/file/d/${idMatch[1]}/view`;
+                        }
+                    }
+                    setTimeout(() => {
+                        window.open(getSafeLink(viewLink), '_blank');
+                    }, index * 200);
+                });
             };
 
             const regLink = getVal(property, "lead_registration") || getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_or_email_id");
@@ -235,26 +253,6 @@
                     if (!link.startsWith('http')) link = `https://${link}`;
                     window.open(link, '_blank');
                 }
-            };
-
-            const handlePreview = (type, rawLink) => {
-                if (!rawLink || rawLink.trim() === '') return alert(`${type} is not available for this property.`);
-                const links = rawLink.split(',').map(l => l.trim()).filter(Boolean);
-                
-                if (links.length > 1) {
-                    alert(`There are ${links.length} files here. Opening the first file in Drive (you can view the folder from there).`);
-                }
-                
-                let viewLink = links[0];
-                // Automatically convert Drive 'open?id=' links to standard view links for a better native folder preview experience
-                if(viewLink.includes('drive.google.com') && viewLink.includes('id=')) {
-                    const idMatch = viewLink.match(/id=(.*?)(&|$)/);
-                    if(idMatch) {
-                        viewLink = `https://drive.google.com/file/d/${idMatch[1]}/view`;
-                    }
-                }
-                
-                window.open(getSafeLink(viewLink), '_blank');
             };
 
             const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
@@ -375,7 +373,8 @@
                                                 <button onClick={() => handlePreview('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
                                                 <button onClick={() => handlePreview('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
                                                 <button onClick={() => handlePreview('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
-                                                <button onClick={handlePreviewImages} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Preview Images</button>
+                                                <button onClick={() => handlePreview('Images', getVal(property, "gallery_images") || getVal(property, "cover_image"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🖼️ Images</button>
+                                                <button onClick={() => handlePreview('Miscellaneous', getVal(property, "miscellaneous"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📁 Misc</button>
                                             </div>
                                         </div>
                                     </div>
