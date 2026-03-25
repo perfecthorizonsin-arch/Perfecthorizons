@@ -115,6 +115,19 @@
             }
         };
 
+        const getCardTint = (status) => {
+            switch(status) {
+                case 'Un called': return 'bg-yellow-50';
+                case 'Called': return 'bg-green-50';
+                case 'RNR': return 'bg-orange-50';
+                case 'Details Shared': return 'bg-purple-50';
+                case 'SV Scheduled': return 'bg-blue-50';
+                case 'Converted': return 'bg-emerald-50';
+                case 'Rejected': return 'bg-red-50';
+                default: return 'bg-white';
+            }
+        };
+
         const EMICalculator = ({ propertyPriceStr }) => {
             const propertyValue = extractPriceInCr(propertyPriceStr) > 0 ? extractPriceInCr(propertyPriceStr) * 10000000 : 10000000; 
             const [loanAmount, setLoanAmount] = useState(propertyValue * 0.8);
@@ -392,6 +405,19 @@
             const [visibleCount, setVisibleCount] = useState(50);
             const [searchTerm, setSearchTerm] = useState("");
 
+            const getCardTint = (status) => {
+                switch(status) {
+                    case 'Un called': return 'bg-yellow-50';
+                    case 'Called': return 'bg-green-50';
+                    case 'RNR': return 'bg-orange-50';
+                    case 'Details Shared': return 'bg-purple-50';
+                    case 'SV Scheduled': return 'bg-blue-50';
+                    case 'Converted': return 'bg-emerald-50';
+                    case 'Rejected': return 'bg-red-50';
+                    default: return 'bg-white';
+                }
+            };
+
             // Router Event Listener
             useEffect(() => {
                 const onHashChange = () => {
@@ -662,7 +688,7 @@
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             {visibleLeads.map(l => (
-                                                <tr key={l.id} className={`hover:bg-slate-50 transition border-l-4 ${l.lead_priority === 'Hot' ? 'border-l-red-500' : l.lead_priority === 'Cold' ? 'border-l-blue-400' : 'border-l-amber-400'}`}>
+                                                <tr key={l.id} className={`transition-colors border-l-4 hover:brightness-95 ${l.lead_priority === 'Hot' ? 'border-l-red-500' : l.lead_priority === 'Cold' ? 'border-l-blue-400' : 'border-l-amber-400'} ${getCardTint(l.lead_status)}`}>
                                                     <td className="p-4 uppercase font-bold min-w-[180px]">
                                                         {l.customer_name}
                                                         <div className="text-blue-600 mt-1">{l.phone_number}</div>
@@ -752,7 +778,7 @@
 
                                 <div className="lg:hidden space-y-4">
                                     {visibleLeads.map(l => (
-                                        <div key={`m-${l.id}`} className={`bg-white p-4 rounded-2xl shadow-sm border border-t-8 ${l.lead_priority === 'Hot' ? 'border-t-red-500 bg-red-50/10' : l.lead_priority === 'Cold' ? 'border-t-blue-400' : 'border-t-amber-400'}`}>
+                                        <div key={`m-${l.id}`} className={`p-4 rounded-2xl shadow-sm border border-t-8 transition-colors ${l.lead_priority === 'Hot' ? 'border-t-red-500' : l.lead_priority === 'Cold' ? 'border-t-blue-400' : 'border-t-amber-400'} ${getCardTint(l.lead_status)}`}>
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <h3 className="font-black text-sm uppercase">{l.customer_name}</h3>
