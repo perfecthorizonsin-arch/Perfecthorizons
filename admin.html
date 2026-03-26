@@ -201,6 +201,9 @@
 
         const PropertyDetailsPage = ({ property, onBack }) => {
             const galleryRef = useRef(null);
+            const [shareModal, setShareModal] = useState(null); 
+            const [selectedUrls, setSelectedUrls] = useState([]);
+
             useEffect(() => { window.scrollTo(0, 0); }, [property]);
 
             const cover = convertDriveLink(getVal(property, "cover_image") || getVal(property, "cover-image"));
@@ -211,14 +214,6 @@
             const openLink = (rawLink) => {
                 if (!rawLink || rawLink.trim() === '') return alert("This link was not provided for this property.");
                 window.open(getSafeLink(rawLink), '_blank');
-            };
-
-            const handlePreviewImages = () => {
-                const gallery = getVal(property, "gallery_images") || getVal(property, "cover_image");
-                if (!gallery || gallery.trim() === '') return alert("No images available.");
-                let firstLink = gallery.split(',')[0].trim();
-                let folderLink = firstLink.replace('thumbnail?id=', 'file/d/').replace('&sz=w1000', '/view');
-                window.open(folderLink, '_blank');
             };
 
             const regLink = getVal(property, "lead_registration") || getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_or_email_id");
@@ -237,59 +232,66 @@
                 }
             };
 
-          // --- 1. NEW ACTUAL FILE SHARING LOGIC ---
-            const shareViaWhatsApp = async (type, link) => {
-                if (!link || link.trim() === '') return alert(`${type} is not available for this property.`);
+            // --- MULTI-FILE SELECTION & ACTUAL ATTACH LOGIC ---
+            const openShareModal = (type, linkStr) => {
+                if (!linkStr || linkStr.trim() === '') return alert(`${type} is not available.`);
+                const urls = linkStr.split(',').map(u => u.trim()).filter(Boolean);
                 
-                const urls = link.split(',').map(u => u.trim()).filter(Boolean);
+                if (urls.length === 1 || type === 'Location Map' || type === 'Property Video') {
+                    executeShare(type, urls);
+                } else {
+                    setShareModal({ type, urls });
+                    setSelectedUrls([...urls]); // Pre-select all
+                }
+            };
+
+            const toggleSelection = (url) => {
+                if (selectedUrls.includes(url)) setSelectedUrls(selectedUrls.filter(u => u !== url));
+                else setSelectedUrls([...selectedUrls, url]);
+            };
+
+            const executeShare = async (type, urlsToShare) => {
+                if (urlsToShare.length === 0) return alert("Please select at least one file to share.");
+                
                 const propName = getVal(property, "Property Name") || getVal(property, "property_name");
                 const textMsg = `Hello! Here is the ${type} for *${propName}*:`;
+                const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-                // Maps and Videos cannot be downloaded, so send them as links
                 if (type === 'Location Map' || type === 'Property Video') {
-                    window.open(`https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urls.join('\n\n'))}`, '_blank');
+                    window.open(`https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urlsToShare.join('\n\n'))}`, '_blank');
+                    setShareModal(null);
                     return;
                 }
 
-                // ATTEMPT TO FETCH AND ATTACH THE ACTUAL FILE (Works on Mobile)
-                try {
-                    if (navigator.canShare) {
+                if (isMobile && navigator.canShare) {
+                    try {
                         const filesToShare = [];
-                        for (let i = 0; i < urls.length; i++) {
-                            const response = await fetch(urls[i]);
+                        for (let i = 0; i < urlsToShare.length; i++) {
+                            const response = await fetch(urlsToShare[i]);
                             const blob = await response.blob();
                             const ext = blob.type.includes('pdf') ? 'pdf' : 'jpg'; 
-                            const fileName = `${propName.replace(/\s+/g, '_')}_${type.replace(/\s+/g, '')}${urls.length > 1 ? '_'+(i+1) : ''}.${ext}`;
+                            const fileName = `${propName.replace(/\s+/g, '_')}_${type.replace(/\s+/g, '')}${urlsToShare.length > 1 ? '_'+(i+1) : ''}.${ext}`;
                             filesToShare.push(new File([blob], fileName, { type: blob.type }));
                         }
 
                         if (navigator.canShare({ files: filesToShare })) {
-                            await navigator.share({
-                                files: filesToShare,
-                                title: `${propName} - ${type}`,
-                                text: textMsg
-                            });
-                            return; // SUCCESS: Phone's native share menu opens with the file attached
+                            await navigator.share({ files: filesToShare, title: `${propName} - ${type}`, text: textMsg });
+                            setShareModal(null);
+                            return; 
                         }
+                    } catch (error) {
+                        console.log("Could not attach actual file. Falling back to links.");
                     }
-                } catch (error) {
-                    console.log("Could not attach actual file (likely on Desktop PC). Falling back to links.");
                 }
 
-                // FALLBACK: If on Desktop PC, send nicely formatted links instead of breaking
-                window.open(`https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urls.join('\n\n'))}`, '_blank');
+                window.open(`https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urlsToShare.join('\n\n'))}`, '_blank');
+                setShareModal(null);
             };
 
-            // --- 2. FIX FOR THE BROKEN IMAGE BUTTON ---
-            const handleShareImages = () => {
-                const gallery = getVal(property, "gallery_images") || getVal(property, "cover_image");
-                if (!gallery || gallery.trim() === '') return alert("No images available.");
-                shareViaWhatsApp('Gallery Images', gallery);
-            };
             const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
 
             return (
-                <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0">
+                <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0 relative">
                     <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
                         <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
                             <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> Back to Search
@@ -400,11 +402,11 @@
 
                                             <h4 className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-2">Share With Client (WhatsApp)</h4>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <button onClick={() => shareViaWhatsApp('Brochure', getVal(property, "brochure"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📥 Brochure</button>
-                                                <button onClick={() => shareViaWhatsApp('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
-                                                <button onClick={() => shareViaWhatsApp('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
-                                                <button onClick={() => shareViaWhatsApp('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
-                                                <button onClick={handleShareImages} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Share Actual Images</button>
+                                                <button onClick={() => openShareModal('Brochure', getVal(property, "brochure"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📥 Brochure</button>
+                                                <button onClick={() => openShareModal('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
+                                                <button onClick={() => openShareModal('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
+                                                <button onClick={() => openShareModal('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
+                                                <button onClick={() => openShareModal('Gallery Images', getVal(property, "gallery_images") || getVal(property, "cover_image"))} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Share Images</button>
                                             </div>
                                         </div>
                                     </div>
@@ -413,6 +415,36 @@
                             </div>
                         </div>
                     </div>
+
+                    {shareModal && (
+                        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl p-6 relative overflow-hidden flex flex-col max-h-[80vh]">
+                                <button onClick={() => setShareModal(null)} className="absolute top-6 right-6 text-xl text-slate-400 hover:text-slate-800">&times;</button>
+                                <h2 className="text-lg font-black uppercase text-slate-900 mb-2">Select Files to Share</h2>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 pb-4 border-b">{shareModal.type}</p>
+                                
+                                <div className="overflow-y-auto pr-2 space-y-3 flex-grow mb-4">
+                                    {shareModal.urls.map((url, index) => (
+                                        <label key={index} className={`flex items-center gap-4 p-3 rounded-xl border cursor-pointer transition ${selectedUrls.includes(url) ? 'bg-blue-50 border-blue-500' : 'bg-slate-50 border-slate-200'}`}>
+                                            <input type="checkbox" className="w-5 h-5 accent-blue-600 cursor-pointer" checked={selectedUrls.includes(url)} onChange={() => toggleSelection(url)} />
+                                            {url.toLowerCase().includes('.jpg') || url.toLowerCase().includes('.png') ? (
+                                                <img src={url} className="w-12 h-12 rounded object-cover border border-slate-200 bg-white" />
+                                            ) : (
+                                                <div className="w-12 h-12 rounded flex items-center justify-center bg-red-100 text-red-600 text-xl">📄</div>
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] font-bold text-slate-700 truncate">{url.split('/').pop().substring(0,25)}...</p>
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+                                
+                                <button onClick={() => executeShare(shareModal.type, selectedUrls)} className="w-full bg-blue-600 text-white p-4 rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-blue-700 transition">
+                                    Send to WhatsApp ({selectedUrls.length})
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -510,10 +542,7 @@
             async function fetchLeads() {
                 setLoading(true);
                 const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-               const { data, error } = await supabase
-    .from('properties')
-    .select('*')
-    .order('created_at', { ascending: false });
+                const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false });
                 if (!error) {
                     let raw = data || [];
                     if (table === 'leads') {
@@ -655,7 +684,6 @@
                         {view === 'dashboard' && (
                             <div className="space-y-6">
                                 
-                                {/* IMPROVED RESPONSIVE STATS BAR */}
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
                                     <div className="flex flex-wrap justify-between md:grid md:grid-cols-5 gap-4 items-center">
                                         <div className="w-full md:w-auto border-b md:border-none pb-2 md:pb-0">
@@ -958,18 +986,15 @@
             const fixImageUrl = (u) => u ? convertDriveLink(String(u).split(',')[0].trim()) : 'https://via.placeholder.com/600x300?text=No+Image';
 
             const toggleLive = async (e, p) => {
-                e.stopPropagation(); // Prevents opening the property details card
-                const currentStatus = p.is_live !== false; // Assume true if undefined
+                e.stopPropagation(); 
+                const currentStatus = p.is_live !== false; 
                 const newStatus = !currentStatus;
 
-                // Optimistic UI update
                 if (setProperties) setProperties(prev => prev.map(item => item.id === p.id ? { ...item, is_live: newStatus } : item));
 
-                // Backend update
                 const { error } = await supabase.from('properties').update({ is_live: newStatus }).eq('id', p.id);
                 if (error) {
-                    alert("Failed to toggle live status. Ensure you have created an 'is_live' boolean column in your 'properties' table in Supabase.");
-                    // Revert UI on error
+                    alert("Failed to toggle live status. Ensure you created 'is_live' boolean column in 'properties' table in Supabase.");
                     if (setProperties) setProperties(prev => prev.map(item => item.id === p.id ? { ...item, is_live: currentStatus } : item));
                 }
             };
@@ -1033,7 +1058,7 @@
                 for(let i=0; i<files.length; i++) {
                     const file = files[i];
 
-                    // 1. Upload to Cloudinary for actual fast viewing in CRM
+                    // 1. Upload to Cloudinary
                     let cloudinaryUrl = null;
                     const formData = new FormData();
                     formData.append('file', file);
@@ -1042,28 +1067,21 @@
 
                     try {
                         const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
-                            method: 'POST',
-                            body: formData
+                            method: 'POST', body: formData
                         });
                         const cloudData = await cloudRes.json();
-                        if (cloudData.secure_url) {
-                            cloudinaryUrl = cloudData.secure_url;
-                        }
-                    } catch (err) {
-                        console.error("Cloudinary upload failed", err);
-                    }
+                        if (cloudData.secure_url) cloudinaryUrl = cloudData.secure_url;
+                    } catch (err) { console.error("Cloudinary fail", err); }
 
-                    // 2. Background Backup to Google Drive (Fire and Forget)
+                    // 2. Drive Backup Background
                     const reader = new FileReader();
                     reader.readAsDataURL(file);
                     reader.onload = () => {
                         fetch(scriptUrl, { 
-                            method: "POST", 
-                            body: JSON.stringify({ base64: reader.result.split(',')[1], type: file.type, name: file.name, propertyName: form.property_name || 'Uploads', category: category }) 
-                        }).catch(err => console.error("Drive backup failed", err));
+                            method: "POST", body: JSON.stringify({ base64: reader.result.split(',')[1], type: file.type, name: file.name, propertyName: form.property_name || 'Uploads', category: category }) 
+                        }).catch(err => console.error("Drive backup fail", err));
                     };
 
-                    // Pushing Cloudinary URL to state so CRM uses it instantly
                     if(cloudinaryUrl) newUrls.push(cloudinaryUrl);
                 }
                 
