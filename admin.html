@@ -237,14 +237,54 @@
                 }
             };
 
-            const shareViaWhatsApp = (type, link) => {
-                if (!link || link.trim() === '') return alert(`${type} is not available for this property.`);
-                let finalLink = link;
-                if (type === 'Images/Gallery' && link.includes(',')) { finalLink = link.split(',').join('\n'); }
-                const text = `Hello! Here is the ${type} for *${getVal(property, "Property Name")}*:\n\n${finalLink}`;
-                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-            };
+           const shareViaWhatsApp = async (type, link) => {
+    if (!link || link.trim() === '') return alert(`${type} is not available for this property.`);
+    
+    // 1. Clean up the links (fixes the broken comma-separated mess in your screenshot)
+    const urls = link.split(',').map(u => u.trim()).filter(Boolean);
+    const propName = getVal(property, "Property Name") || getVal(property, "property_name");
+    const textMsg = `Hello! Here is the ${type} for *${propName}*:`;
 
+    // 2. We cannot "download" Maps or YouTube videos, so just send them as clean links
+    if (type === 'Location Map' || type === 'Property Video') {
+        window.open(`https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urls.join('\n\n'))}`, '_blank');
+        return;
+    }
+
+    // 3. Try to fetch the Cloudinary files and share them as ACTUAL ATTACHMENTS (Mobile)
+    try {
+        if (navigator.canShare) {
+            const filesToShare = [];
+            // Loop through all files (e.g., 4 Cost Sheet pages) and prep them for attachment
+            for (let i = 0; i < urls.length; i++) {
+                const url = urls[i];
+                const response = await fetch(url);
+                const blob = await response.blob();
+                
+                // Assign proper extension (pdf or jpg) based on file type
+                let ext = blob.type.includes('pdf') ? 'pdf' : 'jpg'; 
+                const fileName = `${propName.replace(/\s+/g, '_')}_${type.replace(/\s+/g, '')}${urls.length > 1 ? '_'+(i+1) : ''}.${ext}`;
+                
+                filesToShare.push(new File([blob], fileName, { type: blob.type }));
+            }
+
+            // Trigger the phone's native share menu to push real files to WhatsApp
+            if (navigator.canShare({ files: filesToShare })) {
+                await navigator.share({
+                    files: filesToShare,
+                    title: `${propName} - ${type}`,
+                    text: textMsg
+                });
+                return; // Stop here if native share succeeds
+            }
+        }
+    } catch (error) {
+        console.log("Could not attach file directly (likely on Desktop PC). Falling back to clean links.");
+    }
+
+    // 4. FALLBACK: Send nicely formatted links (one per line) if on Desktop PC
+    window.open(`https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urls.join('\n\n'))}`, '_blank');
+};
             const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
 
             return (
