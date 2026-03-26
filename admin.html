@@ -500,7 +500,6 @@
                const { data, error } = await supabase
     .from('properties')
     .select('*')
-    .not('is_live', 'eq', false) // THIS IS THE MAGIC LINE
     .order('created_at', { ascending: false });
                 if (!error) {
                     let raw = data || [];
