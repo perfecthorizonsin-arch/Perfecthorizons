@@ -551,7 +551,7 @@
                 
                 const fetchProperties = async () => {
                     try {
-                        const { data, error } = await supabase.from('properties').select('*');
+                        const { data, error } = await supabase.from('properties').select('*').not('is_live', 'eq', false);
                         if (!error) setProperties(data || []);
                     } catch (error) { console.error(error); } 
                     finally { setLoading(false); }
