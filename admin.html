@@ -237,42 +237,55 @@
                 }
             };
 
-          const shareViaWhatsApp = async (type, link) => {
-    if (!link || link.trim() === '') return alert(`${type} is not available for this property.`);
-    
-    // Clean up links and prep the message
-    const urls = link.split(',').map(u => u.trim()).filter(Boolean);
-    const propName = getVal(property, "Property Name") || getVal(property, "property_name");
-    const textMsg = `Hello! Here is the ${type} for *${propName}*:\n\n${urls.join('\n\n')}`;
-    
-    const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
+          // --- 1. NEW ACTUAL FILE SHARING LOGIC ---
+            const shareViaWhatsApp = async (type, link) => {
+                if (!link || link.trim() === '') return alert(`${type} is not available for this property.`);
+                
+                const urls = link.split(',').map(u => u.trim()).filter(Boolean);
+                const propName = getVal(property, "Property Name") || getVal(property, "property_name");
+                const textMsg = `Hello! Here is the ${type} for *${propName}*:`;
 
-    // NATIVE FILE ATTACHMENT (Mobile Only, Single Files Only to prevent timeout crashes)
-    if (isMobile && navigator.canShare && urls.length === 1 && !type.includes('Gallery')) {
-        try {
-            const response = await fetch(urls[0]);
-            const blob = await response.blob();
-            
-            let ext = blob.type.includes('pdf') ? 'pdf' : 'jpg'; 
-            const fileName = `${propName.replace(/\s+/g, '_')}_${type.replace(/\s+/g, '')}.${ext}`;
-            const file = new File([blob], fileName, { type: blob.type });
+                // Maps and Videos cannot be downloaded, so send them as links
+                if (type === 'Location Map' || type === 'Property Video') {
+                    window.open(`https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urls.join('\n\n'))}`, '_blank');
+                    return;
+                }
 
-            if (navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: `${propName} - ${type}`,
-                    text: `Hello! Here is the ${type} for *${propName}*.`
-                });
-                return; // Stop here if native attachment succeeds
-            }
-        } catch (error) {
-            console.log("Background download took too long or failed. Falling back to links.", error);
-        }
-    }
+                // ATTEMPT TO FETCH AND ATTACH THE ACTUAL FILE (Works on Mobile)
+                try {
+                    if (navigator.canShare) {
+                        const filesToShare = [];
+                        for (let i = 0; i < urls.length; i++) {
+                            const response = await fetch(urls[i]);
+                            const blob = await response.blob();
+                            const ext = blob.type.includes('pdf') ? 'pdf' : 'jpg'; 
+                            const fileName = `${propName.replace(/\s+/g, '_')}_${type.replace(/\s+/g, '')}${urls.length > 1 ? '_'+(i+1) : ''}.${ext}`;
+                            filesToShare.push(new File([blob], fileName, { type: blob.type }));
+                        }
 
-    // FALLBACK: Open WhatsApp directly with clean links (Desktop, Galleries, or if Mobile fails)
-    window.open(`https://wa.me/?text=${encodeURIComponent(textMsg)}`, '_blank');
-};
+                        if (navigator.canShare({ files: filesToShare })) {
+                            await navigator.share({
+                                files: filesToShare,
+                                title: `${propName} - ${type}`,
+                                text: textMsg
+                            });
+                            return; // SUCCESS: Phone's native share menu opens with the file attached
+                        }
+                    }
+                } catch (error) {
+                    console.log("Could not attach actual file (likely on Desktop PC). Falling back to links.");
+                }
+
+                // FALLBACK: If on Desktop PC, send nicely formatted links instead of breaking
+                window.open(`https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urls.join('\n\n'))}`, '_blank');
+            };
+
+            // --- 2. FIX FOR THE BROKEN IMAGE BUTTON ---
+            const handleShareImages = () => {
+                const gallery = getVal(property, "gallery_images") || getVal(property, "cover_image");
+                if (!gallery || gallery.trim() === '') return alert("No images available.");
+                shareViaWhatsApp('Gallery Images', gallery);
+            };
             const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
 
             return (
@@ -391,7 +404,7 @@
                                                 <button onClick={() => shareViaWhatsApp('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
                                                 <button onClick={() => shareViaWhatsApp('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
                                                 <button onClick={() => shareViaWhatsApp('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
-                                                <button onClick={handlePreviewImages} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Preview Images (Drive)</button>
+                                                <button onClick={handleShareImages} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Share Actual Images</button>
                                             </div>
                                         </div>
                                     </div>
