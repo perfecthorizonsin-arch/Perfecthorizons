@@ -213,35 +213,12 @@
                 window.open(getSafeLink(rawLink), '_blank');
             };
 
-            const handlePreview = (type, rawLink) => {
-                if (!rawLink || rawLink.trim() === '') return alert(`${type} is not available for this property.`);
-                
-                // Because the app script now returns a single FOLDER link for multiple files, 
-                // we can just treat rawLink as a direct link, or fall back to array if legacy data exists.
-                const links = rawLink.split(',').map(l => l.trim()).filter(Boolean);
-
-                if (links.length === 1) {
-                    let viewLink = links[0];
-                    if(viewLink.includes('drive.google.com') && viewLink.includes('id=')) {
-                        const idMatch = viewLink.match(/id=(.*?)(&|$)/);
-                        if(idMatch) {
-                            viewLink = `https://drive.google.com/file/d/${idMatch[1]}/view`;
-                        }
-                    }
-                    window.open(getSafeLink(viewLink), '_blank');
-                } else {
-                    // Fallback for legacy multiple-file links
-                    const propName = getVal(property, "property_name") || getVal(property, "Property Name");
-                    const searchQuery = `"${propName}"`;
-                    const searchUrl = `https://drive.google.com/drive/search?q=${encodeURIComponent(searchQuery)}`;
-                    alert(`Opening folder view for ${links.length} ${type} files...`);
-                    window.open(searchUrl, '_blank');
-                }
-            };
-
             const handlePreviewImages = () => {
                 const gallery = getVal(property, "gallery_images") || getVal(property, "cover_image");
-                handlePreview('Images', gallery);
+                if (!gallery || gallery.trim() === '') return alert("No images available.");
+                let firstLink = gallery.split(',')[0].trim();
+                let folderLink = firstLink.replace('thumbnail?id=', 'file/d/').replace('&sz=w1000', '/view');
+                window.open(folderLink, '_blank');
             };
 
             const regLink = getVal(property, "lead_registration") || getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_or_email_id");
@@ -258,6 +235,14 @@
                     if (!link.startsWith('http')) link = `https://${link}`;
                     window.open(link, '_blank');
                 }
+            };
+
+            const shareViaWhatsApp = (type, link) => {
+                if (!link || link.trim() === '') return alert(`${type} is not available for this property.`);
+                let finalLink = link;
+                if (type === 'Images/Gallery' && link.includes(',')) { finalLink = link.split(',').join('\n'); }
+                const text = `Hello! Here is the ${type} for *${getVal(property, "Property Name")}*:\n\n${finalLink}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
             };
 
             const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
@@ -372,14 +357,13 @@
                                                 </button>
                                             </div>
 
-                                            <h4 className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-2">Preview Documents</h4>
+                                            <h4 className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-2">Share With Client (WhatsApp)</h4>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <button onClick={() => handlePreview('Brochure', getVal(property, "brochure"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📥 Brochure</button>
-                                                <button onClick={() => handlePreview('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
-                                                <button onClick={() => handlePreview('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
-                                                <button onClick={() => handlePreview('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
-                                                <button onClick={handlePreviewImages} className="bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Images</button>
-                                                <button onClick={() => handlePreview('Miscellaneous', getVal(property, "miscellaneous"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">📁 Misc</button>
+                                                <button onClick={() => shareViaWhatsApp('Brochure', getVal(property, "brochure"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📥 Brochure</button>
+                                                <button onClick={() => shareViaWhatsApp('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
+                                                <button onClick={() => shareViaWhatsApp('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
+                                                <button onClick={() => shareViaWhatsApp('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
+                                                <button onClick={handlePreviewImages} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Preview Images (Drive)</button>
                                             </div>
                                         </div>
                                     </div>
@@ -392,6 +376,7 @@
             );
         };
 
+        // URL ROUTER LOGIC
         const getInitialRoute = () => {
             const hash = window.location.hash.replace('#', '');
             if (hash.startsWith('/library')) return { v: 'library', c: 'website' };
@@ -408,6 +393,7 @@
             const [leads, setLeads] = useState([]);
             const [properties, setProperties] = useState([]);
             
+            // View and Category states tied to Router
             const [view, setView] = useState(initRoute.v); 
             const [leadCategory, setLeadCategory] = useState(initRoute.c); 
             
@@ -428,10 +414,11 @@
                     case 'SV Scheduled': return 'bg-blue-50';
                     case 'Converted': return 'bg-emerald-50';
                     case 'Rejected': return 'bg-red-50';
-                    default: return 'bg-slate-50';
+                    default: return 'bg-white';
                 }
             };
 
+            // Router Event Listener
             useEffect(() => {
                 const onHashChange = () => {
                     const r = getInitialRoute();
@@ -442,13 +429,16 @@
                 return () => window.removeEventListener('hashchange', onHashChange);
             }, []);
 
+            // Navigation Function
             const handleNavigate = (newView, newCat = 'website') => {
                 setView(newView);
                 if (newView === 'dashboard') setLeadCategory(newCat);
+                
                 let path = '';
                 if (newView === 'dashboard') path = `/crm/${newCat}`;
                 else if (newView === 'library') path = `/library`;
                 else if (newView === 'add') path = `/add`;
+                
                 window.location.hash = path;
             };
 
@@ -456,6 +446,7 @@
                 setVisibleCount(50);
             }, [leadCategory, filterType, summaryAgent, searchTerm]);
 
+            // AUTH SETUP
             useEffect(() => {
                 supabase.auth.getSession().then(({ data: { session } }) => { 
                     setSession(session); 
@@ -467,6 +458,7 @@
                 return () => subscription.unsubscribe();
             }, []);
 
+            // DATA FETCHING (Tied securely to current tab state)
             useEffect(() => {
                 if (session) {
                     fetchProperties();
@@ -487,8 +479,10 @@
                             setLeads(raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && !l.lead_source.toLowerCase().includes('website')));
                         }
                     } else { 
+                        // This is for Bulk Leads specifically
                         const bulkData = raw.map(l => ({
                             ...l,
+                            // If it's the bulk tab, we use the text exactly as it is in Supabase
                             display_date: l.created_at || 'N/A'
                         }));
                         setLeads(bulkData); 
@@ -717,13 +711,13 @@
                                                         </div>
                                                     </td>
                                                     <td className="p-4 min-w-[140px]">
-                                                        <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none bg-white/60 border-slate-300 text-blue-800">
+                                                        <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none bg-slate-50 border-slate-300 text-blue-800">
                                                             <option value="" disabled>Assign Agent</option>
                                                             <option value="Tharun">Tharun</option>
                                                             <option value="Shivaji">Shivaji</option>
                                                             <option value="Ramswami">Ramswami</option>
                                                         </select>
-                                                        <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 bg-white/60 ${getStatusStyles(l.lead_status)}`}>
+                                                        <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 ${getStatusStyles(l.lead_status)}`}>
                                                             {(!l.lead_status || l.lead_status === 'Un called') && <option value="Un called">Un called</option>}
                                                             <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option><option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
                                                         </select>
@@ -738,7 +732,7 @@
                                                             </select>
                                                         )}
 
-                                                        <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className={`w-full p-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 bg-white/60 ${getPriorityColor(l.lead_priority)}`}>
+                                                        <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className={`w-full p-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 ${getPriorityColor(l.lead_priority)}`}>
                                                             <option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option>
                                                         </select>
                                                     </td>
@@ -747,24 +741,24 @@
                                                             {['Called', 'RNR', 'Details Shared'].includes(l.lead_status) && (
                                                                 <div>
                                                                     <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">Call Back Date</span>
-                                                                    <input type="datetime-local" className="w-full p-2 border border-blue-200 bg-white/60 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
+                                                                    <input type="datetime-local" className="w-full p-2 border border-blue-200 bg-blue-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
                                                                 </div>
                                                             )}
                                                             {l.lead_status === 'SV Scheduled' && (
-                                                                <div className="mt-2 pt-2 border-t border-slate-200/50">
+                                                                <div className="mt-2 pt-2 border-t border-slate-100">
                                                                     <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">Site Visit Date</span>
-                                                                    <input type="date" className="w-full p-2 border border-teal-200 bg-white/60 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
+                                                                    <input type="date" className="w-full p-2 border border-teal-200 bg-teal-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
                                                                 </div>
                                                             )}
                                                         </div>
                                                     </td>
                                                     <td className="p-4">
                                                         <div className="flex flex-col gap-2">
-                                                            <div className="h-16 overflow-y-auto bg-white/60 p-2 rounded-lg history-scroll whitespace-pre-wrap border border-slate-200/50 leading-relaxed font-medium text-slate-500 mb-1">
-                                                                {l.call_remark || <span className="italic opacity-50">System logs...</span>}
+                                                            <div className="h-16 overflow-y-auto bg-slate-50 p-2 rounded-lg history-scroll whitespace-pre-wrap border border-slate-100 leading-relaxed font-medium text-slate-400 mb-1">
+                                                                {l.call_remark || <span className="italic">System logs...</span>}
                                                             </div>
                                                             <div className="flex gap-2">
-                                                                <textarea id={`note-d-${l.id}`} defaultValue={l.add_note || ''} rows="2" placeholder="Manual notes / requirements..." className="flex-1 p-2 border border-slate-200 bg-white/80 rounded-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
+                                                                <textarea id={`note-d-${l.id}`} defaultValue={l.add_note || ''} rows="2" placeholder="Manual notes / requirements..." className="flex-1 p-2 border border-slate-200 rounded-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
                                                                 <button onClick={() => { const el = document.getElementById(`note-d-${l.id}`); updateLead(l, 'add_note', el.value); }} className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition">Save</button>
                                                             </div>
                                                         </div>
@@ -784,35 +778,35 @@
 
                                 <div className="lg:hidden space-y-4">
                                     {visibleLeads.map(l => (
-                                        <div key={`m-${l.id}`} className={`p-4 rounded-2xl shadow-sm border border-t-8 transition-colors ${l.lead_priority === 'Hot' ? 'border-t-red-500 border-red-200/50' : l.lead_priority === 'Cold' ? 'border-t-blue-400 border-blue-200/50' : 'border-t-amber-400 border-amber-200/50'} ${getCardTint(l.lead_status)}`}>
+                                        <div key={`m-${l.id}`} className={`p-4 rounded-2xl shadow-sm border border-t-8 transition-colors ${l.lead_priority === 'Hot' ? 'border-t-red-500' : l.lead_priority === 'Cold' ? 'border-t-blue-400' : 'border-t-amber-400'} ${getCardTint(l.lead_status)}`}>
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <h3 className="font-black text-sm uppercase text-slate-800">{l.customer_name}</h3>
+                                                    <h3 className="font-black text-sm uppercase">{l.customer_name}</h3>
                                                     <p className="font-bold text-blue-600">{l.phone_number}</p>
-                                                    <p className="font-bold text-slate-500 text-[10px] truncate mt-1">{l.customer_email}</p>
+                                                    <p className="font-bold text-slate-400 text-[10px] truncate mt-1">{l.customer_email}</p>
                                                     
-                                                    <p className="text-[10px] text-slate-600 font-bold mt-1 tracking-widest uppercase">
+                                                    <p className="text-[10px] text-slate-500 font-bold mt-1 tracking-widest uppercase">
                                                         Inq: {leadCategory === 'bulk' && session?.user?.email !== 'saishetty1623@gmail.com' 
                                                             ? '[Restricted]' 
                                                             : (l.project_interested_in || 'General')}
                                                     </p>
                                                     
                                                     {l.created_at && (
-                                                        <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase">
+                                                        <div className="text-[8px] text-slate-400 font-bold mt-1 tracking-widest uppercase">
                                                             Logged: {leadCategory === 'bulk' ? l.created_at : l.display_date}
                                                         </div>
                                                     )}
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <a href={`tel:${l.phone_number}`} className="bg-white/80 text-blue-600 border border-blue-100 p-2.5 rounded-full shadow-sm hover:scale-105 transition">📞</a>
-                                                    <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="bg-white/80 text-green-600 border border-green-100 p-2.5 rounded-full shadow-sm hover:scale-105 transition">💬</a>
+                                                    <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 border border-blue-100 p-2.5 rounded-full shadow-sm">📞</a>
+                                                    <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="bg-green-50 text-green-600 border border-green-100 p-2.5 rounded-full shadow-sm">💬</a>
                                                 </div>
                                             </div>
                                             
                                             <div className="grid grid-cols-2 gap-2 mb-4 mt-2">
                                                 <div className="flex flex-col gap-1 col-span-2">
-                                                    <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest">PSA Agent</label>
-                                                    <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="p-2 border border-slate-300 bg-white/60 rounded-xl font-bold uppercase text-[9px] outline-none text-blue-800">
+                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">PSA Agent</label>
+                                                    <select onChange={(e) => updateLead(l, 'psa_agent_name', e.target.value)} value={l.psa_agent_name || ''} className="p-2 border border-slate-300 bg-slate-50 rounded-xl font-bold uppercase text-[9px] outline-none text-blue-800">
                                                         <option value="" disabled>Assign Agent</option>
                                                         <option value="Tharun">Tharun</option>
                                                         <option value="Shivaji">Shivaji</option>
@@ -820,15 +814,15 @@
                                                     </select>
                                                 </div>
                                                 <div className="flex flex-col gap-1">
-                                                    <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Status</label>
-                                                    <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none bg-white/60 ${getStatusStyles(l.lead_status)}`}>
+                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</label>
+                                                    <select onChange={(e) => updateLead(l, 'lead_status', e.target.value)} value={l.lead_status || ''} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none ${getStatusStyles(l.lead_status)}`}>
                                                         {(!l.lead_status || l.lead_status === 'Un called') && <option value="Un called">Un called</option>}
                                                         <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option><option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
                                                     </select>
                                                 </div>
                                                 <div className="flex flex-col gap-1">
-                                                    <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Priority</label>
-                                                    <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none bg-white/60 ${getPriorityColor(l.lead_priority)}`}>
+                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Priority</label>
+                                                    <select onChange={(e) => updateLead(l, 'lead_priority', e.target.value)} value={l.lead_priority || 'Warm'} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none ${getPriorityColor(l.lead_priority)}`}>
                                                         <option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option>
                                                     </select>
                                                 </div>
@@ -851,23 +845,23 @@
                                                 {['Called', 'RNR', 'Details Shared'].includes(l.lead_status) && (
                                                     <div className="flex flex-col gap-1">
                                                         <label className="text-[8px] font-black text-blue-600 uppercase tracking-widest">Callback Date</label>
-                                                        <input type="datetime-local" className="p-2 border border-blue-200 bg-white/60 rounded-xl text-[10px] font-bold outline-none text-slate-800" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
+                                                        <input type="datetime-local" className="p-2 border border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold outline-none" value={l.follow_up_at?.slice(0,16) || ''} onChange={(e) => updateLead(l, 'follow_up_at', e.target.value)} />
                                                     </div>
                                                 )}
                                                 {l.lead_status === 'SV Scheduled' && (
                                                     <div className="flex flex-col gap-1 mt-2">
                                                         <label className="text-[8px] font-black text-teal-600 uppercase tracking-widest">Site Visit Date</label>
-                                                        <input type="date" className="p-2 border border-teal-200 bg-white/60 rounded-xl text-[10px] font-bold outline-none text-slate-800" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
+                                                        <input type="date" className="p-2 border border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold outline-none" value={l.site_visit_at || ''} onChange={(e) => updateLead(l, 'site_visit_at', e.target.value)} />
                                                     </div>
                                                 )}
                                             </div>
 
-                                            <div className="mt-4 pt-3 border-t border-slate-200/50">
-                                                <div className="bg-white/50 p-2 rounded-t-xl h-16 overflow-y-auto text-[9px] font-medium whitespace-pre-wrap border border-slate-200/50 leading-relaxed text-slate-600 mb-1">
-                                                    {l.call_remark || <span className="italic opacity-50">System logs...</span>}
+                                            <div className="mt-4 pt-3 border-t border-slate-100">
+                                                <div className="bg-slate-50 p-2 rounded-t-xl h-16 overflow-y-auto text-[9px] font-medium whitespace-pre-wrap border border-slate-200 leading-relaxed text-slate-400 mb-1">
+                                                    {l.call_remark || <span className="italic">System logs...</span>}
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <textarea id={`m-note-${l.id}`} defaultValue={l.add_note || ''} rows="2" className="w-full p-2 border border-slate-200/80 bg-white/80 rounded-b-xl text-[10px] resize-none focus:ring-1 focus:ring-blue-500 outline-none shadow-sm" placeholder="Manual notes / requirements..." />
+                                                    <textarea id={`m-note-${l.id}`} defaultValue={l.add_note || ''} rows="2" className="w-full p-2 border border-slate-200 rounded-b-xl text-[10px] resize-none focus:ring-1 focus:ring-blue-500 outline-none shadow-sm" placeholder="Manual notes / requirements..." />
                                                     <button onClick={() => { const el = document.getElementById(`m-note-${l.id}`); updateLead(l, 'add_note', el.value); }} className="bg-slate-900 text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-blue-600 transition">Save</button>
                                                 </div>
                                             </div>
@@ -883,7 +877,7 @@
                             </div>
                         )}
 
-                        {view === 'library' && <ProjectLibrary supabase={supabase} setProp={setSelectedProp} properties={properties} />}
+                        {view === 'library' && <ProjectLibrary supabase={supabase} setProp={setSelectedProp} properties={properties} setProperties={setProperties} />}
                         {view === 'add' && <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} />}
                     </main>
 
@@ -902,7 +896,7 @@
             );
         }
 
-        function ProjectLibrary({ properties, setProp }) {
+        function ProjectLibrary({ properties, setProp, supabase, setProperties }) {
             const getVal = (obj, searchKey) => {
                 if (!obj) return "";
                 if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
@@ -919,17 +913,40 @@
 
             const fixImageUrl = (u) => u ? convertDriveLink(String(u).split(',')[0].trim()) : 'https://via.placeholder.com/600x300?text=No+Image';
 
+            const toggleLive = async (e, p) => {
+                e.stopPropagation(); // Prevents opening the property details card
+                const currentStatus = p.is_live !== false; // Assume true if undefined
+                const newStatus = !currentStatus;
+
+                // Optimistic UI update
+                if (setProperties) setProperties(prev => prev.map(item => item.id === p.id ? { ...item, is_live: newStatus } : item));
+
+                // Backend update
+                const { error } = await supabase.from('properties').update({ is_live: newStatus }).eq('id', p.id);
+                if (error) {
+                    alert("Failed to toggle live status. Ensure you have created an 'is_live' boolean column in your 'properties' table in Supabase.");
+                    // Revert UI on error
+                    if (setProperties) setProperties(prev => prev.map(item => item.id === p.id ? { ...item, is_live: currentStatus } : item));
+                }
+            };
+
             if (!properties || properties.length === 0) return <div className="text-center py-20 font-black text-slate-400 tracking-widest uppercase animate-pulse">Library Empty...</div>;
 
             return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
                     {properties.map(p => (
-                        <div key={p.id} onClick={() => setProp(p)} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col">
+                        <div key={p.id} onClick={() => setProp(p)} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col relative">
                             <div className="relative h-48 bg-slate-100 overflow-hidden">
                                 <img src={fixImageUrl(getVal(p, "cover_image") || getVal(p, "cover-image"))} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                                 <div className="absolute top-4 left-0 bg-slate-900/90 backdrop-blur-sm text-white text-[10px] font-black px-3 py-1.5 rounded-r-lg uppercase tracking-widest shadow-md">
                                     {getVal(p, "property_type") || 'Property'}
                                 </div>
+                                <button 
+                                    onClick={(e) => toggleLive(e, p)} 
+                                    className={`absolute top-4 right-0 text-[10px] font-black px-3 py-1.5 rounded-l-lg uppercase tracking-widest shadow-md transition z-10 ${p.is_live !== false ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-red-500 text-white hover:bg-red-600'}`}
+                                >
+                                    {p.is_live !== false ? '🟢 Live' : '🔴 Hidden'}
+                                </button>
                             </div>
                             <div className="p-5 flex-grow flex flex-col">
                                 <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 leading-tight truncate">{getVal(p, "property_name")}</h3>
@@ -962,27 +979,54 @@
                 const files = e.target.files; if(!files || files.length === 0) return;
                 setLoading(true); setUploadingField(field);
                 
-                const categoryMap = { 'cover_image': 'Cover Image', 'gallery_images': 'Gallery', 'brochure': 'Brochures', 'cost_sheet': 'Cost Sheets', 'floor_plan': 'Floor Plans', 'miscellaneous': 'Miscellaneous', 'video_link': 'Videos' };
+                const categoryMap = { 'cover_image': 'Cover Image', 'gallery_images': 'Gallery', 'brochure': 'Brochures', 'cost_sheet': 'Cost Sheets', 'floor_plan': 'Floor Plans', 'miscellaneous': 'Miscellaneous' };
                 const category = categoryMap[field] || 'General';
 
-                let folderUrl = '';
-                
+                const CLOUD_NAME = "dzptjohkq";
+                const UPLOAD_PRESET = "horizon_preset"; 
+
+                let newUrls = [];
                 for(let i=0; i<files.length; i++) {
                     const file = files[i];
+
+                    // 1. Upload to Cloudinary for actual fast viewing in CRM
+                    let cloudinaryUrl = null;
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('upload_preset', UPLOAD_PRESET);
+                    if (form.property_name) formData.append('folder', `Projects/${form.property_name}`);
+
+                    try {
+                        const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const cloudData = await cloudRes.json();
+                        if (cloudData.secure_url) {
+                            cloudinaryUrl = cloudData.secure_url;
+                        }
+                    } catch (err) {
+                        console.error("Cloudinary upload failed", err);
+                    }
+
+                    // 2. Background Backup to Google Drive (Fire and Forget)
                     const reader = new FileReader();
-                    const url = await new Promise(resolve => {
-                        reader.readAsDataURL(file);
-                        reader.onload = async () => {
-                            const res = await fetch(scriptUrl, { method: "POST", body: JSON.stringify({ base64: reader.result.split(',')[1], type: file.type, name: file.name, propertyName: form.property_name || 'Uploads', category: category }) });
-                            const resJson = await res.json();
-                            resolve(resJson.status === 'success' ? resJson.url : null);
-                        };
-                    });
-                    if(url) folderUrl = url; 
+                    reader.readAsDataURL(file);
+                    reader.onload = () => {
+                        fetch(scriptUrl, { 
+                            method: "POST", 
+                            body: JSON.stringify({ base64: reader.result.split(',')[1], type: file.type, name: file.name, propertyName: form.property_name || 'Uploads', category: category }) 
+                        }).catch(err => console.error("Drive backup failed", err));
+                    };
+
+                    // Pushing Cloudinary URL to state so CRM uses it instantly
+                    if(cloudinaryUrl) newUrls.push(cloudinaryUrl);
                 }
                 
-                if(folderUrl) {
-                    setForm(f => ({ ...f, [field]: folderUrl }));
+                if(newUrls.length > 0) {
+                    const joined = newUrls.join(',');
+                    if(append) setForm(f => ({ ...f, [field]: f[field] ? f[field] + ',' + joined : joined }));
+                    else setForm(f => ({ ...f, [field]: joined }));
                 }
                 setLoading(false); setUploadingField(null);
             };
@@ -1086,7 +1130,8 @@
                             <input className="w-full p-4 bg-slate-800 border-none rounded-xl font-bold mt-1 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Commission %" value={form.commission_details} onChange={e => setForm({...form, commission_details: e.target.value})} />
                         </div>
                         
-                        <input className="p-4 bg-slate-800 border-none rounded-xl font-bold md:col-span-2 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Builder Website Link" value={form.website_link} onChange={e => setForm({...form, website_link: e.target.value})} />
+                        <input className="p-4 bg-slate-800 border-none rounded-xl font-bold md:col-span-2 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Video Link (YouTube/Drive URL)" value={form.video_link} onChange={e => setForm({...form, video_link: e.target.value})} />
+                        <input className="p-4 bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-1 focus:ring-blue-400" placeholder="Builder Website Link" value={form.website_link} onChange={e => setForm({...form, website_link: e.target.value})} />
                         <input className="p-4 bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-1 focus:ring-blue-400" placeholder="Lead Register Link / Email" value={form.lead_registration_link} onChange={e => setForm({...form, lead_registration_link: e.target.value})} />
                         <input className="p-4 bg-slate-800 border-none rounded-xl font-bold md:col-span-2 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Map Link (Google Maps URL)" value={form.map_link} onChange={e => setForm({...form, map_link: e.target.value})} />
                     </div>
@@ -1101,7 +1146,7 @@
                             <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Gallery Images (Select Multiple) {uploadingField === 'gallery_images' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
                             <input type="file" multiple onChange={e => upload(e, 'gallery_images', true)} className="text-xs font-bold text-slate-600"/> 
                             {form.gallery_images && form.gallery_images.split(',').filter(Boolean).map((img, idx) => (
-                                <FileTag key={idx} field="gallery_images" name={`Gallery Folder URL`} isArray={false} />
+                                <FileTag key={idx} field="gallery_images" name={`Gallery Image ${idx + 1}`} isArray={true} idx={idx} />
                             ))}
                         </div>
                         <div>
@@ -1113,7 +1158,7 @@
                             <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Cost Sheet (PDF/Images) {uploadingField === 'cost_sheet' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
                             <input type="file" multiple onChange={e => upload(e, 'cost_sheet', true)} className="text-xs font-bold text-slate-600"/>
                             {form.cost_sheet && form.cost_sheet.split(',').filter(Boolean).map((img, idx) => (
-                                <FileTag key={idx} field="cost_sheet" name={`Cost Sheet Folder URL`} isArray={false} />
+                                <FileTag key={idx} field="cost_sheet" name={`Cost Sheet File ${idx + 1}`} isArray={true} idx={idx} />
                             ))}
                         </div>
                         <div>
@@ -1125,13 +1170,8 @@
                             <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Miscellaneous (PDF/Img) {uploadingField === 'miscellaneous' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
                             <input type="file" multiple onChange={e => upload(e, 'miscellaneous', true)} className="text-xs font-bold text-slate-600"/>
                             {form.miscellaneous && form.miscellaneous.split(',').filter(Boolean).map((img, idx) => (
-                                <FileTag key={idx} field="miscellaneous" name={`Misc Folder URL`} isArray={false} />
+                                <FileTag key={idx} field="miscellaneous" name={`Misc File ${idx + 1}`} isArray={true} idx={idx} />
                             ))}
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Property Video (MP4) {uploadingField === 'video_link' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
-                            <input type="file" accept="video/mp4,video/x-m4v,video/*" onChange={e => upload(e, 'video_link')} className="text-xs font-bold text-slate-600"/>
-                            {form.video_link && <FileTag field="video_link" name="Property Video URL" />}
                         </div>
                     </div>
 
@@ -1172,13 +1212,13 @@
 
                 if (!error) {
                     fetch(GOOGLE_SCRIPT_URL, {
-                        method: "POST", 
+                        method: "POST", headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                         body: JSON.stringify({ action: "sendLead", Name: form.name, Phone: form.phone, Email: form.email || 'N/A', Project: form.project, Source: form.source, Requirements: form.note || 'None' })
                     }).catch(err => console.log(err));
                     onSuccess(); 
                 } else alert(error.message);
                 setLoading(false);
-            }; 
+            };
 
             return (
                 <form onSubmit={handleSubmit} className="space-y-4">
