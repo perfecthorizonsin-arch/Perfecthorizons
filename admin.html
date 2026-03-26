@@ -237,53 +237,41 @@
                 }
             };
 
-           const shareViaWhatsApp = async (type, link) => {
+          const shareViaWhatsApp = async (type, link) => {
     if (!link || link.trim() === '') return alert(`${type} is not available for this property.`);
     
-    // 1. Clean up the links (fixes the broken comma-separated mess in your screenshot)
+    // Clean up links and prep the message
     const urls = link.split(',').map(u => u.trim()).filter(Boolean);
     const propName = getVal(property, "Property Name") || getVal(property, "property_name");
-    const textMsg = `Hello! Here is the ${type} for *${propName}*:`;
+    const textMsg = `Hello! Here is the ${type} for *${propName}*:\n\n${urls.join('\n\n')}`;
+    
+    const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    // 2. We cannot "download" Maps or YouTube videos, so just send them as clean links
-    if (type === 'Location Map' || type === 'Property Video') {
-        window.open(`https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urls.join('\n\n'))}`, '_blank');
-        return;
-    }
+    // NATIVE FILE ATTACHMENT (Mobile Only, Single Files Only to prevent timeout crashes)
+    if (isMobile && navigator.canShare && urls.length === 1 && !type.includes('Gallery')) {
+        try {
+            const response = await fetch(urls[0]);
+            const blob = await response.blob();
+            
+            let ext = blob.type.includes('pdf') ? 'pdf' : 'jpg'; 
+            const fileName = `${propName.replace(/\s+/g, '_')}_${type.replace(/\s+/g, '')}.${ext}`;
+            const file = new File([blob], fileName, { type: blob.type });
 
-    // 3. Try to fetch the Cloudinary files and share them as ACTUAL ATTACHMENTS (Mobile)
-    try {
-        if (navigator.canShare) {
-            const filesToShare = [];
-            // Loop through all files (e.g., 4 Cost Sheet pages) and prep them for attachment
-            for (let i = 0; i < urls.length; i++) {
-                const url = urls[i];
-                const response = await fetch(url);
-                const blob = await response.blob();
-                
-                // Assign proper extension (pdf or jpg) based on file type
-                let ext = blob.type.includes('pdf') ? 'pdf' : 'jpg'; 
-                const fileName = `${propName.replace(/\s+/g, '_')}_${type.replace(/\s+/g, '')}${urls.length > 1 ? '_'+(i+1) : ''}.${ext}`;
-                
-                filesToShare.push(new File([blob], fileName, { type: blob.type }));
-            }
-
-            // Trigger the phone's native share menu to push real files to WhatsApp
-            if (navigator.canShare({ files: filesToShare })) {
+            if (navigator.canShare({ files: [file] })) {
                 await navigator.share({
-                    files: filesToShare,
+                    files: [file],
                     title: `${propName} - ${type}`,
-                    text: textMsg
+                    text: `Hello! Here is the ${type} for *${propName}*.`
                 });
-                return; // Stop here if native share succeeds
+                return; // Stop here if native attachment succeeds
             }
+        } catch (error) {
+            console.log("Background download took too long or failed. Falling back to links.", error);
         }
-    } catch (error) {
-        console.log("Could not attach file directly (likely on Desktop PC). Falling back to clean links.");
     }
 
-    // 4. FALLBACK: Send nicely formatted links (one per line) if on Desktop PC
-    window.open(`https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urls.join('\n\n'))}`, '_blank');
+    // FALLBACK: Open WhatsApp directly with clean links (Desktop, Galleries, or if Mobile fails)
+    window.open(`https://wa.me/?text=${encodeURIComponent(textMsg)}`, '_blank');
 };
             const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
 
@@ -509,7 +497,11 @@
             async function fetchLeads() {
                 setLoading(true);
                 const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-                const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false });
+               const { data, error } = await supabase
+    .from('properties')
+    .select('*')
+    .not('is_live', 'eq', false) // THIS IS THE MAGIC LINE
+    .order('created_at', { ascending: false });
                 if (!error) {
                     let raw = data || [];
                     if (table === 'leads') {
