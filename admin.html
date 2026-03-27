@@ -201,10 +201,6 @@
 
         const PropertyDetailsPage = ({ property, onBack }) => {
             const galleryRef = useRef(null);
-            const [shareModal, setShareModal] = useState(null); 
-            const [selectedUrls, setSelectedUrls] = useState([]);
-            const [isSharing, setIsSharing] = useState(false);
-            
             useEffect(() => { window.scrollTo(0, 0); }, [property]);
 
             const cover = convertDriveLink(getVal(property, "cover_image") || getVal(property, "cover-image"));
@@ -217,12 +213,23 @@
                 window.open(getSafeLink(rawLink), '_blank');
             };
 
+            const handlePreviewImages = () => {
+                const gallery = getVal(property, "gallery_images") || getVal(property, "cover_image");
+                if (!gallery || gallery.trim() === '') return alert("No images available.");
+                let firstLink = gallery.split(',')[0].trim();
+                let folderLink = firstLink.replace('thumbnail?id=', 'file/d/').replace('&sz=w1000', '/view');
+                window.open(folderLink, '_blank');
+            };
+
+            const regLink = getVal(property, "lead_registration") || getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_or_email_id");
+            const isEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
+            const regText = isEmail ? "✉️ Email Lead Details" : "🌐 Direct to Website Link";
+
             const handleRegisterLead = () => {
-                const regLink = getVal(property, "lead_registration") || getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_or_email_id");
                 if (!regLink || regLink.trim() === '') return alert("No lead registration details provided.");
-                const isEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
                 if (isEmail) {
-                    window.location.href = `mailto:${regLink.replace('mailto:', '').trim()}?subject=New Lead Registration: ${getVal(property, "property_name")}`;
+                    let email = regLink.replace('mailto:', '').trim();
+                    window.location.href = `mailto:${email}?subject=New Lead Registration: ${getVal(property, "property_name")}`;
                 } else {
                     let link = regLink.trim();
                     if (!link.startsWith('http')) link = `https://${link}`;
@@ -230,97 +237,18 @@
                 }
             };
 
-            // --- THE FIX: SMART NATIVE SHARING ---
-            const shareViaWhatsApp = (type, linkStr) => {
-                if (!linkStr || linkStr.trim() === '') return alert(`${type} is not available for this property.`);
-                const urls = linkStr.split(',').map(u => u.trim()).filter(Boolean);
-                
-                // ONLY bypass the modal if it's a map or a video (because we can't download those to attach)
-                if (type === 'Location Map' || type === 'Property Video') {
-                    executeShareMulti(type, urls);
-                } else {
-                    // Always show the modal for Brochure, Cost Sheet, Floor Plans, and Images so UI is consistent
-                    setShareModal({ type, urls });
-                    setSelectedUrls([...urls]); 
-                }
-            };
-
-            const toggleSelection = (url) => {
-                if (selectedUrls.includes(url)) setSelectedUrls(selectedUrls.filter(u => u !== url));
-                else setSelectedUrls([...selectedUrls, url]);
-            };
-
-            const executeShareMulti = async (type, urlsToShare) => {
-                if (urlsToShare.length === 0) return alert("Please select at least one file to share.");
-                setIsSharing(true);
-                
-                const propName = getVal(property, "Property Name") || getVal(property, "property_name");
-                const textMsg = `Hello! Here is the ${type} for *${propName}*:`;
-                const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-                const waUrl = `https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urlsToShare.join('\n\n'))}`;
-
-                // Maps and Videos are just links, open them directly
-                if (type === 'Location Map' || type === 'Property Video') {
-                    if (isMobile) window.location.href = waUrl;
-                    else window.open(waUrl, '_blank');
-                    setShareModal(null);
-                    setIsSharing(false);
-                    return;
-                }
-
-                // If on mobile, attempt to fetch files and push them to WhatsApp natively
-                // Removed navigator.canShare check from the IF statement to prevent silent failures on older phones
-                if (isMobile && navigator.share) {
-                    try {
-                        const filesToShare = [];
-                        for (let i = 0; i < urlsToShare.length; i++) {
-                            const response = await fetch(urlsToShare[i]);
-                            const blob = await response.blob();
-                            
-                            // Prevent Cloudinary corruption HTML from crashing the share
-                            if (blob.type.includes('text/html')) throw new Error("Cloudinary returned HTML error page");
-
-                            // CRITICAL PDF FIX: Force proper MIME type so mobile browsers accept the PDF
-                            const isPdf = urlsToShare[i].toLowerCase().includes('.pdf') || blob.type.includes('pdf');
-                            const ext = isPdf ? 'pdf' : 'jpg'; 
-                            const mime = isPdf ? 'application/pdf' : (blob.type || 'image/jpeg');
-                            
-                            const fileName = `${propName.replace(/[^a-zA-Z0-9]/g, '_')}_${type.replace(/\s+/g, '')}${urlsToShare.length > 1 ? '_'+(i+1) : ''}.${ext}`;
-                            filesToShare.push(new File([blob], fileName, { type: mime }));
-                        }
-
-                        // Check if the specific files are allowed, if canShare exists. Otherwise just try.
-                        const canShareFiles = navigator.canShare ? navigator.canShare({ files: filesToShare }) : true;
-                        
-                        if (canShareFiles) {
-                            await navigator.share({ files: filesToShare, title: `${propName} - ${type}`, text: textMsg });
-                            setShareModal(null);
-                            setIsSharing(false);
-                            return; 
-                        } else {
-                            console.log("Browser rejected native file share. Falling back to links.");
-                        }
-                    } catch (error) {
-                        console.error("Could not attach actual file natively, falling back to links.", error);
-                    }
-                }
-
-                // Desktop Fallback (or if mobile fetch fails): Opens WhatsApp Web with the links
-                if (isMobile) window.location.href = waUrl;
-                else window.open(waUrl, '_blank');
-                
-                setShareModal(null);
-                setIsSharing(false);
+            const shareViaWhatsApp = (type, link) => {
+                if (!link || link.trim() === '') return alert(`${type} is not available for this property.`);
+                let finalLink = link;
+                if (type === 'Images/Gallery' && link.includes(',')) { finalLink = link.split(',').join('\n'); }
+                const text = `Hello! Here is the ${type} for *${getVal(property, "Property Name")}*:\n\n${finalLink}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
             };
 
             const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
-            
-            // Clean up BHK text so it doesn't say "3 BHK BHK"
-            const rawBhk = getVal(property, "bhk") || getVal(property, "No of BHK's");
-            const bhkLabel = rawBhk ? (String(rawBhk).toLowerCase().includes('bhk') ? rawBhk : `${rawBhk} BHK`) : 'N/A';
 
             return (
-                <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0 relative">
+                <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0">
                     <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
                         <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
                             <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> Back to Search
@@ -361,7 +289,7 @@
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                             <div className="lg:col-span-2 space-y-10">
                                 <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 relative">
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div><div className="text-sm md:text-lg font-black text-slate-900 mt-1">{bhkLabel}</div></div>
+                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div><div className="text-sm md:text-lg font-black text-slate-900 mt-1">{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div></div>
                                     <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_status") || 'N/A'}</div></div>
                                     <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Possession</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : 'On Request'}</div></div>
                                     <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">RERA Status</div><div className="text-sm md:text-base font-black text-green-600 mt-1">Verified ✓</div></div>
@@ -370,7 +298,7 @@
                                 <div>
                                     <h2 className="text-xl md:text-2xl font-black uppercase tracking-wide text-slate-900 mb-4 border-b border-slate-200 pb-2">About The Project</h2>
                                     <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${bhkLabel} homes.`}
+                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${getVal(property, "bhk") || "premium"} homes.`}
                                     </p>
                                 </div>
 
@@ -435,9 +363,7 @@
                                                 <button onClick={() => shareViaWhatsApp('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
                                                 <button onClick={() => shareViaWhatsApp('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
                                                 <button onClick={() => shareViaWhatsApp('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
-                                                <button onClick={() => shareViaWhatsApp('Floor Plan', getVal(property, "floor_plan"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📐 Floor Plan</button>
-                                                <button onClick={() => shareViaWhatsApp('Miscellaneous', getVal(property, "miscellaneous"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📂 Misc</button>
-                                                <button onClick={() => shareViaWhatsApp('Gallery Images', getVal(property, "gallery_images") || getVal(property, "cover_image"))} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Share Images</button>
+                                                <button onClick={handlePreviewImages} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Preview Images (Drive)</button>
                                             </div>
                                         </div>
                                     </div>
@@ -446,37 +372,6 @@
                             </div>
                         </div>
                     </div>
-
-                    {/* Share Modal */}
-                    {shareModal && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fadeIn">
-                            <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl p-6 relative flex flex-col max-h-[80vh]">
-                                <button onClick={() => setShareModal(null)} className="absolute top-6 right-6 text-xl text-slate-400 hover:text-slate-800">✕</button>
-                                <h2 className="text-lg font-black uppercase text-slate-900 mb-2">Select Files to Share</h2>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 pb-4 border-b">{shareModal.type}</p>
-                                
-                                <div className="overflow-y-auto pr-2 space-y-3 flex-grow mb-4">
-                                    {shareModal.urls.map((url, index) => (
-                                        <label key={index} className={`flex items-center gap-4 p-3 rounded-xl border cursor-pointer transition ${selectedUrls.includes(url) ? 'bg-blue-50 border-blue-500' : 'bg-slate-50 border-slate-200'}`}>
-                                            <input type="checkbox" className="w-5 h-5 accent-blue-600 cursor-pointer" checked={selectedUrls.includes(url)} onChange={() => toggleSelection(url)} />
-                                            {url.toLowerCase().includes('.jpg') || url.toLowerCase().includes('.png') ? (
-                                                <img src={url} className="w-12 h-12 rounded object-cover border border-slate-200 bg-white" />
-                                            ) : (
-                                                <div className="w-12 h-12 rounded flex items-center justify-center bg-red-100 text-red-600 text-xl">📄</div>
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-[10px] font-bold text-slate-700 truncate">{url.split('/').pop().substring(0,25)}...</p>
-                                            </div>
-                                        </label>
-                                    ))}
-                                </div>
-                                
-                                <button disabled={isSharing} onClick={() => executeShareMulti(shareModal.type, selectedUrls)} className="w-full bg-blue-600 text-white p-4 rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-blue-700 transition disabled:opacity-50">
-                                    {isSharing ? "Preparing Files..." : `Send to WhatsApp (${selectedUrls.length})`}
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             );
         };
@@ -587,6 +482,7 @@
                         // This is for Bulk Leads specifically
                         const bulkData = raw.map(l => ({
                             ...l,
+                            // If it's the bulk tab, we use the text exactly as it is in Supabase
                             display_date: l.created_at || 'N/A'
                         }));
                         setLeads(bulkData); 
@@ -715,6 +611,7 @@
                         {view === 'dashboard' && (
                             <div className="space-y-6">
                                 
+                                {/* IMPROVED RESPONSIVE STATS BAR */}
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
                                     <div className="flex flex-wrap justify-between md:grid md:grid-cols-5 gap-4 items-center">
                                         <div className="w-full md:w-auto border-b md:border-none pb-2 md:pb-0">
@@ -980,7 +877,7 @@
                             </div>
                         )}
 
-                        {view === 'library' && <ProjectLibrary supabase={supabase} setProp={setSelectedProp} properties={properties} setProperties={setProperties} />}
+                        {view === 'library' && <ProjectLibrary supabase={supabase} setProp={setSelectedProp} properties={properties} />}
                         {view === 'add' && <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} />}
                     </main>
 
@@ -999,7 +896,7 @@
             );
         }
 
-        function ProjectLibrary({ properties, setProp, supabase, setProperties }) {
+        function ProjectLibrary({ properties, setProp }) {
             const getVal = (obj, searchKey) => {
                 if (!obj) return "";
                 if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
@@ -1016,39 +913,17 @@
 
             const fixImageUrl = (u) => u ? convertDriveLink(String(u).split(',')[0].trim()) : 'https://via.placeholder.com/600x300?text=No+Image';
 
-            const toggleLive = async (e, p) => {
-                e.stopPropagation(); 
-                const currentStatus = p.is_live !== false; 
-                const newStatus = !currentStatus;
-
-                if (setProperties) setProperties(prev => prev.map(item => item.id === p.id ? { ...item, is_live: newStatus } : item));
-
-                const { error } = await supabase.from('properties').update({ is_live: newStatus }).eq('id', p.id);
-                
-                if (error) {
-                    console.error("Supabase Error:", error);
-                    alert(`Database Error: ${error.message}\n\nPlease ensure you have added a column named 'is_live' (type: bool, default: true) to your 'properties' table in Supabase.`);
-                    if (setProperties) setProperties(prev => prev.map(item => item.id === p.id ? { ...item, is_live: currentStatus } : item));
-                }
-            };
-
             if (!properties || properties.length === 0) return <div className="text-center py-20 font-black text-slate-400 tracking-widest uppercase animate-pulse">Library Empty...</div>;
 
             return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
                     {properties.map(p => (
-                        <div key={p.id} onClick={() => setProp(p)} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col relative">
+                        <div key={p.id} onClick={() => setProp(p)} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col">
                             <div className="relative h-48 bg-slate-100 overflow-hidden">
                                 <img src={fixImageUrl(getVal(p, "cover_image") || getVal(p, "cover-image"))} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                                 <div className="absolute top-4 left-0 bg-slate-900/90 backdrop-blur-sm text-white text-[10px] font-black px-3 py-1.5 rounded-r-lg uppercase tracking-widest shadow-md">
                                     {getVal(p, "property_type") || 'Property'}
                                 </div>
-                                <button 
-                                    onClick={(e) => toggleLive(e, p)} 
-                                    className={`absolute top-4 right-0 text-[10px] font-black px-3 py-1.5 rounded-l-lg uppercase tracking-widest shadow-md transition z-10 ${p.is_live !== false ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-red-500 text-white hover:bg-red-600'}`}
-                                >
-                                    {p.is_live !== false ? '🟢 Live' : '🔴 Hidden'}
-                                </button>
                             </div>
                             <div className="p-5 flex-grow flex flex-col">
                                 <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 leading-tight truncate">{getVal(p, "property_name")}</h3>
@@ -1084,36 +959,19 @@
                 const categoryMap = { 'cover_image': 'Cover Image', 'gallery_images': 'Gallery', 'brochure': 'Brochures', 'cost_sheet': 'Cost Sheets', 'floor_plan': 'Floor Plans', 'miscellaneous': 'Miscellaneous' };
                 const category = categoryMap[field] || 'General';
 
-                const CLOUD_NAME = "dzptjohkq";
-                const UPLOAD_PRESET = "horizon_preset"; 
-
                 let newUrls = [];
                 for(let i=0; i<files.length; i++) {
                     const file = files[i];
-
-                    let cloudinaryUrl = null;
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    formData.append('upload_preset', UPLOAD_PRESET);
-                    if (form.property_name) formData.append('folder', `Projects/${form.property_name}`);
-
-                    try {
-                        const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
-                            method: 'POST', body: formData
-                        });
-                        const cloudData = await cloudRes.json();
-                        if (cloudData.secure_url) cloudinaryUrl = cloudData.secure_url;
-                    } catch (err) { console.error("Cloudinary fail", err); }
-
                     const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    reader.onload = () => {
-                        fetch(scriptUrl, { 
-                            method: "POST", body: JSON.stringify({ base64: reader.result.split(',')[1], type: file.type, name: file.name, propertyName: form.property_name || 'Uploads', category: category }) 
-                        }).catch(err => console.error("Drive backup fail", err));
-                    };
-
-                    if(cloudinaryUrl) newUrls.push(cloudinaryUrl);
+                    const url = await new Promise(resolve => {
+                        reader.readAsDataURL(file);
+                        reader.onload = async () => {
+                            const res = await fetch(scriptUrl, { method: "POST", body: JSON.stringify({ base64: reader.result.split(',')[1], type: file.type, name: file.name, propertyName: form.property_name || 'Uploads', category: category }) });
+                            const resJson = await res.json();
+                            resolve(resJson.status === 'success' ? resJson.url : null);
+                        };
+                    });
+                    if(url) newUrls.push(url);
                 }
                 
                 if(newUrls.length > 0) {
@@ -1345,4 +1203,19 @@
                 <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
                     <form onSubmit={handleLogin} className="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-sm text-center border-t-8 border-blue-500 relative">
                         <h1 className="text-3xl font-black italic uppercase mb-8">Horizon CRM</h1>
-                        {errorMsg && <div className="text-red-500 text-xs font-bold mb-4 bg-
+                        {errorMsg && <div className="text-red-500 text-xs font-bold mb-4 bg-red-50 p-2 rounded">{errorMsg}</div>}
+                        <input type="email" required placeholder="Email" className="w-full p-4 bg-slate-100 rounded-2xl mb-4 font-bold outline-none focus:ring-2 focus:ring-blue-500 transition" onChange={e => setEmail(e.target.value)} />
+                        <input type="password" required placeholder="Password" className="w-full p-4 bg-slate-100 rounded-2xl mb-8 font-bold outline-none focus:ring-2 focus:ring-blue-500 transition" onChange={e => setPass(e.target.value)} />
+                        <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg disabled:opacity-50 hover:bg-blue-700 transition">
+                            {loading ? "Authenticating..." : "Login"}
+                        </button>
+                    </form>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AdminApp />);
+    </script>
+</body>
+</html>
