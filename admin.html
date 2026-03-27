@@ -259,8 +259,7 @@
                 const waUrl = `https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urlsToShare.join('\n\n'))}`;
 
                 if (type === 'Location Map' || type === 'Property Video') {
-                    if (isMobile) window.location.href = waUrl;
-                    else window.open(waUrl, '_blank');
+                    window.open(waUrl, '_blank');
                     setShareModal(null);
                     return;
                 }
@@ -271,25 +270,30 @@
                         for (let i = 0; i < urlsToShare.length; i++) {
                             const response = await fetch(urlsToShare[i]);
                             const blob = await response.blob();
-                            const ext = blob.type.includes('pdf') ? 'pdf' : 'jpg'; 
+                            
+                            // CRITICAL FIX: Force proper MIME type for PDFs
+                            const isPdf = urlsToShare[i].toLowerCase().includes('.pdf') || blob.type.includes('pdf');
+                            const ext = isPdf ? 'pdf' : 'jpg'; 
+                            const mime = isPdf ? 'application/pdf' : (blob.type || 'image/jpeg');
+                            
                             const fileName = `${propName.replace(/[^a-zA-Z0-9]/g, '_')}_${type.replace(/\s+/g, '')}${urlsToShare.length > 1 ? '_'+(i+1) : ''}.${ext}`;
-                            filesToShare.push(new File([blob], fileName, { type: blob.type }));
+                            filesToShare.push(new File([blob], fileName, { type: mime }));
                         }
 
                         if (navigator.canShare({ files: filesToShare })) {
                             await navigator.share({ files: filesToShare, title: `${propName} - ${type}`, text: textMsg });
                             setShareModal(null);
-                            return; // Success, stop execution
+                            return; 
+                        } else {
+                            console.log("Browser rejected native share, falling back.");
                         }
                     } catch (error) {
-                        console.log("Could not attach actual file, falling back to links.", error);
+                        console.error("Could not attach actual file, falling back to links.", error);
                     }
                 }
 
-                // Fallback for Desktop AND Mobile if Native Share fails or is skipped
-                if (isMobile) window.location.href = waUrl;
-                else window.open(waUrl, '_blank');
-                
+                // Fallback for Desktop AND Mobile if Native Share fails
+                window.open(waUrl, '_blank');
                 setShareModal(null);
             };
 
@@ -1001,7 +1005,8 @@
 
                 const { error } = await supabase.from('properties').update({ is_live: newStatus }).eq('id', p.id);
                 if (error) {
-                    alert("Failed to toggle live status. Ensure you created 'is_live' boolean column in 'properties' table in Supabase.");
+                    console.error("Supabase Error:", error);
+                    alert("Failed to save to database! You must create an 'is_live' boolean column in your Supabase 'properties' table. Reverting toggle.");
                     if (setProperties) setProperties(prev => prev.map(item => item.id === p.id ? { ...item, is_live: currentStatus } : item));
                 }
             };
