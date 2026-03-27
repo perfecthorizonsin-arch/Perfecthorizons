@@ -1215,4 +1215,139 @@
                         
                         <input className="p-4 bg-slate-800 border-none rounded-xl font-bold md:col-span-2 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Video Link (YouTube/Drive URL)" value={form.video_link} onChange={e => setForm({...form, video_link: e.target.value})} />
                         <input className="p-4 bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-1 focus:ring-blue-400" placeholder="Builder Website Link" value={form.website_link} onChange={e => setForm({...form, website_link: e.target.value})} />
-                        <input className="p-4 bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-1 focus:ring-blue-400" placeholder="Lead Register Link / Email" value={form.lead_registration_link} onChange={e => setForm({...form, lead_registration_link: e
+                        <input className="p-4 bg-slate-800 border-none rounded-xl font-bold outline-none focus:ring-1 focus:ring-blue-400" placeholder="Lead Register Link / Email" value={form.lead_registration_link} onChange={e => setForm({...form, lead_registration_link: e.target.value})} />
+                        <input className="p-4 bg-slate-800 border-none rounded-xl font-bold md:col-span-2 outline-none focus:ring-1 focus:ring-blue-400" placeholder="Map Link (Google Maps URL)" value={form.map_link} onChange={e => setForm({...form, map_link: e.target.value})} />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Main Cover Image * {uploadingField === 'cover_image' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
+                            <input type="file" onChange={e => upload(e, 'cover_image')} className="text-xs font-bold text-slate-600"/>
+                            {form.cover_image && <FileTag field="cover_image" name="Cover Image" />}
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Gallery Images (Select Multiple) {uploadingField === 'gallery_images' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
+                            <input type="file" multiple onChange={e => upload(e, 'gallery_images', true)} className="text-xs font-bold text-slate-600"/> 
+                            {form.gallery_images && form.gallery_images.split(',').filter(Boolean).map((img, idx) => (
+                                <FileTag key={idx} field="gallery_images" name={`Gallery Image ${idx + 1}`} isArray={true} idx={idx} />
+                            ))}
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Brochure (PDF) {uploadingField === 'brochure' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
+                            <input type="file" onChange={e => upload(e, 'brochure')} className="text-xs font-bold text-slate-600"/>
+                            {form.brochure && <FileTag field="brochure" name="Brochure PDF" />}
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Cost Sheet (PDF/Images) {uploadingField === 'cost_sheet' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
+                            <input type="file" multiple onChange={e => upload(e, 'cost_sheet', true)} className="text-xs font-bold text-slate-600"/>
+                            {form.cost_sheet && form.cost_sheet.split(',').filter(Boolean).map((img, idx) => (
+                                <FileTag key={idx} field="cost_sheet" name={`Cost Sheet File ${idx + 1}`} isArray={true} idx={idx} />
+                            ))}
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Floor Plan (PDF/Img) {uploadingField === 'floor_plan' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
+                            <input type="file" onChange={e => upload(e, 'floor_plan')} className="text-xs font-bold text-slate-600"/>
+                            {form.floor_plan && <FileTag field="floor_plan" name="Floor Plan File" />}
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Miscellaneous (PDF/Img) {uploadingField === 'miscellaneous' && <span className="text-blue-500 animate-pulse">(Uploading...)</span>}</label>
+                            <input type="file" multiple onChange={e => upload(e, 'miscellaneous', true)} className="text-xs font-bold text-slate-600"/>
+                            {form.miscellaneous && form.miscellaneous.split(',').filter(Boolean).map((img, idx) => (
+                                <FileTag key={idx} field="miscellaneous" name={`Misc File ${idx + 1}`} isArray={true} idx={idx} />
+                            ))}
+                        </div>
+                    </div>
+
+                    <button onClick={save} disabled={loading} className="w-full bg-blue-600 text-white p-5 rounded-3xl font-black uppercase tracking-widest hover:bg-slate-900 transition shadow-xl mt-4">
+                        {loading ? 'Uploading & Publishing...' : 'Publish Listing'}
+                    </button>
+                </div>
+            );
+        }
+
+        function ManualLeadForm({ supabase, properties, onSuccess }) {
+            const [form, setForm] = useState({ name: '', phone: '', email: '', project: 'General Enquiry', note: '', source: 'Manual Entry' });
+            const [loading, setLoading] = useState(false);
+
+            const getVal = (obj, searchKey) => {
+                if (!obj) return "";
+                if (obj[searchKey] !== undefined && obj[searchKey] !== "") return obj[searchKey];
+                const cleanKey = searchKey.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                for (let k in obj) { if (k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanKey) return obj[k]; }
+                return "";
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                const stamp = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
+                
+                const { error } = await supabase.from('leads').insert([{ 
+                    customer_name: form.name, 
+                    phone_number: form.phone, 
+                    customer_email: form.email || null,
+                    project_interested_in: form.project,
+                    add_note: form.note, 
+                    call_remark: form.note ? `[${stamp}] Requirement: ${form.note}\n\n` : '',
+                    lead_source: form.source, 
+                    lead_status: 'Un called' 
+                }]);
+
+                if (!error) {
+                    fetch(GOOGLE_SCRIPT_URL, {
+                        method: "POST", headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ action: "sendLead", Name: form.name, Phone: form.phone, Email: form.email || 'N/A', Project: form.project, Source: form.source, Requirements: form.note || 'None' })
+                    }).catch(err => console.log(err));
+                    onSuccess(); 
+                } else alert(error.message);
+                setLoading(false);
+            };
+
+            return (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <input required className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Client Name *" onChange={e => setForm({...form, name: e.target.value})} />
+                    <input required className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Phone Number *" onChange={e => setForm({...form, phone: e.target.value})} />
+                    <input type="email" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Email ID (Optional)" onChange={e => setForm({...form, email: e.target.value})} />
+                    <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" onChange={e => setForm({...form, project: e.target.value})} value={form.project}>
+                        <option value="General Enquiry">General Enquiry</option>
+                        {properties?.map(p => <option key={p.id} value={getVal(p, "property_name")}>{getVal(p, "property_name")}</option>)}
+                    </select>
+                    <textarea className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500 h-24" placeholder="Customer Requirements / Enquiry Details..." onChange={e => setForm({...form, note: e.target.value})}></textarea>
+                    <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setForm({...form, source: e.target.value})} value={form.source}>
+                        <option>Manual Entry</option><option>Walk-in</option><option>Referral</option><option>MagicBricks</option><option>Housing.com</option>
+                    </select>
+                    <button disabled={loading} className="w-full bg-blue-600 text-white p-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-md transition disabled:opacity-50">
+                        {loading ? "Injecting..." : "Inject Lead"}
+                    </button>
+                </form>
+            );
+        }
+
+        function LoginForm({ supabase }) {
+            const [email, setEmail] = useState(""); const [pass, setPass] = useState(""); const [loading, setLoading] = useState(false); const [errorMsg, setErrorMsg] = useState("");
+            const handleLogin = async (e) => {
+                e.preventDefault(); setLoading(true); setErrorMsg("");
+                const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+                if (error) setErrorMsg(error.message);
+                setLoading(false);
+            };
+            return (
+                <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+                    <form onSubmit={handleLogin} className="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-sm text-center border-t-8 border-blue-500 relative">
+                        <h1 className="text-3xl font-black italic uppercase mb-8">Horizon CRM</h1>
+                        {errorMsg && <div className="text-red-500 text-xs font-bold mb-4 bg-red-50 p-2 rounded">{errorMsg}</div>}
+                        <input type="email" required placeholder="Email" className="w-full p-4 bg-slate-100 rounded-2xl mb-4 font-bold outline-none focus:ring-2 focus:ring-blue-500 transition" onChange={e => setEmail(e.target.value)} />
+                        <input type="password" required placeholder="Password" className="w-full p-4 bg-slate-100 rounded-2xl mb-8 font-bold outline-none focus:ring-2 focus:ring-blue-500 transition" onChange={e => setPass(e.target.value)} />
+                        <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg disabled:opacity-50 hover:bg-blue-700 transition">
+                            {loading ? "Authenticating..." : "Login"}
+                        </button>
+                    </form>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AdminApp />);
+    </script>
+</body>
+</html>
