@@ -203,36 +203,24 @@
             const galleryRef = useRef(null);
             const [shareModal, setShareModal] = useState(null); 
             const [selectedUrls, setSelectedUrls] = useState([]);
-
+            
             useEffect(() => { window.scrollTo(0, 0); }, [property]);
 
             const cover = convertDriveLink(getVal(property, "cover_image") || getVal(property, "cover-image"));
             const galRaw = getVal(property, "gallery_images") || getVal(property, "gallery-images") || "";
             const imgs = [cover, ...(typeof galRaw === 'string' ? galRaw.split(',').map(l => convertDriveLink(l.trim())) : [])].filter(i => i); 
-            const projectUsps = getVal(property, "usp_details") || getVal(property, "usp_s") || getVal(property, "USP's");
 
             const openLink = (rawLink) => {
                 if (!rawLink || rawLink.trim() === '') return alert("This link was not provided for this property.");
                 window.open(getSafeLink(rawLink), '_blank');
             };
 
-            const handlePreviewImages = () => {
-                const gallery = getVal(property, "gallery_images") || getVal(property, "cover_image");
-                if (!gallery || gallery.trim() === '') return alert("No images available.");
-                let firstLink = gallery.split(',')[0].trim();
-                let folderLink = firstLink.replace('thumbnail?id=', 'file/d/').replace('&sz=w1000', '/view');
-                window.open(folderLink, '_blank');
-            };
-
-            const regLink = getVal(property, "lead_registration") || getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_or_email_id");
-            const isEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
-            const regText = isEmail ? "✉️ Email Lead Details" : "🌐 Direct to Website Link";
-
             const handleRegisterLead = () => {
+                const regLink = getVal(property, "lead_registration") || getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_or_email_id");
                 if (!regLink || regLink.trim() === '') return alert("No lead registration details provided.");
+                const isEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
                 if (isEmail) {
-                    let email = regLink.replace('mailto:', '').trim();
-                    window.location.href = `mailto:${email}?subject=New Lead Registration: ${getVal(property, "property_name")}`;
+                    window.location.href = `mailto:${regLink.replace('mailto:', '').trim()}?subject=New Lead Registration: ${getVal(property, "property_name")}`;
                 } else {
                     let link = regLink.trim();
                     if (!link.startsWith('http')) link = `https://${link}`;
@@ -240,19 +228,26 @@
                 }
             };
 
-            // --- MULTI-FILE SELECTION & ACTUAL ATTACH LOGIC ---
-            const openShareModal = (type, linkStr) => {
-                if (!linkStr || linkStr.trim() === '') return alert(`${type} is not available.`);
+            // --- THE FIX: SMART SHARING ---
+            const shareViaWhatsApp = (type, linkStr) => {
+                if (!linkStr || linkStr.trim() === '') return alert(`${type} is not available for this property.`);
                 const urls = linkStr.split(',').map(u => u.trim()).filter(Boolean);
                 
-                // ONLY bypass the modal if it's a map or a video (because we can't download those)
-                if (type === 'Location Map' || type === 'Property Video') {
-                    executeShare(type, urls);
+                // If it's a PDF (Brochure) or Link (Map/Video), just send the clean links.
+                if (type === 'Brochure' || type === 'Location Map' || type === 'Property Video') {
+                    executeShareLinks(type, urls);
                 } else {
-                    // Always show the modal for Brochure, Cost Sheet, and Images so UI is consistent
+                    // For Images/Cost Sheets/Misc, show the selection modal
                     setShareModal({ type, urls });
                     setSelectedUrls([...urls]); 
                 }
+            };
+
+            const executeShareLinks = (type, urls) => {
+                const propName = getVal(property, "Property Name") || getVal(property, "property_name");
+                const textMsg = `Hello! Here is the ${type} for *${propName}*:\n\n${urls.join('\n\n')}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(textMsg)}`, '_blank');
+                setShareModal(null);
             };
 
             const toggleSelection = (url) => {
@@ -260,23 +255,14 @@
                 else setSelectedUrls([...selectedUrls, url]);
             };
 
-            const executeShare = async (type, urlsToShare) => {
+            const executeShareMulti = async (type, urlsToShare) => {
                 if (urlsToShare.length === 0) return alert("Please select at least one file to share.");
                 
                 const propName = getVal(property, "Property Name") || getVal(property, "property_name");
                 const textMsg = `Hello! Here is the ${type} for *${propName}*:`;
                 const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-                const waUrl = `https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urlsToShare.join('\n\n'))}`;
 
-                // Maps and Videos are just links, open them directly
-                if (type === 'Location Map' || type === 'Property Video') {
-                    if (isMobile) window.location.href = waUrl;
-                    else window.open(waUrl, '_blank');
-                    setShareModal(null);
-                    return;
-                }
-
-                // If on mobile, attempt to fetch files and push them to WhatsApp natively
+                // NATIVE ATTACHMENT ON MOBILE
                 if (isMobile && navigator.canShare && navigator.share) {
                     try {
                         const filesToShare = [];
@@ -284,12 +270,14 @@
                             const response = await fetch(urlsToShare[i]);
                             const blob = await response.blob();
                             
-                            // CRITICAL PDF FIX: Force proper MIME type so mobile browsers accept the PDF
+                            // Prevent Cloudinary corruption HTML from crashing the share
+                            if (blob.type.includes('text/html')) throw new Error("Cloudinary returned HTML error page");
+
                             const isPdf = urlsToShare[i].toLowerCase().includes('.pdf') || blob.type.includes('pdf');
                             const ext = isPdf ? 'pdf' : 'jpg'; 
                             const mime = isPdf ? 'application/pdf' : (blob.type || 'image/jpeg');
-                            
-                            const fileName = `${propName.replace(/[^a-zA-Z0-9]/g, '_')}_${type.replace(/\s+/g, '')}${urlsToShare.length > 1 ? '_'+(i+1) : ''}.${ext}`;
+
+                            const fileName = `${propName.replace(/[^a-zA-Z0-9]/g, '_')}_${type.replace(/\s+/g, '')}_${i+1}.${ext}`;
                             filesToShare.push(new File([blob], fileName, { type: mime }));
                         }
 
@@ -299,18 +287,16 @@
                             return; 
                         }
                     } catch (error) {
-                        console.log("Could not attach actual file, falling back to links.", error);
+                        console.log("Could not attach actual file natively, falling back to links.", error);
                     }
                 }
 
-                // Desktop Fallback (or if mobile fails): Opens WhatsApp Web with the links
-                window.open(waUrl, '_blank');
+                // Desktop Fallback (or if mobile fetch fails)
+                window.open(`https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urlsToShare.join('\n\n'))}`, '_blank');
                 setShareModal(null);
             };
 
             const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
-            
-            // Clean up BHK text so it doesn't say "3 BHK BHK"
             const rawBhk = getVal(property, "bhk") || getVal(property, "No of BHK's");
             const bhkLabel = rawBhk ? (String(rawBhk).toLowerCase().includes('bhk') ? rawBhk : `${rawBhk} BHK`) : 'N/A';
 
@@ -320,76 +306,30 @@
                         <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
                             <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> Back to Search
                         </button>
-                        <div className="hidden md:flex items-center gap-4">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-200 pr-4">
-                                {getVal(property, "Location")} • {getVal(property, "Builder Name")}
-                            </div>
-                            <a href={`tel:${pocNumber}`} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-slate-200">
-                                📞 Call Agent
-                            </a>
-                        </div>
                     </div>
 
                     <div className="max-w-7xl mx-auto w-full p-4 md:p-8">
-                        <div className="relative mb-8">
-                            <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scroll h-[40vh] md:h-[60vh] rounded-3xl">
-                                {imgs.length > 0 ? imgs.map((img, i) => (
-                                    <div key={i} className="min-w-full md:min-w-[80%] h-full shrink-0 snap-center relative rounded-3xl overflow-hidden bg-slate-200 border border-slate-100">
-                                        <img src={img} className="w-full h-full object-cover" />
-                                        {i === 0 && (
-                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent flex flex-col justify-end p-6 md:p-10">
-                                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{getVal(property, "Property Type") || 'Apartment'}</div>
-                                                <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-white mb-2">{getVal(property, "Property Name")}</h1>
-                                                <p className="text-white/80 font-medium text-sm md:text-base">📍 {getVal(property, "Location")}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )) : (
-                                    <div className="w-full h-full bg-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-400">
-                                        <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-slate-500 mb-2">{getVal(property, "Property Name")}</h1>
-                                        <p className="text-sm font-bold uppercase tracking-widest">Images Coming Soon</p>
-                                    </div>
-                                )}
+                        <div className="relative mb-8 h-[40vh] md:h-[60vh] rounded-3xl overflow-hidden bg-slate-200 shadow-lg">
+                            <img src={cover} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 flex flex-col justify-end p-8">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{getVal(property, "Property Type") || 'Apartment'}</div>
+                                <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter italic">{getVal(property, "Property Name")}</h1>
+                                <p className="text-white/80 font-medium text-sm mt-2">📍 {getVal(property, "Location")}</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                             <div className="lg:col-span-2 space-y-10">
-                                <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 relative">
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div><div className="text-sm md:text-lg font-black text-slate-900 mt-1">{bhkLabel}</div></div>
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_status") || 'N/A'}</div></div>
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Possession</div><div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : 'On Request'}</div></div>
-                                    <div><div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">RERA Status</div><div className="text-sm md:text-base font-black text-green-600 mt-1">Verified ✓</div></div>
+                                <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6">
+                                    <div><p className="text-[10px] font-black uppercase text-slate-400 mb-1">Configurations</p><p className="text-sm md:text-lg font-black text-slate-900 mt-1">{bhkLabel}</p></div>
+                                    <div><p className="text-[10px] font-black uppercase text-slate-400 mb-1">Status</p><p className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_status") || 'N/A'}</p></div>
+                                    <div><p className="text-[10px] font-black uppercase text-slate-400 mb-1">Possession</p><p className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : 'On Request'}</p></div>
+                                    <div><p className="text-[10px] font-black uppercase text-slate-400 mb-1">RERA Status</p><p className="text-sm md:text-base font-black text-green-600 mt-1">Verified ✓</p></div>
                                 </div>
 
                                 <div>
                                     <h2 className="text-xl md:text-2xl font-black uppercase tracking-wide text-slate-900 mb-4 border-b border-slate-200 pb-2">About The Project</h2>
-                                    <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${bhkLabel} homes.`}
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {projectUsps && (
-                                        <div className="bg-blue-50 p-6 md:p-8 rounded-3xl border border-blue-100">
-                                            <h3 className="text-sm font-black uppercase tracking-widest text-blue-900 mb-6">Key Highlights</h3>
-                                            <ul className="space-y-4">
-                                                {String(projectUsps).split('\n').filter(u => u.trim() !== "").map((u, i) => (
-                                                    <li key={i} className="flex items-start text-xs md:text-sm text-blue-800 font-medium leading-relaxed"><span className="mr-3 text-blue-500 mt-0.5">✦</span> {u.trim()}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                    {getVal(property, "Amenities") && (
-                                        <div className="bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-800">
-                                            <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">World-Class Amenities</h3>
-                                            <ul className="space-y-4">
-                                                {String(getVal(property, "Amenities")).split(',').filter(u => u.trim() !== "").map((u, i) => (
-                                                    <li key={i} className="flex items-start text-xs md:text-sm text-slate-300 font-medium leading-relaxed"><span className="mr-3 text-blue-400 mt-0.5">✓</span> {u.trim()}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
+                                    <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">{getVal(property, "description") || `Experience luxury and comfort at ${getVal(property, "Property Name")}.`}</p>
                                 </div>
                             </div>
 
@@ -397,42 +337,27 @@
                                 <div className="sticky top-24 space-y-6">
                                     <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
                                         <div className="mb-6 pb-6 border-b border-slate-100">
-                                            <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Starting Price</div>
-                                            <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">{getVal(property, "Price") || 'On Request'}</div>
-                                        </div>
-                                        
-                                        <div className="bg-[#fffbeb] border border-[#fde68a] p-4 rounded-2xl text-[#92400e] mb-4">
-                                            <h4 className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-80">Commission</h4>
-                                            <p className="text-2xl font-black">{formatPercent(getVal(property, "commission") || getVal(property, "commision_deta") || getVal(property, "commission_details"))}</p>
-                                        </div>
-
-                                        <div className="bg-[#f0f9ff] border border-[#bae6fd] p-4 rounded-2xl text-[#0369a1] mb-6">
-                                            <h4 className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-80">Internal Info</h4>
-                                            <p className="text-[10px] font-bold mb-1">POC: {getVal(property, "point_of_contact") || "N/A"}</p>
-                                            <p className="text-[10px] font-bold">Avail: {getVal(property, "availability") || "N/A"}</p>
+                                            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Starting Price</p>
+                                            <p className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">{getVal(property, "Price") || 'On Request'}</p>
                                         </div>
 
                                         <div className="bg-slate-900 text-white p-5 rounded-2xl">
                                             <h4 className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-3 border-b border-slate-700 pb-2">Admin Tools</h4>
                                             
                                             <div className="space-y-2 mb-5">
-                                                <button onClick={() => openLink(getVal(property, "website_link"))} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-2.5 rounded-xl uppercase tracking-widest transition-colors text-[9px] border border-slate-700">
-                                                    🌐 Builder Website
-                                                </button>
-                                                <button onClick={handleRegisterLead} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-2.5 rounded-xl uppercase tracking-widest transition-colors shadow-md text-[9px]">
-                                                    {regText}
-                                                </button>
+                                                <button onClick={() => openLink(getVal(property, "website_link"))} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-2.5 rounded-xl uppercase tracking-widest transition-colors text-[9px] border border-slate-700">🌐 Builder Website</button>
+                                                <button onClick={handleRegisterLead} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-2.5 rounded-xl uppercase tracking-widest transition-colors shadow-md text-[9px]">Register Lead</button>
                                             </div>
 
                                             <h4 className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-2">Share With Client (WhatsApp)</h4>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <button onClick={() => openShareModal('Brochure', getVal(property, "brochure"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📥 Brochure</button>
-                                                <button onClick={() => openShareModal('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
-                                                <button onClick={() => openShareModal('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
-                                                <button onClick={() => openShareModal('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
-                                                <button onClick={() => openShareModal('Floor Plan', getVal(property, "floor_plan"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📐 Floor Plan</button>
-                                                <button onClick={() => openShareModal('Miscellaneous', getVal(property, "miscellaneous"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📂 Misc</button>
-                                                <button onClick={() => openShareModal('Gallery Images', getVal(property, "gallery_images") || getVal(property, "cover_image"))} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Share Images</button>
+                                                <button onClick={() => shareViaWhatsApp('Brochure', getVal(property, "brochure"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📥 Brochure</button>
+                                                <button onClick={() => shareViaWhatsApp('Cost Sheet', getVal(property, "cost_sheet"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
+                                                <button onClick={() => shareViaWhatsApp('Location Map', getVal(property, "map_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
+                                                <button onClick={() => shareViaWhatsApp('Property Video', getVal(property, "video_link"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
+                                                <button onClick={() => shareViaWhatsApp('Floor Plan', getVal(property, "floor_plan"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📐 Floor Plan</button>
+                                                <button onClick={() => shareViaWhatsApp('Miscellaneous', getVal(property, "miscellaneous"))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📂 Misc</button>
+                                                <button onClick={() => shareViaWhatsApp('Gallery Images', getVal(property, "gallery_images") || getVal(property, "cover_image"))} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Share Images</button>
                                             </div>
                                         </div>
                                     </div>
@@ -445,7 +370,7 @@
                     {shareModal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fadeIn">
                             <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl p-6 relative flex flex-col max-h-[80vh]">
-                                <button onClick={() => setShareModal(null)} className="absolute top-6 right-6 text-xl text-slate-400 hover:text-slate-800">&times;</button>
+                                <button onClick={() => setShareModal(null)} className="absolute top-6 right-6 text-xl text-slate-400 hover:text-slate-800">✕</button>
                                 <h2 className="text-lg font-black uppercase text-slate-900 mb-2">Select Files to Share</h2>
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 pb-4 border-b">{shareModal.type}</p>
                                 
@@ -465,7 +390,7 @@
                                     ))}
                                 </div>
                                 
-                                <button onClick={() => executeShare(shareModal.type, selectedUrls)} className="w-full bg-blue-600 text-white p-4 rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-blue-700 transition">
+                                <button onClick={() => executeShareMulti(shareModal.type, selectedUrls)} className="w-full bg-blue-600 text-white p-4 rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-blue-700 transition">
                                     Send to WhatsApp ({selectedUrls.length})
                                 </button>
                             </div>
@@ -492,7 +417,6 @@
             const [leads, setLeads] = useState([]);
             const [properties, setProperties] = useState([]);
             
-            // View and Category states tied to Router
             const [view, setView] = useState(initRoute.v); 
             const [leadCategory, setLeadCategory] = useState(initRoute.c); 
             
@@ -517,7 +441,6 @@
                 }
             };
 
-            // Router Event Listener
             useEffect(() => {
                 const onHashChange = () => {
                     const r = getInitialRoute();
@@ -528,16 +451,13 @@
                 return () => window.removeEventListener('hashchange', onHashChange);
             }, []);
 
-            // Navigation Function
             const handleNavigate = (newView, newCat = 'website') => {
                 setView(newView);
                 if (newView === 'dashboard') setLeadCategory(newCat);
-                
                 let path = '';
                 if (newView === 'dashboard') path = `/crm/${newCat}`;
                 else if (newView === 'library') path = `/library`;
                 else if (newView === 'add') path = `/add`;
-                
                 window.location.hash = path;
             };
 
@@ -545,7 +465,6 @@
                 setVisibleCount(50);
             }, [leadCategory, filterType, summaryAgent, searchTerm]);
 
-            // AUTH SETUP
             useEffect(() => {
                 supabase.auth.getSession().then(({ data: { session } }) => { 
                     setSession(session); 
@@ -557,7 +476,6 @@
                 return () => subscription.unsubscribe();
             }, []);
 
-            // DATA FETCHING (Tied securely to current tab state)
             useEffect(() => {
                 if (session) {
                     fetchProperties();
@@ -578,11 +496,7 @@
                             setLeads(raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && !l.lead_source.toLowerCase().includes('website')));
                         }
                     } else { 
-                        // This is for Bulk Leads specifically
-                        const bulkData = raw.map(l => ({
-                            ...l,
-                            display_date: l.created_at || 'N/A'
-                        }));
+                        const bulkData = raw.map(l => ({ ...l, display_date: l.created_at || 'N/A' }));
                         setLeads(bulkData); 
                     }
                 }
@@ -597,7 +511,7 @@
             async function updateLead(lead, field, value) {
                 if (field === 'lead_status') {
                     if (!lead.psa_agent_name || lead.psa_agent_name.trim() === '') {
-                        alert("ERROR: You must assign a PSA Agent (Tharun or Shivaji or Ramswami) before changing the lead status.");
+                        alert("ERROR: You must assign a PSA Agent before changing the lead status.");
                         fetchLeads(); 
                         return;
                     }
@@ -663,7 +577,6 @@
                         (l.project_interested_in && l.project_interested_in.toLowerCase().includes(term))
                     );
                 }
-                
                 return filtered;
             }, [leads, filterType, searchTerm]);
 
@@ -708,7 +621,6 @@
                     <main className="p-3 md:p-8 max-w-7xl mx-auto w-full">
                         {view === 'dashboard' && (
                             <div className="space-y-6">
-                                
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
                                     <div className="flex flex-wrap justify-between md:grid md:grid-cols-5 gap-4 items-center">
                                         <div className="w-full md:w-auto border-b md:border-none pb-2 md:pb-0">
@@ -1012,21 +924,18 @@
 
             const toggleLive = async (e, p) => {
                 e.stopPropagation(); 
-                const currentStatus = p.is_live !== false; // if null/undefined, treat as true
+                const currentStatus = p.is_live !== false; 
                 const newStatus = !currentStatus;
 
-                // Optimistic UI update
+                // Update UI instantly
                 if (setProperties) setProperties(prev => prev.map(item => item.id === p.id ? { ...item, is_live: newStatus } : item));
 
-                // Backend Update
-                const { data, error } = await supabase.from('properties').update({ is_live: newStatus }).eq('id', p.id).select();
+                // Send to DB
+                const { error } = await supabase.from('properties').update({ is_live: newStatus }).eq('id', p.id);
                 
+                // If it fails, alert user and revert UI
                 if (error) {
-                    console.error("Supabase Error:", error);
-                    alert("ERROR: The toggle could not save. You must go to Supabase and add a column named 'is_live' (type: bool, default: true) to your 'properties' table.");
-                    if (setProperties) setProperties(prev => prev.map(item => item.id === p.id ? { ...item, is_live: currentStatus } : item));
-                } else if (!data || data.length === 0) {
-                    alert("WARNING: The toggle visually changed, but Supabase blocked the update because of Row Level Security (RLS) policies.");
+                    alert(`Database Error: ${error.message}\n\nPlease ensure you have added a column named 'is_live' (type: bool, default: true) to your 'properties' table in Supabase.`);
                     if (setProperties) setProperties(prev => prev.map(item => item.id === p.id ? { ...item, is_live: currentStatus } : item));
                 }
             };
