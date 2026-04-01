@@ -5,1486 +5,1308 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horizon CRM | Command Center</title>
     <link rel="icon" type="image/svg+xml" content='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="50" y="54" font-family="Arial" font-size="60" font-weight="900" font-style="italic" fill="#3b82f6" dominant-baseline="middle" text-anchor="middle">H</text></svg>'>
-    
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
         * { box-sizing: border-box; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(8px);} to { opacity:1; transform:translateY(0);} }
         @keyframes slideIn { from { opacity:0; transform:translateX(20px);} to { opacity:1; transform:translateX(0);} }
-        
         .animate-fadeIn { animation: fadeIn 0.18s ease-out forwards; }
         .animate-slideIn { animation: slideIn 0.2s ease-out forwards; }
-        
         .hide-scroll::-webkit-scrollbar { display:none; }
         .hide-scroll { -ms-overflow-style:none; scrollbar-width:none; }
-        
         ::-webkit-scrollbar { width:5px; height:5px; }
         ::-webkit-scrollbar-track { background:#f1f5f9; }
         ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:10px; }
-        
         .history-scroll::-webkit-scrollbar { width:3px; }
         .history-scroll::-webkit-scrollbar-thumb { background:#94a3b8; border-radius:4px; }
-        
         input[type=range] { -webkit-appearance:none; background:transparent; width:100%; }
-        input[type=range]::-webkit-slider-thumb { 
-            -webkit-appearance:none; height:18px; width:18px; background:#2563eb; 
-            cursor:pointer; margin-top:-7px; border-radius:50%; box-shadow:0 2px 6px rgba(37,99,235,0.4); 
-        }
-        input[type=range]::-webkit-slider-runnable-track { 
-            width:100%; height:4px; cursor:pointer; background:#e2e8f0; border-radius:2px; 
-        }
-        
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; height:18px; width:18px; background:#2563eb; cursor:pointer; margin-top:-7px; border-radius:50%; box-shadow:0 2px 6px rgba(37,99,235,0.4); }
+        input[type=range]::-webkit-slider-runnable-track { width:100%; height:4px; cursor:pointer; background:#e2e8f0; border-radius:2px; }
+        .pie-chart { border-radius:50%; display:inline-block; }
         .nav-btn { transition: all 0.15s; }
         .nav-btn:hover { color: #93c5fd; }
-        
-        .status-pill { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; 
-                       font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.08em; 
-                       border-width:1px; border-style:solid; }
-        
+        .status-pill { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.08em; border-width:1px; border-style:solid; }
         .lead-row { transition: background 0.1s; }
         .lead-row:hover { filter: brightness(0.97); }
-        
         input, select, textarea { font-family: inherit; }
-        
-        .field-group label { 
-            display:block; font-size:9px; font-weight:900; text-transform:uppercase; 
-            letter-spacing:0.1em; color:#94a3b8; margin-bottom:4px; 
-        }
-        .field-group input, .field-group select, .field-group textarea { 
-            width:100%; padding:12px 14px; background:#f8fafc; border:1.5px solid #e2e8f0; 
-            border-radius:12px; font-size:13px; font-weight:700; outline:none; 
-            transition: border-color 0.15s, box-shadow 0.15s; color:#0f172a; 
-        }
-        .field-group input:focus, .field-group select:focus, .field-group textarea:focus { 
-            border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,0.12); background:#fff; 
-        }
-        
+        .field-group label { display:block; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; color:#94a3b8; margin-bottom:4px; }
+        .field-group input, .field-group select, .field-group textarea { width:100%; padding:12px 14px; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px; font-size:13px; font-weight:700; outline:none; transition: border-color 0.15s, box-shadow 0.15s; color:#0f172a; }
+        .field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,0.12); background:#fff; }
         .dark-field { background:#1e293b !important; border-color:#334155 !important; color:#f1f5f9 !important; }
         .dark-field:focus { border-color:#3b82f6 !important; box-shadow:0 0 0 3px rgba(59,130,246,0.2) !important; background:#1e293b !important; }
-        
-        .btn-primary { 
-            background:#2563eb; color:#fff; font-weight:900; font-size:11px; text-transform:uppercase; 
-            letter-spacing:0.1em; border-radius:12px; padding:10px 18px; border:none; cursor:pointer; 
-            transition:background 0.15s, transform 0.1s; 
-        }
+        .btn-primary { background:#2563eb; color:#fff; font-weight:900; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; border-radius:12px; padding:10px 18px; border:none; cursor:pointer; transition:background 0.15s, transform 0.1s; }
         .btn-primary:hover { background:#1d4ed8; }
         .btn-primary:active { transform:scale(0.97); }
         .btn-primary:disabled { opacity:0.5; cursor:not-allowed; }
-        
-        .btn-ghost { 
-            background:#f1f5f9; color:#475569; font-weight:900; font-size:10px; text-transform:uppercase; 
-            letter-spacing:0.08em; border-radius:10px; padding:8px 14px; border:none; cursor:pointer; 
-            transition:background 0.15s; 
-        }
+        .btn-ghost { background:#f1f5f9; color:#475569; font-weight:900; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; border-radius:10px; padding:8px 14px; border:none; cursor:pointer; transition:background 0.15s; }
         .btn-ghost:hover { background:#e2e8f0; }
-        
         .card { background:#fff; border-radius:20px; border:1.5px solid #e2e8f0; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
-        
-        .share-btn { 
-            background:#1e293b; color:#cbd5e1; font-weight:900; font-size:9px; text-transform:uppercase; 
-            letter-spacing:0.08em; border-radius:10px; padding:9px 10px; border:1px solid #334155; 
-            cursor:pointer; transition:background 0.15s, transform 0.1s; 
-        }
+        .share-btn { background:#1e293b; color:#cbd5e1; font-weight:900; font-size:9px; text-transform:uppercase; letter-spacing:0.08em; border-radius:10px; padding:9px 10px; border:1px solid #334155; cursor:pointer; transition:background 0.15s, transform 0.1s; }
         .share-btn:hover { background:#334155; color:#fff; }
         .share-btn:active { transform:scale(0.96); }
         .share-btn:disabled { opacity:0.4; cursor:not-allowed; }
-        
         @media(max-width:640px){ .hide-mobile{ display:none !important; } }
     </style>
 </head>
 <body class="bg-slate-100 font-sans text-slate-900 pb-20 md:pb-0" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-    <div id="root"></div>
+<div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef, useCallback } = React;
+<script type="text/babel">
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-        // ─── CONFIG ────────────────────────────────────────────────────────────────
-        const SUPABASE_URL  = 'https://uiiovtsktllvtecfokik.supabase.co';
-        const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
-        const supabase      = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ storage:window.sessionStorage } });
-        const SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbwaOLlqAQZMZczkAWuyK2F2DEHZ2ILgxlJnlDDZrrDNBSdszBZpX3M0f_p9mVtUePobDQ/exec";
-        const WA_NUMBER     = "9113261205";
-        const AGENTS        = ["Tharun","Shivaji","Ramswami"];
-        const OWNER_EMAIL   = "saishetty1623@gmail.com";
+// ─── CONFIG ────────────────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://uiiovtsktllvtecfokik.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
+const supabase      = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ storage:window.sessionStorage } });
+const SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbwaOLlqAQZMZczkAWuyK2F2DEHZ2ILgxlJnlDDZrrDNBSdszBZpX3M0f_p9mVtUePobDQ/exec";
+const WA_NUMBER     = "9113261205";
+const AGENTS        = ["Tharun","Shivaji","Ramswami"];
+const OWNER_EMAIL   = "saishetty1623@gmail.com";
 
-        // ─── HELPERS ───────────────────────────────────────────────────────────────
-        const gv = (obj, key) => {
-            if (!obj) return "";
-            if (obj[key] !== undefined && obj[key] !== "") return obj[key];
-            const ck = key.replace(/[^a-zA-Z0-9]/g,'').toLowerCase();
-            for (let k in obj) if (k.replace(/[^a-zA-Z0-9]/g,'').toLowerCase()===ck) return obj[k];
-            return "";
+// ─── HELPERS ───────────────────────────────────────────────────────────────
+const gv = (obj, key) => {
+    if (!obj) return "";
+    if (obj[key] !== undefined && obj[key] !== "") return obj[key];
+    const ck = key.replace(/[^a-zA-Z0Z0-9]/g,'').toLowerCase();
+    for (let k in obj) if (k.replace(/[^a-zA-Z0-9]/g,'').toLowerCase()===ck) return obj[k];
+    return "";
+};
+
+const driveThumb = (url) => {
+    if (!url || typeof url !== 'string') return url;
+    const m = url.match(/\/d\/(.*?)\//) || url.match(/id=(.*?)(&|$)/);
+    return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000` : url;
+};
+
+const fixImg = (u) => u ? driveThumb(String(u).split(',')[0].trim()) : 'https://placehold.co/600x300/f1f5f9/94a3b8?text=No+Image';
+
+const safeLink = (r) => {
+    if (!r) return "#";
+    const l = String(r).trim();
+    if (l==="") return "#";
+    if (l.includes('@') && !l.startsWith('mailto:')) return `mailto:${l}`;
+    if (!l.startsWith('http') && !l.includes('@')) return `https://${l}`;
+    return l;
+};
+
+const fmtCurrency = (n) => {
+    if (n>=10000000) return '₹'+(n/10000000).toFixed(2).replace(/\.00$/,'')+' Cr';
+    if (n>=100000)   return '₹'+(n/100000).toFixed(2).replace(/\.00$/,'')+' L';
+    return new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(n);
+};
+
+const fmtPct = (v) => {
+    const n=parseFloat(v);
+    if (isNaN(n)) return String(v||"0%");
+    return (n<1&&n>0)?(n*100).toFixed(1)+"%":n+"%";
+};
+
+const priceInCr = (s) => {
+    if (!s) return 0;
+    try {
+        const c=String(s).toLowerCase().replace(/,/g,'');
+        const m=c.match(/[0-9.]+/); if(!m) return 0;
+        const v=parseFloat(m[0]); if(isNaN(v)) return 0;
+        if (c.includes('cr')||c.includes('crore')) return v;
+        if (c.includes('lac')||c.includes('lakh')) return v/100;
+        if (v>100000) return v/10000000;
+        return 0;
+    } catch(e){ return 0; }
+};
+
+const stamp = () => new Date().toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+
+const statusStyle = (s) => {
+    switch(s){
+        case 'Called':        return 'bg-blue-100 text-blue-800 border-blue-300';
+        case 'RNR':           return 'bg-orange-100 text-orange-800 border-orange-300';
+        case 'Details Shared':return 'bg-purple-100 text-purple-800 border-purple-300';
+        case 'SV Scheduled':  return 'bg-teal-100 text-teal-800 border-teal-300';
+        case 'Converted':     return 'bg-emerald-100 text-emerald-800 border-emerald-400';
+        case 'Rejected':      return 'bg-red-100 text-red-800 border-red-300';
+        default:              return 'bg-slate-100 text-slate-600 border-slate-200';
+    }
+};
+
+const priorityStyle = (p) => {
+    switch(p){
+        case 'Hot':  return 'bg-red-50 text-red-700 border-red-400';
+        case 'Cold': return 'bg-blue-50 text-blue-700 border-blue-400';
+        default:     return 'bg-amber-50 text-amber-700 border-amber-400';
+    }
+};
+
+const cardTint = (s) => {
+    switch(s){
+        case 'Un called':     return 'bg-amber-50';
+        case 'Called':        return 'bg-sky-50';
+        case 'RNR':           return 'bg-orange-50';
+        case 'Details Shared':return 'bg-violet-50';
+        case 'SV Scheduled':  return 'bg-teal-50';
+        case 'Converted':     return 'bg-emerald-50';
+        case 'Rejected':      return 'bg-red-50';
+        default:              return 'bg-white';
+    }
+};
+
+const priorityBorder = (p) => p==='Hot'?'border-l-red-500':p==='Cold'?'border-l-sky-400':'border-l-amber-400';
+
+// ─── FILE SHARE UTILITIES ───────────────────────────────────────────────────
+
+const getDriveId = (url) => {
+    if (!url) return null;
+    const m = url.match(/\/d\/([-\w]+)/) || url.match(/[?&]id=([-\w]+)/);
+    return m ? m[1] : null;
+};
+
+const resolveUrl = (url) => {
+    if (!url) return { kind:'unknown', url, dlUrl:url };
+    const u = url.trim();
+    if (u.includes('res.cloudinary.com')) {
+        const isPdf = u.toLowerCase().endsWith('.pdf') || u.includes('/raw/upload/');
+        return { kind: isPdf?'cloudinary_pdf':'cloudinary_img', url:u, dlUrl:u.replace('/upload/','/upload/fl_attachment/') };
+    }
+    if (u.includes('/folders/') || (u.includes('drive.google.com') && !u.includes('/d/'))) {
+        return { kind:'drive_folder', url:u, dlUrl:u };
+    }
+    const driveId = getDriveId(u);
+    if (driveId) {
+        return {
+            kind:'drive_file', url:u,
+            dlUrl:   `https://drive.google.com/uc?export=download&id=${driveId}`,
+            viewUrl: `https://drive.google.com/file/d/${driveId}/view`,
+            thumb:   `https://drive.google.com/thumbnail?id=${driveId}&sz=w300`,
         };
+    }
+    return { kind:'link', url:u, dlUrl:u };
+};
 
-        const driveThumb = (url) => {
-            if (!url || typeof url !== 'string') return url;
-            const m = url.match(/\/d\/(.*?)\//) || url.match(/id=(.*?)(&|$)/);
-            return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000` : url;
-        };
+const isMobileDevice = () => /android|iphone|ipad|ipod/i.test(navigator.userAgent);
 
-        const fixImg = (u) => u ? driveThumb(String(u).split(',')[0].trim()) : 'https://placehold.co/600x300/f1f5f9/94a3b8?text=No+Image';
+const buildFilename = (url, index, type) => {
+    try {
+        const parts = url.split('/');
+        const raw   = decodeURIComponent(parts[parts.length-1].split('?')[0]);
+        if (/\.(pdf|jpg|jpeg|png|webp)$/i.test(raw)) return raw;
+        const slug = type.toLowerCase().replace(/\s+/g,'-');
+        if (url.includes('/image/upload/'))   return slug+'-'+(index+1)+'.jpg';
+        if (url.includes('/raw/upload/'))     return slug+'-'+(index+1)+'.pdf';
+        return slug+'-'+(index+1);
+    } catch { return 'file-'+(index+1); }
+};
 
-        const safeLink = (r) => {
-            if (!r) return "#";
-            const l = String(r).trim();
-            if (l==="") return "#";
-            if (l.includes('@') && !l.startsWith('mailto:')) return `mailto:${l}`;
-            if (!l.startsWith('http') && !l.includes('@')) return `https://${l}`;
-            return l;
-        };
+const triggerDownload = (resolved, filename) => {
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    if (resolved.kind === 'cloudinary_img' || resolved.kind === 'cloudinary_pdf') {
+        a.href = resolved.dlUrl; a.download = filename||'file';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } else if (resolved.kind === 'drive_file') {
+        a.href = resolved.dlUrl; a.target = '_blank';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } else if (resolved.kind === 'drive_folder') {
+        window.open(resolved.url, '_blank');
+    }
+};
 
-        const fmtCurrency = (n) => {
-            if (n>=10000000) return '₹'+(n/10000000).toFixed(2).replace(/\.00$/,'')+' Cr';
-            if (n>=100000)   return '₹'+(n/100000).toFixed(2).replace(/\.00$/,'')+' L';
-            return new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(n);
-        };
+// ─── EMI CALCULATOR ────────────────────────────────────────────────────────
+const EMICalc = ({ priceStr }) => {
+    const base = priceInCr(priceStr)>0 ? priceInCr(priceStr)*10000000 : 10000000;
+    const [loan,    setLoan]    = useState(base*0.8);
+    const [rate,    setRate]    = useState(8.5);
+    const [tenure,  setTenure]  = useState(20);
 
-        const fmtPct = (v) => {
-            const n=parseFloat(v);
-            if (isNaN(n)) return String(v||"0%");
-            return (n<1&&n>0)?(n*100).toFixed(1)+"%":n+"%";
-        };
+    const { emi, totalInt, pct } = useMemo(()=>{
+        const p=loan, r=rate/12/100, n=tenure*12;
+        if(!p||!r||!n) return {emi:0,totalInt:0,pct:100};
+        const e=(p*r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+        const tot=e*n;
+        return {emi:Math.round(e),totalInt:Math.round(tot-p),pct:(p/tot*100).toFixed(1)};
+    },[loan,rate,tenure]);
 
-        const priceInCr = (s) => {
-            if (!s) return 0;
-            try {
-                const c=String(s).toLowerCase().replace(/,/g,'');
-                const m=c.match(/[0-9.]+/); if(!m) return 0;
-                const v=parseFloat(m[0]); if(isNaN(v)) return 0;
-                if (c.includes('cr')||c.includes('crore')) return v;
-                if (c.includes('lac')||c.includes('lakh')) return v/100;
-                if (v>100000) return v/10000000;
-                return 0;
-            } catch(e){ return 0; }
-        };
-
-        const stamp = () => new Date().toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-
-        const statusStyle = (s) => {
-            switch(s){
-                case 'Called':        return 'bg-blue-100 text-blue-800 border-blue-300';
-                case 'RNR':           return 'bg-orange-100 text-orange-800 border-orange-300';
-                case 'Details Shared':return 'bg-purple-100 text-purple-800 border-purple-300';
-                case 'SV Scheduled':  return 'bg-teal-100 text-teal-800 border-teal-300';
-                case 'Converted':     return 'bg-emerald-100 text-emerald-800 border-emerald-400';
-                case 'Rejected':      return 'bg-red-100 text-red-800 border-red-300';
-                default:              return 'bg-slate-100 text-slate-600 border-slate-200';
-            }
-        };
-
-        const priorityStyle = (p) => {
-            switch(p){
-                case 'Hot':  return 'bg-red-50 text-red-700 border-red-400';
-                case 'Cold': return 'bg-blue-50 text-blue-700 border-blue-400';
-                default:     return 'bg-amber-50 text-amber-700 border-amber-400';
-            }
-        };
-
-        const cardTint = (s) => {
-            switch(s){
-                case 'Un called':     return 'bg-amber-50';
-                case 'Called':        return 'bg-sky-50';
-                case 'RNR':           return 'bg-orange-50';
-                case 'Details Shared':return 'bg-violet-50';
-                case 'SV Scheduled':  return 'bg-teal-50';
-                case 'Converted':     return 'bg-emerald-50';
-                case 'Rejected':      return 'bg-red-50';
-                default:              return 'bg-white';
-            }
-        };
-
-        const priorityBorder = (p) => p==='Hot'?'border-l-red-500':p==='Cold'?'border-l-sky-400':'border-l-amber-400';
-
-        // ─── FILE SHARE UTILITIES ───────────────────────────────────────────────────
-        const resolveShareUrl = (url) => {
-            if (!url) return { type:'unknown', url };
-            const u = url.trim();
-            if (u.includes('res.cloudinary.com')) {
-                const dlUrl = u.replace('/upload/', '/upload/fl_attachment/');
-                const isPdf = u.toLowerCase().endsWith('.pdf') || u.includes('/raw/upload/');
-                return { type: isPdf ? 'cloudinary_pdf' : 'cloudinary_img', url: u, dlUrl };
-            }
-            if (u.includes('drive.google.com/drive/folders') || u.includes('/folders/')) {
-                return { type: 'drive_folder', url: u };
-            }
-            const m = u.match(/\/d\/(.*?)\//) || u.match(/id=(.*?)(&|$)/);
-            if (m) {
-                const id = m[1];
-                return {
-                    type: 'drive_file',
-                    url: u,
-                    previewUrl: `https://drive.google.com/file/d/${id}/view`,
-                    dlUrl: `https://drive.google.com/uc?export=download&id=${id}`,
-                    thumbUrl: `https://drive.google.com/thumbnail?id=${id}&sz=w400`
-                };
-            }
-            return { type: 'link', url: u };
-        };
-
-        const getMimeFromUrl = (url) => {
-            const u = url.toLowerCase().split('?')[0];
-            if (u.endsWith('.pdf') || u.includes('/raw/upload/')) return 'application/pdf';
-            if (u.endsWith('.png'))  return 'image/png';
-            if (u.endsWith('.webp')) return 'image/webp';
-            return 'image/jpeg';
-        };
-
-        const getFileName = (url, i=0, type='file') => {
-            try {
-                const parts = url.split('/');
-                const raw = decodeURIComponent(parts[parts.length-1].split('?')[0]);
-                if (/\.(pdf|jpg|jpeg|png|webp)$/i.test(raw)) return raw;
-                if (url.includes('/image/upload/')) return `${type.replace(/\s+/g,'-')}-${i+1}.jpg`;
-                if (url.includes('/raw/upload/'))   return `${type.replace(/\s+/g,'-')}-${i+1}.pdf`;
-                return `${type.replace(/\s+/g,'-')}-${i+1}`;
-            } catch { return `file-${i+1}`; }
-        };
-
-        // ─── EMI CALCULATOR ────────────────────────────────────────────────────────
-        const EMICalc = ({ priceStr }) => {
-            const base = priceInCr(priceStr)>0 ? priceInCr(priceStr)*10000000 : 10000000;
-            const [loan,    setLoan]    = useState(base*0.8);
-            const [rate,    setRate]    = useState(8.5);
-            const [tenure,  setTenure]  = useState(20);
-
-            const { emi, totalInt, pct } = useMemo(()=>{
-                const p=loan, r=rate/12/100, n=tenure*12;
-                if(!p||!r||!n) return {emi:0,totalInt:0,pct:100};
-                const e=(p*r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
-                const tot=e*n;
-                return {emi:Math.round(e),totalInt:Math.round(tot-p),pct:(p/tot*100).toFixed(1)};
-            },[loan,rate,tenure]);
-
-            return (
-                <div className="card p-5 mt-4">
-                    <div className="flex items-center gap-2 mb-5">
-                        <span className="text-lg">📊</span>
-                        <span className="text-xs font-black uppercase tracking-widest text-slate-700">EMI Calculator</span>
+    return (
+        <div className="card p-5 mt-4">
+            <div className="flex items-center gap-2 mb-5">
+                <span className="text-lg">📊</span>
+                <span className="text-xs font-black uppercase tracking-widest text-slate-700">EMI Calculator</span>
+            </div>
+            <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 pie-chart shrink-0" style={{background:`conic-gradient(#2563eb ${pct}%,#e2e8f0 ${pct}% 100%)`}}></div>
+                <div className="flex-1 space-y-1.5">
+                    <div className="flex justify-between text-[9px]">
+                        <span className="flex items-center gap-1.5 font-bold text-slate-500 uppercase tracking-widest"><span className="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>Principal</span>
+                        <span className="font-black text-slate-800">{fmtCurrency(loan)}</span>
                     </div>
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-14 h-14 pie-chart shrink-0" style={{background:`conic-gradient(#2563eb ${pct}%,#e2e8f0 ${pct}% 100%)`}}></div>
-                        <div className="flex-1 space-y-1.5">
-                            <div className="flex justify-between text-[9px]">
-                                <span className="flex items-center gap-1.5 font-bold text-slate-500 uppercase tracking-widest"><span className="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>Principal</span>
-                                <span className="font-black text-slate-800">{fmtCurrency(loan)}</span>
-                            </div>
-                            <div className="flex justify-between text-[9px]">
-                                <span className="flex items-center gap-1.5 font-bold text-slate-500 uppercase tracking-widest"><span className="w-2 h-2 rounded-full bg-slate-300 inline-block"></span>Interest</span>
-                                <span className="font-black text-slate-800">{fmtCurrency(totalInt)}</span>
-                            </div>
-                        </div>
-                    </div>
-                    {[
-                        {label:'Loan Amount', val:fmtCurrency(loan), min:1000000, max:50000000, step:100000, onChange:setLoan, cur:loan},
-                        {label:'Interest Rate', val:rate+'%', min:6, max:15, step:0.1, onChange:setRate, cur:rate},
-                        {label:'Tenure', val:tenure+' Yrs', min:5, max:30, step:1, onChange:setTenure, cur:tenure},
-                    ].map(s=>(
-                        <div key={s.label} className="mb-4">
-                            <div className="flex justify-between mb-1.5">
-                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{s.label}</span>
-                                <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{s.val}</span>
-                            </div>
-                            <input type="range" min={s.min} max={s.max} step={s.step} value={s.cur} onChange={e=>s.onChange(Number(e.target.value))} />
-                        </div>
-                    ))}
-                    <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Monthly EMI</span>
-                        <span className="text-xl font-black text-slate-900">{fmtCurrency(emi)} <span className="text-[9px] text-slate-400 font-bold">/mo</span></span>
+                    <div className="flex justify-between text-[9px]">
+                        <span className="flex items-center gap-1.5 font-bold text-slate-500 uppercase tracking-widest"><span className="w-2 h-2 rounded-full bg-slate-300 inline-block"></span>Interest</span>
+                        <span className="font-black text-slate-800">{fmtCurrency(totalInt)}</span>
                     </div>
                 </div>
-            );
-        };
+            </div>
+            {[
+                {label:'Loan Amount', val:fmtCurrency(loan), min:1000000, max:50000000, step:100000, onChange:setLoan, cur:loan},
+                {label:'Interest Rate', val:rate+'%', min:6, max:15, step:0.1, onChange:setRate, cur:rate},
+                {label:'Tenure', val:tenure+' Yrs', min:5, max:30, step:1, onChange:setTenure, cur:tenure},
+            ].map(s=>(
+                <div key={s.label} className="mb-4">
+                    <div className="flex justify-between mb-1.5">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{s.label}</span>
+                        <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{s.val}</span>
+                    </div>
+                    <input type="range" min={s.min} max={s.max} step={s.step} value={s.cur} onChange={e=>s.onChange(Number(e.target.value))} />
+                </div>
+            ))}
+            <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Monthly EMI</span>
+                <span className="text-xl font-black text-slate-900">{fmtCurrency(emi)} <span className="text-[9px] text-slate-400 font-bold">/mo</span></span>
+            </div>
+        </div>
+    );
+};
 
-        // ─── PROPERTY DETAILS PAGE ─────────────────────────────────────────
-        const PropertyPage = ({ property:init, onBack }) => {
-            const [prop,       setProp]       = useState(init);
-            const [editField,  setEditField]  = useState(null);
-            const [editVal,    setEditVal]    = useState('');
-            const [saving,     setSaving]     = useState(false);
-            const [toast,      setToast]      = useState(null);
-            const [shareModal, setShareModal] = useState(null);
-            const [selected,   setSelected]   = useState([]);
-            const [sharing,    setSharing]    = useState(false);
-            const galleryRef = useRef(null);
+// ─── PROPERTY DETAILS PAGE (Admin) ─────────────────────────────────────────
+const PropertyPage = ({ property:init, onBack }) => {
+    const [prop,       setProp]       = useState(init);
+    const [editField,  setEditField]  = useState(null);
+    const [editVal,    setEditVal]    = useState('');
+    const [saving,     setSaving]     = useState(false);
+    const [toast,      setToast]      = useState(null);
+    const [shareModal, setShareModal] = useState(null);
+    const [selected,   setSelected]   = useState([]);
+    const [sharing,    setSharing]    = useState(false);
+    const galleryRef = useRef(null);
 
-            useEffect(()=>{ window.scrollTo(0,0); },[init]);
+    useEffect(()=>{ window.scrollTo(0,0); },[init]);
 
-            const showToast = (msg, color='bg-emerald-500') => {
-                setToast({msg,color});
-                setTimeout(()=>setToast(null), 4000);
-            };
+    const showToast = (msg, color='bg-emerald-500') => {
+        setToast({msg,color});
+        setTimeout(()=>setToast(null), 4000);
+    };
 
-            const startEdit = (field, val) => { setEditField(field); setEditVal(val||''); };
-            const cancelEdit = () => setEditField(null);
-            const saveField  = async (field, val) => {
-                setSaving(true);
-                const {error} = await supabase.from('properties').update({[field]:val}).eq('id',prop.id);
-                if (!error) { 
-                    setProp(p=>({...p,[field]:val})); 
-                    showToast('✅ Saved'); 
-                } else showToast('❌ '+error.message,'bg-red-500');
-                setSaving(false);
-                setEditField(null);
-            };
+    const startEdit = (field, val) => { setEditField(field); setEditVal(val||''); };
+    const cancelEdit = () => setEditField(null);
+    const saveField  = async (field, val) => {
+        setSaving(true);
+        const {error} = await supabase.from('properties').update({[field]:val}).eq('id',prop.id);
+        if (!error) { setProp(p=>({...p,[field]:val})); showToast('✅ Saved'); }
+        else showToast('❌ '+error.message,'bg-red-500');
+        setSaving(false);
+        setEditField(null);
+    };
 
-            const EF = ({field,label,val,multiline=false,type='text'}) => {
-                const editing = editField===field;
-                return (
-                    <div className="group/ef">
-                        {!editing ? (
-                            <div className="flex items-start gap-2">
-                                <div className="flex-1 min-w-0">
-                                    {label && <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">{label}</div>}
-                                    <div className={`text-sm font-semibold break-words ${val?'text-slate-800':'italic text-slate-300'}`}>{val||'—'}</div>
-                                </div>
-                                <button onClick={()=>startEdit(field,val)} className="opacity-0 group-hover/ef:opacity-100 transition-opacity shrink-0 mt-0.5 text-[8px] font-black bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg uppercase tracking-widest hover:bg-blue-100">Edit</button>
+    const EF = ({field,label,val,multiline=false,type='text'}) => {
+        const editing = editField===field;
+        return (
+            <div className="group/ef">
+                {!editing ? (
+                    <div className="flex items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                            {label && <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">{label}</div>}
+                            <div className={`text-sm font-semibold break-words ${val?'text-slate-800':'italic text-slate-300'}`}>{val||'—'}</div>
+                        </div>
+                        <button onClick={()=>startEdit(field,val)} className="opacity-0 group-hover/ef:opacity-100 transition-opacity shrink-0 mt-0.5 text-[8px] font-black bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg uppercase tracking-widest hover:bg-blue-100">Edit</button>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {label && <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</div>}
+                        {multiline
+                            ? <textarea rows={4} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none resize-none bg-blue-50/50 focus:bg-white transition-colors" />
+                            : <input type={type} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none bg-blue-50/50 focus:bg-white transition-colors" />
+                        }
+                        <div className="flex gap-2">
+                            <button onClick={()=>saveField(field,editVal)} disabled={saving} className="btn-primary text-[9px] py-1.5 px-3">{saving?'…':'Save'}</button>
+                            <button onClick={cancelEdit} className="btn-ghost text-[9px] py-1.5 px-3">Cancel</button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const cover   = driveThumb(gv(prop,'cover_image')||gv(prop,'cover-image'));
+    const galRaw  = gv(prop,'gallery_images')||gv(prop,'gallery-images')||'';
+    const imgs    = [cover,...(galRaw?galRaw.split(',').map(l=>driveThumb(l.trim())):[])].filter(Boolean);
+
+    const parseField = (raw) => {
+        if (!raw||!raw.trim()) return [];
+        return raw.split(',').map(u=>u.trim()).filter(Boolean).map(u=>({url:u, resolved:resolveUrl(u)}));
+    };
+
+    const handleShare = (type, rawField) => {
+        const items = parseField(rawField);
+        if (!items.length) { showToast('⚠️ No '+type+' available for this property.','bg-amber-500'); return; }
+        if (items.length===1) {
+            doShare([items[0]], type);
+        } else {
+            setShareModal({type, items});
+            setSelected(items.map(i=>i.url));
+        }
+    };
+
+    const doShare = (items, type) => {
+        const propName = gv(prop,'property_name');
+        const mobile   = isMobileDevice();
+
+        const fileItems = items.filter(i=>i.resolved.kind!=='link');
+        const linkItems = items.filter(i=>i.resolved.kind==='link');
+
+        fileItems.forEach((item, i) => {
+            const fname = buildFilename(item.url, i, type);
+            setTimeout(() => triggerDownload(item.resolved, fname), i * 400);
+        });
+
+        let waMsg = 'Hi! ';
+        if (fileItems.length) {
+            const fileWord = fileItems.length===1 ? 'the file' : fileItems.length+' files';
+            waMsg += 'I\'m sending you '+fileWord+' for *'+propName+'* 📎\n';
+            waMsg += '('+type+' — just sent as attachment)';
+        }
+        if (linkItems.length) {
+            waMsg += (fileItems.length ? '\n\n' : '') + 'Here is the *'+type+'* for *'+propName+'*:\n';
+            waMsg += linkItems.map(i=>i.url).join('\n');
+        }
+
+        const delay = fileItems.length * 400 + 300;
+        setTimeout(() => {
+            if (mobile) {
+                window.open('https://wa.me/?text='+encodeURIComponent(waMsg), '_blank');
+            } else {
+                window.open('https://web.whatsapp.com/','_blank');
+            }
+        }, delay);
+
+        if (fileItems.length && !mobile) {
+            const n = fileItems.length;
+            showToast('📥 '+n+' file'+(n>1?'s':'')+' downloading — WhatsApp Web is opening. Open a chat, attach from Downloads, and send!','bg-blue-600');
+        } else if (fileItems.length && mobile) {
+            showToast('📥 File downloading — WhatsApp is opening. Attach from Downloads and send!','bg-blue-600');
+        }
+
+        setSharing(false);
+    };
+
+    const sendSelected = () => {
+        const type   = shareModal.type;
+        const toSend = shareModal.items.filter(i=>selected.includes(i.url));
+        setShareModal(null); setSelected([]);
+        doShare(toSend, type);
+    };
+
+    const regLink = gv(prop,'lead_registration')||gv(prop,'lead_registration_link')||gv(prop,'lead_registration_link_or_email_id');
+    const regIsEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
+    const handleReg = () => {
+        if (!regLink) { showToast('⚠️ No registration link set','bg-amber-500'); return; }
+        if (regIsEmail) window.location.href=`mailto:${regLink.replace('mailto:','').trim()}?subject=New Lead: ${gv(prop,'property_name')}`;
+        else window.open(safeLink(regLink),'_blank');
+    };
+
+    return (
+        <div className="min-h-screen bg-slate-100 animate-fadeIn pb-28 md:pb-8">
+            {toast && (
+                <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[500] ${toast.color} text-white text-xs font-black uppercase tracking-widest px-6 py-3.5 rounded-2xl shadow-2xl animate-fadeIn flex items-center gap-2 max-w-xs text-center`}>
+                    {toast.msg}
+                </div>
+            )}
+
+            {shareModal && (
+                <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fadeIn" onClick={()=>setShareModal(null)}>
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-slideIn" onClick={e=>e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-1">
+                            <h3 className="text-base font-black uppercase tracking-tight text-slate-900">Select Files</h3>
+                            <button onClick={()=>setShareModal(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+                        </div>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{shareModal.type} · {shareModal.items.length} available</p>
+                        <p className="text-[9px] text-blue-600 font-bold mb-4">
+                            📱 Mobile: files share directly · 💻 Desktop: files download, attach in WhatsApp Web
+                        </p>
+                        <div className="space-y-2 mb-5 max-h-56 overflow-y-auto">
+                            {shareModal.items.map((item,i)=>{
+                                const chk = selected.includes(item.url);
+                                const r   = item.resolved;
+                                const isImg = r.kind==='cloudinary_img'||r.kind==='drive_file';
+                                const thumb = r.thumb || item.url;
+                                return (
+                                    <label key={i} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${chk?'border-emerald-400 bg-emerald-50':'border-slate-200 bg-slate-50 hover:border-slate-300'}`}>
+                                        <input type="checkbox" checked={chk} className="accent-emerald-500 w-4 h-4 shrink-0" onChange={()=>setSelected(p=>chk?p.filter(u=>u!==item.url):[...p,item.url])} />
+                                        {isImg&&thumb ? <img src={thumb} className="w-10 h-10 rounded-lg object-cover shrink-0 border border-slate-200" onError={e=>e.target.style.display='none'} /> : <span className="text-xl shrink-0">📄</span>}
+                                        <span className="text-xs font-bold text-slate-700 flex-1 truncate">{shareModal.type} {i+1}</span>
+                                        <a href={r.viewUrl||r.url||item.url} target="_blank" onClick={e=>e.stopPropagation()} className="text-[9px] text-blue-500 font-bold uppercase tracking-widest shrink-0 hover:text-blue-700">View</a>
+                                    </label>
+                                );
+                            })}
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={()=>setSelected(shareModal.items.map(i=>i.url))} className="btn-ghost flex-1 text-[9px] py-2.5">All</button>
+                            <button onClick={()=>setSelected([])} className="btn-ghost flex-1 text-[9px] py-2.5">None</button>
+                            <button onClick={sendSelected} disabled={!selected.length||sharing} className="btn-primary flex-1 text-[9px] py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40">
+                                Share ({selected.length}) 💬
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Header */}
+            <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-3.5 flex justify-between items-center shadow-sm">
+                <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors group">
+                    <span className="group-hover:-translate-x-1 transition-transform inline-block">←</span> Library
+                </button>
+                <div className="flex items-center gap-3">
+                    <span className="hidden md:inline text-[9px] font-black uppercase tracking-widest text-blue-500 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full">✏️ Hover fields to edit</span>
+                </div>
+            </div>
+
+            <div className="max-w-7xl mx-auto p-4 md:p-6">
+                {/* Gallery */}
+                <div className="relative mb-6">
+                    <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-2 hide-scroll h-[38vh] md:h-[55vh] rounded-2xl">
+                        {imgs.length>0 ? imgs.map((img,i)=>(
+                            <div key={i} className="min-w-full md:min-w-[78%] h-full shrink-0 snap-center relative rounded-2xl overflow-hidden bg-slate-200">
+                                <img src={img} className="w-full h-full object-cover" alt="" />
+                                {i===0&&(
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent flex flex-col justify-end p-5 md:p-8">
+                                        <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">{gv(prop,'property_type')||'Property'}</div>
+                                        <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tighter text-white leading-tight mb-1">{gv(prop,'property_name')}</h1>
+                                        <p className="text-white/75 text-sm">📍 {gv(prop,'location')}</p>
+                                    </div>
+                                )}
                             </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {label && <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</div>}
-                                {multiline
-                                    ? <textarea rows={4} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none resize-none bg-blue-50/50 focus:bg-white transition-colors" />
-                                    : <input type={type} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none bg-blue-50/50 focus:bg-white transition-colors" />
-                                }
-                                <div className="flex gap-2">
-                                    <button onClick={()=>saveField(field,editVal)} disabled={saving} className="btn-primary text-[9px] py-1.5 px-3">{saving?'…':'Save'}</button>
-                                    <button onClick={cancelEdit} className="btn-ghost text-[9px] py-1.5 px-3">Cancel</button>
-                                </div>
+                        )) : (
+                            <div className="w-full h-full bg-slate-200 rounded-2xl flex items-center justify-center">
+                                <span className="text-slate-400 font-black text-lg uppercase tracking-widest">No Images</span>
                             </div>
                         )}
                     </div>
-                );
-            };
+                </div>
 
-            const cover   = driveThumb(gv(prop,'cover_image')||gv(prop,'cover-image'));
-            const galRaw  = gv(prop,'gallery_images')||gv(prop,'gallery-images')||'';
-            const imgs    = [cover,...(galRaw?galRaw.split(',').map(l=>driveThumb(l.trim())):[])].filter(Boolean);
-
-            const parseField = (raw) => {
-                if (!raw||!raw.trim()) return [];
-                return raw.split(',').map(u=>u.trim()).filter(Boolean).map(u=>({url:u, resolved:resolveShareUrl(u)}));
-            };
-
-            const isMobile = () => /android|iphone|ipad|ipod/i.test(navigator.userAgent);
-
-            const handleShare = async (type, rawField) => {
-                const items = parseField(rawField);
-                if (!items.length) { showToast(`⚠️ No ${type} available for this property.`,'bg-amber-500'); return; }
-                if (items.length===1) {
-                    await doShare([items[0]], type);
-                } else {
-                    setShareModal({type, items});
-                    setSelected(items.map(i=>i.url));
-                }
-            };
-
-            const doShare = async (items, type) => {
-                setSharing(true);
-                const name = gv(prop,'property_name');
-
-                const cloudItems = items.filter(i=>['cloudinary_img','cloudinary_pdf'].includes(i.resolved.type));
-                const driveFileItems = items.filter(i=>i.resolved.type==='drive_file');
-                const driveFolderItems = items.filter(i=>i.resolved.type==='drive_folder');
-                const linkItems = items.filter(i=>i.resolved.type==='link');
-
-                try {
-                    if (cloudItems.length) {
-                        showToast(`⏳ Fetching ${cloudItems.length} file(s)…`,'bg-blue-600');
-                        const fileObjs = await Promise.all(cloudItems.map(async(item,i)=>{
-                            const res = await fetch(item.resolved.dlUrl, {mode:'cors'});
-                            if (!res.ok) throw new Error('Fetch error '+res.status);
-                            const blob = await res.blob();
-                            return new File([blob], getFileName(item.url,i,type), {type:getMimeFromUrl(item.url)});
-                        }));
-
-                        const mobile = isMobile();
-                        const canNative = mobile && navigator.share && navigator.canShare && navigator.canShare({files:fileObjs});
-
-                        if (canNative) {
-                            setSharing(false);
-                            setToast(null);
-                            await navigator.share({ files:fileObjs, title:`${type} — ${name}` });
-                        } else {
-                            fileObjs.forEach(f=>{
-                                const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name;
-                                document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                                setTimeout(()=>URL.revokeObjectURL(a.href),8000);
-                            });
-                            setSharing(false);
-                            const msg = mobile
-                                ? `✅ File(s) downloaded! Open WhatsApp and attach from your Downloads.`
-                                : `✅ ${fileObjs.length} file(s) downloaded! Now open WhatsApp Web and attach them to your chat.`;
-                            showToast(msg,'bg-emerald-600');
-                            setTimeout(()=>window.open(mobile?`https://wa.me/?text=${encodeURIComponent(`Hi, attaching *${type}* for *${name}*`)}`: 'https://web.whatsapp.com/','_blank'),700);
-                        }
-                    }
-
-                    if (driveFileItems.length) {
-                        setSharing(false);
-                        const links = driveFileItems.map(i=>i.resolved.previewUrl).join('\n');
-                        const waText = `Hi! Here is the *${type}* for *${name}*:\n\n${links}`;
-                        showToast('📂 Opening Drive file(s) + WhatsApp…','bg-indigo-600');
-                        driveFileItems.forEach(i=>{
-                            const a=document.createElement('a'); a.href=i.resolved.dlUrl; a.target='_blank';
-                            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                        });
-                        setTimeout(()=>window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank'), 800);
-                    }
-
-                    if (driveFolderItems.length) {
-                        setSharing(false);
-                        showToast('📁 Opening Drive folder — download files then share via WhatsApp','bg-violet-600');
-                        driveFolderItems.forEach(i=>window.open(i.url,'_blank'));
-                        setTimeout(()=>window.open('https://web.whatsapp.com/','_blank'),1000);
-                    }
-
-                    if (linkItems.length) {
-                        setSharing(false);
-                        const urlList = linkItems.map(i=>i.url).join('\n');
-                        const waText  = `Hi! Here is the *${type}* for *${name}*:\n\n${urlList}`;
-                        window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank');
-                    }
-
-                } catch(err) {
-                    setSharing(false);
-                    if (err.name!=='AbortError') {
-                        showToast('❌ Could not fetch files. Opening links instead.','bg-red-600');
-                        items.forEach(i=>window.open(i.url,'_blank'));
-                    } else setToast(null);
-                }
-            };
-
-            const sendSelected = () => {
-                const type   = shareModal.type;
-                const toSend = shareModal.items.filter(i=>selected.includes(i.url));
-                setShareModal(null); setSelected([]);
-                doShare(toSend, type);
-            };
-
-            const regLink = gv(prop,'lead_registration')||gv(prop,'lead_registration_link')||gv(prop,'lead_registration_link_or_email_id');
-            const regIsEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
-            const handleReg = () => {
-                if (!regLink) { showToast('⚠️ No registration link set','bg-amber-500'); return; }
-                if (regIsEmail) window.location.href=`mailto:${regLink.replace('mailto:','').trim()}?subject=New Lead: ${gv(prop,'property_name')}`;
-                else window.open(safeLink(regLink),'_blank');
-            };
-
-            return (
-                <div className="min-h-screen bg-slate-100 animate-fadeIn pb-28 md:pb-8">
-                    {toast && (
-                        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[500] ${toast.color} text-white text-xs font-black uppercase tracking-widest px-6 py-3.5 rounded-2xl shadow-2xl animate-fadeIn flex items-center gap-2 max-w-xs text-center`}>
-                            {toast.msg}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                    <div className="lg:col-span-2 space-y-5">
+                        <div className="card p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <EF field="bhk"                 label="Configurations" val={gv(prop,'bhk')} />
+                            <EF field="construction_status" label="Status"          val={gv(prop,'construction_status')} />
+                            <EF field="possession_date"     label="Possession"      val={gv(prop,'possession_date')} type="date" />
+                            <EF field="approval"            label="Approvals"       val={gv(prop,'approval')} />
                         </div>
-                    )}
 
-                    {shareModal && (
-                        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fadeIn" onClick={()=>setShareModal(null)}>
-                            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-slideIn" onClick={e=>e.stopPropagation()}>
-                                <div className="flex justify-between items-center mb-1">
-                                    <h3 className="text-base font-black uppercase tracking-tight text-slate-900">Select Files</h3>
-                                    <button onClick={()=>setShareModal(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
-                                </div>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{shareModal.type} · {shareModal.items.length} available</p>
-                                <p className="text-[9px] text-blue-600 font-bold mb-4">
-                                    📱 Mobile: files share directly · 💻 Desktop: files download, attach in WhatsApp Web
-                                </p>
-                                <div className="space-y-2 mb-5 max-h-56 overflow-y-auto">
-                                    {shareModal.items.map((item,i)=>{
-                                        const chk = selected.includes(item.url);
-                                        const r   = item.resolved;
-                                        const isImg = r.type==='cloudinary_img'||r.type==='drive_file';
-                                        const thumb = r.type==='cloudinary_img' ? item.url : r.thumbUrl;
-                                        return (
-                                            <label key={i} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${chk?'border-emerald-400 bg-emerald-50':'border-slate-200 bg-slate-50 hover:border-slate-300'}`}>
-                                                <input type="checkbox" checked={chk} className="accent-emerald-500 w-4 h-4 shrink-0" onChange={()=>setSelected(p=>chk?p.filter(u=>u!==item.url):[...p,item.url])} />
-                                                {isImg&&thumb ? <img src={thumb} className="w-10 h-10 rounded-lg object-cover shrink-0 border border-slate-200" onError={e=>e.target.style.display='none'} /> : <span className="text-xl shrink-0">📄</span>}
-                                                <span className="text-xs font-bold text-slate-700 flex-1 truncate">{shareModal.type} {i+1}</span>
-                                                <a href={r.previewUrl||r.url||item.url} target="_blank" onClick={e=>e.stopPropagation()} className="text-[9px] text-blue-500 font-bold uppercase tracking-widest shrink-0 hover:text-blue-700">View</a>
-                                            </label>
-                                        );
-                                    })}
-                                </div>
-                                <div className="flex gap-2">
-                                    <button onClick={()=>setSelected(shareModal.items.map(i=>i.url))} className="btn-ghost flex-1 text-[9px] py-2.5">All</button>
-                                    <button onClick={()=>setSelected([])} className="btn-ghost flex-1 text-[9px] py-2.5">None</button>
-                                    <button onClick={sendSelected} disabled={!selected.length||sharing} className="btn-primary flex-1 text-[9px] py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40">
-                                        Share ({selected.length}) 💬
-                                    </button>
-                                </div>
+                        <div className="card p-5">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">About The Project</div>
+                            <EF field="description" label="" val={gv(prop,'description')} multiline />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="card p-5 bg-blue-50 border-blue-100">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-3">Key Highlights</div>
+                                <EF field="usp_details" label="" val={gv(prop,'usp_details')} multiline />
                             </div>
-                        </div>
-                    )}
-
-                    {/* Header */}
-                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-3.5 flex justify-between items-center shadow-sm">
-                        <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors group">
-                            <span className="group-hover:-translate-x-1 transition-transform inline-block">←</span> Library
-                        </button>
-                        <div className="flex items-center gap-3">
-                            <span className="hidden md:inline text-[9px] font-black uppercase tracking-widest text-blue-500 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full">✏️ Hover fields to edit</span>
-                            {sharing && <span className="text-[9px] font-black text-blue-600 animate-pulse uppercase tracking-widest">Preparing…</span>}
-                        </div>
-                    </div>
-
-                    <div className="max-w-7xl mx-auto p-4 md:p-6">
-                        {/* Gallery */}
-                        <div className="relative mb-6">
-                            <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-2 hide-scroll h-[38vh] md:h-[55vh] rounded-2xl">
-                                {imgs.length>0 ? imgs.map((img,i)=>(
-                                    <div key={i} className="min-w-full md:min-w-[78%] h-full shrink-0 snap-center relative rounded-2xl overflow-hidden bg-slate-200">
-                                        <img src={img} className="w-full h-full object-cover" alt="" />
-                                        {i===0&&(
-                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent flex flex-col justify-end p-5 md:p-8">
-                                                <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">{gv(prop,'property_type')||'Property'}</div>
-                                                <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tighter text-white leading-tight mb-1">{gv(prop,'property_name')}</h1>
-                                                <p className="text-white/75 text-sm">📍 {gv(prop,'location')}</p>
-                                            </div>
-                                        )}
+                            <div className="card p-5 bg-slate-900 border-slate-800">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Amenities</div>
+                                {editField!=='amenities' ? (
+                                    <div className="group/ef flex items-start gap-2">
+                                        <div className="flex-1 text-sm text-slate-300 font-semibold break-words">{gv(prop,'amenities')||<span className="italic text-slate-600">—</span>}</div>
+                                        <button onClick={()=>startEdit('amenities',gv(prop,'amenities'))} className="opacity-0 group-hover/ef:opacity-100 transition-opacity shrink-0 text-[8px] font-black bg-slate-700 text-slate-300 border border-slate-600 px-2 py-1 rounded-lg uppercase tracking-widest hover:bg-slate-600">Edit</button>
                                     </div>
-                                )) : (
-                                    <div className="w-full h-full bg-slate-200 rounded-2xl flex items-center justify-center">
-                                        <span className="text-slate-400 font-black text-lg uppercase tracking-widest">No Images</span>
+                                ):(
+                                    <div className="space-y-2">
+                                        <textarea rows={4} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none resize-none bg-slate-800 text-white" />
+                                        <div className="flex gap-2">
+                                            <button onClick={()=>saveField('amenities',editVal)} disabled={saving} className="btn-primary text-[9px] py-1.5 px-3">{saving?'…':'Save'}</button>
+                                            <button onClick={cancelEdit} className="bg-slate-700 text-slate-300 font-black text-[9px] py-1.5 px-3 rounded-lg uppercase tracking-widest">Cancel</button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                            {/* LEFT COLUMN */}
-                            <div className="lg:col-span-2 space-y-5">
-                                <div className="card p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <EF field="bhk"                 label="Configurations" val={gv(prop,'bhk')} />
-                                    <EF field="construction_status" label="Status"          val={gv(prop,'construction_status')} />
-                                    <EF field="possession_date"     label="Possession"      val={gv(prop,'possession_date')} type="date" />
-                                    <EF field="approval"            label="Approvals"       val={gv(prop,'approval')} />
-                                </div>
-
-                                <div className="card p-5">
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">About The Project</div>
-                                    <EF field="description" label="" val={gv(prop,'description')} multiline />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="card p-5 bg-blue-50 border-blue-100">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-3">Key Highlights</div>
-                                        <EF field="usp_details" label="" val={gv(prop,'usp_details')} multiline />
-                                    </div>
-                                    <div className="card p-5 bg-slate-900 border-slate-800">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Amenities</div>
-                                        {editField!=='amenities' ? (
-                                            <div className="group/ef flex items-start gap-2">
-                                                <div className="flex-1 text-sm text-slate-300 font-semibold break-words">{gv(prop,'amenities')||<span className="italic text-slate-600">—</span>}</div>
-                                                <button onClick={()=>startEdit('amenities',gv(prop,'amenities'))} className="opacity-0 group-hover/ef:opacity-100 transition-opacity shrink-0 text-[8px] font-black bg-slate-700 text-slate-300 border border-slate-600 px-2 py-1 rounded-lg uppercase tracking-widest hover:bg-slate-600">Edit</button>
-                                            </div>
-                                        ):(
-                                            <div className="space-y-2">
-                                                <textarea rows={4} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none resize-none bg-slate-800 text-white" />
-                                                <div className="flex gap-2">
-                                                    <button onClick={()=>saveField('amenities',editVal)} disabled={saving} className="btn-primary text-[9px] py-1.5 px-3">{saving?'…':'Save'}</button>
-                                                    <button onClick={cancelEdit} className="bg-slate-700 text-slate-300 font-black text-[9px] py-1.5 px-3 rounded-lg uppercase tracking-widest">Cancel</button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="card p-5">
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 pb-2 border-b border-slate-100">Links & Internal Info</div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <EF field="video_link"             label="Video Link"             val={gv(prop,'video_link')} />
-                                        <EF field="website_link"           label="Builder Website"        val={gv(prop,'website_link')} />
-                                        <EF field="lead_registration_link" label="Lead Registration"      val={gv(prop,'lead_registration_link')} />
-                                        <EF field="map_link"               label="Map Link"               val={gv(prop,'map_link')} />
-                                        <EF field="point_of_contact"       label="Point of Contact"       val={gv(prop,'point_of_contact')} />
-                                        <EF field="commission_details"     label="Commission"             val={gv(prop,'commission_details')} />
-                                        <EF field="availability"           label="Availability"           val={gv(prop,'availability')} />
-                                        <EF field="total_units"            label="Total Units"            val={gv(prop,'total_units')} />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* RIGHT SIDEBAR */}
-                            <div className="lg:col-span-1">
-                                <div className="sticky top-20 space-y-4">
-                                    <div className="card p-5">
-                                        <div className="mb-4 pb-4 border-b border-slate-100">
-                                            <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Starting Price</div>
-                                            <EF field="price" label="" val={gv(prop,'price')} />
-                                        </div>
-                                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 mb-3">
-                                            <div className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-0.5">Commission</div>
-                                            <div className="text-xl font-black text-amber-800">{fmtPct(gv(prop,'commission')||gv(prop,'commission_details'))}</div>
-                                        </div>
-                                        <div className="bg-sky-50 border border-sky-200 rounded-xl p-3.5 mb-4">
-                                            <div className="text-[9px] font-black uppercase tracking-widest text-sky-700 mb-1">Internal Info</div>
-                                            <p className="text-[10px] font-bold text-sky-800">POC: {gv(prop,'point_of_contact')||'N/A'}</p>
-                                            <p className="text-[10px] font-bold text-sky-800 mt-0.5">Avail: {gv(prop,'availability')||'N/A'}</p>
-                                        </div>
-                                        <div className="bg-slate-900 rounded-xl p-4">
-                                            <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-3 pb-2 border-b border-slate-700">Admin Tools</div>
-                                            <div className="space-y-2 mb-4">
-                                                <button onClick={()=>window.open(safeLink(gv(prop,'website_link')),'_blank')} className="share-btn w-full text-left">🌐 Builder Website</button>
-                                                <button onClick={handleReg} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-2 rounded-lg text-[9px] uppercase tracking-widest transition">
-                                                    {regIsEmail?'✉️ Email Lead Details':'🌐 Lead Registration Link'}
-                                                </button>
-                                            </div>
-                                            <div className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-2">Share with Client via WhatsApp</div>
-                                            <div className="grid grid-cols-2 gap-1.5">
-                                                <button disabled={sharing} onClick={()=>handleShare('Brochure',       gv(prop,'brochure'))}       className="share-btn">📥 Brochure</button>
-                                                <button disabled={sharing} onClick={()=>handleShare('Cost Sheet',    gv(prop,'cost_sheet'))}     className="share-btn">📄 Cost Sheet</button>
-                                                <button disabled={sharing} onClick={()=>handleShare('Location Map',  gv(prop,'map_link'))}       className="share-btn">📍 Location</button>
-                                                <button disabled={sharing} onClick={()=>handleShare('Property Video',gv(prop,'video_link'))}     className="share-btn">🎥 Video</button>
-                                                <button disabled={sharing} onClick={()=>handleShare('Floor Plan',    gv(prop,'floor_plan'))}     className="share-btn col-span-2">📐 Floor Plan</button>
-                                                <button disabled={sharing} onClick={()=>handleShare('Gallery',       gv(prop,'gallery_images'))} className="share-btn col-span-2">🖼️ Gallery Images</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <EMICalc priceStr={gv(prop,'price')} />
-                                </div>
+                        <div className="card p-5">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 pb-2 border-b border-slate-100">Links & Internal Info</div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <EF field="video_link"             label="Video Link"             val={gv(prop,'video_link')} />
+                                <EF field="website_link"           label="Builder Website"        val={gv(prop,'website_link')} />
+                                <EF field="lead_registration_link" label="Lead Registration"      val={gv(prop,'lead_registration_link')} />
+                                <EF field="map_link"               label="Map Link"               val={gv(prop,'map_link')} />
+                                <EF field="point_of_contact"       label="Point of Contact"       val={gv(prop,'point_of_contact')} />
+                                <EF field="commission_details"     label="Commission"             val={gv(prop,'commission_details')} />
+                                <EF field="availability"           label="Availability"           val={gv(prop,'availability')} />
+                                <EF field="total_units"            label="Total Units"            val={gv(prop,'total_units')} />
                             </div>
                         </div>
                     </div>
-                </div>
-            );
-        };
 
-        // ─── PROJECT LIBRARY ───────────────────────────────────────────────────────
-        const Library = ({ props:initProps, onSelect, supabase }) => {
-            const [props,      setProps]      = useState(initProps||[]);
-            const [togglingId, setTogglingId] = useState(null);
-            const [search,     setSearch]     = useState('');
-
-            useEffect(()=>setProps(initProps||[]),[initProps]);
-
-            const toggle = async (e,p) => {
-                e.stopPropagation();
-                const newVal = p.is_live!==true;
-                setTogglingId(p.id);
-                const {error} = await supabase.from('properties').update({is_live:newVal}).eq('id',p.id);
-                if (!error) setProps(prev=>prev.map(x=>x.id===p.id?{...x,is_live:newVal}:x));
-                else alert('Update failed: '+error.message);
-                setTogglingId(null);
-            };
-
-            const filtered = props.filter(p=>{
-                if (!search) return true;
-                const t=search.toLowerCase();
-                return gv(p,'property_name').toLowerCase().includes(t)||gv(p,'location').toLowerCase().includes(t)||gv(p,'builder_name').toLowerCase().includes(t);
-            });
-
-            if (!props.length) return (
-                <div className="text-center py-24 text-slate-400 font-black uppercase tracking-widest animate-pulse">Library Empty…</div>
-            );
-
-            return (
-                <div className="animate-fadeIn space-y-5">
-                    <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
-                        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search property, location, builder…" className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {filtered.map(p=>{
-                            const live = p.is_live===true;
-                            const tog  = togglingId===p.id;
-                            return (
-                                <div key={p.id} className="card overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
-                                    <div className="relative h-44 bg-slate-100 overflow-hidden cursor-pointer" onClick={()=>onSelect(p)}>
-                                        <img src={fixImg(gv(p,'cover_image')||gv(p,'cover-image'))} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
-                                        <div className="absolute top-3 left-0 bg-slate-900/85 text-white text-[9px] font-black px-3 py-1.5 rounded-r-lg uppercase tracking-widest">
-                                            {gv(p,'property_type')||'Property'}
-                                        </div>
-                                        <div className={`absolute top-3 right-3 text-[9px] font-black px-2.5 py-1 rounded-full border ${live?'bg-emerald-100 text-emerald-700 border-emerald-300':'bg-red-100 text-red-600 border-red-300'}`}>
-                                            {live?'🟢 Live':'🔴 Unlive'}
-                                        </div>
+                    <div className="lg:col-span-1">
+                        <div className="sticky top-20 space-y-4">
+                            <div className="card p-5">
+                                <div className="mb-4 pb-4 border-b border-slate-100">
+                                    <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Starting Price</div>
+                                    <EF field="price" label="" val={gv(prop,'price')} />
+                                </div>
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 mb-3">
+                                    <div className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-0.5">Commission</div>
+                                    <div className="text-xl font-black text-amber-800">{fmtPct(gv(prop,'commission')||gv(prop,'commission_details'))}</div>
+                                </div>
+                                <div className="bg-sky-50 border border-sky-200 rounded-xl p-3.5 mb-4">
+                                    <div className="text-[9px] font-black uppercase tracking-widest text-sky-700 mb-1">Internal Info</div>
+                                    <p className="text-[10px] font-bold text-sky-800">POC: {gv(prop,'point_of_contact')||'N/A'}</p>
+                                    <p className="text-[10px] font-bold text-sky-800 mt-0.5">Avail: {gv(prop,'availability')||'N/A'}</p>
+                                </div>
+                                <div className="bg-slate-900 rounded-xl p-4">
+                                    <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-3 pb-2 border-b border-slate-700">Admin Tools</div>
+                                    <div className="space-y-2 mb-4">
+                                        <button onClick={()=>window.open(safeLink(gv(prop,'website_link')),'_blank')} className="share-btn w-full text-left">🌐 Builder Website</button>
+                                        <button onClick={handleReg} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-2 rounded-lg text-[9px] uppercase tracking-widest transition">
+                                            {regIsEmail?'✉️ Email Lead Details':'🌐 Lead Registration Link'}
+                                        </button>
                                     </div>
-                                    <div className="p-4 flex flex-col flex-1">
-                                        <h3 onClick={()=>onSelect(p)} className="font-black uppercase tracking-tight text-slate-900 text-base leading-tight truncate cursor-pointer hover:text-blue-600 transition-colors">{gv(p,'property_name')}</h3>
-                                        <p className="text-slate-400 text-xs font-semibold mt-0.5 truncate">📍 {gv(p,'location')||'—'}</p>
-                                        <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
-                                            <div>
-                                                <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">From</div>
-                                                <div className="text-sm font-black text-blue-700">{gv(p,'price')||'On Request'}</div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button onClick={e=>toggle(e,p)} disabled={tog} className={`text-[9px] font-black px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${live?'bg-red-50 border-red-300 text-red-700 hover:bg-red-100':'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100'}`}>
-                                                    {tog?'…':live?'Unlive':'Set Live'}
-                                                </button>
-                                                <button onClick={()=>onSelect(p)} className="btn-primary text-[9px] py-1.5 px-3">Open</button>
-                                            </div>
-                                        </div>
+                                    <div className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-2">Share with Client via WhatsApp</div>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        <button disabled={sharing} onClick={()=>handleShare('Brochure',       gv(prop,'brochure'))}       className="share-btn">📥 Brochure</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Cost Sheet',    gv(prop,'cost_sheet'))}     className="share-btn">📄 Cost Sheet</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Location Map',  gv(prop,'map_link'))}       className="share-btn">📍 Location</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Property Video',gv(prop,'video_link'))}     className="share-btn">🎥 Video</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Floor Plan',    gv(prop,'floor_plan'))}     className="share-btn col-span-2">📐 Floor Plan</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Gallery',       gv(prop,'gallery_images'))} className="share-btn col-span-2">🖼️ Gallery Images</button>
                                     </div>
                                 </div>
-                            );
-                        })}
+                            </div>
+                            <EMICalc priceStr={gv(prop,'price')} />
+                        </div>
                     </div>
                 </div>
-            );
-        };
+            </div>
+        </div>
+    );
+};
 
-        // ─── ADD PROPERTY FORM ─────────────────────────────────────────────────────
-        const AddPropertyForm = ({ supabase, scriptUrl }) => {
-            const blank = { 
-                property_name:'', builder_name:'', property_region:'', property_type:'', location:'', price:'', 
-                bhk:'', super_built_up_area:'', possession_date:'', construction_status:'', approval:'', 
-                total_units:'', availability:'', description:'', usp_details:'', amenities:'', 
-                point_of_contact:'', commission_details:'', video_link:'', website_link:'', 
-                lead_registration_link:'', map_link:'', cover_image:'', gallery_images:'', 
-                floor_plan:'', brochure:'', cost_sheet:'', miscellaneous:'' 
-            };
-            
-            const [form,         setForm]         = useState(blank);
-            const [loading,      setLoading]      = useState(false);
-            const [uploadField,  setUploadField]  = useState(null);
-            const [saved,        setSaved]        = useState(false);
+// ─── PROJECT LIBRARY ───────────────────────────────────────────────────────
+const Library = ({ props:initProps, onSelect, supabase }) => {
+    const [props,      setProps]      = useState(initProps||[]);
+    const [togglingId, setTogglingId] = useState(null);
+    const [search,     setSearch]     = useState('');
 
-            const set = (k,v) => setForm(f=>({...f,[k]:v}));
+    useEffect(()=>setProps(initProps||[]),[initProps]);
 
-            const upload = async (e, field, multi=false) => {
-                const files=e.target.files; 
-                if(!files||!files.length) return;
-                setLoading(true); 
-                setUploadField(field);
-                
-                const catMap = {
-                    cover_image:'Cover Image',
-                    gallery_images:'Gallery',
-                    brochure:'Brochures',
-                    cost_sheet:'Cost Sheets',
-                    floor_plan:'Floor Plans',
-                    miscellaneous:'Miscellaneous'
+    const toggle = async (e,p) => {
+        e.stopPropagation();
+        const newVal = p.is_live!==true;
+        setTogglingId(p.id);
+        const {error} = await supabase.from('properties').update({is_live:newVal}).eq('id',p.id);
+        if (!error) setProps(prev=>prev.map(x=>x.id===p.id?{...x,is_live:newVal}:x));
+        else alert('Update failed: '+error.message);
+        setTogglingId(null);
+    };
+
+    const filtered = props.filter(p=>{
+        if (!search) return true;
+        const t=search.toLowerCase();
+        return gv(p,'property_name').toLowerCase().includes(t)||gv(p,'location').toLowerCase().includes(t)||gv(p,'builder_name').toLowerCase().includes(t);
+    });
+
+    if (!props.length) return (
+        <div className="text-center py-24 text-slate-400 font-black uppercase tracking-widest animate-pulse">Library Empty…</div>
+    );
+
+    return (
+        <div className="animate-fadeIn space-y-5">
+            <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search property, location, builder…" className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filtered.map(p=>{
+                    const live = p.is_live===true;
+                    const tog  = togglingId===p.id;
+                    return (
+                        <div key={p.id} className="card overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
+                            <div className="relative h-44 bg-slate-100 overflow-hidden cursor-pointer" onClick={()=>onSelect(p)}>
+                                <img src={fixImg(gv(p,'cover_image')||gv(p,'cover-image'))} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
+                                <div className="absolute top-3 left-0 bg-slate-900/85 text-white text-[9px] font-black px-3 py-1.5 rounded-r-lg uppercase tracking-widest">
+                                    {gv(p,'property_type')||'Property'}
+                                </div>
+                                <div className={`absolute top-3 right-3 text-[9px] font-black px-2.5 py-1 rounded-full border ${live?'bg-emerald-100 text-emerald-700 border-emerald-300':'bg-red-100 text-red-600 border-red-300'}`}>
+                                    {live?'🟢 Live':'🔴 Unlive'}
+                                </div>
+                            </div>
+                            <div className="p-4 flex flex-col flex-1">
+                                <h3 onClick={()=>onSelect(p)} className="font-black uppercase tracking-tight text-slate-900 text-base leading-tight truncate cursor-pointer hover:text-blue-600 transition-colors">{gv(p,'property_name')}</h3>
+                                <p className="text-slate-400 text-xs font-semibold mt-0.5 truncate">📍 {gv(p,'location')||'—'}</p>
+                                <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
+                                    <div>
+                                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">From</div>
+                                        <div className="text-sm font-black text-blue-700">{gv(p,'price')||'On Request'}</div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={e=>toggle(e,p)} disabled={tog} className={`text-[9px] font-black px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${live?'bg-red-50 border-red-300 text-red-700 hover:bg-red-100':'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100'}`}>
+                                            {tog?'…':live?'Unlive':'Set Live'}
+                                        </button>
+                                        <button onClick={()=>onSelect(p)} className="btn-primary text-[9px] py-1.5 px-3">Open</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+// ─── ADD PROPERTY FORM ─────────────────────────────────────────────────────
+const AddPropertyForm = ({ supabase, scriptUrl }) => {
+    const blank = { property_name:'',builder_name:'',property_region:'',property_type:'',location:'',price:'',bhk:'',super_built_up_area:'',possession_date:'',construction_status:'',approval:'',total_units:'',availability:'',description:'',usp_details:'',amenities:'',point_of_contact:'',commission_details:'',video_link:'',website_link:'',lead_registration_link:'',map_link:'',cover_image:'',gallery_images:'',floor_plan:'',brochure:'',cost_sheet:'',miscellaneous:'' };
+    const [form,         setForm]         = useState(blank);
+    const [loading,      setLoading]      = useState(false);
+    const [uploadField,  setUploadField]  = useState(null);
+    const [saved,        setSaved]        = useState(false);
+
+    const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+    const upload = async (e, field, multi=false) => {
+        const files=e.target.files; if(!files||!files.length) return;
+        setLoading(true); setUploadField(field);
+        const catMap = {cover_image:'Cover Image',gallery_images:'Gallery',brochure:'Brochures',cost_sheet:'Cost Sheets',floor_plan:'Floor Plans',miscellaneous:'Miscellaneous'};
+        const cat = catMap[field]||'General';
+        let urls=[];
+        for(let i=0;i<files.length;i++){
+            const file=files[i];
+            const url = await new Promise(res=>{
+                const r=new FileReader();
+                r.readAsDataURL(file);
+                r.onload=async()=>{
+                    const resp = await fetch(scriptUrl,{method:'POST',body:JSON.stringify({base64:r.result.split(',')[1],type:file.type,name:file.name,propertyName:form.property_name||'Uploads',category:cat})});
+                    const j=await resp.json();
+                    res(j.status==='success'?j.fileUrl||j.url:null);
                 };
-                
-                const cat = catMap[field]||'General';
-                let urls=[];
+            });
+            if(url) urls.push(url);
+        }
+        if(urls.length){
+            const joined=urls.join(',');
+            if(multi) set(field, form[field]?form[field]+','+joined:joined);
+            else set(field,joined);
+        }
+        setLoading(false); setUploadField(null);
+    };
 
-                for(let i=0;i<files.length;i++){
-                    const file=files[i];
-                    const url = await new Promise(res=>{
-                        const r=new FileReader();
-                        r.readAsDataURL(file);
-                        r.onload=async()=>{
-                            const resp = await fetch(scriptUrl,{
-                                method:'POST',
-                                body:JSON.stringify({
-                                    base64: r.result.split(',')[1],
-                                    type: file.type,
-                                    name: file.name,
-                                    propertyName: form.property_name || 'Uploads',
-                                    category: cat
-                                })
-                            });
-                            const j=await resp.json();
-                            res(j.status==='success' ? j.fileUrl || j.url : null);
-                        };
-                    });
-                    if(url) urls.push(url);
-                }
+    const removeFile=(field,multi=false,idx=null)=>{
+        if(multi){ const arr=form[field].split(',').filter(Boolean); arr.splice(idx,1); set(field,arr.join(',')); }
+        else set(field,'');
+    };
 
-                if(urls.length){
-                    const joined=urls.join(',');
-                    if(multi) set(field, form[field]?form[field]+','+joined:joined);
-                    else set(field,joined);
-                }
-                setLoading(false); 
-                setUploadField(null);
-            };
+    const FileChip=({field,name,multi=false,idx=null})=>(
+        <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg mt-2 text-[10px] font-bold mr-2">
+            <span className="truncate max-w-[130px]">{name}</span>
+            <button onClick={()=>removeFile(field,multi,idx)} className="text-red-500 hover:text-red-700 leading-none font-black">✕</button>
+        </div>
+    );
 
-            const removeFile=(field,multi=false,idx=null)=>{
-                if(multi){ 
-                    const arr=form[field].split(',').filter(Boolean); 
-                    arr.splice(idx,1); 
-                    set(field,arr.join(',')); 
-                }
-                else set(field,'');
-            };
+    const save=async()=>{
+        if(!form.property_name||!form.price||!form.cover_image){
+            alert('Please fill: Property Name, Price, and Cover Image.'); return;
+        }
+        setLoading(true);
+        const payload={...form,is_live:true};
+        const {error}=await supabase.from('properties').insert([payload]);
+        if(!error){ setSaved(true); setForm(blank); setTimeout(()=>setSaved(false),3000); }
+        else alert(error.message);
+        setLoading(false);
+    };
 
-            const FileChip=({field,name,multi=false,idx=null})=>(
-                <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg mt-2 text-[10px] font-bold mr-2">
-                    <span className="truncate max-w-[130px]">{name}</span>
-                    <button onClick={()=>removeFile(field,multi,idx)} className="text-red-500 hover:text-red-700 leading-none font-black">✕</button>
+    const F=({label,children})=>(
+        <div className="field-group">
+            <label>{label}</label>
+            {children}
+        </div>
+    );
+
+    return (
+        <div className="max-w-4xl mx-auto animate-fadeIn">
+            <div className="card p-6 md:p-8 space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-xl font-black uppercase tracking-tight text-slate-900">New Property Listing</h2>
+                        <p className="text-xs text-slate-400 font-semibold mt-0.5">All starred fields are required</p>
+                    </div>
+                    {saved&&<div className="bg-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-emerald-200 animate-fadeIn">✅ Published!</div>}
                 </div>
-            );
 
-            const save=async()=>{
-                if(!form.property_name||!form.price||!form.cover_image){
-                    alert('Please fill: Property Name, Price, and Cover Image.'); 
-                    return;
-                }
-                setLoading(true);
-                const payload={...form,is_live:true};
-                const {error}=await supabase.from('properties').insert([payload]);
-                if(!error){ 
-                    setSaved(true); 
-                    setForm(blank); 
-                    setTimeout(()=>setSaved(false),3000); 
-                } else alert(error.message);
-                setLoading(false);
-            };
-
-            const F=({label,children})=>(
-                <div className="field-group">
-                    <label>{label}</label>
-                    {children}
+                {/* Basic Info */}
+                <div>
+                    <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Basic Information</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <F label="Property Name ★"><input value={form.property_name} onChange={e=>set('property_name',e.target.value)} placeholder="e.g. Prestige Lakeside Habitat" /></F>
+                        <F label="Builder Name"><input value={form.builder_name} onChange={e=>set('builder_name',e.target.value)} placeholder="e.g. Prestige Group" /></F>
+                        <F label="Region">
+                            <select value={form.property_region} onChange={e=>set('property_region',e.target.value)}>
+                                <option value="">Select Region</option>
+                                {['North','South','East','West'].map(r=><option key={r}>{r}</option>)}
+                            </select>
+                        </F>
+                        <F label="Property Type">
+                            <select value={form.property_type} onChange={e=>set('property_type',e.target.value)}>
+                                <option value="">Select Type</option>
+                                {['Apartment','Villa','Villament','Plot','Others'].map(t=><option key={t}>{t}</option>)}
+                            </select>
+                        </F>
+                        <F label="Location / Micro-Market"><input value={form.location} onChange={e=>set('location',e.target.value)} placeholder="e.g. Whitefield, Bengaluru" /></F>
+                        <F label="Price ★"><input value={form.price} onChange={e=>set('price',e.target.value)} placeholder="e.g. 1.2 Cr onwards" /></F>
+                    </div>
                 </div>
-            );
 
-            return (
-                <div className="max-w-4xl mx-auto animate-fadeIn">
-                    <div className="card p-6 md:p-8 space-y-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-xl font-black uppercase tracking-tight text-slate-900">New Property Listing</h2>
-                                <p className="text-xs text-slate-400 font-semibold mt-0.5">All starred fields are required</p>
-                            </div>
-                            {saved&&<div className="bg-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-emerald-200 animate-fadeIn">✅ Published!</div>}
+                {/* Specs */}
+                <div>
+                    <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Specifications</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="field-group md:col-span-2">
+                            <label>Configurations (hold Ctrl/⌘ for multi)</label>
+                            <select multiple className="h-28" value={form.bhk?form.bhk.split(','):[]} onChange={e=>set('bhk',[...e.target.selectedOptions].map(o=>o.value).join(','))}>
+                                {['1 BHK','2 BHK','3 BHK','4 BHK','5+ BHK'].map(b=><option key={b}>{b}</option>)}
+                            </select>
                         </div>
+                        <F label="Super Built-up Area"><input value={form.super_built_up_area} onChange={e=>set('super_built_up_area',e.target.value)} placeholder="SqFt" /></F>
+                        <F label="Total Units"><input value={form.total_units} onChange={e=>set('total_units',e.target.value)} placeholder="e.g. 420" /></F>
+                        <F label="Possession Date">
+                            <input type="date" value={form.possession_date} onChange={e=>set('possession_date',e.target.value)} />
+                        </F>
+                        <F label="Construction Status">
+                            <select value={form.construction_status} onChange={e=>set('construction_status',e.target.value)}>
+                                <option value="">Select</option>
+                                {['Ready to Move','Under Construction','New Launch'].map(s=><option key={s}>{s}</option>)}
+                            </select>
+                        </F>
+                        <F label="Approvals"><input value={form.approval} onChange={e=>set('approval',e.target.value)} placeholder="BDA, RERA, etc." /></F>
+                        <F label="Availability"><input value={form.availability} onChange={e=>set('availability',e.target.value)} placeholder="e.g. 2 & 3 BHK" /></F>
+                    </div>
+                </div>
 
-                        {/* Basic Info */}
-                        <div>
-                            <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Basic Information</div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <F label="Property Name ★"><input value={form.property_name} onChange={e=>set('property_name',e.target.value)} placeholder="e.g. Prestige Lakeside Habitat" /></F>
-                                <F label="Builder Name"><input value={form.builder_name} onChange={e=>set('builder_name',e.target.value)} placeholder="e.g. Prestige Group" /></F>
-                                <F label="Region">
-                                    <select value={form.property_region} onChange={e=>set('property_region',e.target.value)}>
-                                        <option value="">Select Region</option>
-                                        {['North','South','East','West'].map(r=><option key={r}>{r}</option>)}
-                                    </select>
-                                </F>
-                                <F label="Property Type">
-                                    <select value={form.property_type} onChange={e=>set('property_type',e.target.value)}>
-                                        <option value="">Select Type</option>
-                                        {['Apartment','Villa','Villament','Plot','Others'].map(t=><option key={t}>{t}</option>)}
-                                    </select>
-                                </F>
-                                <F label="Location / Micro-Market"><input value={form.location} onChange={e=>set('location',e.target.value)} placeholder="e.g. Whitefield, Bengaluru" /></F>
-                                <F label="Price ★"><input value={form.price} onChange={e=>set('price',e.target.value)} placeholder="e.g. 1.2 Cr onwards" /></F>
-                            </div>
+                {/* Content */}
+                <div>
+                    <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Content</div>
+                    <div className="space-y-4">
+                        <F label="Property Description">
+                            <textarea rows={4} value={form.description} onChange={e=>set('description',e.target.value)} placeholder="Describe the project — location advantages, lifestyle, architecture…" className="resize-none" />
+                        </F>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <F label="Key USPs / Highlights (one per line)">
+                                <textarea rows={4} value={form.usp_details} onChange={e=>set('usp_details',e.target.value)} placeholder={"Zero car movement design\nRooftop infinity pool\nWalkable to metro"} className="resize-none" />
+                            </F>
+                            <F label="Amenities (comma separated)">
+                                <textarea rows={4} value={form.amenities} onChange={e=>set('amenities',e.target.value)} placeholder="Clubhouse, Swimming Pool, Gym, Co-working" className="resize-none" />
+                            </F>
                         </div>
+                    </div>
+                </div>
 
-                        {/* Specifications */}
-                        <div>
-                            <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Specifications</div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="field-group md:col-span-2">
-                                    <label>Configurations (hold Ctrl/⌘ for multi)</label>
-                                    <select multiple className="h-28" value={form.bhk?form.bhk.split(','):[]} onChange={e=>set('bhk',[...e.target.selectedOptions].map(o=>o.value).join(','))}>
-                                        {['1 BHK','2 BHK','3 BHK','4 BHK','5+ BHK'].map(b=><option key={b}>{b}</option>)}
-                                    </select>
-                                </div>
-                                <F label="Super Built-up Area"><input value={form.super_built_up_area} onChange={e=>set('super_built_up_area',e.target.value)} placeholder="SqFt" /></F>
-                                <F label="Total Units"><input value={form.total_units} onChange={e=>set('total_units',e.target.value)} placeholder="e.g. 420" /></F>
-                                <F label="Possession Date">
-                                    <input type="date" value={form.possession_date} onChange={e=>set('possession_date',e.target.value)} />
-                                </F>
-                                <F label="Construction Status">
-                                    <select value={form.construction_status} onChange={e=>set('construction_status',e.target.value)}>
-                                        <option value="">Select</option>
-                                        {['Ready to Move','Under Construction','New Launch'].map(s=><option key={s}>{s}</option>)}
-                                    </select>
-                                </F>
-                                <F label="Approvals"><input value={form.approval} onChange={e=>set('approval',e.target.value)} placeholder="BDA, RERA, etc." /></F>
-                                <F label="Availability"><input value={form.availability} onChange={e=>set('availability',e.target.value)} placeholder="e.g. 2 & 3 BHK" /></F>
-                            </div>
+                {/* Internal / Links */}
+                <div className="bg-slate-900 rounded-2xl p-5">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-4 pb-2 border-b border-slate-700">Internal Data & Links</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="field-group">
+                            <label className="text-slate-400">Internal POC</label>
+                            <input className="dark-field" value={form.point_of_contact} onChange={e=>set('point_of_contact',e.target.value)} placeholder="Agent name / phone" />
                         </div>
-
-                        {/* Content */}
-                        <div>
-                            <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Content</div>
-                            <div className="space-y-4">
-                                <F label="Property Description">
-                                    <textarea rows={4} value={form.description} onChange={e=>set('description',e.target.value)} placeholder="Describe the project — location advantages, lifestyle, architecture…" className="resize-none" />
-                                </F>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <F label="Key USPs / Highlights (one per line)">
-                                        <textarea rows={4} value={form.usp_details} onChange={e=>set('usp_details',e.target.value)} placeholder={"Zero car movement design\nRooftop infinity pool\nWalkable to metro"} className="resize-none" />
-                                    </F>
-                                    <F label="Amenities (comma separated)">
-                                        <textarea rows={4} value={form.amenities} onChange={e=>set('amenities',e.target.value)} placeholder="Clubhouse, Swimming Pool, Gym, Co-working" className="resize-none" />
-                                    </F>
-                                </div>
-                            </div>
+                        <div className="field-group">
+                            <label className="text-slate-400">Commission %</label>
+                            <input className="dark-field" value={form.commission_details} onChange={e=>set('commission_details',e.target.value)} placeholder="e.g. 2%" />
                         </div>
+                        <div className="field-group">
+                            <label className="text-slate-400">Video Link</label>
+                            <input className="dark-field" value={form.video_link} onChange={e=>set('video_link',e.target.value)} placeholder="YouTube / Drive URL" />
+                        </div>
+                        <div className="field-group">
+                            <label className="text-slate-400">Builder Website</label>
+                            <input className="dark-field" value={form.website_link} onChange={e=>set('website_link',e.target.value)} placeholder="https://…" />
+                        </div>
+                        <div className="field-group">
+                            <label className="text-slate-400">Lead Registration Link / Email</label>
+                            <input className="dark-field" value={form.lead_registration_link} onChange={e=>set('lead_registration_link',e.target.value)} placeholder="URL or email@domain.com" />
+                        </div>
+                        <div className="field-group">
+                            <label className="text-slate-400">Google Maps Link</label>
+                            <input className="dark-field" value={form.map_link} onChange={e=>set('map_link',e.target.value)} placeholder="https://maps.google.com/…" />
+                        </div>
+                    </div>
+                </div>
 
-                        {/* Internal & Links */}
-                        <div className="bg-slate-900 rounded-2xl p-5">
-                            <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-4 pb-2 border-b border-slate-700">Internal Data & Links</div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="field-group">
-                                    <label className="text-slate-400">Internal POC</label>
-                                    <input className="dark-field" value={form.point_of_contact} onChange={e=>set('point_of_contact',e.target.value)} placeholder="Agent name / phone" />
-                                </div>
-                                <div className="field-group">
-                                    <label className="text-slate-400">Commission %</label>
-                                    <input className="dark-field" value={form.commission_details} onChange={e=>set('commission_details',e.target.value)} placeholder="e.g. 2%" />
-                                </div>
-                                <div className="field-group">
-                                    <label className="text-slate-400">Video Link</label>
-                                    <input className="dark-field" value={form.video_link} onChange={e=>set('video_link',e.target.value)} placeholder="YouTube / Drive URL" />
-                                </div>
-                                <div className="field-group">
-                                    <label className="text-slate-400">Builder Website</label>
-                                    <input className="dark-field" value={form.website_link} onChange={e=>set('website_link',e.target.value)} placeholder="https://…" />
-                                </div>
-                                <div className="field-group">
-                                    <label className="text-slate-400">Lead Registration Link / Email</label>
-                                    <input className="dark-field" value={form.lead_registration_link} onChange={e=>set('lead_registration_link',e.target.value)} placeholder="URL or email@domain.com" />
-                                </div>
-                                <div className="field-group">
-                                    <label className="text-slate-400">Google Maps Link</label>
-                                    <input className="dark-field" value={form.map_link} onChange={e=>set('map_link',e.target.value)} placeholder="https://maps.google.com/…" />
+                {/* Media */}
+                <div>
+                    <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Media & Documents</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {[
+                            {field:'cover_image',    label:'Cover Image ★',        multi:false},
+                            {field:'gallery_images', label:'Gallery Images (multi)', multi:true},
+                            {field:'brochure',       label:'Brochure (PDF)',         multi:false},
+                            {field:'cost_sheet',     label:'Cost Sheet (multi)',     multi:true},
+                            {field:'floor_plan',     label:'Floor Plan',             multi:false},
+                            {field:'miscellaneous',  label:'Miscellaneous (multi)',  multi:true},
+                        ].map(({field,label,multi})=>(
+                            <div key={field} className="field-group">
+                                <label>{label} {uploadField===field&&<span className="text-blue-500 normal-case font-bold animate-pulse ml-1">(uploading…)</span>}</label>
+                                <input type="file" multiple={multi} onChange={e=>upload(e,field,multi)} className="text-xs font-bold text-slate-500 cursor-pointer file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                                <div className="flex flex-wrap mt-1">
+                                    {form[field] && (
+                                        multi
+                                            ? form[field].split(',').filter(Boolean).map((_,i)=><FileChip key={i} field={field} name={`File ${i+1}`} multi idx={i} />)
+                                            : <FileChip field={field} name="Uploaded ✓" />
+                                    )}
                                 </div>
                             </div>
-                        </div>
+                        ))}
+                    </div>
+                </div>
 
-                        {/* Media Uploads */}
-                        <div>
-                            <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Media & Documents</div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <button onClick={save} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black uppercase tracking-widest py-4 rounded-2xl text-sm shadow-lg transition-colors">
+                    {loading?'Uploading & Publishing…':'🚀 Publish Listing'}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// ─── MANUAL LEAD FORM ──────────────────────────────────────────────────────
+const ManualLeadForm = ({ supabase, properties, onSuccess }) => {
+    const [form, setForm] = useState({name:'',phone:'',email:'',project:'General Enquiry',note:'',source:'Manual Entry'});
+    const [loading, setLoading] = useState(false);
+    const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+    const submit = async (e) => {
+        e.preventDefault(); setLoading(true);
+        const t=stamp();
+        const {error}=await supabase.from('leads').insert([{
+            customer_name:form.name, phone_number:form.phone, customer_email:form.email||null,
+            project_interested_in:form.project, add_note:form.note,
+            call_remark:form.note?`[${t}] Requirement: ${form.note}\n\n`:'',
+            lead_source:form.source, lead_status:'Un called'
+        }]);
+        if(!error){
+            fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({action:'sendLead',Name:form.name,Phone:form.phone,Email:form.email||'N/A',Project:form.project,Source:form.source,Requirements:form.note||'None'})
+            }).catch(()=>{});
+            onSuccess();
+        } else alert(error.message);
+        setLoading(false);
+    };
+
+    return (
+        <form onSubmit={submit} className="space-y-3">
+            <div className="field-group"><label>Client Name ★</label><input required value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Full name" /></div>
+            <div className="field-group"><label>Phone ★</label><input required value={form.phone} onChange={e=>set('phone',e.target.value)} placeholder="10-digit number" /></div>
+            <div className="field-group"><label>Email (optional)</label><input type="email" value={form.email} onChange={e=>set('email',e.target.value)} placeholder="email@domain.com" /></div>
+            <div className="field-group">
+                <label>Project Interest</label>
+                <select value={form.project} onChange={e=>set('project',e.target.value)}>
+                    <option value="General Enquiry">General Enquiry</option>
+                    {properties?.map(p=><option key={p.id} value={gv(p,'property_name')}>{gv(p,'property_name')}</option>)}
+                </select>
+            </div>
+            <div className="field-group"><label>Requirements / Notes</label><textarea rows={3} value={form.note} onChange={e=>set('note',e.target.value)} placeholder="Budget, BHK preference, timeline…" className="resize-none" /></div>
+            <div className="field-group">
+                <label>Source</label>
+                <select value={form.source} onChange={e=>set('source',e.target.value)}>
+                    {['Manual Entry','Walk-in','Referral','MagicBricks','Housing.com','99Acres','JustDial'].map(s=><option key={s}>{s}</option>)}
+                </select>
+            </div>
+            <button disabled={loading} className="btn-primary w-full py-3 text-xs">{loading?'Adding Lead…':'+ Inject Lead'}</button>
+        </form>
+    );
+};
+
+// ─── LOGIN ─────────────────────────────────────────────────────────────────
+const Login = () => {
+    const [email,setEmail]=useState(''); const [pass,setPass]=useState('');
+    const [loading,setLoading]=useState(false); const [err,setErr]=useState('');
+    const go=async(e)=>{ e.preventDefault(); setLoading(true); setErr('');
+        const {error}=await supabase.auth.signInWithPassword({email,password:pass});
+        if(error) setErr(error.message); setLoading(false);
+    };
+    return (
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+            <form onSubmit={go} className="bg-white w-full max-w-sm rounded-[32px] p-10 shadow-2xl text-center border-t-4 border-blue-500">
+                <div className="mb-8">
+                    <h1 className="text-2xl font-black italic uppercase tracking-tight text-slate-900">Horizon CRM</h1>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Command Center</p>
+                </div>
+                {err&&<div className="text-red-500 text-xs font-bold bg-red-50 border border-red-200 rounded-xl p-3 mb-4">{err}</div>}
+                <div className="field-group mb-3 text-left"><label>Email</label><input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@horizons.com" /></div>
+                <div className="field-group mb-6 text-left"><label>Password</label><input type="password" required value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" /></div>
+                <button disabled={loading} className="btn-primary w-full py-3.5 text-xs">{loading?'Authenticating…':'Login'}</button>
+            </form>
+        </div>
+    );
+};
+
+// ─── ADMIN APP ─────────────────────────────────────────────────────────────
+const getRoute = () => {
+    const h=window.location.hash.replace('#','');
+    if (h.startsWith('/library')) return {v:'library',c:'website'};
+    if (h.startsWith('/add'))     return {v:'add',    c:'website'};
+    if (h.includes('/bulk'))      return {v:'crm',    c:'bulk'};
+    if (h.includes('/manual'))    return {v:'crm',    c:'manual'};
+    return {v:'crm',c:'website'};
+};
+
+function AdminApp() {
+    const init=getRoute();
+    const [session,    setSession]    = useState(null);
+    const [authReady,  setAuthReady]  = useState(false);
+    const [view,       setView]       = useState(init.v);
+    const [tab,        setTab]        = useState(init.c);
+    const [leads,      setLeads]      = useState([]);
+    const [props,      setProps]      = useState([]);
+    const [loading,    setLoading]    = useState(true);
+    const [manualOpen, setManualOpen] = useState(false);
+    const [filter,     setFilter]     = useState('ALL');
+    const [agentFilter,setAgentFilter]= useState('All');
+    const [selProp,    setSelProp]    = useState(null);
+    const [visible,    setVisible]    = useState(50);
+    const [search,     setSearch]     = useState('');
+
+    useEffect(()=>{
+        const fn=()=>{ const r=getRoute(); setView(r.v); setTab(r.c); };
+        window.addEventListener('hashchange',fn);
+        return ()=>window.removeEventListener('hashchange',fn);
+    },[]);
+
+    const nav=(v,c='website')=>{
+        setView(v); if(v==='crm') setTab(c);
+        const h=v==='crm'?`/crm/${c}`:v==='library'?'/library':'/add';
+        window.location.hash=h;
+    };
+
+    useEffect(()=>{
+        supabase.auth.getSession().then(({data:{session}})=>{ setSession(session); setAuthReady(true); });
+        const {data:{subscription}}=supabase.auth.onAuthStateChange((_,s)=>setSession(s));
+        return ()=>subscription.unsubscribe();
+    },[]);
+
+    useEffect(()=>{
+        if(!session) return;
+        fetchProps();
+        if(view==='crm') fetchLeads();
+    },[session,view,tab]);
+
+    useEffect(()=>setVisible(50),[tab,filter,agentFilter,search]);
+
+    const fetchLeads=async()=>{
+        setLoading(true);
+        const tbl=tab==='bulk'?'bulk_leads':'leads';
+        const {data,error}=await supabase.from(tbl).select('*').order('created_at',{ascending:false});
+        if(!error){
+            let raw=data||[];
+            if(tbl==='leads'){
+                if(tab==='website') raw=raw.filter(l=>!l.lead_source||l.lead_source.trim()===''||l.lead_source.toLowerCase().includes('website'));
+                else if(tab==='manual') raw=raw.filter(l=>l.lead_source&&l.lead_source.trim()!==''&&!l.lead_source.toLowerCase().includes('website'));
+            } else raw=raw.map(l=>({...l,display_date:l.created_at||'N/A'}));
+            setLeads(raw);
+        }
+        setLoading(false);
+    };
+
+    const fetchProps=async()=>{
+        const {data}=await supabase.from('properties').select('*').order('created_at',{ascending:false});
+        setProps(data||[]);
+    };
+
+    const updateLead=async(lead,field,value)=>{
+        if(field==='lead_status'&&(!lead.psa_agent_name||!lead.psa_agent_name.trim())){
+            alert('Assign an agent before changing status.'); fetchLeads(); return;
+        }
+        let updates={};
+        const t=stamp();
+        if(field==='lead_status')      { updates.lead_status=value; updates.call_remark=`[${t}] Status → ${value}\n\n${lead.call_remark||''}`; }
+        else if(field==='follow_up_at'){ updates.follow_up_at=value; updates.call_remark=`[${t}] Callback: ${new Date(value).toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}\n\n${lead.call_remark||''}`; }
+        else if(field==='site_visit_at'){ updates.site_visit_at=value; updates.call_remark=`[${t}] SV Booked: ${value}\n\n${lead.call_remark||''}`; }
+        else if(field==='add_note')    { if(!value.trim()) return; updates.add_note=value; updates.call_remark=`[${t}] Note: ${value}\n\n${lead.call_remark||''}`; }
+        else if(field==='reject_reason'){ updates.reject_reason=value; updates.call_remark=`[${t}] Rejected: ${value}\n\n${lead.call_remark||''}`; }
+        else updates[field]=value;
+
+        const tbl=tab==='bulk'?'bulk_leads':'leads';
+        setLeads(p=>p.map(l=>l.id===lead.id?{...l,...updates}:l));
+        const {error}=await supabase.from(tbl).update(updates).eq('id',lead.id);
+        if(error){ alert('Save error: '+error.message); fetchLeads(); }
+    };
+
+    const displayed=useMemo(()=>{
+        let f=leads;
+        const td=new Date().toISOString().split('T')[0];
+        if(filter==='TODAY_CB')   f=f.filter(l=>l.follow_up_at?.startsWith(td)&&!['Rejected','Converted'].includes(l.lead_status));
+        else if(filter==='TODAY_SV')  f=f.filter(l=>l.site_visit_at===td&&!['Rejected','Converted'].includes(l.lead_status));
+        else if(filter==='MISSED_CB') f=f.filter(l=>l.follow_up_at&&l.follow_up_at<td&&!['Rejected','Converted'].includes(l.lead_status));
+        else if(filter==='MISSED_SV') f=f.filter(l=>l.site_visit_at&&l.site_visit_at<td&&!['Rejected','Converted'].includes(l.lead_status));
+        else if(filter.startsWith('STATUS_')) f=f.filter(l=>(l.lead_status||'Un called')===filter.replace('STATUS_',''));
+        if(agentFilter!=='All') f=f.filter(l=>l.psa_agent_name===agentFilter);
+        if(search.trim()){ const t=search.toLowerCase(); f=f.filter(l=>(l.customer_name||'').toLowerCase().includes(t)||(l.phone_number||'').toLowerCase().includes(t)||(l.project_interested_in||'').toLowerCase().includes(t)); }
+        return f;
+    },[leads,filter,agentFilter,search]);
+
+    const visLeads=displayed.slice(0,visible);
+
+    const stats=useMemo(()=>{
+        let t=leads; if(agentFilter!=='All') t=t.filter(l=>l.psa_agent_name===agentFilter);
+        return {
+            total:t.length,
+            uncalled:t.filter(l=>l.lead_status==='Un called'||!l.lead_status).length,
+            working:t.filter(l=>l.lead_status&&l.lead_status!=='Un called'&&l.lead_status!=='Rejected').length,
+            rejected:t.filter(l=>l.lead_status==='Rejected').length,
+            converted:t.filter(l=>l.lead_status==='Converted').length,
+        };
+    },[leads,agentFilter]);
+
+    if (!authReady) return (
+        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-3">
+            <div className="text-2xl font-black italic text-white uppercase tracking-widest animate-pulse">Horizon CRM</div>
+            <div className="text-blue-400 text-[10px] font-bold uppercase tracking-widest">Verifying Access…</div>
+        </div>
+    );
+    if (!session) return <Login />;
+    if (selProp) return <PropertyPage property={selProp} onBack={()=>setSelProp(null)} />;
+
+    const isOwner = session?.user?.email===OWNER_EMAIL;
+
+    return (
+        <div className="min-h-screen flex flex-col bg-slate-100 animate-fadeIn">
+            <nav className="bg-slate-950 text-white px-4 md:px-6 py-3.5 flex justify-between items-center sticky top-0 z-50 shadow-lg">
+                <div className="flex items-center gap-1">
+                    <h1 className="font-black text-lg uppercase italic tracking-tight">Horizon</h1>
+                    <span className="text-blue-400 font-black text-lg italic uppercase tracking-tight">CRM</span>
+                </div>
+                <div className="flex items-center gap-1 md:gap-2">
+                    {[{id:'crm',label:'CRM'},{id:'library',label:'Library'},{id:'add',label:'+ Project'}].map(({id,label})=>(
+                        <button key={id} onClick={()=>nav(id)} className={`nav-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view===id?'bg-blue-600 text-white':'text-slate-400 hover:text-white hover:bg-slate-800'}`}>{label}</button>
+                    ))}
+                    <button onClick={()=>supabase.auth.signOut()} className="nav-btn ml-2 text-red-400 border border-red-800 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-900/40 transition">Logout</button>
+                </div>
+            </nav>
+
+            <main className="p-3 md:p-6 max-w-7xl mx-auto w-full flex-1">
+
+                {view==='crm' && (
+                    <div className="space-y-4 animate-fadeIn">
+                        <div className="card p-4">
+                            <div className="flex flex-wrap md:grid md:grid-cols-6 gap-3 items-center">
+                                <select className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest text-slate-600 border border-slate-200 rounded-lg px-2 py-1.5 cursor-pointer md:col-span-1" value={agentFilter} onChange={e=>setAgentFilter(e.target.value)}>
+                                    <option value="All">All Agents</option>
+                                    {AGENTS.map(a=><option key={a}>{a}</option>)}
+                                </select>
                                 {[
-                                    {field:'cover_image',    label:'Cover Image ★',        multi:false},
-                                    {field:'gallery_images', label:'Gallery Images (multi)', multi:true},
-                                    {field:'brochure',       label:'Brochure (PDF)',         multi:false},
-                                    {field:'cost_sheet',     label:'Cost Sheet (multi)',     multi:true},
-                                    {field:'floor_plan',     label:'Floor Plan',             multi:false},
-                                    {field:'miscellaneous',  label:'Miscellaneous (multi)',  multi:true},
-                                ].map(({field,label,multi})=>(
-                                    <div key={field} className="field-group">
-                                        <label>{label} {uploadField===field&&<span className="text-blue-500 normal-case font-bold animate-pulse ml-1">(uploading…)</span>}</label>
-                                        <input type="file" multiple={multi} onChange={e=>upload(e,field,multi)} className="text-xs font-bold text-slate-500 cursor-pointer file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-                                        <div className="flex flex-wrap mt-1">
-                                            {form[field] && (
-                                                multi
-                                                    ? form[field].split(',').filter(Boolean).map((_,i)=><FileChip key={i} field={field} name={`File ${i+1}`} multi idx={i} />)
-                                                    : <FileChip field={field} name="Uploaded ✓" />
-                                            )}
-                                        </div>
+                                    {label:'Total',   val:stats.total,     color:'text-slate-700'},
+                                    {label:'Uncalled', val:stats.uncalled,  color:'text-amber-600'},
+                                    {label:'Working',  val:stats.working,   color:'text-blue-600'},
+                                    {label:'Converted',val:stats.converted, color:'text-emerald-600'},
+                                    {label:'Rejected', val:stats.rejected,  color:'text-red-600'},
+                                ].map(s=>(
+                                    <div key={s.label} className="flex flex-col items-center flex-1 cursor-pointer" onClick={()=>s.label!=='Total'&&setFilter(`STATUS_${s.label==='Uncalled'?'Un called':s.label==='Working'?'Called':s.label}`)}>
+                                        <span className={`text-xl font-black ${s.color}`}>{s.val}</span>
+                                        <span className={`text-[8px] font-black uppercase tracking-widest ${s.color} opacity-80`}>{s.label}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        <button onClick={save} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black uppercase tracking-widest py-4 rounded-2xl text-sm shadow-lg transition-colors">
-                            {loading?'Uploading & Publishing…':'🚀 Publish Listing'}
-                        </button>
-                    </div>
-                </div>
-            );
-        };
-
-        // ─── MANUAL LEAD FORM ──────────────────────────────────────────────────────
-        const ManualLeadForm = ({ supabase, properties, onSuccess }) => {
-            const [form, setForm] = useState({name:'',phone:'',email:'',project:'General Enquiry',note:'',source:'Manual Entry'});
-            const [loading, setLoading] = useState(false);
-            const set = (k,v) => setForm(f=>({...f,[k]:v}));
-
-            const submit = async (e) => {
-                e.preventDefault(); 
-                setLoading(true);
-                const t=stamp();
-                const {error}=await supabase.from('leads').insert([{
-                    customer_name:form.name, 
-                    phone_number:form.phone, 
-                    customer_email:form.email||null,
-                    project_interested_in:form.project, 
-                    add_note:form.note,
-                    call_remark:form.note?`[${t}] Requirement: ${form.note}\n\n`:'',
-                    lead_source:form.source, 
-                    lead_status:'Un called'
-                }]);
-                if(!error){
-                    fetch(SCRIPT_URL,{
-                        method:'POST',
-                        headers:{'Content-Type':'application/json'},
-                        body:JSON.stringify({
-                            action:'sendLead',
-                            Name:form.name,
-                            Phone:form.phone,
-                            Email:form.email||'N/A',
-                            Project:form.project,
-                            Source:form.source,
-                            Requirements:form.note||'None'
-                        })
-                    }).catch(()=>{});
-                    onSuccess();
-                } else alert(error.message);
-                setLoading(false);
-            };
-
-            return (
-                <form onSubmit={submit} className="space-y-3">
-                    <div className="field-group"><label>Client Name ★</label><input required value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Full name" /></div>
-                    <div className="field-group"><label>Phone ★</label><input required value={form.phone} onChange={e=>set('phone',e.target.value)} placeholder="10-digit number" /></div>
-                    <div className="field-group"><label>Email (optional)</label><input type="email" value={form.email} onChange={e=>set('email',e.target.value)} placeholder="email@domain.com" /></div>
-                    <div className="field-group">
-                        <label>Project Interest</label>
-                        <select value={form.project} onChange={e=>set('project',e.target.value)}>
-                            <option value="General Enquiry">General Enquiry</option>
-                            {properties?.map(p=><option key={p.id} value={gv(p,'property_name')}>{gv(p,'property_name')}</option>)}
-                        </select>
-                    </div>
-                    <div className="field-group"><label>Requirements / Notes</label><textarea rows={3} value={form.note} onChange={e=>set('note',e.target.value)} placeholder="Budget, BHK preference, timeline…" className="resize-none" /></div>
-                    <div className="field-group">
-                        <label>Source</label>
-                        <select value={form.source} onChange={e=>set('source',e.target.value)}>
-                            {['Manual Entry','Walk-in','Referral','MagicBricks','Housing.com','99Acres','JustDial'].map(s=><option key={s}>{s}</option>)}
-                        </select>
-                    </div>
-                    <button disabled={loading} className="btn-primary w-full py-3 text-xs">{loading?'Adding Lead…':'+ Inject Lead'}</button>
-                </form>
-            );
-        };
-
-        // ─── LOGIN ─────────────────────────────────────────────────────────────────
-        const Login = () => {
-            const [email,setEmail]=useState(''); 
-            const [pass,setPass]=useState('');
-            const [loading,setLoading]=useState(false); 
-            const [err,setErr]=useState('');
-            
-            const go=async(e)=>{ 
-                e.preventDefault(); 
-                setLoading(true); 
-                setErr('');
-                const {error}=await supabase.auth.signInWithPassword({email,password:pass});
-                if(error) setErr(error.message); 
-                setLoading(false);
-            };
-            
-            return (
-                <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-                    <form onSubmit={go} className="bg-white w-full max-w-sm rounded-[32px] p-10 shadow-2xl text-center border-t-4 border-blue-500">
-                        <div className="mb-8">
-                            <h1 className="text-2xl font-black italic uppercase tracking-tight text-slate-900">Horizon CRM</h1>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Command Center</p>
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                            <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                                {['website','bulk','manual'].map(c=>(
+                                    <button key={c} onClick={()=>{nav('crm',c);setVisible(50);}} className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${tab===c?'bg-blue-600 text-white shadow-sm':'text-slate-500 hover:text-slate-800'}`}>{c}</button>
+                                ))}
+                            </div>
+                            <div className="flex gap-2 items-center w-full md:w-auto">
+                                <select value={filter} onChange={e=>setFilter(e.target.value)} className="flex-1 md:flex-none px-3 py-2 rounded-xl text-[9px] font-black uppercase border border-slate-200 bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="ALL">All Leads</option>
+                                    <optgroup label="Schedule">
+                                        <option value="TODAY_CB">📅 Today's Callbacks</option>
+                                        <option value="TODAY_SV">📅 Today's Site Visits</option>
+                                        <option value="MISSED_CB">⚠️ Missed Callbacks</option>
+                                        <option value="MISSED_SV">⚠️ Missed Site Visits</option>
+                                    </optgroup>
+                                    <optgroup label="Status">
+                                        {['Un called','Called','RNR','Details Shared','SV Scheduled','Converted','Rejected'].map(s=><option key={s} value={`STATUS_${s}`}>{s}</option>)}
+                                    </optgroup>
+                                </select>
+                                <button onClick={()=>setManualOpen(true)} className="btn-primary shrink-0 text-[9px] py-2 px-4">+ Lead</button>
+                            </div>
                         </div>
-                        {err&&<div className="text-red-500 text-xs font-bold bg-red-50 border border-red-200 rounded-xl p-3 mb-4">{err}</div>}
-                        <div className="field-group mb-3 text-left"><label>Email</label><input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@horizons.com" /></div>
-                        <div className="field-group mb-6 text-left"><label>Password</label><input type="password" required value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" /></div>
-                        <button disabled={loading} className="btn-primary w-full py-3.5 text-xs">{loading?'Authenticating…':'Login'}</button>
-                    </form>
-                </div>
-            );
-        };
 
-        // ─── MAIN ADMIN APP ────────────────────────────────────────────────────────
-        const getRoute = () => {
-            const h=window.location.hash.replace('#','');
-            if (h.startsWith('/library')) return {v:'library',c:'website'};
-            if (h.startsWith('/add'))     return {v:'add',    c:'website'};
-            if (h.includes('/bulk'))      return {v:'crm',    c:'bulk'};
-            if (h.includes('/manual'))    return {v:'crm',    c:'manual'};
-            return {v:'crm',c:'website'};
-        };
-
-        function AdminApp() {
-            const init = getRoute();
-            const [session,    setSession]    = useState(null);
-            const [authReady,  setAuthReady]  = useState(false);
-            const [view,       setView]       = useState(init.v);
-            const [tab,        setTab]        = useState(init.c);
-            const [leads,      setLeads]      = useState([]);
-            const [props,      setProps]      = useState([]);
-            const [loading,    setLoading]    = useState(true);
-            const [manualOpen, setManualOpen] = useState(false);
-            const [filter,     setFilter]     = useState('ALL');
-            const [agentFilter,setAgentFilter]= useState('All');
-            const [selProp,    setSelProp]    = useState(null);
-            const [visible,    setVisible]    = useState(50);
-            const [search,     setSearch]     = useState('');
-
-            // Router
-            useEffect(()=>{
-                const fn=()=>{ const r=getRoute(); setView(r.v); setTab(r.c); };
-                window.addEventListener('hashchange',fn);
-                return ()=>window.removeEventListener('hashchange',fn);
-            },[]);
-
-            const nav=(v,c='website')=>{
-                setView(v); 
-                if(v==='crm') setTab(c);
-                const h = v==='crm' ? `/crm/${c}` : v==='library' ? '/library' : '/add';
-                window.location.hash = h;
-            };
-
-            // Auth
-            useEffect(()=>{
-                supabase.auth.getSession().then(({data:{session}})=>{ 
-                    setSession(session); 
-                    setAuthReady(true); 
-                });
-                const {data:{subscription}}=supabase.auth.onAuthStateChange((_,s)=>setSession(s));
-                return ()=>subscription.unsubscribe();
-            },[]);
-
-            // Data Fetching
-            useEffect(()=>{
-                if(!session) return;
-                fetchProps();
-                if(view==='crm') fetchLeads();
-            },[session,view,tab]);
-
-            useEffect(()=>setVisible(50),[tab,filter,agentFilter,search]);
-
-            const fetchLeads=async()=>{
-                setLoading(true);
-                const tbl = tab==='bulk' ? 'bulk_leads' : 'leads';
-                const {data,error}=await supabase.from(tbl).select('*').order('created_at',{ascending:false});
-                if(!error){
-                    let raw = data||[];
-                    if(tbl==='leads'){
-                        if(tab==='website') raw = raw.filter(l=>!l.lead_source || l.lead_source.trim()==='' || l.lead_source.toLowerCase().includes('website'));
-                        else if(tab==='manual') raw = raw.filter(l=>l.lead_source && l.lead_source.trim()!=='' && !l.lead_source.toLowerCase().includes('website'));
-                    }
-                    setLeads(raw);
-                }
-                setLoading(false);
-            };
-
-            const fetchProps=async()=>{
-                const {data}=await supabase.from('properties').select('*').order('created_at',{ascending:false});
-                setProps(data||[]);
-            };
-
-            const updateLead = async(lead, field, value) => {
-                if(field==='lead_status' && (!lead.psa_agent_name || !lead.psa_agent_name.trim())){
-                    alert('Assign an agent before changing status.');
-                    fetchLeads();
-                    return;
-                }
-                let updates = {};
-                const t = stamp();
-                if(field==='lead_status') {
-                    updates.lead_status = value;
-                    updates.call_remark = `[${t}] Status → ${value}\n\n${lead.call_remark||''}`;
-                }
-                else if(field==='follow_up_at'){
-                    updates.follow_up_at = value;
-                    updates.call_remark = `[${t}] Callback: ${new Date(value).toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}\n\n${lead.call_remark||''}`;
-                }
-                else if(field==='site_visit_at'){
-                    updates.site_visit_at = value;
-                    updates.call_remark = `[${t}] SV Booked: ${value}\n\n${lead.call_remark||''}`;
-                }
-                else if(field==='add_note'){
-                    if(!value.trim()) return;
-                    updates.add_note = value;
-                    updates.call_remark = `[${t}] Note: ${value}\n\n${lead.call_remark||''}`;
-                }
-                else if(field==='reject_reason'){
-                    updates.reject_reason = value;
-                    updates.call_remark = `[${t}] Rejected: ${value}\n\n${lead.call_remark||''}`;
-                }
-                else updates[field] = value;
-
-                const tbl = tab==='bulk' ? 'bulk_leads' : 'leads';
-                setLeads(p=>p.map(l=>l.id===lead.id ? {...l,...updates} : l));
-                const {error} = await supabase.from(tbl).update(updates).eq('id',lead.id);
-                if(error){
-                    alert('Save error: '+error.message);
-                    fetchLeads();
-                }
-            };
-
-            const displayed = useMemo(()=>{
-                let f = leads;
-                const td = new Date().toISOString().split('T')[0];
-                if(filter==='TODAY_CB')   f = f.filter(l=>l.follow_up_at?.startsWith(td) && !['Rejected','Converted'].includes(l.lead_status));
-                else if(filter==='TODAY_SV')  f = f.filter(l=>l.site_visit_at===td && !['Rejected','Converted'].includes(l.lead_status));
-                else if(filter==='MISSED_CB') f = f.filter(l=>l.follow_up_at && l.follow_up_at < td && !['Rejected','Converted'].includes(l.lead_status));
-                else if(filter==='MISSED_SV') f = f.filter(l=>l.site_visit_at && l.site_visit_at < td && !['Rejected','Converted'].includes(l.lead_status));
-                else if(filter.startsWith('STATUS_')) f = f.filter(l=>(l.lead_status||'Un called') === filter.replace('STATUS_',''));
-                
-                if(agentFilter!=='All') f = f.filter(l=>l.psa_agent_name===agentFilter);
-                if(search.trim()){ 
-                    const t = search.toLowerCase(); 
-                    f = f.filter(l=>(l.customer_name||'').toLowerCase().includes(t) || 
-                                    (l.phone_number||'').toLowerCase().includes(t) || 
-                                    (l.project_interested_in||'').toLowerCase().includes(t)); 
-                }
-                return f;
-            },[leads,filter,agentFilter,search]);
-
-            const visLeads = displayed.slice(0,visible);
-
-            const stats = useMemo(()=>{
-                let t = leads;
-                if(agentFilter!=='All') t = t.filter(l=>l.psa_agent_name===agentFilter);
-                return {
-                    total: t.length,
-                    uncalled: t.filter(l=>l.lead_status==='Un called'||!l.lead_status).length,
-                    working: t.filter(l=>l.lead_status && l.lead_status!=='Un called' && l.lead_status!=='Rejected').length,
-                    rejected: t.filter(l=>l.lead_status==='Rejected').length,
-                    converted: t.filter(l=>l.lead_status==='Converted').length,
-                };
-            },[leads,agentFilter]);
-
-            if (!authReady) return (
-                <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-3">
-                    <div className="text-2xl font-black italic text-white uppercase tracking-widest animate-pulse">Horizon CRM</div>
-                    <div className="text-blue-400 text-[10px] font-bold uppercase tracking-widest">Verifying Access…</div>
-                </div>
-            );
-
-            if (!session) return <Login />;
-            if (selProp) return <PropertyPage property={selProp} onBack={()=>setSelProp(null)} />;
-
-            const isOwner = session?.user?.email === OWNER_EMAIL;
-
-            return (
-                <div className="min-h-screen flex flex-col bg-slate-100 animate-fadeIn">
-                    {/* NAV */}
-                    <nav className="bg-slate-950 text-white px-4 md:px-6 py-3.5 flex justify-between items-center sticky top-0 z-50 shadow-lg">
-                        <div className="flex items-center gap-1">
-                            <h1 className="font-black text-lg uppercase italic tracking-tight">Horizon</h1>
-                            <span className="text-blue-400 font-black text-lg italic uppercase tracking-tight">CRM</span>
+                        <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">🔍</span>
+                            <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone or project…" className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-semibold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" />
+                            {search&&<button onClick={()=>setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 hover:text-red-500 bg-slate-100 px-2 py-1 rounded-lg uppercase">Clear</button>}
                         </div>
-                        <div className="flex items-center gap-1 md:gap-2">
-                            {[{id:'crm',label:'CRM'},{id:'library',label:'Library'},{id:'add',label:'+ Project'}].map(({id,label})=>(
-                                <button key={id} onClick={()=>nav(id)} className={`nav-btn px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view===id?'bg-blue-600 text-white':'text-slate-400 hover:text-white hover:bg-slate-800'}`}>{label}</button>
-                            ))}
-                            <button onClick={()=>supabase.auth.signOut()} className="nav-btn ml-2 text-red-400 border border-red-800 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-900/40 transition">Logout</button>
-                        </div>
-                    </nav>
 
-                    <main className="p-3 md:p-6 max-w-7xl mx-auto w-full flex-1">
-                        {view==='crm' && (
-                            <div className="space-y-4 animate-fadeIn">
-                                {/* Stats Bar */}
-                                <div className="card p-4">
-                                    <div className="flex flex-wrap md:grid md:grid-cols-6 gap-3 items-center">
-                                        <select className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest text-slate-600 border border-slate-200 rounded-lg px-2 py-1.5 cursor-pointer md:col-span-1" value={agentFilter} onChange={e=>setAgentFilter(e.target.value)}>
-                                            <option value="All">All Agents</option>
-                                            {AGENTS.map(a=><option key={a}>{a}</option>)}
-                                        </select>
-                                        {[
-                                            {label:'Total',   val:stats.total,     color:'text-slate-700'},
-                                            {label:'Uncalled', val:stats.uncalled,  color:'text-amber-600'},
-                                            {label:'Working',  val:stats.working,   color:'text-blue-600'},
-                                            {label:'Converted',val:stats.converted, color:'text-emerald-600'},
-                                            {label:'Rejected', val:stats.rejected,  color:'text-red-600'},
-                                        ].map(s=>(
-                                            <div key={s.label} className="flex flex-col items-center flex-1 cursor-pointer" onClick={()=>s.label!=='Total'&&setFilter(`STATUS_${s.label==='Uncalled'?'Un called':s.label==='Working'?'Called':s.label}`)}>
-                                                <span className={`text-xl font-black ${s.color}`}>{s.val}</span>
-                                                <span className={`text-[8px] font-black uppercase tracking-widest ${s.color} opacity-80`}>{s.label}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Tabs + Controls */}
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                                    <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                                        {['website','bulk','manual'].map(c=>(
-                                            <button key={c} onClick={()=>{nav('crm',c);setVisible(50);}} className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${tab===c?'bg-blue-600 text-white shadow-sm':'text-slate-500 hover:text-slate-800'}`}>{c}</button>
-                                        ))}
-                                    </div>
-                                    <div className="flex gap-2 items-center w-full md:w-auto">
-                                        <select value={filter} onChange={e=>setFilter(e.target.value)} className="flex-1 md:flex-none px-3 py-2 rounded-xl text-[9px] font-black uppercase border border-slate-200 bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500">
-                                            <option value="ALL">All Leads</option>
-                                            <optgroup label="Schedule">
-                                                <option value="TODAY_CB">📅 Today's Callbacks</option>
-                                                <option value="TODAY_SV">📅 Today's Site Visits</option>
-                                                <option value="MISSED_CB">⚠️ Missed Callbacks</option>
-                                                <option value="MISSED_SV">⚠️ Missed Site Visits</option>
-                                            </optgroup>
-                                            <optgroup label="Status">
-                                                {['Un called','Called','RNR','Details Shared','SV Scheduled','Converted','Rejected'].map(s=><option key={s} value={`STATUS_${s}`}>{s}</option>)}
-                                            </optgroup>
-                                        </select>
-                                        <button onClick={()=>setManualOpen(true)} className="btn-primary shrink-0 text-[9px] py-2 px-4">+ Lead</button>
-                                    </div>
-                                </div>
-
-                                {/* Search */}
-                                <div className="relative">
-                                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">🔍</span>
-                                    <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone or project…" className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-semibold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" />
-                                    {search&&<button onClick={()=>setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 hover:text-red-500 bg-slate-100 px-2 py-1 rounded-lg uppercase">Clear</button>}
-                                </div>
-
-                                {/* Leads Display */}
-                                {loading ? (
-                                    <div className="text-center py-16 text-slate-400 font-black uppercase tracking-widest animate-pulse text-xs">Loading Leads…</div>
-                                ) : (
-                                    <>
-                                        {/* Desktop Table */}
-                                        <div className="hidden lg:block card overflow-hidden">
-                                            <table className="w-full text-xs">
-                                                <thead className="bg-slate-50 border-b border-slate-200">
-                                                    <tr>
-                                                        {['Customer','Agent & Status','Schedule','Notes & Activity'].map(h=>(
-                                                            <th key={h} className="p-3.5 text-left text-[9px] font-black uppercase tracking-widest text-slate-400">{h}</th>
-                                                        ))}
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100">
-                                                    {visLeads.map(l=>(
-                                                        <tr key={l.id} className={`lead-row border-l-4 ${priorityBorder(l.lead_priority)} ${cardTint(l.lead_status)}`}>
-                                                            <td className="p-3.5 min-w-[175px]">
-                                                                <div className="font-black text-slate-900 uppercase text-xs leading-tight">{l.customer_name}</div>
-                                                                <div className="text-blue-600 font-bold mt-0.5">{l.phone_number}</div>
-                                                                {l.customer_email&&<div className="text-slate-400 text-[9px] mt-0.5 lowercase truncate font-medium max-w-[160px]">{l.customer_email}</div>}
-                                                                <div className="text-[8px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
-                                                                    {tab==='bulk'&&!isOwner?'[Restricted]':(l.project_interested_in||'General')}
-                                                                </div>
-                                                                {l.created_at&&<div className="text-[8px] text-slate-300 font-bold mt-0.5">{l.display_date||l.created_at}</div>}
-                                                                <div className="flex gap-1.5 mt-2">
-                                                                    <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1 rounded-lg text-[8px] font-black uppercase hover:bg-blue-100 transition">📞 Call</a>
-                                                                    <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-1 rounded-lg text-[8px] font-black uppercase hover:bg-emerald-100 transition">💬 WA</a>
-                                                                </div>
-                                                            </td>
-                                                            <td className="p-3.5 min-w-[145px] space-y-1.5">
-                                                                <select value={l.psa_agent_name||''} onChange={e=>updateLead(l,'psa_agent_name',e.target.value)} className="w-full p-1.5 border border-slate-200 rounded-lg font-black text-[9px] uppercase outline-none bg-white text-blue-800">
-                                                                    <option value="" disabled>Assign Agent</option>
-                                                                    {AGENTS.map(a=><option key={a}>{a}</option>)}
-                                                                </select>
-                                                                <select value={l.lead_status||''} onChange={e=>updateLead(l,'lead_status',e.target.value)} className={`w-full p-1.5 border-2 rounded-lg font-black text-[9px] uppercase outline-none ${statusStyle(l.lead_status)}`}>
-                                                                    {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">Un called</option>}
-                                                                    {['Called','RNR','Details Shared','SV Scheduled','Converted','Rejected'].map(s=><option key={s}>{s}</option>)}
-                                                                </select>
-                                                                {l.lead_status==='Rejected'&&(
-                                                                    <select value={l.reject_reason||''} onChange={e=>updateLead(l,'reject_reason',e.target.value)} className="w-full p-1.5 border border-red-300 bg-red-50 text-red-800 rounded-lg font-black text-[9px] uppercase outline-none">
-                                                                        <option value="" disabled>Reason</option>
-                                                                        {['Not Interested','No Response','Wrong Number','No Incoming Call'].map(r=><option key={r}>{r}</option>)}
-                                                                    </select>
-                                                                )}
-                                                                <select value={l.lead_priority||'Warm'} onChange={e=>updateLead(l,'lead_priority',e.target.value)} className={`w-full p-1.5 border-2 rounded-lg font-black text-[9px] uppercase outline-none ${priorityStyle(l.lead_priority)}`}>
-                                                                    {['Hot','Warm','Cold'].map(p=><option key={p}>{p}</option>)}
-                                                                </select>
-                                                            </td>
-                                                            <td className="p-3.5 min-w-[155px]">
-                                                                {['Called','RNR','Details Shared'].includes(l.lead_status)&&(
-                                                                    <div className="mb-2">
-                                                                        <div className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-1">Callback</div>
-                                                                        <input type="datetime-local" value={l.follow_up_at?.slice(0,16)||''} onChange={e=>updateLead(l,'follow_up_at',e.target.value)} className="w-full p-1.5 border border-blue-200 bg-blue-50 rounded-lg text-[9px] font-bold outline-none" />
-                                                                    </div>
-                                                                )}
-                                                                {l.lead_status==='SV Scheduled'&&(
-                                                                    <div>
-                                                                        <div className="text-[8px] font-black text-teal-600 uppercase tracking-widest mb-1">Site Visit</div>
-                                                                        <input type="date" value={l.site_visit_at||''} onChange={e=>updateLead(l,'site_visit_at',e.target.value)} className="w-full p-1.5 border border-teal-200 bg-teal-50 rounded-lg text-[9px] font-bold outline-none" />
-                                                                    </div>
-                                                                )}
-                                                            </td>
-                                                            <td className="p-3.5 min-w-[240px]">
-                                                                <div className="h-14 overflow-y-auto bg-slate-50 border border-slate-200 rounded-t-lg p-2 history-scroll text-[9px] font-medium text-slate-500 whitespace-pre-wrap leading-relaxed mb-1">
-                                                                    {l.call_remark||<span className="italic text-slate-300">No activity yet…</span>}
-                                                                </div>
-                                                                <div className="flex gap-1.5">
-                                                                    <textarea id={`n-${l.id}`} defaultValue={l.add_note||''} rows={2} placeholder="Add manual note…" className="flex-1 p-1.5 border border-slate-200 rounded-b-lg text-[9px] outline-none focus:ring-1 focus:ring-blue-400 resize-none shadow-sm" />
-                                                                    <button onClick={()=>{ const el=document.getElementById(`n-${l.id}`); updateLead(l,'add_note',el.value); }} className="bg-slate-800 hover:bg-blue-600 text-white px-2.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition">Save</button>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                            {visible < displayed.length && (
-                                                <div className="p-4 border-t border-slate-100 bg-slate-50 text-center">
-                                                    <button onClick={()=>setVisible(v=>v+50)} className="btn-ghost text-[9px] px-6 py-2.5">Load More ({displayed.length-visible} remaining)</button>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Mobile Cards */}
-                                        <div className="lg:hidden space-y-3">
-                                            {visLeads.map(l=>(
-                                                <div key={`m-${l.id}`} className={`card p-4 border-t-4 ${l.lead_priority==='Hot'?'border-t-red-500':l.lead_priority==='Cold'?'border-t-sky-400':'border-t-amber-400'} ${cardTint(l.lead_status)}`}>
-                                                    <div className="flex justify-between items-start mb-3">
+                        {loading ? (
+                            <div className="text-center py-16 text-slate-400 font-black uppercase tracking-widest animate-pulse text-xs">Loading Leads…</div>
+                        ) : (
+                            <>
+                            <div className="hidden lg:block card overflow-hidden">
+                                <table className="w-full text-xs">
+                                    <thead className="bg-slate-50 border-b border-slate-200">
+                                        <tr>
+                                            {['Customer','Agent & Status','Schedule','Notes & Activity'].map(h=>(
+                                                <th key={h} className="p-3.5 text-left text-[9px] font-black uppercase tracking-widest text-slate-400">{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {visLeads.map(l=>(
+                                            <tr key={l.id} className={`lead-row border-l-4 ${priorityBorder(l.lead_priority)} ${cardTint(l.lead_status)}`}>
+                                                <td className="p-3.5 min-w-[175px]">
+                                                    <div className="font-black text-slate-900 uppercase text-xs leading-tight">{l.customer_name}</div>
+                                                    <div className="text-blue-600 font-bold mt-0.5">{l.phone_number}</div>
+                                                    {l.customer_email&&<div className="text-slate-400 text-[9px] mt-0.5 lowercase truncate font-medium max-w-[160px]">{l.customer_email}</div>}
+                                                    <div className="text-[8px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
+                                                        {tab==='bulk'&&!isOwner?'[Restricted]':(l.project_interested_in||'General')}
+                                                    </div>
+                                                    {l.created_at&&<div className="text-[8px] text-slate-300 font-bold mt-0.5">{l.display_date||l.created_at}</div>}
+                                                    <div className="flex gap-1.5 mt-2">
+                                                        <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1 rounded-lg text-[8px] font-black uppercase hover:bg-blue-100 transition">📞 Call</a>
+                                                        <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-1 rounded-lg text-[8px] font-black uppercase hover:bg-emerald-100 transition">💬 WA</a>
+                                                    </div>
+                                                </td>
+                                                <td className="p-3.5 min-w-[145px] space-y-1.5">
+                                                    <select value={l.psa_agent_name||''} onChange={e=>updateLead(l,'psa_agent_name',e.target.value)} className="w-full p-1.5 border border-slate-200 rounded-lg font-black text-[9px] uppercase outline-none bg-white text-blue-800">
+                                                        <option value="" disabled>Assign Agent</option>
+                                                        {AGENTS.map(a=><option key={a}>{a}</option>)}
+                                                    </select>
+                                                    <select value={l.lead_status||''} onChange={e=>updateLead(l,'lead_status',e.target.value)} className={`w-full p-1.5 border-2 rounded-lg font-black text-[9px] uppercase outline-none ${statusStyle(l.lead_status)}`}>
+                                                        {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">Un called</option>}
+                                                        {['Called','RNR','Details Shared','SV Scheduled','Converted','Rejected'].map(s=><option key={s}>{s}</option>)}
+                                                    </select>
+                                                    {l.lead_status==='Rejected'&&(
+                                                        <select value={l.reject_reason||''} onChange={e=>updateLead(l,'reject_reason',e.target.value)} className="w-full p-1.5 border border-red-300 bg-red-50 text-red-800 rounded-lg font-black text-[9px] uppercase outline-none">
+                                                            <option value="" disabled>Reason</option>
+                                                            {['Not Interested','No Response','Wrong Number','No Incoming Call'].map(r=><option key={r}>{r}</option>)}
+                                                        </select>
+                                                    )}
+                                                    <select value={l.lead_priority||'Warm'} onChange={e=>updateLead(l,'lead_priority',e.target.value)} className={`w-full p-1.5 border-2 rounded-lg font-black text-[9px] uppercase outline-none ${priorityStyle(l.lead_priority)}`}>
+                                                        {['Hot','Warm','Cold'].map(p=><option key={p}>{p}</option>)}
+                                                    </select>
+                                                </td>
+                                                <td className="p-3.5 min-w-[155px]">
+                                                    {['Called','RNR','Details Shared'].includes(l.lead_status)&&(
+                                                        <div className="mb-2">
+                                                            <div className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-1">Callback</div>
+                                                            <input type="datetime-local" value={l.follow_up_at?.slice(0,16)||''} onChange={e=>updateLead(l,'follow_up_at',e.target.value)} className="w-full p-1.5 border border-blue-200 bg-blue-50 rounded-lg text-[9px] font-bold outline-none" />
+                                                        </div>
+                                                    )}
+                                                    {l.lead_status==='SV Scheduled'&&(
                                                         <div>
-                                                            <div className="font-black text-sm uppercase text-slate-900">{l.customer_name}</div>
-                                                            <div className="text-blue-600 font-bold text-sm">{l.phone_number}</div>
-                                                            {l.customer_email&&<div className="text-slate-400 text-[10px] truncate mt-0.5 font-medium">{l.customer_email}</div>}
-                                                            <div className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-widest">{tab==='bulk'&&!isOwner?'[Restricted]':(l.project_interested_in||'General')}</div>
+                                                            <div className="text-[8px] font-black text-teal-600 uppercase tracking-widest mb-1">Site Visit</div>
+                                                            <input type="date" value={l.site_visit_at||''} onChange={e=>updateLead(l,'site_visit_at',e.target.value)} className="w-full p-1.5 border border-teal-200 bg-teal-50 rounded-lg text-[9px] font-bold outline-none" />
                                                         </div>
-                                                        <div className="flex gap-2">
-                                                            <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 border border-blue-100 w-9 h-9 rounded-full flex items-center justify-center text-sm">📞</a>
-                                                            <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="bg-emerald-50 text-emerald-600 border border-emerald-100 w-9 h-9 rounded-full flex items-center justify-center text-sm">💬</a>
-                                                        </div>
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-2 mb-3">
-                                                        <div className="col-span-2 field-group"><label>Agent</label>
-                                                            <select value={l.psa_agent_name||''} onChange={e=>updateLead(l,'psa_agent_name',e.target.value)} className="w-full p-2 border border-slate-200 rounded-xl font-black text-[9px] uppercase outline-none bg-white text-blue-800">
-                                                                <option value="" disabled>Assign Agent</option>
-                                                                {AGENTS.map(a=><option key={a}>{a}</option>)}
-                                                            </select>
-                                                        </div>
-                                                        <div className="field-group"><label>Status</label>
-                                                            <select value={l.lead_status||''} onChange={e=>updateLead(l,'lead_status',e.target.value)} className={`w-full p-2 border-2 rounded-xl font-black text-[9px] uppercase outline-none ${statusStyle(l.lead_status)}`}>
-                                                                {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">Un called</option>}
-                                                                {['Called','RNR','Details Shared','SV Scheduled','Converted','Rejected'].map(s=><option key={s}>{s}</option>)}
-                                                            </select>
-                                                        </div>
-                                                        <div className="field-group"><label>Priority</label>
-                                                            <select value={l.lead_priority||'Warm'} onChange={e=>updateLead(l,'lead_priority',e.target.value)} className={`w-full p-2 border-2 rounded-xl font-black text-[9px] uppercase outline-none ${priorityStyle(l.lead_priority)}`}>
-                                                                {['Hot','Warm','Cold'].map(p=><option key={p}>{p}</option>)}
-                                                            </select>
-                                                        </div>
-                                                        {l.lead_status==='Rejected'&&(
-                                                            <div className="col-span-2 field-group"><label>Reject Reason</label>
-                                                                <select value={l.reject_reason||''} onChange={e=>updateLead(l,'reject_reason',e.target.value)} className="w-full p-2 border border-red-300 bg-red-50 text-red-800 rounded-xl font-black text-[9px] uppercase outline-none">
-                                                                    <option value="" disabled>Select Reason</option>
-                                                                    {['Not Interested','No Response','Wrong Number','No Incoming Call'].map(r=><option key={r}>{r}</option>)}
-                                                                </select>
-                                                            </div>
-                                                        )}
-                                                        {['Called','RNR','Details Shared'].includes(l.lead_status)&&(
-                                                            <div className="col-span-2 field-group"><label>Callback</label>
-                                                                <input type="datetime-local" value={l.follow_up_at?.slice(0,16)||''} onChange={e=>updateLead(l,'follow_up_at',e.target.value)} className="w-full p-2 border border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold outline-none" />
-                                                            </div>
-                                                        )}
-                                                        {l.lead_status==='SV Scheduled'&&(
-                                                            <div className="col-span-2 field-group"><label>Site Visit</label>
-                                                                <input type="date" value={l.site_visit_at||''} onChange={e=>updateLead(l,'site_visit_at',e.target.value)} className="w-full p-2 border border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold outline-none" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="bg-slate-50 border border-slate-200 rounded-t-xl p-2 h-14 overflow-y-auto history-scroll text-[9px] text-slate-500 whitespace-pre-wrap font-medium mb-1 leading-relaxed">
+                                                    )}
+                                                </td>
+                                                <td className="p-3.5 min-w-[240px]">
+                                                    <div className="h-14 overflow-y-auto bg-slate-50 border border-slate-200 rounded-t-lg p-2 history-scroll text-[9px] font-medium text-slate-500 whitespace-pre-wrap leading-relaxed mb-1">
                                                         {l.call_remark||<span className="italic text-slate-300">No activity yet…</span>}
                                                     </div>
-                                                    <div className="flex gap-2">
-                                                        <textarea id={`mn-${l.id}`} defaultValue={l.add_note||''} rows={2} placeholder="Add note…" className="flex-1 p-2 border border-slate-200 rounded-b-xl text-[10px] outline-none focus:ring-1 focus:ring-blue-400 resize-none" />
-                                                        <button onClick={()=>{ const el=document.getElementById(`mn-${l.id}`); updateLead(l,'add_note',el.value); }} className="bg-slate-800 hover:bg-blue-600 text-white px-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition">Save</button>
+                                                    <div className="flex gap-1.5">
+                                                        <textarea id={`n-${l.id}`} defaultValue={l.add_note||''} rows={2} placeholder="Add manual note…" className="flex-1 p-1.5 border border-slate-200 rounded-b-lg text-[9px] outline-none focus:ring-1 focus:ring-blue-400 resize-none shadow-sm" />
+                                                        <button onClick={()=>{ const el=document.getElementById(`n-${l.id}`); updateLead(l,'add_note',el.value); }} className="bg-slate-800 hover:bg-blue-600 text-white px-2.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition">Save</button>
                                                     </div>
-                                                </div>
-                                            ))}
-                                            {visible < displayed.length && (
-                                                <button onClick={()=>setVisible(v=>v+50)} className="w-full btn-ghost py-3 text-[9px]">Load More ({displayed.length-visible} remaining)</button>
-                                            )}
-                                        </div>
-                                    </>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {visible<displayed.length&&(
+                                    <div className="p-4 border-t border-slate-100 bg-slate-50 text-center">
+                                        <button onClick={()=>setVisible(v=>v+50)} className="btn-ghost text-[9px] px-6 py-2.5">Load More ({displayed.length-visible} remaining)</button>
+                                    </div>
                                 )}
                             </div>
-                        )}
 
-                        {view==='library' && <Library props={props} onSelect={setSelProp} supabase={supabase} />}
-                        {view==='add'     && <AddPropertyForm supabase={supabase} scriptUrl={SCRIPT_URL} />}
-                    </main>
-
-                    {/* Manual Lead Modal */}
-                    {manualOpen && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-start justify-center p-4 pt-20 overflow-y-auto">
-                            <div className="card p-6 w-full max-w-md animate-slideIn mb-10 shadow-2xl">
-                                <div className="flex justify-between items-center mb-5">
-                                    <h2 className="text-base font-black uppercase italic text-slate-900">Manual Lead Entry</h2>
-                                    <button onClick={()=>setManualOpen(false)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
-                                </div>
-                                <ManualLeadForm supabase={supabase} properties={props} onSuccess={()=>{setManualOpen(false);fetchLeads();}} />
+                            <div className="lg:hidden space-y-3">
+                                {visLeads.map(l=>(
+                                    <div key={`m-${l.id}`} className={`card p-4 border-t-4 ${l.lead_priority==='Hot'?'border-t-red-500':l.lead_priority==='Cold'?'border-t-sky-400':'border-t-amber-400'} ${cardTint(l.lead_status)}`}>
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <div className="font-black text-sm uppercase text-slate-900">{l.customer_name}</div>
+                                                <div className="text-blue-600 font-bold text-sm">{l.phone_number}</div>
+                                                {l.customer_email&&<div className="text-slate-400 text-[10px] truncate mt-0.5 font-medium">{l.customer_email}</div>}
+                                                <div className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-widest">{tab==='bulk'&&!isOwner?'[Restricted]':(l.project_interested_in||'General')}</div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 border border-blue-100 w-9 h-9 rounded-full flex items-center justify-center text-sm">📞</a>
+                                                <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="bg-emerald-50 text-emerald-600 border border-emerald-100 w-9 h-9 rounded-full flex items-center justify-center text-sm">💬</a>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 mb-3">
+                                            <div className="col-span-2 field-group"><label>Agent</label>
+                                                <select value={l.psa_agent_name||''} onChange={e=>updateLead(l,'psa_agent_name',e.target.value)} className="w-full p-2 border border-slate-200 rounded-xl font-black text-[9px] uppercase outline-none bg-white text-blue-800">
+                                                    <option value="" disabled>Assign Agent</option>
+                                                    {AGENTS.map(a=><option key={a}>{a}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="field-group"><label>Status</label>
+                                                <select value={l.lead_status||''} onChange={e=>updateLead(l,'lead_status',e.target.value)} className={`w-full p-2 border-2 rounded-xl font-black text-[9px] uppercase outline-none ${statusStyle(l.lead_status)}`}>
+                                                    {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">Un called</option>}
+                                                    {['Called','RNR','Details Shared','SV Scheduled','Converted','Rejected'].map(s=><option key={s}>{s}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="field-group"><label>Priority</label>
+                                                <select value={l.lead_priority||'Warm'} onChange={e=>updateLead(l,'lead_priority',e.target.value)} className={`w-full p-2 border-2 rounded-xl font-black text-[9px] uppercase outline-none ${priorityStyle(l.lead_priority)}`}>
+                                                    {['Hot','Warm','Cold'].map(p=><option key={p}>{p}</option>)}
+                                                </select>
+                                            </div>
+                                            {l.lead_status==='Rejected'&&(
+                                                <div className="col-span-2 field-group"><label>Reject Reason</label>
+                                                    <select value={l.reject_reason||''} onChange={e=>updateLead(l,'reject_reason',e.target.value)} className="w-full p-2 border border-red-300 bg-red-50 text-red-800 rounded-xl font-black text-[9px] uppercase outline-none">
+                                                        <option value="" disabled>Select Reason</option>
+                                                        {['Not Interested','No Response','Wrong Number','No Incoming Call'].map(r=><option key={r}>{r}</option>)}
+                                                    </select>
+                                                </div>
+                                            )}
+                                            {['Called','RNR','Details Shared'].includes(l.lead_status)&&(
+                                                <div className="col-span-2 field-group"><label>Callback</label>
+                                                    <input type="datetime-local" value={l.follow_up_at?.slice(0,16)||''} onChange={e=>updateLead(l,'follow_up_at',e.target.value)} className="w-full p-2 border border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold outline-none" />
+                                                </div>
+                                            )}
+                                            {l.lead_status==='SV Scheduled'&&(
+                                                <div className="col-span-2 field-group"><label>Site Visit</label>
+                                                    <input type="date" value={l.site_visit_at||''} onChange={e=>updateLead(l,'site_visit_at',e.target.value)} className="w-full p-2 border border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold outline-none" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="bg-slate-50 border border-slate-200 rounded-t-xl p-2 h-14 overflow-y-auto history-scroll text-[9px] text-slate-500 whitespace-pre-wrap font-medium mb-1 leading-relaxed">
+                                            {l.call_remark||<span className="italic text-slate-300">No activity yet…</span>}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <textarea id={`mn-${l.id}`} defaultValue={l.add_note||''} rows={2} placeholder="Add note…" className="flex-1 p-2 border border-slate-200 rounded-b-xl text-[10px] outline-none focus:ring-1 focus:ring-blue-400 resize-none" />
+                                            <button onClick={()=>{ const el=document.getElementById(`mn-${l.id}`); updateLead(l,'add_note',el.value); }} className="bg-slate-800 hover:bg-blue-600 text-white px-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition">Save</button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {visible<displayed.length&&(
+                                    <button onClick={()=>setVisible(v=>v+50)} className="w-full btn-ghost py-3 text-[9px]">Load More ({displayed.length-visible} remaining)</button>
+                                )}
                             </div>
-                        </div>
-                    )}
-                </div>
-            );
-        }
+                            </>
+                        )}
+                    </div>
+                )}
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<AdminApp/>);
-    </script>
+                {view==='library' && <Library props={props} onSelect={setSelProp} supabase={supabase} />}
+                {view==='add'     && <AddPropertyForm supabase={supabase} scriptUrl={SCRIPT_URL} />}
+            </main>
+
+            {manualOpen&&(
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-start justify-center p-4 pt-20 overflow-y-auto">
+                    <div className="card p-6 w-full max-w-md animate-slideIn mb-10 shadow-2xl">
+                        <div className="flex justify-between items-center mb-5">
+                            <h2 className="text-base font-black uppercase italic text-slate-900">Manual Lead Entry</h2>
+                            <button onClick={()=>setManualOpen(false)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+                        </div>
+                        <ManualLeadForm supabase={supabase} properties={props} onSuccess={()=>{setManualOpen(false);fetchLeads();}} />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+const root=ReactDOM.createRoot(document.getElementById('root'));
+root.render(<AdminApp/>);
+</script>
 </body>
 </html>
