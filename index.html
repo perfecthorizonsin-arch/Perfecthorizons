@@ -35,7 +35,6 @@
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px; }
         .pie-chart { border-radius: 50%; display: inline-block; }
 
-        /* Splash Animation Styles */
         .splash-house-path { stroke-dasharray: 300; stroke-dashoffset: 300; animation: drawHouse 1.5s ease-in-out forwards; }
         @keyframes drawHouse { to { stroke-dashoffset: 0; } }
     </style>
@@ -99,7 +98,6 @@
             return url;
         };
 
-        // 🟢 PASTE YOUR GOOGLE DRIVE IMAGE LINKS HERE
         const AUTHORIZED_PARTNERS = [
             convertDriveLink("https://drive.google.com/file/d/1IsWpoHNh1Wj0toMnzXc4FFvqCHxMoK85/view?usp=drive_link"),
             convertDriveLink("https://drive.google.com/file/d/11r3Bj7QF_RrKZTvY3q9l4VjJqJZudIl6/view?usp=drive_link"),
@@ -590,10 +588,19 @@
                 
                 const fetchProperties = async () => {
                     try {
-                        const { data, error } = await supabase.from('properties').select('*');
+                        // FIXED: Only fetch live properties for the customer frontend
+                        const { data, error } = await supabase
+                            .from('properties')
+                            .select('*')
+                            .or('is_live.eq.true,is_live.is.null');
+
                         if (!error) setProperties(data || []);
-                    } catch (error) { console.error(error); } 
-                    finally { setLoading(false); }
+                    } catch (error) { 
+                        console.error(error); 
+                    } 
+                    finally { 
+                        setLoading(false); 
+                    }
                 };
                 fetchProperties();
                 return () => window.removeEventListener('hashchange', handleHashChange);
@@ -625,7 +632,6 @@
 
                     if (error) throw error; 
 
-                    // Trigger Email Alert
                     fetch(GOOGLE_SCRIPT_URL, {
                         method: "POST",
                         body: JSON.stringify({
@@ -734,8 +740,6 @@
                                 <button onClick={() => navTo('advisor')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'advisor' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Advisors</button>
                                 <button onClick={() => navTo('blogs')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'blogs' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Insights</button>
                                 <button onClick={() => navTo('customers')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'customers' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Reviews</button>
-                                
-                                {isAdmin && <span className="bg-green-500 text-slate-900 text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest shadow-sm">Admin Mode</span>}
                             </div>
                             
                             <div className="md:hidden flex items-center gap-3 shrink-0">
@@ -819,20 +823,6 @@
                             </div>
                         )}
                     </div>
-
-                    {activePage === 'home' && (
-                        <div className="bg-white border-b border-gray-200 py-2 overflow-hidden marquee-container shadow-sm flex flex-col items-center">
-                            <p className="text-center text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Associated With</p>
-                            <div className="animate-marquee flex items-center">
-                                {AUTHORIZED_PARTNERS.map((logo, index) => (
-                                    <img key={index} src={logo} className="h-6 md:h-8 w-auto object-contain mx-6 md:mx-10 transition-all cursor-default" />
-                                ))}
-                                {AUTHORIZED_PARTNERS.map((logo, index) => (
-                                    <img key={`dup-${index}`} src={logo} className="h-6 md:h-8 w-auto object-contain mx-6 md:mx-10 transition-all cursor-default" />
-                                ))}
-                            </div>
-                        </div>
-                    )}
 
                     <main className="max-w-7xl mx-auto p-4 md:p-8 flex-grow w-full animate-fadeIn">
                         {activePage === 'home' && (
