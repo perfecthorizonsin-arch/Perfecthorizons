@@ -657,7 +657,7 @@ const Library = ({ props:initProps, onSelect, supabase }) => {
 // ─── ADD PROPERTY FORM – FINAL FIXED VERSION ───────────────────────────────
 import React, { useState } from 'react';
 
-// ─── MOVED OUTSIDE TO PREVENT RE-RENDERS & FOCUS LOSS ─────────────────────
+// ─── HELPER COMPONENTS (Moved outside to fix the typing focus bug) ────────
 const F = ({ label, children }) => (
     <div className="field-group">
         <label>{label}</label>
