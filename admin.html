@@ -653,8 +653,26 @@ const Library = ({ props:initProps, onSelect, supabase }) => {
     );
 };
 
-// ─── // ─── ADD PROPERTY FORM – FIXED (Basic Information now works) ─────────────────
+
 // ─── ADD PROPERTY FORM – FINAL FIXED VERSION ───────────────────────────────
+import React, { useState } from 'react';
+
+// ─── MOVED OUTSIDE TO PREVENT RE-RENDERS & FOCUS LOSS ─────────────────────
+const F = ({ label, children }) => (
+    <div className="field-group">
+        <label>{label}</label>
+        {children}
+    </div>
+);
+
+const FileChip = ({ field, name, multi = false, idx = null, onRemove }) => (
+    <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg mt-2 text-[10px] font-bold mr-2">
+        <span className="truncate max-w-[130px]">{name}</span>
+        <button onClick={() => onRemove(field, multi, idx)} className="text-red-500 hover:text-red-700 leading-none font-black">✕</button>
+    </div>
+);
+// ──────────────────────────────────────────────────────────────────────────
+
 const AddPropertyForm = ({ supabase, scriptUrl }) => {
     const blank = {
         property_name:'', builder_name:'', property_region:'', property_type:'', location:'', price:'', bhk:'',
@@ -669,7 +687,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
     const [uploadField, setUploadField] = useState(null);
     const [saved, setSaved] = useState(false);
 
-    // Stable handler - this fixes the typing bug
     const handleChange = (e) => {
         const { name, value } = e.target;
         setForm(prev => ({ ...prev, [name]: value }));
@@ -737,13 +754,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
         }
     };
 
-    const FileChip = ({ field, name, multi = false, idx = null }) => (
-        <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg mt-2 text-[10px] font-bold mr-2">
-            <span className="truncate max-w-[130px]">{name}</span>
-            <button onClick={() => removeFile(field, multi, idx)} className="text-red-500 hover:text-red-700 leading-none font-black">✕</button>
-        </div>
-    );
-
     const save = async () => {
         if (!form.property_name || !form.price || !form.cover_image) {
             alert('Please fill: Property Name, Price, and Cover Image.');
@@ -759,13 +769,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
         } else alert(error.message);
         setLoading(false);
     };
-
-    const F = ({ label, children }) => (
-        <div className="field-group">
-            <label>{label}</label>
-            {children}
-        </div>
-    );
 
     return (
         <div className="max-w-4xl mx-auto animate-fadeIn">
@@ -857,7 +860,7 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     </div>
                 </div>
 
-                {/* Media & Documents - 100% unchanged */}
+                {/* Media & Documents */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Media & Documents</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -874,8 +877,8 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                                 <input type="file" multiple={multi} onChange={e => upload(e, field, multi)} className="text-xs font-bold text-slate-500 cursor-pointer file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                                 <div className="flex flex-wrap mt-1">
                                     {form[field] && (multi
-                                        ? form[field].split(',').filter(Boolean).map((_,i) => <FileChip key={i} field={field} name={`File ${i+1}`} multi idx={i} />)
-                                        : <FileChip field={field} name="Uploaded ✓" />
+                                        ? form[field].split(',').filter(Boolean).map((_,i) => <FileChip key={i} field={field} name={`File ${i+1}`} multi idx={i} onRemove={removeFile} />)
+                                        : <FileChip field={field} name="Uploaded ✓" onRemove={removeFile} />
                                     )}
                                 </div>
                             </div>
@@ -891,6 +894,8 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
     );
 };
 
+export default AddPropertyForm;
+    
 // ─── MANUAL LEAD FORM ──────────────────────────────────────────────────────
 const ManualLeadForm = ({ supabase, properties, onSuccess }) => {
     const [form, setForm] = useState({name:'',phone:'',email:'',project:'General Enquiry',note:'',source:'Manual Entry'});
