@@ -654,6 +654,7 @@ const Library = ({ props:initProps, onSelect, supabase }) => {
 };
 
 // ─── // ─── ADD PROPERTY FORM – FIXED (Basic Information now works) ─────────────────
+// ─── ADD PROPERTY FORM – FINAL FIXED VERSION ───────────────────────────────
 const AddPropertyForm = ({ supabase, scriptUrl }) => {
     const blank = {
         property_name:'', builder_name:'', property_region:'', property_type:'', location:'', price:'', bhk:'',
@@ -668,7 +669,7 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
     const [uploadField, setUploadField] = useState(null);
     const [saved, setSaved] = useState(false);
 
-    // Stable handler – this is what fixes the typing bug
+    // Stable handler - this fixes the typing bug
     const handleChange = (e) => {
         const { name, value } = e.target;
         setForm(prev => ({ ...prev, [name]: value }));
@@ -681,11 +682,18 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
         setLoading(true);
         setUploadField(field);
 
-        const catMap = {cover_image:'Cover Image',gallery_images:'Gallery',brochure:'Brochures',cost_sheet:'Cost Sheets',floor_plan:'Floor Plans',miscellaneous:'Miscellaneous'};
-        const cat = catMap[field]||'General';
+        const catMap = {
+            cover_image: 'Cover Image',
+            gallery_images: 'Gallery',
+            brochure: 'Brochures',
+            cost_sheet: 'Cost Sheets',
+            floor_plan: 'Floor Plans',
+            miscellaneous: 'Miscellaneous'
+        };
+        const cat = catMap[field] || 'General';
 
         let urls = [];
-        for(let i = 0; i < files.length; i++){
+        for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const url = await new Promise(res => {
                 const r = new FileReader();
@@ -770,7 +778,7 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     {saved && <div className="bg-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-emerald-200 animate-fadeIn">✅ Published!</div>}
                 </div>
 
-                {/* BASIC INFORMATION – NOW FIXED */}
+                {/* BASIC INFORMATION */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Basic Information</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -818,7 +826,7 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     </div>
                 </div>
 
-                {/* Content, Internal Details, Media – all use stable handleChange */}
+                {/* Content */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Content</div>
                     <div className="space-y-4">
@@ -836,6 +844,7 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     </div>
                 </div>
 
+                {/* Internal Data & Links */}
                 <div className="bg-slate-900 rounded-2xl p-5">
                     <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-4 pb-2 border-b border-slate-700">Internal Data & Links</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -848,7 +857,7 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     </div>
                 </div>
 
-                {/* Media & Documents - completely untouched */}
+                {/* Media & Documents - 100% unchanged */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Media & Documents</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -881,7 +890,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
         </div>
     );
 };
-
 
 // ─── MANUAL LEAD FORM ──────────────────────────────────────────────────────
 const ManualLeadForm = ({ supabase, properties, onSuccess }) => {
