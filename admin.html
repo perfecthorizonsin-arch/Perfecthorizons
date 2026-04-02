@@ -653,68 +653,110 @@ const Library = ({ props:initProps, onSelect, supabase }) => {
     );
 };
 
-// ─── ADD PROPERTY FORM ─────────────────────────────────────────────────────
+
+// ─── ADD PROPERTY FORM (Fixed typing + stable inputs) ─────────────────────
 const AddPropertyForm = ({ supabase, scriptUrl }) => {
-    const blank = { property_name:'',builder_name:'',property_region:'',property_type:'',location:'',price:'',bhk:'',super_built_up_area:'',possession_date:'',construction_status:'',approval:'',total_units:'',availability:'',description:'',usp_details:'',amenities:'',point_of_contact:'',commission_details:'',video_link:'',website_link:'',lead_registration_link:'',map_link:'',cover_image:'',gallery_images:'',floor_plan:'',brochure:'',cost_sheet:'',miscellaneous:'' };
-    const [form,         setForm]         = useState(blank);
-    const [loading,      setLoading]      = useState(false);
-    const [uploadField,  setUploadField]  = useState(null);
-    const [saved,        setSaved]        = useState(false);
+    const blank = {
+        property_name:'', builder_name:'', property_region:'', property_type:'', location:'', price:'', bhk:'',
+        super_built_up_area:'', possession_date:'', construction_status:'', approval:'', total_units:'',
+        availability:'', description:'', usp_details:'', amenities:'', point_of_contact:'',
+        commission_details:'', video_link:'', website_link:'', lead_registration_link:'', map_link:'',
+        cover_image:'', gallery_images:'', floor_plan:'', brochure:'', cost_sheet:'', miscellaneous:''
+    };
 
-    const set = (k,v) => setForm(f=>({...f,[k]:v}));
+    const [form, setForm] = useState(blank);
+    const [loading, setLoading] = useState(false);
+    const [uploadingField, setUploadingField] = useState(null);
+    const [saved, setSaved] = useState(false);
 
-    const upload = async (e, field, multi=false) => {
-        const files=e.target.files; if(!files||!files.length) return;
-        setLoading(true); setUploadField(field);
-        const catMap = {cover_image:'Cover Image',gallery_images:'Gallery',brochure:'Brochures',cost_sheet:'Cost Sheets',floor_plan:'Floor Plans',miscellaneous:'Miscellaneous'};
-        const cat = catMap[field]||'General';
-        let urls=[];
-        for(let i=0;i<files.length;i++){
-            const file=files[i];
-            const url = await new Promise(res=>{
-                const r=new FileReader();
+    // Stable setter (prevents focus loss)
+    const updateField = useCallback((key, value) => {
+        setForm(prev => ({ ...prev, [key]: value }));
+    }, []);
+
+    const upload = async (e, field, multi = false) => {
+        const files = e.target.files;
+        if (!files || !files.length) return;
+
+        setLoading(true);
+        setUploadingField(field);
+
+        const catMap = {
+            cover_image: 'Cover Image',
+            gallery_images: 'Gallery',
+            brochure: 'Brochures',
+            cost_sheet: 'Cost Sheets',
+            floor_plan: 'Floor Plans',
+            miscellaneous: 'Miscellaneous'
+        };
+        const cat = catMap[field] || 'General';
+
+        let urls = [];
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const url = await new Promise(res => {
+                const r = new FileReader();
                 r.readAsDataURL(file);
-                r.onload=async()=>{
-                    const resp = await fetch(scriptUrl,{method:'POST',body:JSON.stringify({base64:r.result.split(',')[1],type:file.type,name:file.name,propertyName:form.property_name||'Uploads',category:cat})});
-                    const j=await resp.json();
-                    res(j.status==='success'?j.fileUrl||j.url:null);
+                r.onload = async () => {
+                    const resp = await fetch(scriptUrl, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            base64: r.result.split(',')[1],
+                            type: file.type,
+                            name: file.name,
+                            propertyName: form.property_name || 'Uploads',
+                            category: cat
+                        })
+                    });
+                    const j = await resp.json();
+                    res(j.status === 'success' ? j.fileUrl || j.url : null);
                 };
             });
-            if(url) urls.push(url);
+            if (url) urls.push(url);
         }
-        if(urls.length){
-            const joined=urls.join(',');
-            if(multi) set(field, form[field]?form[field]+','+joined:joined);
-            else set(field,joined);
+
+        if (urls.length) {
+            const joined = urls.join(',');
+            updateField(field, multi && form[field] ? form[field] + ',' + joined : joined);
         }
-        setLoading(false); setUploadField(null);
+
+        setLoading(false);
+        setUploadingField(null);
     };
 
-    const removeFile=(field,multi=false,idx=null)=>{
-        if(multi){ const arr=form[field].split(',').filter(Boolean); arr.splice(idx,1); set(field,arr.join(',')); }
-        else set(field,'');
+    const removeFile = (field, multi = false, idx = null) => {
+        if (multi) {
+            const arr = (form[field] || '').split(',').filter(Boolean);
+            arr.splice(idx, 1);
+            updateField(field, arr.join(','));
+        } else {
+            updateField(field, '');
+        }
     };
 
-    const FileChip=({field,name,multi=false,idx=null})=>(
+    const FileChip = ({ field, name, multi = false, idx = null }) => (
         <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg mt-2 text-[10px] font-bold mr-2">
             <span className="truncate max-w-[130px]">{name}</span>
-            <button onClick={()=>removeFile(field,multi,idx)} className="text-red-500 hover:text-red-700 leading-none font-black">✕</button>
+            <button onClick={() => removeFile(field, multi, idx)} className="text-red-500 hover:text-red-700 leading-none font-black">✕</button>
         </div>
     );
 
-    const save=async()=>{
-        if(!form.property_name||!form.price||!form.cover_image){
-            alert('Please fill: Property Name, Price, and Cover Image.'); return;
+    const save = async () => {
+        if (!form.property_name || !form.price || !form.cover_image) {
+            alert('Please fill: Property Name, Price, and Cover Image.');
+            return;
         }
         setLoading(true);
-        const payload={...form,is_live:true};
-        const {error}=await supabase.from('properties').insert([payload]);
-        if(!error){ setSaved(true); setForm(blank); setTimeout(()=>setSaved(false),3000); }
-        else alert(error.message);
+        const { error } = await supabase.from('properties').insert([{ ...form, is_live: true }]);
+        if (!error) {
+            setSaved(true);
+            setForm(blank);
+            setTimeout(() => setSaved(false), 3000);
+        } else alert(error.message);
         setLoading(false);
     };
 
-    const F=({label,children})=>(
+    const F = ({ label, children }) => (
         <div className="field-group">
             <label>{label}</label>
             {children}
@@ -729,29 +771,37 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                         <h2 className="text-xl font-black uppercase tracking-tight text-slate-900">New Property Listing</h2>
                         <p className="text-xs text-slate-400 font-semibold mt-0.5">All starred fields are required</p>
                     </div>
-                    {saved&&<div className="bg-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-emerald-200 animate-fadeIn">✅ Published!</div>}
+                    {saved && <div className="bg-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-emerald-200 animate-fadeIn">✅ Published!</div>}
                 </div>
 
                 {/* Basic Info */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Basic Information</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <F label="Property Name ★"><input value={form.property_name} onChange={e=>set('property_name',e.target.value)} placeholder="e.g. Prestige Lakeside Habitat" /></F>
-                        <F label="Builder Name"><input value={form.builder_name} onChange={e=>set('builder_name',e.target.value)} placeholder="e.g. Prestige Group" /></F>
+                        <F label="Property Name ★">
+                            <input value={form.property_name} onChange={e => updateField('property_name', e.target.value)} placeholder="e.g. Prestige Lakeside Habitat" />
+                        </F>
+                        <F label="Builder Name">
+                            <input value={form.builder_name} onChange={e => updateField('builder_name', e.target.value)} placeholder="e.g. Prestige Group" />
+                        </F>
                         <F label="Region">
-                            <select value={form.property_region} onChange={e=>set('property_region',e.target.value)}>
+                            <select value={form.property_region} onChange={e => updateField('property_region', e.target.value)}>
                                 <option value="">Select Region</option>
-                                {['North','South','East','West'].map(r=><option key={r}>{r}</option>)}
+                                {['North','South','East','West'].map(r => <option key={r}>{r}</option>)}
                             </select>
                         </F>
                         <F label="Property Type">
-                            <select value={form.property_type} onChange={e=>set('property_type',e.target.value)}>
+                            <select value={form.property_type} onChange={e => updateField('property_type', e.target.value)}>
                                 <option value="">Select Type</option>
-                                {['Apartment','Villa','Villament','Plot','Others'].map(t=><option key={t}>{t}</option>)}
+                                {['Apartment','Villa','Villament','Plot','Others'].map(t => <option key={t}>{t}</option>)}
                             </select>
                         </F>
-                        <F label="Location / Micro-Market"><input value={form.location} onChange={e=>set('location',e.target.value)} placeholder="e.g. Whitefield, Bengaluru" /></F>
-                        <F label="Price ★"><input value={form.price} onChange={e=>set('price',e.target.value)} placeholder="e.g. 1.2 Cr onwards" /></F>
+                        <F label="Location / Micro-Market">
+                            <input value={form.location} onChange={e => updateField('location', e.target.value)} placeholder="e.g. Whitefield, Bengaluru" />
+                        </F>
+                        <F label="Price ★">
+                            <input value={form.price} onChange={e => updateField('price', e.target.value)} placeholder="e.g. 1.2 Cr onwards" />
+                        </F>
                     </div>
                 </div>
 
@@ -761,23 +811,22 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="field-group md:col-span-2">
                             <label>Configurations (hold Ctrl/⌘ for multi)</label>
-                            <select multiple className="h-28" value={form.bhk?form.bhk.split(','):[]} onChange={e=>set('bhk',[...e.target.selectedOptions].map(o=>o.value).join(','))}>
-                                {['1 BHK','2 BHK','3 BHK','4 BHK','5+ BHK'].map(b=><option key={b}>{b}</option>)}
+                            <select multiple className="h-28" value={form.bhk ? form.bhk.split(',') : []} 
+                                onChange={e => updateField('bhk', [...e.target.selectedOptions].map(o => o.value).join(','))}>
+                                {['1 BHK','2 BHK','3 BHK','4 BHK','5+ BHK'].map(b => <option key={b}>{b}</option>)}
                             </select>
                         </div>
-                        <F label="Super Built-up Area"><input value={form.super_built_up_area} onChange={e=>set('super_built_up_area',e.target.value)} placeholder="SqFt" /></F>
-                        <F label="Total Units"><input value={form.total_units} onChange={e=>set('total_units',e.target.value)} placeholder="e.g. 420" /></F>
-                        <F label="Possession Date">
-                            <input type="date" value={form.possession_date} onChange={e=>set('possession_date',e.target.value)} />
-                        </F>
+                        <F label="Super Built-up Area"><input value={form.super_built_up_area} onChange={e => updateField('super_built_up_area', e.target.value)} placeholder="SqFt" /></F>
+                        <F label="Total Units"><input value={form.total_units} onChange={e => updateField('total_units', e.target.value)} placeholder="e.g. 420" /></F>
+                        <F label="Possession Date"><input type="date" value={form.possession_date} onChange={e => updateField('possession_date', e.target.value)} /></F>
                         <F label="Construction Status">
-                            <select value={form.construction_status} onChange={e=>set('construction_status',e.target.value)}>
+                            <select value={form.construction_status} onChange={e => updateField('construction_status', e.target.value)}>
                                 <option value="">Select</option>
-                                {['Ready to Move','Under Construction','New Launch'].map(s=><option key={s}>{s}</option>)}
+                                {['Ready to Move','Under Construction','New Launch'].map(s => <option key={s}>{s}</option>)}
                             </select>
                         </F>
-                        <F label="Approvals"><input value={form.approval} onChange={e=>set('approval',e.target.value)} placeholder="BDA, RERA, etc." /></F>
-                        <F label="Availability"><input value={form.availability} onChange={e=>set('availability',e.target.value)} placeholder="e.g. 2 & 3 BHK" /></F>
+                        <F label="Approvals"><input value={form.approval} onChange={e => updateField('approval', e.target.value)} placeholder="BDA, RERA, etc." /></F>
+                        <F label="Availability"><input value={form.availability} onChange={e => updateField('availability', e.target.value)} placeholder="e.g. 2 & 3 BHK" /></F>
                     </div>
                 </div>
 
@@ -786,14 +835,14 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Content</div>
                     <div className="space-y-4">
                         <F label="Property Description">
-                            <textarea rows={4} value={form.description} onChange={e=>set('description',e.target.value)} placeholder="Describe the project — location advantages, lifestyle, architecture…" className="resize-none" />
+                            <textarea rows={4} value={form.description} onChange={e => updateField('description', e.target.value)} placeholder="Describe the project..." className="resize-none" />
                         </F>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <F label="Key USPs / Highlights (one per line)">
-                                <textarea rows={4} value={form.usp_details} onChange={e=>set('usp_details',e.target.value)} placeholder={"Zero car movement design\nRooftop infinity pool\nWalkable to metro"} className="resize-none" />
+                                <textarea rows={4} value={form.usp_details} onChange={e => updateField('usp_details', e.target.value)} placeholder="Zero car movement design..." className="resize-none" />
                             </F>
                             <F label="Amenities (comma separated)">
-                                <textarea rows={4} value={form.amenities} onChange={e=>set('amenities',e.target.value)} placeholder="Clubhouse, Swimming Pool, Gym, Co-working" className="resize-none" />
+                                <textarea rows={4} value={form.amenities} onChange={e => updateField('amenities', e.target.value)} placeholder="Clubhouse, Swimming Pool..." className="resize-none" />
                             </F>
                         </div>
                     </div>
@@ -803,30 +852,12 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                 <div className="bg-slate-900 rounded-2xl p-5">
                     <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-4 pb-2 border-b border-slate-700">Internal Data & Links</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="field-group">
-                            <label className="text-slate-400">Internal POC</label>
-                            <input className="dark-field" value={form.point_of_contact} onChange={e=>set('point_of_contact',e.target.value)} placeholder="Agent name / phone" />
-                        </div>
-                        <div className="field-group">
-                            <label className="text-slate-400">Commission %</label>
-                            <input className="dark-field" value={form.commission_details} onChange={e=>set('commission_details',e.target.value)} placeholder="e.g. 2%" />
-                        </div>
-                        <div className="field-group">
-                            <label className="text-slate-400">Video Link</label>
-                            <input className="dark-field" value={form.video_link} onChange={e=>set('video_link',e.target.value)} placeholder="YouTube / Drive URL" />
-                        </div>
-                        <div className="field-group">
-                            <label className="text-slate-400">Builder Website</label>
-                            <input className="dark-field" value={form.website_link} onChange={e=>set('website_link',e.target.value)} placeholder="https://…" />
-                        </div>
-                        <div className="field-group">
-                            <label className="text-slate-400">Lead Registration Link / Email</label>
-                            <input className="dark-field" value={form.lead_registration_link} onChange={e=>set('lead_registration_link',e.target.value)} placeholder="URL or email@domain.com" />
-                        </div>
-                        <div className="field-group">
-                            <label className="text-slate-400">Google Maps Link</label>
-                            <input className="dark-field" value={form.map_link} onChange={e=>set('map_link',e.target.value)} placeholder="https://maps.google.com/…" />
-                        </div>
+                        <div className="field-group"><label className="text-slate-400">Internal POC</label><input className="dark-field" value={form.point_of_contact} onChange={e => updateField('point_of_contact', e.target.value)} placeholder="Agent name / phone" /></div>
+                        <div className="field-group"><label className="text-slate-400">Commission %</label><input className="dark-field" value={form.commission_details} onChange={e => updateField('commission_details', e.target.value)} placeholder="e.g. 2%" /></div>
+                        <div className="field-group"><label className="text-slate-400">Video Link</label><input className="dark-field" value={form.video_link} onChange={e => updateField('video_link', e.target.value)} placeholder="YouTube / Drive URL" /></div>
+                        <div className="field-group"><label className="text-slate-400">Builder Website</label><input className="dark-field" value={form.website_link} onChange={e => updateField('website_link', e.target.value)} placeholder="https://…" /></div>
+                        <div className="field-group"><label className="text-slate-400">Lead Registration Link / Email</label><input className="dark-field" value={form.lead_registration_link} onChange={e => updateField('lead_registration_link', e.target.value)} placeholder="URL or email@domain.com" /></div>
+                        <div className="field-group"><label className="text-slate-400">Google Maps Link</label><input className="dark-field" value={form.map_link} onChange={e => updateField('map_link', e.target.value)} placeholder="https://maps.google.com/…" /></div>
                     </div>
                 </div>
 
@@ -841,15 +872,14 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                             {field:'cost_sheet',     label:'Cost Sheet (multi)',     multi:true},
                             {field:'floor_plan',     label:'Floor Plan',             multi:false},
                             {field:'miscellaneous',  label:'Miscellaneous (multi)',  multi:true},
-                        ].map(({field,label,multi})=>(
+                        ].map(({field,label,multi}) => (
                             <div key={field} className="field-group">
-                                <label>{label} {uploadField===field&&<span className="text-blue-500 normal-case font-bold animate-pulse ml-1">(uploading…)</span>}</label>
-                                <input type="file" multiple={multi} onChange={e=>upload(e,field,multi)} className="text-xs font-bold text-slate-500 cursor-pointer file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                                <label>{label} {uploadingField===field && <span className="text-blue-500 normal-case font-bold animate-pulse ml-1">(uploading…)</span>}</label>
+                                <input type="file" multiple={multi} onChange={e => upload(e, field, multi)} className="text-xs font-bold text-slate-500 cursor-pointer file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                                 <div className="flex flex-wrap mt-1">
-                                    {form[field] && (
-                                        multi
-                                            ? form[field].split(',').filter(Boolean).map((_,i)=><FileChip key={i} field={field} name={`File ${i+1}`} multi idx={i} />)
-                                            : <FileChip field={field} name="Uploaded ✓" />
+                                    {form[field] && (multi
+                                        ? form[field].split(',').filter(Boolean).map((_, i) => <FileChip key={i} field={field} name={`File ${i+1}`} multi idx={i} />)
+                                        : <FileChip field={field} name="Uploaded ✓" />
                                     )}
                                 </div>
                             </div>
@@ -858,7 +888,7 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                 </div>
 
                 <button onClick={save} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black uppercase tracking-widest py-4 rounded-2xl text-sm shadow-lg transition-colors">
-                    {loading?'Uploading & Publishing…':'🚀 Publish Listing'}
+                    {loading ? 'Uploading & Publishing…' : '🚀 Publish Listing'}
                 </button>
             </div>
         </div>
