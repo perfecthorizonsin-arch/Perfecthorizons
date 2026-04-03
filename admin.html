@@ -71,7 +71,7 @@ const OWNER_EMAIL   = "saishetty1623@gmail.com";
 const gv = (obj, key) => {
     if (!obj) return "";
     if (obj[key] !== undefined && obj[key] !== "") return obj[key];
-    const ck = key.replace(/[^a-zA-Z0Z0-9]/g,'').toLowerCase();
+    const ck = key.replace(/[^a-zA-Z0-9]/g,'').toLowerCase();
     for (let k in obj) if (k.replace(/[^a-zA-Z0-9]/g,'').toLowerCase()===ck) return obj[k];
     return "";
 };
@@ -155,7 +155,8 @@ const cardTint = (s) => {
 
 const priorityBorder = (p) => p==='Hot'?'border-l-red-500':p==='Cold'?'border-l-sky-400':'border-l-amber-400';
 
-// ─── FILE SHARE UTILITIES ──────────────────────────────────────────────────
+// ─── FILE SHARE UTILITIES ───────────────────────────────────────────────────
+
 const getDriveId = (url) => {
     if (!url) return null;
     const m = url.match(/\/d\/([-\w]+)/) || url.match(/[?&]id=([-\w]+)/);
@@ -215,9 +216,9 @@ const triggerDownload = (resolved, filename) => {
 // ─── EMI CALCULATOR ────────────────────────────────────────────────────────
 const EMICalc = ({ priceStr }) => {
     const base = priceInCr(priceStr)>0 ? priceInCr(priceStr)*10000000 : 10000000;
-    const [loan,   setLoan]   = useState(base*0.8);
-    const [rate,   setRate]   = useState(8.5);
-    const [tenure, setTenure] = useState(20);
+    const [loan,    setLoan]    = useState(base*0.8);
+    const [rate,    setRate]    = useState(8.5);
+    const [tenure,  setTenure]  = useState(20);
 
     const { emi, totalInt, pct } = useMemo(()=>{
         const p=loan, r=rate/12/100, n=tenure*12;
@@ -247,9 +248,9 @@ const EMICalc = ({ priceStr }) => {
                 </div>
             </div>
             {[
-                {label:'Loan Amount', val:fmtCurrency(loan), min:1000000, max:50000000, step:100000, onChange:setLoan,   cur:loan},
-                {label:'Interest Rate',val:rate+'%',          min:6,       max:15,       step:0.1,   onChange:setRate,   cur:rate},
-                {label:'Tenure',       val:tenure+' Yrs',     min:5,       max:30,       step:1,     onChange:setTenure, cur:tenure},
+                {label:'Loan Amount', val:fmtCurrency(loan), min:1000000, max:50000000, step:100000, onChange:setLoan, cur:loan},
+                {label:'Interest Rate', val:rate+'%', min:6, max:15, step:0.1, onChange:setRate, cur:rate},
+                {label:'Tenure', val:tenure+' Yrs', min:5, max:30, step:1, onChange:setTenure, cur:tenure},
             ].map(s=>(
                 <div key={s.label} className="mb-4">
                     <div className="flex justify-between mb-1.5">
@@ -267,46 +268,14 @@ const EMICalc = ({ priceStr }) => {
     );
 };
 
-// ─── EDIT FIELD (outside PropertyPage — fixes focus-loss bug) ──────────────
-// editState = { editField, editVal, setEditVal, saving, onStartEdit, onSave, onCancel }
-const EF = ({ field, label, val, multiline=false, type='text', editState }) => {
-    const { editField, editVal, setEditVal, saving, onStartEdit, onSave, onCancel } = editState;
-    const editing = editField === field;
-    return (
-        <div className="group/ef">
-            {!editing ? (
-                <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                        {label && <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">{label}</div>}
-                        <div className={`text-sm font-semibold break-words ${val?'text-slate-800':'italic text-slate-300'}`}>{val||'—'}</div>
-                    </div>
-                    <button onClick={()=>onStartEdit(field,val)} className="opacity-0 group-hover/ef:opacity-100 transition-opacity shrink-0 mt-0.5 text-[8px] font-black bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg uppercase tracking-widest hover:bg-blue-100">Edit</button>
-                </div>
-            ) : (
-                <div className="space-y-2">
-                    {label && <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</div>}
-                    {multiline
-                        ? <textarea rows={4} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none resize-none bg-blue-50/50 focus:bg-white transition-colors" />
-                        : <input type={type} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none bg-blue-50/50 focus:bg-white transition-colors" />
-                    }
-                    <div className="flex gap-2">
-                        <button onClick={()=>onSave(field,editVal)} disabled={saving} className="btn-primary text-[9px] py-1.5 px-3">{saving?'…':'Save'}</button>
-                        <button onClick={onCancel} className="btn-ghost text-[9px] py-1.5 px-3">Cancel</button>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
 // ─── PROPERTY DETAILS PAGE (Admin) ─────────────────────────────────────────
 const PropertyPage = ({ property:init, onBack }) => {
     const [prop,       setProp]       = useState(init);
     const [editField,  setEditField]  = useState(null);
     const [editVal,    setEditVal]    = useState('');
     const [saving,     setSaving]     = useState(false);
-    const [toast,      setToast]      = useState(null);
-    const [shareModal, setShareModal] = useState(null);
+    const [toast,      setToast]      = useState(null);  // {msg, color}
+    const [shareModal, setShareModal] = useState(null);  // {type, items:[{url,resolved}]}
     const [selected,   setSelected]   = useState([]);
     const [sharing,    setSharing]    = useState(false);
     const galleryRef = useRef(null);
@@ -318,7 +287,8 @@ const PropertyPage = ({ property:init, onBack }) => {
         setTimeout(()=>setToast(null), 4000);
     };
 
-    const startEdit  = (field, val) => { setEditField(field); setEditVal(val||''); };
+    // ── Inline editing ──
+    const startEdit = (field, val) => { setEditField(field); setEditVal(val||''); };
     const cancelEdit = () => setEditField(null);
     const saveField  = async (field, val) => {
         setSaving(true);
@@ -329,38 +299,106 @@ const PropertyPage = ({ property:init, onBack }) => {
         setEditField(null);
     };
 
-    // ✅ Single editState object passed to EF — no more inline component redefinition
-    const editState = { editField, editVal, setEditVal, saving, onStartEdit: startEdit, onSave: saveField, onCancel: cancelEdit };
+    const EF = ({field,label,val,multiline=false,type='text'}) => {
+        const editing = editField===field;
+        return (
+            <div className="group/ef">
+                {!editing ? (
+                    <div className="flex items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                            {label && <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">{label}</div>}
+                            <div className={`text-sm font-semibold break-words ${val?'text-slate-800':'italic text-slate-300'}`}>{val||'—'}</div>
+                        </div>
+                        <button onClick={()=>startEdit(field,val)} className="opacity-0 group-hover/ef:opacity-100 transition-opacity shrink-0 mt-0.5 text-[8px] font-black bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg uppercase tracking-widest hover:bg-blue-100">Edit</button>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {label && <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</div>}
+                        {multiline
+                            ? <textarea rows={4} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none resize-none bg-blue-50/50 focus:bg-white transition-colors" />
+                            : <input type={type} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none bg-blue-50/50 focus:bg-white transition-colors" />
+                        }
+                        <div className="flex gap-2">
+                            <button onClick={()=>saveField(field,editVal)} disabled={saving} className="btn-primary text-[9px] py-1.5 px-3">{saving?'…':'Save'}</button>
+                            <button onClick={cancelEdit} className="btn-ghost text-[9px] py-1.5 px-3">Cancel</button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
-    const cover  = driveThumb(gv(prop,'cover_image')||gv(prop,'cover-image'));
-    const galRaw = gv(prop,'gallery_images')||gv(prop,'gallery-images')||'';
-    const imgs   = [cover,...(galRaw?galRaw.split(',').map(l=>driveThumb(l.trim())):[])].filter(Boolean);
+    // ── Gallery ──
+    const cover   = driveThumb(gv(prop,'cover_image')||gv(prop,'cover-image'));
+    const galRaw  = gv(prop,'gallery_images')||gv(prop,'gallery-images')||'';
+    const imgs    = [cover,...(galRaw?galRaw.split(',').map(l=>driveThumb(l.trim())):[])].filter(Boolean);
 
+    // ── Share logic ──
+    // Parse a raw comma-separated field into array of {url, resolved}
     const parseField = (raw) => {
         if (!raw||!raw.trim()) return [];
         return raw.split(',').map(u=>u.trim()).filter(Boolean).map(u=>({url:u, resolved:resolveUrl(u)}));
     };
 
+    // Entry point from share buttons
     const handleShare = (type, rawField) => {
         const items = parseField(rawField);
         if (!items.length) { showToast('⚠️ No '+type+' available for this property.','bg-amber-500'); return; }
-        if (items.length===1) { doShare([items[0]], type); }
-        else { setShareModal({type, items}); setSelected(items.map(i=>i.url)); }
+        if (items.length===1) {
+            doShare([items[0]], type);
+        } else {
+            setShareModal({type, items});
+            setSelected(items.map(i=>i.url));
+        }
     };
 
+    // Core share engine — download files then open WhatsApp with pre-typed message
     const doShare = (items, type) => {
         const propName = gv(prop,'property_name');
         const mobile   = isMobileDevice();
+
+        // Separate links (maps/video) from actual files
         const fileItems = items.filter(i=>i.resolved.kind!=='link');
         const linkItems = items.filter(i=>i.resolved.kind==='link');
-        fileItems.forEach((item,i)=>{ const fname=buildFilename(item.url,i,type); setTimeout(()=>triggerDownload(item.resolved,fname),i*400); });
+
+        // ── Step 1: Trigger downloads for all file items ──
+        fileItems.forEach((item, i) => {
+            const fname = buildFilename(item.url, i, type);
+            setTimeout(() => triggerDownload(item.resolved, fname), i * 400);
+        });
+
+        // ── Step 2: Build a human-friendly WhatsApp message ──
         let waMsg = 'Hi! ';
-        if (fileItems.length) { waMsg += 'I\'m sending you '+(fileItems.length===1?'the file':fileItems.length+' files')+' for *'+propName+'* 📎\n('+ type+' — just sent as attachment)'; }
-        if (linkItems.length) { waMsg += (fileItems.length?'\n\n':'')+'Here is the *'+type+'* for *'+propName+'*:\n'+linkItems.map(i=>i.url).join('\n'); }
-        const delay = fileItems.length*400+300;
-        setTimeout(()=>{ if(mobile) window.open('https://wa.me/?text='+encodeURIComponent(waMsg),'_blank'); else window.open('https://web.whatsapp.com/','_blank'); }, delay);
-        if (fileItems.length&&!mobile) showToast('📥 '+fileItems.length+' file'+(fileItems.length>1?'s':'')+' downloading — WhatsApp Web is opening. Open a chat, attach from Downloads, and send!','bg-blue-600');
-        else if (fileItems.length&&mobile) showToast('📥 File downloading — WhatsApp is opening. Attach from Downloads and send!','bg-blue-600');
+        if (fileItems.length) {
+            const fileWord = fileItems.length===1 ? 'the file' : fileItems.length+' files';
+            waMsg += 'I'm sending you '+fileWord+' for *'+propName+'* 📎\n';
+            waMsg += '('+type+' — just sent as attachment)';
+        }
+        if (linkItems.length) {
+            waMsg += (fileItems.length ? '\n\n' : '') + 'Here is the *'+type+'* for *'+propName+'*:\n';
+            waMsg += linkItems.map(i=>i.url).join('\n');
+        }
+
+        // ── Step 3: Open WhatsApp with the message pre-typed ──
+        const delay = fileItems.length * 400 + 300;
+        setTimeout(() => {
+            if (mobile) {
+                window.open('https://wa.me/?text='+encodeURIComponent(waMsg), '_blank');
+            } else {
+                window.open('https://web.whatsapp.com/','_blank');
+            }
+        }, delay);
+
+        if (fileItems.length && !mobile) {
+            const n = fileItems.length;
+            showToast(
+                '📥 '+n+' file'+(n>1?'s':'')+' downloading — WhatsApp Web is opening. Open a chat, attach from Downloads, and send!',
+                'bg-blue-600'
+            );
+        } else if (fileItems.length && mobile) {
+            showToast('📥 File downloading — WhatsApp is opening. Attach from Downloads and send!','bg-blue-600');
+        }
+
         setSharing(false);
     };
 
@@ -371,9 +409,10 @@ const PropertyPage = ({ property:init, onBack }) => {
         doShare(toSend, type);
     };
 
-    const regLink    = gv(prop,'lead_registration')||gv(prop,'lead_registration_link')||gv(prop,'lead_registration_link_or_email_id');
+    // ── Lead registration ──
+    const regLink = gv(prop,'lead_registration')||gv(prop,'lead_registration_link')||gv(prop,'lead_registration_link_or_email_id');
     const regIsEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
-    const handleReg  = () => {
+    const handleReg = () => {
         if (!regLink) { showToast('⚠️ No registration link set','bg-amber-500'); return; }
         if (regIsEmail) window.location.href=`mailto:${regLink.replace('mailto:','').trim()}?subject=New Lead: ${gv(prop,'property_name')}`;
         else window.open(safeLink(regLink),'_blank');
@@ -381,12 +420,14 @@ const PropertyPage = ({ property:init, onBack }) => {
 
     return (
         <div className="min-h-screen bg-slate-100 animate-fadeIn pb-28 md:pb-8">
+            {/* Toast */}
             {toast && (
                 <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[500] ${toast.color} text-white text-xs font-black uppercase tracking-widest px-6 py-3.5 rounded-2xl shadow-2xl animate-fadeIn flex items-center gap-2 max-w-xs text-center`}>
                     {toast.msg}
                 </div>
             )}
 
+            {/* Multi-file share modal */}
             {shareModal && (
                 <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fadeIn" onClick={()=>setShareModal(null)}>
                     <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-slideIn" onClick={e=>e.stopPropagation()}>
@@ -395,13 +436,15 @@ const PropertyPage = ({ property:init, onBack }) => {
                             <button onClick={()=>setShareModal(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
                         </div>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{shareModal.type} · {shareModal.items.length} available</p>
-                        <p className="text-[9px] text-blue-600 font-bold mb-4">📱 Mobile: files share directly · 💻 Desktop: files download, attach in WhatsApp Web</p>
+                        <p className="text-[9px] text-blue-600 font-bold mb-4">
+                            📱 Mobile: files share directly · 💻 Desktop: files download, attach in WhatsApp Web
+                        </p>
                         <div className="space-y-2 mb-5 max-h-56 overflow-y-auto">
                             {shareModal.items.map((item,i)=>{
                                 const chk = selected.includes(item.url);
                                 const r   = item.resolved;
                                 const isImg = r.kind==='cloudinary_img'||r.kind==='drive_file';
-                                const thumb = r.thumb || item.url;
+                                const thumb = r.type==='cloudinary_img' ? item.url : r.thumb;
                                 return (
                                     <label key={i} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${chk?'border-emerald-400 bg-emerald-50':'border-slate-200 bg-slate-50 hover:border-slate-300'}`}>
                                         <input type="checkbox" checked={chk} className="accent-emerald-500 w-4 h-4 shrink-0" onChange={()=>setSelected(p=>chk?p.filter(u=>u!==item.url):[...p,item.url])} />
@@ -415,7 +458,9 @@ const PropertyPage = ({ property:init, onBack }) => {
                         <div className="flex gap-2">
                             <button onClick={()=>setSelected(shareModal.items.map(i=>i.url))} className="btn-ghost flex-1 text-[9px] py-2.5">All</button>
                             <button onClick={()=>setSelected([])} className="btn-ghost flex-1 text-[9px] py-2.5">None</button>
-                            <button onClick={sendSelected} disabled={!selected.length||sharing} className="btn-primary flex-1 text-[9px] py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40">Share ({selected.length}) 💬</button>
+                            <button onClick={sendSelected} disabled={!selected.length||sharing} className="btn-primary flex-1 text-[9px] py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40">
+                                Share ({selected.length}) 💬
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -428,6 +473,7 @@ const PropertyPage = ({ property:init, onBack }) => {
                 </button>
                 <div className="flex items-center gap-3">
                     <span className="hidden md:inline text-[9px] font-black uppercase tracking-widest text-blue-500 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full">✏️ Hover fields to edit</span>
+                    {sharing && <span className="text-[9px] font-black text-blue-600 animate-pulse uppercase tracking-widest">Preparing…</span>}
                 </div>
             </div>
 
@@ -455,23 +501,27 @@ const PropertyPage = ({ property:init, onBack }) => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                    {/* LEFT */}
                     <div className="lg:col-span-2 space-y-5">
+                        {/* Quick stats */}
                         <div className="card p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <EF field="bhk"                 label="Configurations" val={gv(prop,'bhk')}                 editState={editState} />
-                            <EF field="construction_status" label="Status"          val={gv(prop,'construction_status')} editState={editState} />
-                            <EF field="possession_date"     label="Possession"      val={gv(prop,'possession_date')}     editState={editState} type="date" />
-                            <EF field="approval"            label="Approvals"       val={gv(prop,'approval')}            editState={editState} />
+                            <EF field="bhk"                 label="Configurations" val={gv(prop,'bhk')} />
+                            <EF field="construction_status" label="Status"          val={gv(prop,'construction_status')} />
+                            <EF field="possession_date"     label="Possession"      val={gv(prop,'possession_date')} type="date" />
+                            <EF field="approval"            label="Approvals"       val={gv(prop,'approval')} />
                         </div>
 
+                        {/* About */}
                         <div className="card p-5">
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">About The Project</div>
-                            <EF field="description" label="" val={gv(prop,'description')} multiline editState={editState} />
+                            <EF field="description" label="" val={gv(prop,'description')} multiline />
                         </div>
 
+                        {/* USPs + Amenities */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="card p-5 bg-blue-50 border-blue-100">
                                 <div className="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-3">Key Highlights</div>
-                                <EF field="usp_details" label="" val={gv(prop,'usp_details')} multiline editState={editState} />
+                                <EF field="usp_details" label="" val={gv(prop,'usp_details')} multiline />
                             </div>
                             <div className="card p-5 bg-slate-900 border-slate-800">
                                 <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Amenities</div>
@@ -492,37 +542,43 @@ const PropertyPage = ({ property:init, onBack }) => {
                             </div>
                         </div>
 
+                        {/* Links */}
                         <div className="card p-5">
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 pb-2 border-b border-slate-100">Links & Internal Info</div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <EF field="video_link"             label="Video Link"        val={gv(prop,'video_link')}             editState={editState} />
-                                <EF field="website_link"           label="Builder Website"   val={gv(prop,'website_link')}           editState={editState} />
-                                <EF field="lead_registration_link" label="Lead Registration" val={gv(prop,'lead_registration_link')} editState={editState} />
-                                <EF field="map_link"               label="Map Link"          val={gv(prop,'map_link')}               editState={editState} />
-                                <EF field="point_of_contact"       label="Point of Contact"  val={gv(prop,'point_of_contact')}       editState={editState} />
-                                <EF field="commission_details"     label="Commission"        val={gv(prop,'commission_details')}     editState={editState} />
-                                <EF field="availability"           label="Availability"      val={gv(prop,'availability')}           editState={editState} />
-                                <EF field="total_units"            label="Total Units"       val={gv(prop,'total_units')}            editState={editState} />
+                                <EF field="video_link"             label="Video Link"             val={gv(prop,'video_link')} />
+                                <EF field="website_link"           label="Builder Website"        val={gv(prop,'website_link')} />
+                                <EF field="lead_registration_link" label="Lead Registration"      val={gv(prop,'lead_registration_link')} />
+                                <EF field="map_link"               label="Map Link"               val={gv(prop,'map_link')} />
+                                <EF field="point_of_contact"       label="Point of Contact"       val={gv(prop,'point_of_contact')} />
+                                <EF field="commission_details"     label="Commission"             val={gv(prop,'commission_details')} />
+                                <EF field="availability"           label="Availability"           val={gv(prop,'availability')} />
+                                <EF field="total_units"            label="Total Units"            val={gv(prop,'total_units')} />
                             </div>
                         </div>
                     </div>
 
+                    {/* RIGHT SIDEBAR */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-20 space-y-4">
                             <div className="card p-5">
+                                {/* Price */}
                                 <div className="mb-4 pb-4 border-b border-slate-100">
                                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Starting Price</div>
-                                    <EF field="price" label="" val={gv(prop,'price')} editState={editState} />
+                                    <EF field="price" label="" val={gv(prop,'price')} />
                                 </div>
+                                {/* Commission */}
                                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 mb-3">
                                     <div className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-0.5">Commission</div>
                                     <div className="text-xl font-black text-amber-800">{fmtPct(gv(prop,'commission')||gv(prop,'commission_details'))}</div>
                                 </div>
+                                {/* POC */}
                                 <div className="bg-sky-50 border border-sky-200 rounded-xl p-3.5 mb-4">
                                     <div className="text-[9px] font-black uppercase tracking-widest text-sky-700 mb-1">Internal Info</div>
                                     <p className="text-[10px] font-bold text-sky-800">POC: {gv(prop,'point_of_contact')||'N/A'}</p>
                                     <p className="text-[10px] font-bold text-sky-800 mt-0.5">Avail: {gv(prop,'availability')||'N/A'}</p>
                                 </div>
+                                {/* Admin Tools */}
                                 <div className="bg-slate-900 rounded-xl p-4">
                                     <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-3 pb-2 border-b border-slate-700">Admin Tools</div>
                                     <div className="space-y-2 mb-4">
@@ -533,12 +589,12 @@ const PropertyPage = ({ property:init, onBack }) => {
                                     </div>
                                     <div className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-2">Share with Client via WhatsApp</div>
                                     <div className="grid grid-cols-2 gap-1.5">
-                                        <button disabled={sharing} onClick={()=>handleShare('Brochure',        gv(prop,'brochure'))}       className="share-btn">📥 Brochure</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Cost Sheet',     gv(prop,'cost_sheet'))}     className="share-btn">📄 Cost Sheet</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Location Map',   gv(prop,'map_link'))}       className="share-btn">📍 Location</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Property Video', gv(prop,'video_link'))}     className="share-btn">🎥 Video</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Floor Plan',     gv(prop,'floor_plan'))}     className="share-btn col-span-2">📐 Floor Plan</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Gallery',        gv(prop,'gallery_images'))} className="share-btn col-span-2">🖼️ Gallery Images</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Brochure',       gv(prop,'brochure'))}       className="share-btn">📥 Brochure</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Cost Sheet',    gv(prop,'cost_sheet'))}     className="share-btn">📄 Cost Sheet</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Location Map',  gv(prop,'map_link'))}       className="share-btn">📍 Location</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Property Video',gv(prop,'video_link'))}     className="share-btn">🎥 Video</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Floor Plan',    gv(prop,'floor_plan'))}     className="share-btn col-span-2">📐 Floor Plan</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Gallery',       gv(prop,'gallery_images'))} className="share-btn col-span-2">🖼️ Gallery Images</button>
                                     </div>
                                 </div>
                             </div>
@@ -551,39 +607,28 @@ const PropertyPage = ({ property:init, onBack }) => {
     );
 };
 
-// ─── LIBRARY ───────────────────────────────────────────────────────────────
-const Library = ({ props: initProps, onSelect, supabase }) => {
-    const [props,      setProps]      = useState(initProps || []);
+// ─── PROJECT LIBRARY ───────────────────────────────────────────────────────
+const Library = ({ props:initProps, onSelect, supabase }) => {
+    const [props,      setProps]      = useState(initProps||[]);
     const [togglingId, setTogglingId] = useState(null);
     const [search,     setSearch]     = useState('');
 
-    const prevInitRef = useRef(initProps);
-    useEffect(() => {
-        const prev = prevInitRef.current || [];
-        const next = initProps || [];
-        const changed = prev.length !== next.length || next.some((p,i) => p.id !== (prev[i]?.id));
-        if (changed) { setProps(next); prevInitRef.current = next; }
-    }, [initProps]);
+    useEffect(()=>setProps(initProps||[]),[initProps]);
 
-    const toggle = async (e, p) => {
+    const toggle = async (e,p) => {
         e.stopPropagation();
-        const newVal = p.is_live !== true;
+        const newVal = p.is_live!==true;
         setTogglingId(p.id);
-        setProps(prev => prev.map(x => x.id === p.id ? { ...x, is_live: newVal } : x));
-        const { error } = await supabase.from('properties').update({ is_live: newVal }).eq('id', p.id);
-        if (error) {
-            setProps(prev => prev.map(x => x.id === p.id ? { ...x, is_live: p.is_live } : x));
-            alert('Update failed: ' + error.message);
-        }
+        const {error} = await supabase.from('properties').update({is_live:newVal}).eq('id',p.id);
+        if (!error) setProps(prev=>prev.map(x=>x.id===p.id?{...x,is_live:newVal}:x));
+        else alert('Update failed: '+error.message);
         setTogglingId(null);
     };
 
-    const filtered = props.filter(p => {
+    const filtered = props.filter(p=>{
         if (!search) return true;
-        const t = search.toLowerCase();
-        return gv(p,'property_name').toLowerCase().includes(t) ||
-               gv(p,'location').toLowerCase().includes(t) ||
-               gv(p,'builder_name').toLowerCase().includes(t);
+        const t=search.toLowerCase();
+        return gv(p,'property_name').toLowerCase().includes(t)||gv(p,'location').toLowerCase().includes(t)||gv(p,'builder_name').toLowerCase().includes(t);
     });
 
     if (!props.length) return (
@@ -594,36 +639,36 @@ const Library = ({ props: initProps, onSelect, supabase }) => {
         <div className="animate-fadeIn space-y-5">
             <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search property, location, builder…" className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" />
+                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search property, location, builder…" className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {filtered.map(p => {
-                    const live = p.is_live === true;
-                    const tog  = togglingId === p.id;
+                {filtered.map(p=>{
+                    const live = p.is_live===true;
+                    const tog  = togglingId===p.id;
                     return (
                         <div key={p.id} className="card overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
-                            <div className="relative h-44 bg-slate-100 overflow-hidden cursor-pointer" onClick={() => onSelect(p)}>
-                                <img src={fixImg(gv(p,'cover_image') || gv(p,'cover-image'))} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
+                            <div className="relative h-44 bg-slate-100 overflow-hidden cursor-pointer" onClick={()=>onSelect(p)}>
+                                <img src={fixImg(gv(p,'cover_image')||gv(p,'cover-image'))} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
                                 <div className="absolute top-3 left-0 bg-slate-900/85 text-white text-[9px] font-black px-3 py-1.5 rounded-r-lg uppercase tracking-widest">
-                                    {gv(p,'property_type') || 'Property'}
+                                    {gv(p,'property_type')||'Property'}
                                 </div>
-                                <div className={`absolute top-3 right-3 text-[9px] font-black px-2.5 py-1 rounded-full border ${live ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-red-100 text-red-600 border-red-300'}`}>
-                                    {live ? '🟢 Live' : '🔴 Unlive'}
+                                <div className={`absolute top-3 right-3 text-[9px] font-black px-2.5 py-1 rounded-full border ${live?'bg-emerald-100 text-emerald-700 border-emerald-300':'bg-red-100 text-red-600 border-red-300'}`}>
+                                    {live?'🟢 Live':'🔴 Unlive'}
                                 </div>
                             </div>
                             <div className="p-4 flex flex-col flex-1">
-                                <h3 onClick={() => onSelect(p)} className="font-black uppercase tracking-tight text-slate-900 text-base leading-tight truncate cursor-pointer hover:text-blue-600 transition-colors">{gv(p,'property_name')}</h3>
-                                <p className="text-slate-400 text-xs font-semibold mt-0.5 truncate">📍 {gv(p,'location') || '—'}</p>
+                                <h3 onClick={()=>onSelect(p)} className="font-black uppercase tracking-tight text-slate-900 text-base leading-tight truncate cursor-pointer hover:text-blue-600 transition-colors">{gv(p,'property_name')}</h3>
+                                <p className="text-slate-400 text-xs font-semibold mt-0.5 truncate">📍 {gv(p,'location')||'—'}</p>
                                 <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
                                     <div>
                                         <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">From</div>
-                                        <div className="text-sm font-black text-blue-700">{gv(p,'price') || 'On Request'}</div>
+                                        <div className="text-sm font-black text-blue-700">{gv(p,'price')||'On Request'}</div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <button onClick={e => toggle(e, p)} disabled={tog} className={`text-[9px] font-black px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${live ? 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100' : 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100'}`}>
-                                            {tog ? '…' : live ? 'Unlive' : 'Set Live'}
+                                        <button onClick={e=>toggle(e,p)} disabled={tog} className={`text-[9px] font-black px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${live?'bg-red-50 border-red-300 text-red-700 hover:bg-red-100':'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100'}`}>
+                                            {tog?'…':live?'Unlive':'Set Live'}
                                         </button>
-                                        <button onClick={() => onSelect(p)} className="btn-primary text-[9px] py-1.5 px-3">Open</button>
+                                        <button onClick={()=>onSelect(p)} className="btn-primary text-[9px] py-1.5 px-3">Open</button>
                                     </div>
                                 </div>
                             </div>
@@ -635,74 +680,73 @@ const Library = ({ props: initProps, onSelect, supabase }) => {
     );
 };
 
-// ─── HELPER COMPONENTS (outside AddPropertyForm) ───────────────────────────
-const F = ({ label, children }) => (
-    <div className="field-group">
-        <label>{label}</label>
-        {children}
-    </div>
-);
-
-const FileChip = ({ field, name, multi = false, idx = null, onRemove }) => (
-    <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg mt-2 text-[10px] font-bold mr-2">
-        <span className="truncate max-w-[130px]">{name}</span>
-        <button onClick={() => onRemove(field, multi, idx)} className="text-red-500 hover:text-red-700 leading-none font-black">✕</button>
-    </div>
-);
-
 // ─── ADD PROPERTY FORM ─────────────────────────────────────────────────────
 const AddPropertyForm = ({ supabase, scriptUrl }) => {
     const blank = { property_name:'',builder_name:'',property_region:'',property_type:'',location:'',price:'',bhk:'',super_built_up_area:'',possession_date:'',construction_status:'',approval:'',total_units:'',availability:'',description:'',usp_details:'',amenities:'',point_of_contact:'',commission_details:'',video_link:'',website_link:'',lead_registration_link:'',map_link:'',cover_image:'',gallery_images:'',floor_plan:'',brochure:'',cost_sheet:'',miscellaneous:'' };
-    const [form,        setForm]        = useState(blank);
-    const [loading,     setLoading]     = useState(false);
-    const [uploadField, setUploadField] = useState(null);
-    const [saved,       setSaved]       = useState(false);
+    const [form,         setForm]         = useState(blank);
+    const [loading,      setLoading]      = useState(false);
+    const [uploadField,  setUploadField]  = useState(null);
+    const [saved,        setSaved]        = useState(false);
 
-    const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+    const set = (k,v) => setForm(f=>({...f,[k]:v}));
 
-    const upload = async (e, field, multi = false) => {
-        const files = e.target.files; if (!files || !files.length) return;
+    const upload = async (e, field, multi=false) => {
+        const files=e.target.files; if(!files||!files.length) return;
         setLoading(true); setUploadField(field);
-        const catMap = { cover_image:'Cover Image', gallery_images:'Gallery', brochure:'Brochures', cost_sheet:'Cost Sheets', floor_plan:'Floor Plans', miscellaneous:'Miscellaneous' };
-        const cat = catMap[field] || 'General';
-        let urls = [];
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            const url = await new Promise(res => {
-                const r = new FileReader();
+        const catMap = {cover_image:'Cover Image',gallery_images:'Gallery',brochure:'Brochures',cost_sheet:'Cost Sheets',floor_plan:'Floor Plans',miscellaneous:'Miscellaneous'};
+        const cat = catMap[field]||'General';
+        let urls=[];
+        for(let i=0;i<files.length;i++){
+            const file=files[i];
+            const url = await new Promise(res=>{
+                const r=new FileReader();
                 r.readAsDataURL(file);
-                r.onload = async () => {
-                    const resp = await fetch(scriptUrl, { method:'POST', body: JSON.stringify({ base64: r.result.split(',')[1], type: file.type, name: file.name, propertyName: form.property_name || 'Uploads', category: cat }) });
-                    const j = await resp.json();
-                    res(j.status === 'success' ? j.fileUrl || j.url : null);
+                r.onload=async()=>{
+                    const resp = await fetch(scriptUrl,{method:'POST',body:JSON.stringify({base64:r.result.split(',')[1],type:file.type,name:file.name,propertyName:form.property_name||'Uploads',category:cat})});
+                    const j=await resp.json();
+                    res(j.status==='success'?j.fileUrl||j.url:null);
                 };
             });
-            if (url) urls.push(url);
+            if(url) urls.push(url);
         }
-        if (urls.length) {
-            const joined = urls.join(',');
-            if (multi) set(field, form[field] ? form[field] + ',' + joined : joined);
-            else set(field, joined);
+        if(urls.length){
+            const joined=urls.join(',');
+            if(multi) set(field, form[field]?form[field]+','+joined:joined);
+            else set(field,joined);
         }
         setLoading(false); setUploadField(null);
     };
 
-    const removeFile = (field, multi = false, idx = null) => {
-        if (multi) { const arr = form[field].split(',').filter(Boolean); arr.splice(idx, 1); set(field, arr.join(',')); }
-        else set(field, '');
+    const removeFile=(field,multi=false,idx=null)=>{
+        if(multi){ const arr=form[field].split(',').filter(Boolean); arr.splice(idx,1); set(field,arr.join(',')); }
+        else set(field,'');
     };
 
-    const save = async () => {
-        if (!form.property_name || !form.price || !form.cover_image) {
+    const FileChip=({field,name,multi=false,idx=null})=>(
+        <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg mt-2 text-[10px] font-bold mr-2">
+            <span className="truncate max-w-[130px]">{name}</span>
+            <button onClick={()=>removeFile(field,multi,idx)} className="text-red-500 hover:text-red-700 leading-none font-black">✕</button>
+        </div>
+    );
+
+    const save=async()=>{
+        if(!form.property_name||!form.price||!form.cover_image){
             alert('Please fill: Property Name, Price, and Cover Image.'); return;
         }
         setLoading(true);
-        const payload = { ...form, is_live: true };
-        const { error } = await supabase.from('properties').insert([payload]);
-        if (!error) { setSaved(true); setForm(blank); setTimeout(() => setSaved(false), 3000); }
+        const payload={...form,is_live:true};
+        const {error}=await supabase.from('properties').insert([payload]);
+        if(!error){ setSaved(true); setForm(blank); setTimeout(()=>setSaved(false),3000); }
         else alert(error.message);
         setLoading(false);
     };
+
+    const F=({label,children})=>(
+        <div className="field-group">
+            <label>{label}</label>
+            {children}
+        </div>
+    );
 
     return (
         <div className="max-w-4xl mx-auto animate-fadeIn">
@@ -712,102 +756,127 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                         <h2 className="text-xl font-black uppercase tracking-tight text-slate-900">New Property Listing</h2>
                         <p className="text-xs text-slate-400 font-semibold mt-0.5">All starred fields are required</p>
                     </div>
-                    {saved && <div className="bg-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-emerald-200 animate-fadeIn">✅ Published!</div>}
+                    {saved&&<div className="bg-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-emerald-200 animate-fadeIn">✅ Published!</div>}
                 </div>
 
+                {/* Basic Info */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Basic Information</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <F label="Property Name ★"><input value={form.property_name} onChange={e => set('property_name', e.target.value)} placeholder="e.g. Prestige Lakeside Habitat" /></F>
-                        <F label="Builder Name"><input value={form.builder_name} onChange={e => set('builder_name', e.target.value)} placeholder="e.g. Prestige Group" /></F>
+                        <F label="Property Name ★"><input value={form.property_name} onChange={e=>set('property_name',e.target.value)} placeholder="e.g. Prestige Lakeside Habitat" /></F>
+                        <F label="Builder Name"><input value={form.builder_name} onChange={e=>set('builder_name',e.target.value)} placeholder="e.g. Prestige Group" /></F>
                         <F label="Region">
-                            <select value={form.property_region} onChange={e => set('property_region', e.target.value)}>
+                            <select value={form.property_region} onChange={e=>set('property_region',e.target.value)}>
                                 <option value="">Select Region</option>
-                                {['North','South','East','West'].map(r => <option key={r}>{r}</option>)}
+                                {['North','South','East','West'].map(r=><option key={r}>{r}</option>)}
                             </select>
                         </F>
                         <F label="Property Type">
-                            <select value={form.property_type} onChange={e => set('property_type', e.target.value)}>
+                            <select value={form.property_type} onChange={e=>set('property_type',e.target.value)}>
                                 <option value="">Select Type</option>
-                                {['Apartment','Villa','Villament','Plot','Others'].map(t => <option key={t}>{t}</option>)}
+                                {['Apartment','Villa','Villament','Plot','Others'].map(t=><option key={t}>{t}</option>)}
                             </select>
                         </F>
-                        <F label="Location / Micro-Market"><input value={form.location} onChange={e => set('location', e.target.value)} placeholder="e.g. Whitefield, Bengaluru" /></F>
-                        <F label="Price ★"><input value={form.price} onChange={e => set('price', e.target.value)} placeholder="e.g. 1.2 Cr onwards" /></F>
+                        <F label="Location / Micro-Market"><input value={form.location} onChange={e=>set('location',e.target.value)} placeholder="e.g. Whitefield, Bengaluru" /></F>
+                        <F label="Price ★"><input value={form.price} onChange={e=>set('price',e.target.value)} placeholder="e.g. 1.2 Cr onwards" /></F>
                     </div>
                 </div>
 
+                {/* Specs */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Specifications</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="field-group md:col-span-2">
                             <label>Configurations (hold Ctrl/⌘ for multi)</label>
-                            <select multiple className="h-28" value={form.bhk ? form.bhk.split(',') : []} onChange={e => set('bhk', [...e.target.selectedOptions].map(o => o.value).join(','))}>
-                                {['1 BHK','2 BHK','3 BHK','4 BHK','5+ BHK'].map(b => <option key={b}>{b}</option>)}
+                            <select multiple className="h-28" value={form.bhk?form.bhk.split(','):[]} onChange={e=>set('bhk',[...e.target.selectedOptions].map(o=>o.value).join(','))}>
+                                {['1 BHK','2 BHK','3 BHK','4 BHK','5+ BHK'].map(b=><option key={b}>{b}</option>)}
                             </select>
                         </div>
-                        <F label="Super Built-up Area"><input value={form.super_built_up_area} onChange={e => set('super_built_up_area', e.target.value)} placeholder="SqFt" /></F>
-                        <F label="Total Units"><input value={form.total_units} onChange={e => set('total_units', e.target.value)} placeholder="e.g. 420" /></F>
-                        <F label="Possession Date"><input type="date" value={form.possession_date} onChange={e => set('possession_date', e.target.value)} /></F>
+                        <F label="Super Built-up Area"><input value={form.super_built_up_area} onChange={e=>set('super_built_up_area',e.target.value)} placeholder="SqFt" /></F>
+                        <F label="Total Units"><input value={form.total_units} onChange={e=>set('total_units',e.target.value)} placeholder="e.g. 420" /></F>
+                        <F label="Possession Date">
+                            <input type="date" value={form.possession_date} onChange={e=>set('possession_date',e.target.value)} />
+                        </F>
                         <F label="Construction Status">
-                            <select value={form.construction_status} onChange={e => set('construction_status', e.target.value)}>
+                            <select value={form.construction_status} onChange={e=>set('construction_status',e.target.value)}>
                                 <option value="">Select</option>
-                                {['Ready to Move','Under Construction','New Launch'].map(s => <option key={s}>{s}</option>)}
+                                {['Ready to Move','Under Construction','New Launch'].map(s=><option key={s}>{s}</option>)}
                             </select>
                         </F>
-                        <F label="Approvals"><input value={form.approval} onChange={e => set('approval', e.target.value)} placeholder="BDA, RERA, etc." /></F>
-                        <F label="Availability"><input value={form.availability} onChange={e => set('availability', e.target.value)} placeholder="e.g. 2 & 3 BHK" /></F>
+                        <F label="Approvals"><input value={form.approval} onChange={e=>set('approval',e.target.value)} placeholder="BDA, RERA, etc." /></F>
+                        <F label="Availability"><input value={form.availability} onChange={e=>set('availability',e.target.value)} placeholder="e.g. 2 & 3 BHK" /></F>
                     </div>
                 </div>
 
+                {/* Content */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Content</div>
                     <div className="space-y-4">
                         <F label="Property Description">
-                            <textarea rows={4} value={form.description} onChange={e => set('description', e.target.value)} placeholder="Describe the project — location advantages, lifestyle, architecture…" className="resize-none" />
+                            <textarea rows={4} value={form.description} onChange={e=>set('description',e.target.value)} placeholder="Describe the project — location advantages, lifestyle, architecture…" className="resize-none" />
                         </F>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <F label="Key USPs / Highlights (one per line)">
-                                <textarea rows={4} value={form.usp_details} onChange={e => set('usp_details', e.target.value)} placeholder={"Zero car movement design\nRooftop infinity pool\nWalkable to metro"} className="resize-none" />
+                                <textarea rows={4} value={form.usp_details} onChange={e=>set('usp_details',e.target.value)} placeholder={"Zero car movement design\nRooftop infinity pool\nWalkable to metro"} className="resize-none" />
                             </F>
                             <F label="Amenities (comma separated)">
-                                <textarea rows={4} value={form.amenities} onChange={e => set('amenities', e.target.value)} placeholder="Clubhouse, Swimming Pool, Gym, Co-working" className="resize-none" />
+                                <textarea rows={4} value={form.amenities} onChange={e=>set('amenities',e.target.value)} placeholder="Clubhouse, Swimming Pool, Gym, Co-working" className="resize-none" />
                             </F>
                         </div>
                     </div>
                 </div>
 
+                {/* Internal / Links */}
                 <div className="bg-slate-900 rounded-2xl p-5">
                     <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-4 pb-2 border-b border-slate-700">Internal Data & Links</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="field-group"><label className="text-slate-400">Internal POC</label><input className="dark-field" value={form.point_of_contact} onChange={e => set('point_of_contact', e.target.value)} placeholder="Agent name / phone" /></div>
-                        <div className="field-group"><label className="text-slate-400">Commission %</label><input className="dark-field" value={form.commission_details} onChange={e => set('commission_details', e.target.value)} placeholder="e.g. 2%" /></div>
-                        <div className="field-group"><label className="text-slate-400">Video Link</label><input className="dark-field" value={form.video_link} onChange={e => set('video_link', e.target.value)} placeholder="YouTube / Drive URL" /></div>
-                        <div className="field-group"><label className="text-slate-400">Builder Website</label><input className="dark-field" value={form.website_link} onChange={e => set('website_link', e.target.value)} placeholder="https://…" /></div>
-                        <div className="field-group"><label className="text-slate-400">Lead Registration Link / Email</label><input className="dark-field" value={form.lead_registration_link} onChange={e => set('lead_registration_link', e.target.value)} placeholder="URL or email@domain.com" /></div>
-                        <div className="field-group"><label className="text-slate-400">Google Maps Link</label><input className="dark-field" value={form.map_link} onChange={e => set('map_link', e.target.value)} placeholder="https://maps.google.com/…" /></div>
+                        <div className="field-group">
+                            <label className="text-slate-400">Internal POC</label>
+                            <input className="dark-field" value={form.point_of_contact} onChange={e=>set('point_of_contact',e.target.value)} placeholder="Agent name / phone" />
+                        </div>
+                        <div className="field-group">
+                            <label className="text-slate-400">Commission %</label>
+                            <input className="dark-field" value={form.commission_details} onChange={e=>set('commission_details',e.target.value)} placeholder="e.g. 2%" />
+                        </div>
+                        <div className="field-group">
+                            <label className="text-slate-400">Video Link</label>
+                            <input className="dark-field" value={form.video_link} onChange={e=>set('video_link',e.target.value)} placeholder="YouTube / Drive URL" />
+                        </div>
+                        <div className="field-group">
+                            <label className="text-slate-400">Builder Website</label>
+                            <input className="dark-field" value={form.website_link} onChange={e=>set('website_link',e.target.value)} placeholder="https://…" />
+                        </div>
+                        <div className="field-group">
+                            <label className="text-slate-400">Lead Registration Link / Email</label>
+                            <input className="dark-field" value={form.lead_registration_link} onChange={e=>set('lead_registration_link',e.target.value)} placeholder="URL or email@domain.com" />
+                        </div>
+                        <div className="field-group">
+                            <label className="text-slate-400">Google Maps Link</label>
+                            <input className="dark-field" value={form.map_link} onChange={e=>set('map_link',e.target.value)} placeholder="https://maps.google.com/…" />
+                        </div>
                     </div>
                 </div>
 
+                {/* Media */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Media & Documents</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {[
-                            { field:'cover_image',    label:'Cover Image ★',         multi:false },
-                            { field:'gallery_images', label:'Gallery Images (multi)',  multi:true  },
-                            { field:'brochure',       label:'Brochure (PDF)',          multi:false },
-                            { field:'cost_sheet',     label:'Cost Sheet (multi)',      multi:true  },
-                            { field:'floor_plan',     label:'Floor Plan',              multi:false },
-                            { field:'miscellaneous',  label:'Miscellaneous (multi)',   multi:true  },
-                        ].map(({ field, label, multi }) => (
+                            {field:'cover_image',    label:'Cover Image ★',        multi:false},
+                            {field:'gallery_images', label:'Gallery Images (multi)', multi:true},
+                            {field:'brochure',       label:'Brochure (PDF)',         multi:false},
+                            {field:'cost_sheet',     label:'Cost Sheet (multi)',     multi:true},
+                            {field:'floor_plan',     label:'Floor Plan',             multi:false},
+                            {field:'miscellaneous',  label:'Miscellaneous (multi)',  multi:true},
+                        ].map(({field,label,multi})=>(
                             <div key={field} className="field-group">
-                                <label>{label} {uploadField === field && <span className="text-blue-500 normal-case font-bold animate-pulse ml-1">(uploading…)</span>}</label>
-                                <input type="file" multiple={multi} onChange={e => upload(e, field, multi)} className="text-xs font-bold text-slate-500 cursor-pointer file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                                <label>{label} {uploadField===field&&<span className="text-blue-500 normal-case font-bold animate-pulse ml-1">(uploading…)</span>}</label>
+                                <input type="file" multiple={multi} onChange={e=>upload(e,field,multi)} className="text-xs font-bold text-slate-500 cursor-pointer file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                                 <div className="flex flex-wrap mt-1">
                                     {form[field] && (
                                         multi
-                                            ? form[field].split(',').filter(Boolean).map((_, i) => <FileChip key={i} field={field} name={`File ${i + 1}`} multi idx={i} onRemove={removeFile} />)
-                                            : <FileChip field={field} name="Uploaded ✓" onRemove={removeFile} />
+                                            ? form[field].split(',').filter(Boolean).map((_,i)=><FileChip key={i} field={field} name={`File ${i+1}`} multi idx={i} />)
+                                            : <FileChip field={field} name="Uploaded ✓" />
                                     )}
                                 </div>
                             </div>
@@ -816,14 +885,14 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                 </div>
 
                 <button onClick={save} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black uppercase tracking-widest py-4 rounded-2xl text-sm shadow-lg transition-colors">
-                    {loading ? 'Uploading & Publishing…' : '🚀 Publish Listing'}
+                    {loading?'Uploading & Publishing…':'🚀 Publish Listing'}
                 </button>
             </div>
         </div>
     );
 };
 
-// ─── MANUAL LEAD FORM ─────────────────────────────────────────────────────
+// ─── MANUAL LEAD FORM ──────────────────────────────────────────────────────
 const ManualLeadForm = ({ supabase, properties, onSuccess }) => {
     const [form, setForm] = useState({name:'',phone:'',email:'',project:'General Enquiry',note:'',source:'Manual Entry'});
     const [loading, setLoading] = useState(false);
@@ -871,7 +940,7 @@ const ManualLeadForm = ({ supabase, properties, onSuccess }) => {
     );
 };
 
-// ─── LOGIN ────────────────────────────────────────────────────────────────
+// ─── LOGIN ─────────────────────────────────────────────────────────────────
 const Login = () => {
     const [email,setEmail]=useState(''); const [pass,setPass]=useState('');
     const [loading,setLoading]=useState(false); const [err,setErr]=useState('');
@@ -895,7 +964,7 @@ const Login = () => {
     );
 };
 
-// ─── ADMIN APP ────────────────────────────────────────────────────────────
+// ─── ADMIN APP ─────────────────────────────────────────────────────────────
 const getRoute = () => {
     const h=window.location.hash.replace('#','');
     if (h.startsWith('/library')) return {v:'library',c:'website'};
@@ -921,6 +990,7 @@ function AdminApp() {
     const [visible,    setVisible]    = useState(50);
     const [search,     setSearch]     = useState('');
 
+    // Router
     useEffect(()=>{
         const fn=()=>{ const r=getRoute(); setView(r.v); setTab(r.c); };
         window.addEventListener('hashchange',fn);
@@ -933,12 +1003,14 @@ function AdminApp() {
         window.location.hash=h;
     };
 
+    // Auth
     useEffect(()=>{
         supabase.auth.getSession().then(({data:{session}})=>{ setSession(session); setAuthReady(true); });
         const {data:{subscription}}=supabase.auth.onAuthStateChange((_,s)=>setSession(s));
         return ()=>subscription.unsubscribe();
     },[]);
 
+    // Data
     useEffect(()=>{
         if(!session) return;
         fetchProps();
@@ -973,10 +1045,10 @@ function AdminApp() {
         }
         let updates={};
         const t=stamp();
-        if(field==='lead_status')       { updates.lead_status=value; updates.call_remark=`[${t}] Status → ${value}\n\n${lead.call_remark||''}`; }
-        else if(field==='follow_up_at') { updates.follow_up_at=value; updates.call_remark=`[${t}] Callback: ${new Date(value).toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}\n\n${lead.call_remark||''}`; }
+        if(field==='lead_status')      { updates.lead_status=value; updates.call_remark=`[${t}] Status → ${value}\n\n${lead.call_remark||''}`; }
+        else if(field==='follow_up_at'){ updates.follow_up_at=value; updates.call_remark=`[${t}] Callback: ${new Date(value).toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}\n\n${lead.call_remark||''}`; }
         else if(field==='site_visit_at'){ updates.site_visit_at=value; updates.call_remark=`[${t}] SV Booked: ${value}\n\n${lead.call_remark||''}`; }
-        else if(field==='add_note')     { if(!value.trim()) return; updates.add_note=value; updates.call_remark=`[${t}] Note: ${value}\n\n${lead.call_remark||''}`; }
+        else if(field==='add_note')    { if(!value.trim()) return; updates.add_note=value; updates.call_remark=`[${t}] Note: ${value}\n\n${lead.call_remark||''}`; }
         else if(field==='reject_reason'){ updates.reject_reason=value; updates.call_remark=`[${t}] Rejected: ${value}\n\n${lead.call_remark||''}`; }
         else updates[field]=value;
 
@@ -989,10 +1061,10 @@ function AdminApp() {
     const displayed=useMemo(()=>{
         let f=leads;
         const td=new Date().toISOString().split('T')[0];
-        if(filter==='TODAY_CB')        f=f.filter(l=>l.follow_up_at?.startsWith(td)&&!['Rejected','Converted'].includes(l.lead_status));
-        else if(filter==='TODAY_SV')   f=f.filter(l=>l.site_visit_at===td&&!['Rejected','Converted'].includes(l.lead_status));
-        else if(filter==='MISSED_CB')  f=f.filter(l=>l.follow_up_at&&l.follow_up_at<td&&!['Rejected','Converted'].includes(l.lead_status));
-        else if(filter==='MISSED_SV')  f=f.filter(l=>l.site_visit_at&&l.site_visit_at<td&&!['Rejected','Converted'].includes(l.lead_status));
+        if(filter==='TODAY_CB')   f=f.filter(l=>l.follow_up_at?.startsWith(td)&&!['Rejected','Converted'].includes(l.lead_status));
+        else if(filter==='TODAY_SV')  f=f.filter(l=>l.site_visit_at===td&&!['Rejected','Converted'].includes(l.lead_status));
+        else if(filter==='MISSED_CB') f=f.filter(l=>l.follow_up_at&&l.follow_up_at<td&&!['Rejected','Converted'].includes(l.lead_status));
+        else if(filter==='MISSED_SV') f=f.filter(l=>l.site_visit_at&&l.site_visit_at<td&&!['Rejected','Converted'].includes(l.lead_status));
         else if(filter.startsWith('STATUS_')) f=f.filter(l=>(l.lead_status||'Un called')===filter.replace('STATUS_',''));
         if(agentFilter!=='All') f=f.filter(l=>l.psa_agent_name===agentFilter);
         if(search.trim()){ const t=search.toLowerCase(); f=f.filter(l=>(l.customer_name||'').toLowerCase().includes(t)||(l.phone_number||'').toLowerCase().includes(t)||(l.project_interested_in||'').toLowerCase().includes(t)); }
@@ -1025,6 +1097,7 @@ function AdminApp() {
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-100 animate-fadeIn">
+            {/* NAV */}
             <nav className="bg-slate-950 text-white px-4 md:px-6 py-3.5 flex justify-between items-center sticky top-0 z-50 shadow-lg">
                 <div className="flex items-center gap-1">
                     <h1 className="font-black text-lg uppercase italic tracking-tight">Horizon</h1>
@@ -1040,8 +1113,10 @@ function AdminApp() {
 
             <main className="p-3 md:p-6 max-w-7xl mx-auto w-full flex-1">
 
+                {/* ── CRM VIEW ── */}
                 {view==='crm' && (
                     <div className="space-y-4 animate-fadeIn">
+                        {/* Stats Bar */}
                         <div className="card p-4">
                             <div className="flex flex-wrap md:grid md:grid-cols-6 gap-3 items-center">
                                 <select className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest text-slate-600 border border-slate-200 rounded-lg px-2 py-1.5 cursor-pointer md:col-span-1" value={agentFilter} onChange={e=>setAgentFilter(e.target.value)}>
@@ -1049,7 +1124,7 @@ function AdminApp() {
                                     {AGENTS.map(a=><option key={a}>{a}</option>)}
                                 </select>
                                 {[
-                                    {label:'Total',    val:stats.total,     color:'text-slate-700'},
+                                    {label:'Total',   val:stats.total,     color:'text-slate-700'},
                                     {label:'Uncalled', val:stats.uncalled,  color:'text-amber-600'},
                                     {label:'Working',  val:stats.working,   color:'text-blue-600'},
                                     {label:'Converted',val:stats.converted, color:'text-emerald-600'},
@@ -1063,6 +1138,7 @@ function AdminApp() {
                             </div>
                         </div>
 
+                        {/* Tabs + Controls */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                             <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
                                 {['website','bulk','manual'].map(c=>(
@@ -1086,12 +1162,14 @@ function AdminApp() {
                             </div>
                         </div>
 
+                        {/* Search */}
                         <div className="relative">
                             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">🔍</span>
                             <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone or project…" className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-semibold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" />
                             {search&&<button onClick={()=>setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 hover:text-red-500 bg-slate-100 px-2 py-1 rounded-lg uppercase">Clear</button>}
                         </div>
 
+                        {/* Lead Table — Desktop */}
                         {loading ? (
                             <div className="text-center py-16 text-slate-400 font-black uppercase tracking-widest animate-pulse text-xs">Loading Leads…</div>
                         ) : (
@@ -1108,17 +1186,21 @@ function AdminApp() {
                                     <tbody className="divide-y divide-slate-100">
                                         {visLeads.map(l=>(
                                             <tr key={l.id} className={`lead-row border-l-4 ${priorityBorder(l.lead_priority)} ${cardTint(l.lead_status)}`}>
+                                                {/* Customer */}
                                                 <td className="p-3.5 min-w-[175px]">
                                                     <div className="font-black text-slate-900 uppercase text-xs leading-tight">{l.customer_name}</div>
                                                     <div className="text-blue-600 font-bold mt-0.5">{l.phone_number}</div>
                                                     {l.customer_email&&<div className="text-slate-400 text-[9px] mt-0.5 lowercase truncate font-medium max-w-[160px]">{l.customer_email}</div>}
-                                                    <div className="text-[8px] text-slate-400 font-bold mt-1 uppercase tracking-widest">{tab==='bulk'&&!isOwner?'[Restricted]':(l.project_interested_in||'General')}</div>
+                                                    <div className="text-[8px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
+                                                        {tab==='bulk'&&!isOwner?'[Restricted]':(l.project_interested_in||'General')}
+                                                    </div>
                                                     {l.created_at&&<div className="text-[8px] text-slate-300 font-bold mt-0.5">{l.display_date||l.created_at}</div>}
                                                     <div className="flex gap-1.5 mt-2">
                                                         <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1 rounded-lg text-[8px] font-black uppercase hover:bg-blue-100 transition">📞 Call</a>
                                                         <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-1 rounded-lg text-[8px] font-black uppercase hover:bg-emerald-100 transition">💬 WA</a>
                                                     </div>
                                                 </td>
+                                                {/* Agent & Status */}
                                                 <td className="p-3.5 min-w-[145px] space-y-1.5">
                                                     <select value={l.psa_agent_name||''} onChange={e=>updateLead(l,'psa_agent_name',e.target.value)} className="w-full p-1.5 border border-slate-200 rounded-lg font-black text-[9px] uppercase outline-none bg-white text-blue-800">
                                                         <option value="" disabled>Assign Agent</option>
@@ -1138,6 +1220,7 @@ function AdminApp() {
                                                         {['Hot','Warm','Cold'].map(p=><option key={p}>{p}</option>)}
                                                     </select>
                                                 </td>
+                                                {/* Schedule */}
                                                 <td className="p-3.5 min-w-[155px]">
                                                     {['Called','RNR','Details Shared'].includes(l.lead_status)&&(
                                                         <div className="mb-2">
@@ -1152,6 +1235,7 @@ function AdminApp() {
                                                         </div>
                                                     )}
                                                 </td>
+                                                {/* Notes */}
                                                 <td className="p-3.5 min-w-[240px]">
                                                     <div className="h-14 overflow-y-auto bg-slate-50 border border-slate-200 rounded-t-lg p-2 history-scroll text-[9px] font-medium text-slate-500 whitespace-pre-wrap leading-relaxed mb-1">
                                                         {l.call_remark||<span className="italic text-slate-300">No activity yet…</span>}
@@ -1172,6 +1256,7 @@ function AdminApp() {
                                 )}
                             </div>
 
+                            {/* Lead Cards — Mobile */}
                             <div className="lg:hidden space-y-3">
                                 {visLeads.map(l=>(
                                     <div key={`m-${l.id}`} className={`card p-4 border-t-4 ${l.lead_priority==='Hot'?'border-t-red-500':l.lead_priority==='Cold'?'border-t-sky-400':'border-t-amber-400'} ${cardTint(l.lead_status)}`}>
@@ -1246,6 +1331,7 @@ function AdminApp() {
                 {view==='add'     && <AddPropertyForm supabase={supabase} scriptUrl={SCRIPT_URL} />}
             </main>
 
+            {/* Manual Lead Modal */}
             {manualOpen&&(
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-start justify-center p-4 pt-20 overflow-y-auto">
                     <div className="card p-6 w-full max-w-md animate-slideIn mb-10 shadow-2xl">
