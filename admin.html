@@ -580,28 +580,52 @@ const PropertyPage = ({ property:init, onBack }) => {
     );
 };
 
-// ─── PROJECT LIBRARY ───────────────────────────────────────────────────────
-const Library = ({ props:initProps, onSelect, supabase }) => {
-    const [props,      setProps]      = useState(initProps||[]);
+const Library = ({ props: initProps, onSelect, supabase }) => {
+    const [props,      setProps]      = useState(initProps || []);
     const [togglingId, setTogglingId] = useState(null);
     const [search,     setSearch]     = useState('');
 
-    useEffect(()=>setProps(initProps||[]),[initProps]);
+    // ✅ Only sync from parent on initial mount, or when a full refresh is needed
+    // Don't blindly overwrite on every parent re-render
+    const prevInitRef = useRef(initProps);
+    useEffect(() => {
+        // Only reset if parent has genuinely pushed a new dataset (e.g. after a fresh fetch)
+        // Compare lengths + ids as a lightweight diff
+        const prev = prevInitRef.current || [];
+        const next = initProps || [];
+        const changed =
+            prev.length !== next.length ||
+            next.some((p, i) => p.id !== (prev[i]?.id));
+        if (changed) {
+            setProps(next);
+            prevInitRef.current = next;
+        }
+    }, [initProps]);
 
-    const toggle = async (e,p) => {
+    const toggle = async (e, p) => {
         e.stopPropagation();
-        const newVal = p.is_live!==true;
+        const newVal = p.is_live !== true;
         setTogglingId(p.id);
-        const {error} = await supabase.from('properties').update({is_live:newVal}).eq('id',p.id);
-        if (!error) setProps(prev=>prev.map(x=>x.id===p.id?{...x,is_live:newVal}:x));
-        else alert('Update failed: '+error.message);
+
+        // ✅ Optimistic update first
+        setProps(prev => prev.map(x => x.id === p.id ? { ...x, is_live: newVal } : x));
+
+        const { error } = await supabase.from('properties').update({ is_live: newVal }).eq('id', p.id);
+
+        if (error) {
+            // ✅ Revert on failure
+            setProps(prev => prev.map(x => x.id === p.id ? { ...x, is_live: p.is_live } : x));
+            alert('Update failed: ' + error.message);
+        }
         setTogglingId(null);
     };
 
-    const filtered = props.filter(p=>{
+    const filtered = props.filter(p => {
         if (!search) return true;
-        const t=search.toLowerCase();
-        return gv(p,'property_name').toLowerCase().includes(t)||gv(p,'location').toLowerCase().includes(t)||gv(p,'builder_name').toLowerCase().includes(t);
+        const t = search.toLowerCase();
+        return gv(p,'property_name').toLowerCase().includes(t) ||
+               gv(p,'location').toLowerCase().includes(t) ||
+               gv(p,'builder_name').toLowerCase().includes(t);
     });
 
     if (!props.length) return (
@@ -612,36 +636,36 @@ const Library = ({ props:initProps, onSelect, supabase }) => {
         <div className="animate-fadeIn space-y-5">
             <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
-                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search property, location, builder…" className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" />
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search property, location, builder…" className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {filtered.map(p=>{
-                    const live = p.is_live===true;
-                    const tog  = togglingId===p.id;
+                {filtered.map(p => {
+                    const live = p.is_live === true;
+                    const tog  = togglingId === p.id;
                     return (
                         <div key={p.id} className="card overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
-                            <div className="relative h-44 bg-slate-100 overflow-hidden cursor-pointer" onClick={()=>onSelect(p)}>
-                                <img src={fixImg(gv(p,'cover_image')||gv(p,'cover-image'))} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
+                            <div className="relative h-44 bg-slate-100 overflow-hidden cursor-pointer" onClick={() => onSelect(p)}>
+                                <img src={fixImg(gv(p,'cover_image') || gv(p,'cover-image'))} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
                                 <div className="absolute top-3 left-0 bg-slate-900/85 text-white text-[9px] font-black px-3 py-1.5 rounded-r-lg uppercase tracking-widest">
-                                    {gv(p,'property_type')||'Property'}
+                                    {gv(p,'property_type') || 'Property'}
                                 </div>
-                                <div className={`absolute top-3 right-3 text-[9px] font-black px-2.5 py-1 rounded-full border ${live?'bg-emerald-100 text-emerald-700 border-emerald-300':'bg-red-100 text-red-600 border-red-300'}`}>
-                                    {live?'🟢 Live':'🔴 Unlive'}
+                                <div className={`absolute top-3 right-3 text-[9px] font-black px-2.5 py-1 rounded-full border ${live ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-red-100 text-red-600 border-red-300'}`}>
+                                    {live ? '🟢 Live' : '🔴 Unlive'}
                                 </div>
                             </div>
                             <div className="p-4 flex flex-col flex-1">
-                                <h3 onClick={()=>onSelect(p)} className="font-black uppercase tracking-tight text-slate-900 text-base leading-tight truncate cursor-pointer hover:text-blue-600 transition-colors">{gv(p,'property_name')}</h3>
-                                <p className="text-slate-400 text-xs font-semibold mt-0.5 truncate">📍 {gv(p,'location')||'—'}</p>
+                                <h3 onClick={() => onSelect(p)} className="font-black uppercase tracking-tight text-slate-900 text-base leading-tight truncate cursor-pointer hover:text-blue-600 transition-colors">{gv(p,'property_name')}</h3>
+                                <p className="text-slate-400 text-xs font-semibold mt-0.5 truncate">📍 {gv(p,'location') || '—'}</p>
                                 <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
                                     <div>
                                         <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">From</div>
-                                        <div className="text-sm font-black text-blue-700">{gv(p,'price')||'On Request'}</div>
+                                        <div className="text-sm font-black text-blue-700">{gv(p,'price') || 'On Request'}</div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <button onClick={e=>toggle(e,p)} disabled={tog} className={`text-[9px] font-black px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${live?'bg-red-50 border-red-300 text-red-700 hover:bg-red-100':'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100'}`}>
-                                            {tog?'…':live?'Unlive':'Set Live'}
+                                        <button onClick={e => toggle(e, p)} disabled={tog} className={`text-[9px] font-black px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${live ? 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100' : 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100'}`}>
+                                            {tog ? '…' : live ? 'Unlive' : 'Set Live'}
                                         </button>
-                                        <button onClick={()=>onSelect(p)} className="btn-primary text-[9px] py-1.5 px-3">Open</button>
+                                        <button onClick={() => onSelect(p)} className="btn-primary text-[9px] py-1.5 px-3">Open</button>
                                     </div>
                                 </div>
                             </div>
@@ -652,7 +676,7 @@ const Library = ({ props:initProps, onSelect, supabase }) => {
         </div>
     );
 };
-
+    
 // ─── HELPER COMPONENTS (outside AddPropertyForm) ────────────────────────────
 
 const F = ({ label, children }) => (
