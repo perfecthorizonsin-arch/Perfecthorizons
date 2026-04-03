@@ -207,17 +207,6 @@
             border-bottom: 1px solid var(--border);
         }
 
-        /* ---- STICKY MOBILE CTA ---- */
-        .mobile-cta-bar {
-            position: fixed; bottom: 60px; left: 0; right: 0;
-            z-index: 44;
-            background: white;
-            border-top: 1px solid var(--border);
-            padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-            display: flex; gap: 10px;
-            box-shadow: 0 -8px 32px rgba(0,0,0,.1);
-        }
-
         /* ---- DROPDOWN ---- */
         .dropdown-arrow { display:inline-block; margin-left:4px; width:0; height:0; vertical-align:middle; border-top:4px solid currentColor; border-right:4px solid transparent; border-left:4px solid transparent; }
 
@@ -466,7 +455,7 @@
         },[property,allProperties]);
 
         return (
-            <div className="min-h-screen bg-slate-50 overflow-x-hidden" style={{paddingBottom:'130px'}}>
+            <div className="min-h-screen bg-slate-50 overflow-x-hidden">
 
                 {/* Top Nav */}
                 <div className="navbar sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-md">
@@ -648,22 +637,6 @@
                     )}
                 </div>
 
-                {/* Mobile Sticky CTA */}
-                <div className="mobile-cta-bar md:hidden">
-                    <button onClick={()=>openAction('interest')} className="flex-1 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-widest transition active:scale-95"
-                        style={{background:'linear-gradient(135deg,#2563eb,#4f46e5)'}}>
-                        I'm Interested
-                    </button>
-                    <button onClick={()=>openAction('cost_sheet')} className="flex-1 bg-slate-900 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-widest hover:bg-blue-700 transition active:scale-95">
-                        Cost Sheet
-                    </button>
-                    <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, I'm interested in ${getVal(property,"Property Name")}`} target="_blank"
-                        className="w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-white transition"
-                        style={{background:'#22c55e'}}>
-                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.12.553 4.148 1.603 5.946L.2 24l6.195-1.62c1.737.947 3.69 1.445 5.636 1.445 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.615 0 12.031 0zm5.496 16.482c-.301-.15-1.785-.885-2.062-.986-.277-.1-.478-.15-.678.15-.201.301-.778.986-.954 1.187-.176.201-.351.226-.653.076-1.609-.816-2.73-1.637-3.784-3.411-.176-.301.176-.277.453-.827.076-.15-.038-.277-.038-.427-.076-.15-.678-1.631-.929-2.233-.251-.602-.502-.527-.678-.527-.176 0-.377 0-.578 0-.201 0-.527.076-.803.427-.276.351-1.054 1.028-1.054 2.508 0 1.48 1.079 2.91 1.229 3.111.15.201 2.133 3.262 5.169 4.566.726.301 1.28.478 1.731.628.728.227 1.381.194 1.905.118.578-.084 1.785-.728 2.036-1.431.251-.703.251-1.305.176-1.431-.076-.126-.277-.201-.578-.352z"/></svg>
-                    </a>
-                </div>
-
                 {/* Action Modal */}
                 {actionModal && (
                     <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4" style={{background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)'}} onClick={()=>setActionModal(null)}>
@@ -707,7 +680,6 @@
         const [legalModal,       setLegalModal]       = useState(null);
         const [mobileAboutOpen,  setMobileAboutOpen]  = useState(false);
         const [mobileServicesOpen,setMobileServicesOpen]=useState(false);
-        const [showMobileSearch, setShowMobileSearch] = useState(false);
         const [showMobileFilter, setShowMobileFilter] = useState(false);
 
         useEffect(()=>{
@@ -786,52 +758,40 @@
 
         /* ====== HERO SEARCH ====== */
         const HeroSection = () => (
-            <div className="hero-bg w-full relative" style={{padding:'56px 0 48px'}}>
-                <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
-                    <div className="inline-flex items-center gap-2 border border-white/15 rounded-full px-4 py-1.5 mb-6" style={{background:'rgba(255,255,255,.07)'}}>
-                        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                        <span className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Bengaluru's Trusted Property Advisor</span>
+            <div className="hero-bg w-full relative" style={{padding:'28px 0 24px'}}>
+                <div className="relative z-10 max-w-3xl mx-auto px-4 text-center">
+                    <div className="inline-flex items-center gap-2 border border-white/15 rounded-full px-3 py-1 mb-4" style={{background:'rgba(255,255,255,.07)'}}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                        <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest">Bengaluru's Trusted Property Advisor · Zero Brokerage</span>
                     </div>
-                    <h1 style={{fontFamily:'var(--font-display)',lineHeight:1.1}} className="text-3xl md:text-6xl font-bold text-white uppercase mb-4">
-                        Find Your<br/><span style={{WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',background:'linear-gradient(90deg,#60a5fa,#818cf8)'}}>Perfect Home</span>
+                    <h1 style={{fontFamily:'var(--font-display)',lineHeight:1.1}} className="text-2xl md:text-4xl font-bold text-white uppercase mb-2">
+                        Find Your <span style={{WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',background:'linear-gradient(90deg,#60a5fa,#818cf8)'}}>Perfect Home</span>
                     </h1>
-                    <p className="text-slate-400 text-sm md:text-base mb-8 max-w-xl mx-auto font-medium">
-                        Zero brokerage. Unbiased advice. Expert guidance from search to handover.
+                    <p className="text-slate-500 text-xs md:text-sm mb-5 font-medium">
+                        Unbiased advice. Expert guidance from search to handover.
                     </p>
-                    {/* Hero Search */}
                     <div className="max-w-xl mx-auto">
-                        <div className="relative flex items-center rounded-2xl overflow-hidden" style={{border:'1.5px solid rgba(255,255,255,.15)',background:'rgba(255,255,255,.08)',backdropFilter:'blur(12px)'}}>
+                        <div className="relative flex items-center rounded-xl overflow-hidden" style={{border:'1.5px solid rgba(255,255,255,.15)',background:'rgba(255,255,255,.08)',backdropFilter:'blur(12px)'}}>
                             <span className="pl-4 text-slate-400 text-sm shrink-0">🔍</span>
                             <input
                                 type="text"
                                 placeholder="Search location, project or builder..."
-                                className="flex-1 bg-transparent text-white placeholder-slate-400 px-3 py-4 text-sm font-medium outline-none"
+                                className="flex-1 bg-transparent text-white placeholder-slate-400 px-3 py-3.5 text-sm font-medium outline-none"
                                 value={search}
                                 onChange={e=>setSearch(e.target.value)}
+                                autoComplete="off"
                             />
                             {search && (
-                                <button onClick={()=>setSearch("")} className="pr-3 text-slate-400 hover:text-white transition text-lg">×</button>
+                                <button onClick={()=>setSearch("")} className="pr-3 text-slate-400 hover:text-white transition text-xl leading-none">×</button>
                             )}
-                            <div className="shrink-0 m-1.5">
-                                <button className="text-white font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-widest transition"
-                                    style={{background:'linear-gradient(135deg,#2563eb,#4f46e5)'}}>
-                                    Search
-                                </button>
-                            </div>
                         </div>
                     </div>
 
-                    {/* Trust Stats */}
-                    <div className="flex justify-center gap-6 md:gap-12 mt-10 flex-wrap">
-                        {[
-                            {n:'50+', label:'Live Properties'},
-                            {n:'100+',label:'Happy Homeowners'},
-                            {n:'0',   label:'Brokerage Fees'},
-                            {n:'5★',  label:'Client Rating'},
-                        ].map(s=>(
+                    <div className="flex justify-center gap-5 md:gap-10 mt-5 flex-wrap">
+                        {[{n:'50+',label:'Properties'},{n:'100+',label:'Homeowners'},{n:'₹0',label:'Brokerage'},{n:'5★',label:'Rated'}].map(s=>(
                             <div key={s.label} className="text-center">
-                                <div style={{fontFamily:'var(--font-display)'}} className="text-2xl md:text-3xl font-bold text-white">{s.n}</div>
-                                <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mt-0.5">{s.label}</div>
+                                <div style={{fontFamily:'var(--font-display)'}} className="text-lg md:text-xl font-bold text-white">{s.n}</div>
+                                <div className="text-[9px] text-slate-500 font-semibold uppercase tracking-widest">{s.label}</div>
                             </div>
                         ))}
                     </div>
@@ -843,7 +803,6 @@
         const FilterBar = () => (
             <div className="bg-white border-b border-slate-200 py-3 px-4 md:px-8 shadow-sm">
                 <div className="max-w-7xl mx-auto">
-                    {/* Mobile toggle */}
                     <div className="flex items-center justify-between md:hidden mb-2">
                         <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">
                             {filtered.length} Properties
@@ -873,7 +832,6 @@
                         </button>
                     </div>
 
-                    {/* Desktop count */}
                     <div className="hidden md:flex items-center justify-between mt-2.5">
                         <span className="text-[10px] text-slate-400 font-semibold">Showing <strong className="text-slate-700">{filtered.length}</strong> properties</span>
                         {activeFilterCount > 0 && <span className="text-[10px] font-bold text-blue-500">{activeFilterCount} filter{activeFilterCount>1?'s':''} active</span>}
@@ -1152,8 +1110,8 @@
 
                     {activePage==='home' && (
                         <>
-                            <HeroSection />
-                            <FilterBar />
+                            {HeroSection()}
+                            {FilterBar()}
                             <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-10">
                                 {loading ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1177,13 +1135,11 @@
                                                         <img src={fixImageUrl(getVal(p,"Cover Image")||getVal(p,"cover_image"))||''} className="card-img w-full h-full object-cover" alt=""
                                                             onError={e=>e.target.src='https://via.placeholder.com/600x300?text=No+Image'} />
                                                         <div className="absolute inset-0" style={{background:'linear-gradient(to top,rgba(0,0,0,.45) 0%,transparent 55%)'}}></div>
-                                                        {/* Type badge top-left */}
                                                         <div className="absolute top-3 left-3">
                                                             <span className="badge" style={{background:'rgba(11,17,32,.85)',color:'white',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,.1)'}}>
                                                                 {getVal(p,"Property Type")||'Apartment'}
                                                             </span>
                                                         </div>
-                                                        {/* Status badge top-right */}
                                                         <div className="absolute top-3 right-3">
                                                             <span className="badge" style={{background:st.bg,color:st.text}}>
                                                                 {getVal(p,"Construction Status")||'—'}
