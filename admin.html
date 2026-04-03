@@ -29,9 +29,6 @@
         .pie-chart { border-radius:50%; display:inline-block; }
         .nav-btn { transition: all 0.15s; }
         .nav-btn:hover { color: #93c5fd; }
-        .status-pill { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.08em; border-width:1px; border-style:solid; }
-        .lead-row { transition: background 0.1s; }
-        .lead-row:hover { filter: brightness(0.97); }
         input, select, textarea { font-family: inherit; }
         .field-group label { display:block; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; color:#94a3b8; margin-bottom:4px; }
         .field-group input, .field-group select, .field-group textarea { width:100%; padding:12px 14px; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px; font-size:13px; font-weight:700; outline:none; transition: border-color 0.15s, box-shadow 0.15s; color:#0f172a; }
@@ -56,16 +53,15 @@
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useEffect, useMemo, useRef, useCallback } = React;
+const { useState, useEffect, useMemo, useRef } = React;
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────
-const SUPABASE_URL  = 'https://uiiovtsktllvtecfokik.supabase.co';
-const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
-const supabase      = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ storage:window.sessionStorage } });
-const SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbwaOLlqAQZMZczkAWuyK2F2DEHZ2ILgxlJnlDDZrrDNBSdszBZpX3M0f_p9mVtUePobDQ/exec";
-const WA_NUMBER     = "9113261205";
-const AGENTS        = ["Tharun","Shivaji","Ramswami"];
-const OWNER_EMAIL   = "saishetty1623@gmail.com";
+const SUPABASE_URL = 'https://uiiovtsktllvtecfokik.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ storage:window.sessionStorage } });
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwaOLlqAQZMZczkAWuyK2F2DEHZ2ILgxlJnlDDZrrDNBSdszBZpX3M0f_p9mVtUePobDQ/exec";
+const AGENTS = ["Tharun","Shivaji","Ramswami"];
+const OWNER_EMAIL = "saishetty1623@gmail.com";
 
 // ─── HELPERS ───────────────────────────────────────────────────────────────
 const gv = (obj, key) => {
@@ -122,104 +118,89 @@ const stamp = () => new Date().toLocaleString('en-IN',{day:'numeric',month:'shor
 
 const statusStyle = (s) => {
     switch(s){
-        case 'Called':        return 'bg-blue-100 text-blue-800 border-blue-300';
-        case 'RNR':           return 'bg-orange-100 text-orange-800 border-orange-300';
+        case 'Called': return 'bg-blue-100 text-blue-800 border-blue-300';
+        case 'RNR': return 'bg-orange-100 text-orange-800 border-orange-300';
         case 'Details Shared':return 'bg-purple-100 text-purple-800 border-purple-300';
-        case 'SV Scheduled':  return 'bg-teal-100 text-teal-800 border-teal-300';
-        case 'Converted':     return 'bg-emerald-100 text-emerald-800 border-emerald-400';
-        case 'Rejected':      return 'bg-red-100 text-red-800 border-red-300';
-        default:              return 'bg-slate-100 text-slate-600 border-slate-200';
+        case 'SV Scheduled': return 'bg-teal-100 text-teal-800 border-teal-300';
+        case 'Converted': return 'bg-emerald-100 text-emerald-800 border-emerald-400';
+        case 'Rejected': return 'bg-red-100 text-red-800 border-red-300';
+        default: return 'bg-slate-100 text-slate-600 border-slate-200';
     }
 };
 
 const priorityStyle = (p) => {
     switch(p){
-        case 'Hot':  return 'bg-red-50 text-red-700 border-red-400';
+        case 'Hot': return 'bg-red-50 text-red-700 border-red-400';
         case 'Cold': return 'bg-blue-50 text-blue-700 border-blue-400';
-        default:     return 'bg-amber-50 text-amber-700 border-amber-400';
+        default: return 'bg-amber-50 text-amber-700 border-amber-400';
     }
 };
 
 const cardTint = (s) => {
     switch(s){
-        case 'Un called':     return 'bg-amber-50';
-        case 'Called':        return 'bg-sky-50';
-        case 'RNR':           return 'bg-orange-50';
+        case 'Un called': return 'bg-amber-50';
+        case 'Called': return 'bg-sky-50';
+        case 'RNR': return 'bg-orange-50';
         case 'Details Shared':return 'bg-violet-50';
-        case 'SV Scheduled':  return 'bg-teal-50';
-        case 'Converted':     return 'bg-emerald-50';
-        case 'Rejected':      return 'bg-red-50';
-        default:              return 'bg-white';
+        case 'SV Scheduled': return 'bg-teal-50';
+        case 'Converted': return 'bg-emerald-50';
+        case 'Rejected': return 'bg-red-50';
+        default: return 'bg-white';
     }
 };
 
 const priorityBorder = (p) => p==='Hot'?'border-l-red-500':p==='Cold'?'border-l-sky-400':'border-l-amber-400';
 
-// ─── FILE SHARE UTILITIES ───────────────────────────────────────────────────
-
-const getDriveId = (url) => {
-    if (!url) return null;
-    const m = url.match(/\/d\/([-\w]+)/) || url.match(/[?&]id=([-\w]+)/);
-    return m ? m[1] : null;
-};
-
-const resolveUrl = (url) => {
-    if (!url) return { kind:'unknown', url, dlUrl:url };
+const resolveShareUrl = (url) => {
+    if (!url) return { type:'unknown', url };
     const u = url.trim();
     if (u.includes('res.cloudinary.com')) {
+        const dlUrl = u.replace('/upload/', '/upload/fl_attachment/');
         const isPdf = u.toLowerCase().endsWith('.pdf') || u.includes('/raw/upload/');
-        return { kind: isPdf?'cloudinary_pdf':'cloudinary_img', url:u, dlUrl:u.replace('/upload/','/upload/fl_attachment/') };
+        return { type: isPdf ? 'cloudinary_pdf' : 'cloudinary_img', url: u, dlUrl };
     }
-    if (u.includes('/folders/') || (u.includes('drive.google.com') && !u.includes('/d/'))) {
-        return { kind:'drive_folder', url:u, dlUrl:u };
+    if (u.includes('drive.google.com/drive/folders') || u.includes('/folders/')) {
+        return { type: 'drive_folder', url: u };
     }
-    const driveId = getDriveId(u);
-    if (driveId) {
+    const m = u.match(/\/d\/(.*?)\//) || u.match(/id=(.*?)(&|$)/);
+    if (m) {
+        const id = m[1];
         return {
-            kind:'drive_file', url:u,
-            dlUrl:   `https://drive.google.com/uc?export=download&id=${driveId}`,
-            viewUrl: `https://drive.google.com/file/d/${driveId}/view`,
-            thumb:   `https://drive.google.com/thumbnail?id=${driveId}&sz=w300`,
+            type: 'drive_file',
+            url: u,
+            previewUrl: `https://drive.google.com/file/d/${id}/view`,
+            dlUrl: `https://drive.google.com/uc?export=download&id=${id}`,
+            thumbUrl: `https://drive.google.com/thumbnail?id=${id}&sz=w400`
         };
     }
-    return { kind:'link', url:u, dlUrl:u };
+    return { type: 'link', url: u };
 };
 
-const isMobileDevice = () => /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+const getMimeFromUrl = (url) => {
+    const u = url.toLowerCase().split('?')[0];
+    if (u.endsWith('.pdf') || u.includes('/raw/upload/')) return 'application/pdf';
+    if (u.endsWith('.png')) return 'image/png';
+    if (u.endsWith('.webp')) return 'image/webp';
+    return 'image/jpeg';
+};
 
-const buildFilename = (url, index, type) => {
+const getFileName = (url, i=0, type='file') => {
     try {
         const parts = url.split('/');
-        const raw   = decodeURIComponent(parts[parts.length-1].split('?')[0]);
+        const raw = decodeURIComponent(parts[parts.length-1].split('?')[0]);
         if (/\.(pdf|jpg|jpeg|png|webp)$/i.test(raw)) return raw;
-        const slug = type.toLowerCase().replace(/\s+/g,'-');
-        if (url.includes('/image/upload/'))   return slug+'-'+(index+1)+'.jpg';
-        if (url.includes('/raw/upload/'))     return slug+'-'+(index+1)+'.pdf';
-        return slug+'-'+(index+1);
-    } catch { return 'file-'+(index+1); }
-};
-
-const triggerDownload = (resolved, filename) => {
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    if (resolved.kind === 'cloudinary_img' || resolved.kind === 'cloudinary_pdf') {
-        a.href = resolved.dlUrl; a.download = filename||'file';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    } else if (resolved.kind === 'drive_file') {
-        a.href = resolved.dlUrl; a.target = '_blank';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    } else if (resolved.kind === 'drive_folder') {
-        window.open(resolved.url, '_blank');
-    }
+        if (url.includes('/image/upload/')) return `${type.replace(/\s+/g,'-')}-${i+1}.jpg`;
+        if (url.includes('/raw/upload/')) return `${type.replace(/\s+/g,'-')}-${i+1}.pdf`;
+        return `${type.replace(/\s+/g,'-')}-${i+1}`;
+    } catch { return `file-${i+1}`; }
 };
 
 // ─── EMI CALCULATOR ────────────────────────────────────────────────────────
 const EMICalc = ({ priceStr }) => {
     const base = priceInCr(priceStr)>0 ? priceInCr(priceStr)*10000000 : 10000000;
-    const [loan,    setLoan]    = useState(base*0.8);
-    const [rate,    setRate]    = useState(8.5);
-    const [tenure,  setTenure]  = useState(20);
-
+    const [loan, setLoan] = useState(base*0.8);
+    const [rate, setRate] = useState(8.5);
+    const [tenure, setTenure] = useState(20);
     const { emi, totalInt, pct } = useMemo(()=>{
         const p=loan, r=rate/12/100, n=tenure*12;
         if(!p||!r||!n) return {emi:0,totalInt:0,pct:100};
@@ -227,7 +208,6 @@ const EMICalc = ({ priceStr }) => {
         const tot=e*n;
         return {emi:Math.round(e),totalInt:Math.round(tot-p),pct:(p/tot*100).toFixed(1)};
     },[loan,rate,tenure]);
-
     return (
         <div className="card p-5 mt-4">
             <div className="flex items-center gap-2 mb-5">
@@ -268,16 +248,16 @@ const EMICalc = ({ priceStr }) => {
     );
 };
 
-// ─── PROPERTY DETAILS PAGE (Admin) ─────────────────────────────────────────
+// ─── PROPERTY PAGE (full improved version) ─────────────────────────────────
 const PropertyPage = ({ property:init, onBack }) => {
-    const [prop,       setProp]       = useState(init);
-    const [editField,  setEditField]  = useState(null);
-    const [editVal,    setEditVal]    = useState('');
-    const [saving,     setSaving]     = useState(false);
-    const [toast,      setToast]      = useState(null);  // {msg, color}
-    const [shareModal, setShareModal] = useState(null);  // {type, items:[{url,resolved}]}
-    const [selected,   setSelected]   = useState([]);
-    const [sharing,    setSharing]    = useState(false);
+    const [prop, setProp] = useState(init);
+    const [editField, setEditField] = useState(null);
+    const [editVal, setEditVal] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [toast, setToast] = useState(null);
+    const [shareModal, setShareModal] = useState(null);
+    const [selected, setSelected] = useState([]);
+    const [sharing, setSharing] = useState(false);
     const galleryRef = useRef(null);
 
     useEffect(()=>{ window.scrollTo(0,0); },[init]);
@@ -287,10 +267,9 @@ const PropertyPage = ({ property:init, onBack }) => {
         setTimeout(()=>setToast(null), 4000);
     };
 
-    // ── Inline editing ──
     const startEdit = (field, val) => { setEditField(field); setEditVal(val||''); };
     const cancelEdit = () => setEditField(null);
-    const saveField  = async (field, val) => {
+    const saveField = async (field, val) => {
         setSaving(true);
         const {error} = await supabase.from('properties').update({[field]:val}).eq('id',prop.id);
         if (!error) { setProp(p=>({...p,[field]:val})); showToast('✅ Saved'); }
@@ -328,88 +307,107 @@ const PropertyPage = ({ property:init, onBack }) => {
         );
     };
 
-    // ── Gallery ──
-    const cover   = driveThumb(gv(prop,'cover_image')||gv(prop,'cover-image'));
-    const galRaw  = gv(prop,'gallery_images')||gv(prop,'gallery-images')||'';
-    const imgs    = [cover,...(galRaw?galRaw.split(',').map(l=>driveThumb(l.trim())):[])].filter(Boolean);
+    const cover = driveThumb(gv(prop,'cover_image')||gv(prop,'cover-image'));
+    const galRaw = gv(prop,'gallery_images')||gv(prop,'gallery-images')||'';
+    const imgs = [cover,...(galRaw?galRaw.split(',').map(l=>driveThumb(l.trim())):[])].filter(Boolean);
 
-    // ── Share logic ──
-    // Parse a raw comma-separated field into array of {url, resolved}
     const parseField = (raw) => {
         if (!raw||!raw.trim()) return [];
-        return raw.split(',').map(u=>u.trim()).filter(Boolean).map(u=>({url:u, resolved:resolveUrl(u)}));
+        return raw.split(',').map(u=>u.trim()).filter(Boolean).map(u=>({url:u, resolved:resolveShareUrl(u)}));
     };
 
-    // Entry point from share buttons
-    const handleShare = (type, rawField) => {
+    const isMobile = () => /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    const handleShare = async (type, rawField) => {
         const items = parseField(rawField);
-        if (!items.length) { showToast('⚠️ No '+type+' available for this property.','bg-amber-500'); return; }
+        if (!items.length) { showToast(`⚠️ No ${type} available for this property.`,'bg-amber-500'); return; }
         if (items.length===1) {
-            doShare([items[0]], type);
+            await doShare([items[0]], type);
         } else {
             setShareModal({type, items});
             setSelected(items.map(i=>i.url));
         }
     };
 
-    // Core share engine — download files then open WhatsApp with pre-typed message
-    const doShare = (items, type) => {
-        const propName = gv(prop,'property_name');
-        const mobile   = isMobileDevice();
+    const doShare = async (items, type) => {
+        setSharing(true);
+        const name = gv(prop,'property_name');
+        const cloudItems = items.filter(i=>['cloudinary_img','cloudinary_pdf'].includes(i.resolved.type));
+        const driveFileItems = items.filter(i=>i.resolved.type==='drive_file');
+        const driveFolderItems = items.filter(i=>i.resolved.type==='drive_folder');
+        const linkItems = items.filter(i=>i.resolved.type==='link');
 
-        // Separate links (maps/video) from actual files
-        const fileItems = items.filter(i=>i.resolved.kind!=='link');
-        const linkItems = items.filter(i=>i.resolved.kind==='link');
+        try {
+            if (cloudItems.length) {
+                showToast(`⏳ Fetching ${cloudItems.length} file(s)…`,'bg-blue-600');
+                const fileObjs = await Promise.all(cloudItems.map(async(item,i)=>{
+                    const res = await fetch(item.resolved.dlUrl, {mode:'cors'});
+                    if (!res.ok) throw new Error('Fetch error '+res.status);
+                    const blob = await res.blob();
+                    return new File([blob], getFileName(item.url,i,type), {type:getMimeFromUrl(item.url)});
+                }));
 
-        // ── Step 1: Trigger downloads for all file items ──
-        fileItems.forEach((item, i) => {
-            const fname = buildFilename(item.url, i, type);
-            setTimeout(() => triggerDownload(item.resolved, fname), i * 400);
-        });
+                const mobile = isMobile();
+                const canNative = mobile && navigator.share && navigator.canShare && navigator.canShare({files:fileObjs});
 
-        // ── Step 2: Build a human-friendly WhatsApp message ──
-        let waMsg = 'Hi! ';
-        if (fileItems.length) {
-            const fileWord = fileItems.length===1 ? 'the file' : fileItems.length+' files';
-            waMsg += 'I'm sending you '+fileWord+' for *'+propName+'* 📎\n';
-            waMsg += '('+type+' — just sent as attachment)';
-        }
-        if (linkItems.length) {
-            waMsg += (fileItems.length ? '\n\n' : '') + 'Here is the *'+type+'* for *'+propName+'*:\n';
-            waMsg += linkItems.map(i=>i.url).join('\n');
-        }
-
-        // ── Step 3: Open WhatsApp with the message pre-typed ──
-        const delay = fileItems.length * 400 + 300;
-        setTimeout(() => {
-            if (mobile) {
-                window.open('https://wa.me/?text='+encodeURIComponent(waMsg), '_blank');
-            } else {
-                window.open('https://web.whatsapp.com/','_blank');
+                if (canNative) {
+                    setSharing(false);
+                    setToast(null);
+                    await navigator.share({ files:fileObjs, title:`${type} — ${name}` });
+                } else {
+                    fileObjs.forEach(f=>{
+                        const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name;
+                        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                        setTimeout(()=>URL.revokeObjectURL(a.href),8000);
+                    });
+                    setSharing(false);
+                    const msg = mobile ? `✅ File(s) downloaded! Open WhatsApp and attach from your Downloads.` : `✅ ${fileObjs.length} file(s) downloaded! Now open WhatsApp Web and attach them to your chat.`;
+                    showToast(msg,'bg-emerald-600');
+                    setTimeout(()=>window.open(mobile?`https://wa.me/?text=${encodeURIComponent(`Hi, attaching *${type}* for *${name}*`)}`: 'https://web.whatsapp.com/','_blank'),700);
+                }
             }
-        }, delay);
 
-        if (fileItems.length && !mobile) {
-            const n = fileItems.length;
-            showToast(
-                '📥 '+n+' file'+(n>1?'s':'')+' downloading — WhatsApp Web is opening. Open a chat, attach from Downloads, and send!',
-                'bg-blue-600'
-            );
-        } else if (fileItems.length && mobile) {
-            showToast('📥 File downloading — WhatsApp is opening. Attach from Downloads and send!','bg-blue-600');
+            if (driveFileItems.length) {
+                setSharing(false);
+                const links = driveFileItems.map(i=>i.resolved.previewUrl).join('\n');
+                const waText = `Hi! Here is the *${type}* for *${name}*:\n\n${links}`;
+                showToast('📂 Opening Drive file(s) + WhatsApp…','bg-indigo-600');
+                driveFileItems.forEach(i=>{
+                    const a=document.createElement('a'); a.href=i.resolved.dlUrl; a.target='_blank';
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                });
+                setTimeout(()=>window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank'), 800);
+            }
+
+            if (driveFolderItems.length) {
+                setSharing(false);
+                showToast('📁 Opening Drive folder — download files then share via WhatsApp','bg-violet-600');
+                driveFolderItems.forEach(i=>window.open(i.url,'_blank'));
+                setTimeout(()=>window.open('https://web.whatsapp.com/','_blank'),1000);
+            }
+
+            if (linkItems.length) {
+                setSharing(false);
+                const urlList = linkItems.map(i=>i.url).join('\n');
+                const waText = `Hi! Here is the *${type}* for *${name}*:\n\n${urlList}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank');
+            }
+        } catch(err) {
+            setSharing(false);
+            if (err.name!=='AbortError') {
+                showToast('❌ Could not fetch files. Opening links instead.','bg-red-600');
+                items.forEach(i=>window.open(i.url,'_blank'));
+            } else setToast(null);
         }
-
-        setSharing(false);
     };
 
     const sendSelected = () => {
-        const type   = shareModal.type;
+        const type = shareModal.type;
         const toSend = shareModal.items.filter(i=>selected.includes(i.url));
         setShareModal(null); setSelected([]);
         doShare(toSend, type);
     };
 
-    // ── Lead registration ──
     const regLink = gv(prop,'lead_registration')||gv(prop,'lead_registration_link')||gv(prop,'lead_registration_link_or_email_id');
     const regIsEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
     const handleReg = () => {
@@ -420,14 +418,8 @@ const PropertyPage = ({ property:init, onBack }) => {
 
     return (
         <div className="min-h-screen bg-slate-100 animate-fadeIn pb-28 md:pb-8">
-            {/* Toast */}
-            {toast && (
-                <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[500] ${toast.color} text-white text-xs font-black uppercase tracking-widest px-6 py-3.5 rounded-2xl shadow-2xl animate-fadeIn flex items-center gap-2 max-w-xs text-center`}>
-                    {toast.msg}
-                </div>
-            )}
+            {toast && <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[500] ${toast.color} text-white text-xs font-black uppercase tracking-widest px-6 py-3.5 rounded-2xl shadow-2xl animate-fadeIn flex items-center gap-2 max-w-xs text-center`}>{toast.msg}</div>}
 
-            {/* Multi-file share modal */}
             {shareModal && (
                 <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fadeIn" onClick={()=>setShareModal(null)}>
                     <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-slideIn" onClick={e=>e.stopPropagation()}>
@@ -436,21 +428,19 @@ const PropertyPage = ({ property:init, onBack }) => {
                             <button onClick={()=>setShareModal(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
                         </div>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{shareModal.type} · {shareModal.items.length} available</p>
-                        <p className="text-[9px] text-blue-600 font-bold mb-4">
-                            📱 Mobile: files share directly · 💻 Desktop: files download, attach in WhatsApp Web
-                        </p>
+                        <p className="text-[9px] text-blue-600 font-bold mb-4">📱 Mobile: files share directly · 💻 Desktop: files download, attach in WhatsApp Web</p>
                         <div className="space-y-2 mb-5 max-h-56 overflow-y-auto">
                             {shareModal.items.map((item,i)=>{
                                 const chk = selected.includes(item.url);
-                                const r   = item.resolved;
-                                const isImg = r.kind==='cloudinary_img'||r.kind==='drive_file';
-                                const thumb = r.type==='cloudinary_img' ? item.url : r.thumb;
+                                const r = item.resolved;
+                                const isImg = r.type==='cloudinary_img'||r.type==='drive_file';
+                                const thumb = r.type==='cloudinary_img' ? item.url : r.thumbUrl;
                                 return (
                                     <label key={i} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${chk?'border-emerald-400 bg-emerald-50':'border-slate-200 bg-slate-50 hover:border-slate-300'}`}>
                                         <input type="checkbox" checked={chk} className="accent-emerald-500 w-4 h-4 shrink-0" onChange={()=>setSelected(p=>chk?p.filter(u=>u!==item.url):[...p,item.url])} />
                                         {isImg&&thumb ? <img src={thumb} className="w-10 h-10 rounded-lg object-cover shrink-0 border border-slate-200" onError={e=>e.target.style.display='none'} /> : <span className="text-xl shrink-0">📄</span>}
                                         <span className="text-xs font-bold text-slate-700 flex-1 truncate">{shareModal.type} {i+1}</span>
-                                        <a href={r.viewUrl||r.url||item.url} target="_blank" onClick={e=>e.stopPropagation()} className="text-[9px] text-blue-500 font-bold uppercase tracking-widest shrink-0 hover:text-blue-700">View</a>
+                                        <a href={r.previewUrl||r.url||item.url} target="_blank" onClick={e=>e.stopPropagation()} className="text-[9px] text-blue-500 font-bold uppercase tracking-widest shrink-0 hover:text-blue-700">View</a>
                                     </label>
                                 );
                             })}
@@ -458,15 +448,12 @@ const PropertyPage = ({ property:init, onBack }) => {
                         <div className="flex gap-2">
                             <button onClick={()=>setSelected(shareModal.items.map(i=>i.url))} className="btn-ghost flex-1 text-[9px] py-2.5">All</button>
                             <button onClick={()=>setSelected([])} className="btn-ghost flex-1 text-[9px] py-2.5">None</button>
-                            <button onClick={sendSelected} disabled={!selected.length||sharing} className="btn-primary flex-1 text-[9px] py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40">
-                                Share ({selected.length}) 💬
-                            </button>
+                            <button onClick={sendSelected} disabled={!selected.length||sharing} className="btn-primary flex-1 text-[9px] py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40">Share ({selected.length}) 💬</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Header */}
             <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-3.5 flex justify-between items-center shadow-sm">
                 <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors group">
                     <span className="group-hover:-translate-x-1 transition-transform inline-block">←</span> Library
@@ -478,7 +465,6 @@ const PropertyPage = ({ property:init, onBack }) => {
             </div>
 
             <div className="max-w-7xl mx-auto p-4 md:p-6">
-                {/* Gallery */}
                 <div className="relative mb-6">
                     <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-2 hide-scroll h-[38vh] md:h-[55vh] rounded-2xl">
                         {imgs.length>0 ? imgs.map((img,i)=>(
@@ -501,23 +487,17 @@ const PropertyPage = ({ property:init, onBack }) => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                    {/* LEFT */}
                     <div className="lg:col-span-2 space-y-5">
-                        {/* Quick stats */}
                         <div className="card p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <EF field="bhk"                 label="Configurations" val={gv(prop,'bhk')} />
-                            <EF field="construction_status" label="Status"          val={gv(prop,'construction_status')} />
-                            <EF field="possession_date"     label="Possession"      val={gv(prop,'possession_date')} type="date" />
-                            <EF field="approval"            label="Approvals"       val={gv(prop,'approval')} />
+                            <EF field="bhk" label="Configurations" val={gv(prop,'bhk')} />
+                            <EF field="construction_status" label="Status" val={gv(prop,'construction_status')} />
+                            <EF field="possession_date" label="Possession" val={gv(prop,'possession_date')} type="date" />
+                            <EF field="approval" label="Approvals" val={gv(prop,'approval')} />
                         </div>
-
-                        {/* About */}
                         <div className="card p-5">
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">About The Project</div>
                             <EF field="description" label="" val={gv(prop,'description')} multiline />
                         </div>
-
-                        {/* USPs + Amenities */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="card p-5 bg-blue-50 border-blue-100">
                                 <div className="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-3">Key Highlights</div>
@@ -541,44 +521,37 @@ const PropertyPage = ({ property:init, onBack }) => {
                                 )}
                             </div>
                         </div>
-
-                        {/* Links */}
                         <div className="card p-5">
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 pb-2 border-b border-slate-100">Links & Internal Info</div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <EF field="video_link"             label="Video Link"             val={gv(prop,'video_link')} />
-                                <EF field="website_link"           label="Builder Website"        val={gv(prop,'website_link')} />
-                                <EF field="lead_registration_link" label="Lead Registration"      val={gv(prop,'lead_registration_link')} />
-                                <EF field="map_link"               label="Map Link"               val={gv(prop,'map_link')} />
-                                <EF field="point_of_contact"       label="Point of Contact"       val={gv(prop,'point_of_contact')} />
-                                <EF field="commission_details"     label="Commission"             val={gv(prop,'commission_details')} />
-                                <EF field="availability"           label="Availability"           val={gv(prop,'availability')} />
-                                <EF field="total_units"            label="Total Units"            val={gv(prop,'total_units')} />
+                                <EF field="video_link" label="Video Link" val={gv(prop,'video_link')} />
+                                <EF field="website_link" label="Builder Website" val={gv(prop,'website_link')} />
+                                <EF field="lead_registration_link" label="Lead Registration" val={gv(prop,'lead_registration_link')} />
+                                <EF field="map_link" label="Map Link" val={gv(prop,'map_link')} />
+                                <EF field="point_of_contact" label="Point of Contact" val={gv(prop,'point_of_contact')} />
+                                <EF field="commission_details" label="Commission" val={gv(prop,'commission_details')} />
+                                <EF field="availability" label="Availability" val={gv(prop,'availability')} />
+                                <EF field="total_units" label="Total Units" val={gv(prop,'total_units')} />
                             </div>
                         </div>
                     </div>
 
-                    {/* RIGHT SIDEBAR */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-20 space-y-4">
                             <div className="card p-5">
-                                {/* Price */}
                                 <div className="mb-4 pb-4 border-b border-slate-100">
                                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Starting Price</div>
                                     <EF field="price" label="" val={gv(prop,'price')} />
                                 </div>
-                                {/* Commission */}
                                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 mb-3">
                                     <div className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-0.5">Commission</div>
                                     <div className="text-xl font-black text-amber-800">{fmtPct(gv(prop,'commission')||gv(prop,'commission_details'))}</div>
                                 </div>
-                                {/* POC */}
                                 <div className="bg-sky-50 border border-sky-200 rounded-xl p-3.5 mb-4">
                                     <div className="text-[9px] font-black uppercase tracking-widest text-sky-700 mb-1">Internal Info</div>
                                     <p className="text-[10px] font-bold text-sky-800">POC: {gv(prop,'point_of_contact')||'N/A'}</p>
                                     <p className="text-[10px] font-bold text-sky-800 mt-0.5">Avail: {gv(prop,'availability')||'N/A'}</p>
                                 </div>
-                                {/* Admin Tools */}
                                 <div className="bg-slate-900 rounded-xl p-4">
                                     <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-3 pb-2 border-b border-slate-700">Admin Tools</div>
                                     <div className="space-y-2 mb-4">
@@ -589,12 +562,12 @@ const PropertyPage = ({ property:init, onBack }) => {
                                     </div>
                                     <div className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-2">Share with Client via WhatsApp</div>
                                     <div className="grid grid-cols-2 gap-1.5">
-                                        <button disabled={sharing} onClick={()=>handleShare('Brochure',       gv(prop,'brochure'))}       className="share-btn">📥 Brochure</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Cost Sheet',    gv(prop,'cost_sheet'))}     className="share-btn">📄 Cost Sheet</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Location Map',  gv(prop,'map_link'))}       className="share-btn">📍 Location</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Property Video',gv(prop,'video_link'))}     className="share-btn">🎥 Video</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Floor Plan',    gv(prop,'floor_plan'))}     className="share-btn col-span-2">📐 Floor Plan</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Gallery',       gv(prop,'gallery_images'))} className="share-btn col-span-2">🖼️ Gallery Images</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Brochure', gv(prop,'brochure'))} className="share-btn">📥 Brochure</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Cost Sheet', gv(prop,'cost_sheet'))} className="share-btn">📄 Cost Sheet</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Location Map', gv(prop,'map_link'))} className="share-btn">📍 Location</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Property Video',gv(prop,'video_link'))} className="share-btn">🎥 Video</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Floor Plan', gv(prop,'floor_plan'))} className="share-btn col-span-2">📐 Floor Plan</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Gallery', gv(prop,'gallery_images'))} className="share-btn col-span-2">🖼️ Gallery Images</button>
                                     </div>
                                 </div>
                             </div>
@@ -607,11 +580,11 @@ const PropertyPage = ({ property:init, onBack }) => {
     );
 };
 
-// ─── PROJECT LIBRARY ───────────────────────────────────────────────────────
+// ─── LIBRARY ───────────────────────────────────────────────────────────────
 const Library = ({ props:initProps, onSelect, supabase }) => {
-    const [props,      setProps]      = useState(initProps||[]);
+    const [props, setProps] = useState(initProps||[]);
     const [togglingId, setTogglingId] = useState(null);
-    const [search,     setSearch]     = useState('');
+    const [search, setSearch] = useState('');
 
     useEffect(()=>setProps(initProps||[]),[initProps]);
 
@@ -631,9 +604,7 @@ const Library = ({ props:initProps, onSelect, supabase }) => {
         return gv(p,'property_name').toLowerCase().includes(t)||gv(p,'location').toLowerCase().includes(t)||gv(p,'builder_name').toLowerCase().includes(t);
     });
 
-    if (!props.length) return (
-        <div className="text-center py-24 text-slate-400 font-black uppercase tracking-widest animate-pulse">Library Empty…</div>
-    );
+    if (!props.length) return <div className="text-center py-24 text-slate-400 font-black uppercase tracking-widest animate-pulse">Library Empty…</div>;
 
     return (
         <div className="animate-fadeIn space-y-5">
@@ -644,17 +615,13 @@ const Library = ({ props:initProps, onSelect, supabase }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filtered.map(p=>{
                     const live = p.is_live===true;
-                    const tog  = togglingId===p.id;
+                    const tog = togglingId===p.id;
                     return (
                         <div key={p.id} className="card overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
                             <div className="relative h-44 bg-slate-100 overflow-hidden cursor-pointer" onClick={()=>onSelect(p)}>
                                 <img src={fixImg(gv(p,'cover_image')||gv(p,'cover-image'))} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
-                                <div className="absolute top-3 left-0 bg-slate-900/85 text-white text-[9px] font-black px-3 py-1.5 rounded-r-lg uppercase tracking-widest">
-                                    {gv(p,'property_type')||'Property'}
-                                </div>
-                                <div className={`absolute top-3 right-3 text-[9px] font-black px-2.5 py-1 rounded-full border ${live?'bg-emerald-100 text-emerald-700 border-emerald-300':'bg-red-100 text-red-600 border-red-300'}`}>
-                                    {live?'🟢 Live':'🔴 Unlive'}
-                                </div>
+                                <div className="absolute top-3 left-0 bg-slate-900/85 text-white text-[9px] font-black px-3 py-1.5 rounded-r-lg uppercase tracking-widest">{gv(p,'property_type')||'Property'}</div>
+                                <div className={`absolute top-3 right-3 text-[9px] font-black px-2.5 py-1 rounded-full border ${live?'bg-emerald-100 text-emerald-700 border-emerald-300':'bg-red-100 text-red-600 border-red-300'}`}>{live?'🟢 Live':'🔴 Unlive'}</div>
                             </div>
                             <div className="p-4 flex flex-col flex-1">
                                 <h3 onClick={()=>onSelect(p)} className="font-black uppercase tracking-tight text-slate-900 text-base leading-tight truncate cursor-pointer hover:text-blue-600 transition-colors">{gv(p,'property_name')}</h3>
@@ -665,9 +632,7 @@ const Library = ({ props:initProps, onSelect, supabase }) => {
                                         <div className="text-sm font-black text-blue-700">{gv(p,'price')||'On Request'}</div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <button onClick={e=>toggle(e,p)} disabled={tog} className={`text-[9px] font-black px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${live?'bg-red-50 border-red-300 text-red-700 hover:bg-red-100':'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100'}`}>
-                                            {tog?'…':live?'Unlive':'Set Live'}
-                                        </button>
+                                        <button onClick={e=>toggle(e,p)} disabled={tog} className={`text-[9px] font-black px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 ${live?'bg-red-50 border-red-300 text-red-700 hover:bg-red-100':'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100'}`}>{tog?'…':live?'Unlive':'Set Live'}</button>
                                         <button onClick={()=>onSelect(p)} className="btn-primary text-[9px] py-1.5 px-3">Open</button>
                                     </div>
                                 </div>
@@ -683,10 +648,10 @@ const Library = ({ props:initProps, onSelect, supabase }) => {
 // ─── ADD PROPERTY FORM ─────────────────────────────────────────────────────
 const AddPropertyForm = ({ supabase, scriptUrl }) => {
     const blank = { property_name:'',builder_name:'',property_region:'',property_type:'',location:'',price:'',bhk:'',super_built_up_area:'',possession_date:'',construction_status:'',approval:'',total_units:'',availability:'',description:'',usp_details:'',amenities:'',point_of_contact:'',commission_details:'',video_link:'',website_link:'',lead_registration_link:'',map_link:'',cover_image:'',gallery_images:'',floor_plan:'',brochure:'',cost_sheet:'',miscellaneous:'' };
-    const [form,         setForm]         = useState(blank);
-    const [loading,      setLoading]      = useState(false);
-    const [uploadField,  setUploadField]  = useState(null);
-    const [saved,        setSaved]        = useState(false);
+    const [form, setForm] = useState(blank);
+    const [loading, setLoading] = useState(false);
+    const [uploadField, setUploadField] = useState(null);
+    const [saved, setSaved] = useState(false);
 
     const set = (k,v) => setForm(f=>({...f,[k]:v}));
 
@@ -759,7 +724,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     {saved&&<div className="bg-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-emerald-200 animate-fadeIn">✅ Published!</div>}
                 </div>
 
-                {/* Basic Info */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Basic Information</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -782,7 +746,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     </div>
                 </div>
 
-                {/* Specs */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Specifications</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -794,9 +757,7 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                         </div>
                         <F label="Super Built-up Area"><input value={form.super_built_up_area} onChange={e=>set('super_built_up_area',e.target.value)} placeholder="SqFt" /></F>
                         <F label="Total Units"><input value={form.total_units} onChange={e=>set('total_units',e.target.value)} placeholder="e.g. 420" /></F>
-                        <F label="Possession Date">
-                            <input type="date" value={form.possession_date} onChange={e=>set('possession_date',e.target.value)} />
-                        </F>
+                        <F label="Possession Date"><input type="date" value={form.possession_date} onChange={e=>set('possession_date',e.target.value)} /></F>
                         <F label="Construction Status">
                             <select value={form.construction_status} onChange={e=>set('construction_status',e.target.value)}>
                                 <option value="">Select</option>
@@ -808,7 +769,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     </div>
                 </div>
 
-                {/* Content */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Content</div>
                     <div className="space-y-4">
@@ -826,7 +786,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     </div>
                 </div>
 
-                {/* Internal / Links */}
                 <div className="bg-slate-900 rounded-2xl p-5">
                     <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-4 pb-2 border-b border-slate-700">Internal Data & Links</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -857,17 +816,16 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     </div>
                 </div>
 
-                {/* Media */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Media & Documents</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {[
-                            {field:'cover_image',    label:'Cover Image ★',        multi:false},
+                            {field:'cover_image', label:'Cover Image ★', multi:false},
                             {field:'gallery_images', label:'Gallery Images (multi)', multi:true},
-                            {field:'brochure',       label:'Brochure (PDF)',         multi:false},
-                            {field:'cost_sheet',     label:'Cost Sheet (multi)',     multi:true},
-                            {field:'floor_plan',     label:'Floor Plan',             multi:false},
-                            {field:'miscellaneous',  label:'Miscellaneous (multi)',  multi:true},
+                            {field:'brochure', label:'Brochure (PDF)', multi:false},
+                            {field:'cost_sheet', label:'Cost Sheet (multi)', multi:true},
+                            {field:'floor_plan', label:'Floor Plan', multi:false},
+                            {field:'miscellaneous', label:'Miscellaneous (multi)', multi:true},
                         ].map(({field,label,multi})=>(
                             <div key={field} className="field-group">
                                 <label>{label} {uploadField===field&&<span className="text-blue-500 normal-case font-bold animate-pulse ml-1">(uploading…)</span>}</label>
@@ -908,9 +866,7 @@ const ManualLeadForm = ({ supabase, properties, onSuccess }) => {
             lead_source:form.source, lead_status:'Un called'
         }]);
         if(!error){
-            fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({action:'sendLead',Name:form.name,Phone:form.phone,Email:form.email||'N/A',Project:form.project,Source:form.source,Requirements:form.note||'None'})
-            }).catch(()=>{});
+            fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'sendLead',Name:form.name,Phone:form.phone,Email:form.email||'N/A',Project:form.project,Source:form.source,Requirements:form.note||'None'})}).catch(()=>{});
             onSuccess();
         } else alert(error.message);
         setLoading(false);
@@ -964,7 +920,7 @@ const Login = () => {
     );
 };
 
-// ─── ADMIN APP ─────────────────────────────────────────────────────────────
+// ─── ROUTE & ADMIN APP ─────────────────────────────────────────────────────
 const getRoute = () => {
     const h=window.location.hash.replace('#','');
     if (h.startsWith('/library')) return {v:'library',c:'website'};
@@ -976,26 +932,21 @@ const getRoute = () => {
 
 function AdminApp() {
     const init=getRoute();
-    const [session,    setSession]    = useState(null);
-    const [authReady,  setAuthReady]  = useState(false);
-    const [view,       setView]       = useState(init.v);
-    const [tab,        setTab]        = useState(init.c);
-    const [leads,      setLeads]      = useState([]);
-    const [props,      setProps]      = useState([]);
-    const [loading,    setLoading]    = useState(true);
+    const [session, setSession] = useState(null);
+    const [authReady, setAuthReady] = useState(false);
+    const [view, setView] = useState(init.v);
+    const [tab, setTab] = useState(init.c);
+    const [leads, setLeads] = useState([]);
+    const [props, setProps] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [manualOpen, setManualOpen] = useState(false);
-    const [filter,     setFilter]     = useState('ALL');
+    const [filter, setFilter] = useState('ALL');
     const [agentFilter,setAgentFilter]= useState('All');
-    const [selProp,    setSelProp]    = useState(null);
-    const [visible,    setVisible]    = useState(50);
-    const [search,     setSearch]     = useState('');
+    const [selProp, setSelProp] = useState(null);
+    const [visible, setVisible] = useState(50);
+    const [search, setSearch] = useState('');
 
-    // Router
-    useEffect(()=>{
-        const fn=()=>{ const r=getRoute(); setView(r.v); setTab(r.c); };
-        window.addEventListener('hashchange',fn);
-        return ()=>window.removeEventListener('hashchange',fn);
-    },[]);
+    useEffect(()=>{ const fn=()=>{ const r=getRoute(); setView(r.v); setTab(r.c); }; window.addEventListener('hashchange',fn); return ()=>window.removeEventListener('hashchange',fn); },[]);
 
     const nav=(v,c='website')=>{
         setView(v); if(v==='crm') setTab(c);
@@ -1003,14 +954,12 @@ function AdminApp() {
         window.location.hash=h;
     };
 
-    // Auth
     useEffect(()=>{
         supabase.auth.getSession().then(({data:{session}})=>{ setSession(session); setAuthReady(true); });
         const {data:{subscription}}=supabase.auth.onAuthStateChange((_,s)=>setSession(s));
         return ()=>subscription.unsubscribe();
     },[]);
 
-    // Data
     useEffect(()=>{
         if(!session) return;
         fetchProps();
@@ -1061,8 +1010,8 @@ function AdminApp() {
     const displayed=useMemo(()=>{
         let f=leads;
         const td=new Date().toISOString().split('T')[0];
-        if(filter==='TODAY_CB')   f=f.filter(l=>l.follow_up_at?.startsWith(td)&&!['Rejected','Converted'].includes(l.lead_status));
-        else if(filter==='TODAY_SV')  f=f.filter(l=>l.site_visit_at===td&&!['Rejected','Converted'].includes(l.lead_status));
+        if(filter==='TODAY_CB') f=f.filter(l=>l.follow_up_at?.startsWith(td)&&!['Rejected','Converted'].includes(l.lead_status));
+        else if(filter==='TODAY_SV') f=f.filter(l=>l.site_visit_at===td&&!['Rejected','Converted'].includes(l.lead_status));
         else if(filter==='MISSED_CB') f=f.filter(l=>l.follow_up_at&&l.follow_up_at<td&&!['Rejected','Converted'].includes(l.lead_status));
         else if(filter==='MISSED_SV') f=f.filter(l=>l.site_visit_at&&l.site_visit_at<td&&!['Rejected','Converted'].includes(l.lead_status));
         else if(filter.startsWith('STATUS_')) f=f.filter(l=>(l.lead_status||'Un called')===filter.replace('STATUS_',''));
@@ -1097,7 +1046,6 @@ function AdminApp() {
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-100 animate-fadeIn">
-            {/* NAV */}
             <nav className="bg-slate-950 text-white px-4 md:px-6 py-3.5 flex justify-between items-center sticky top-0 z-50 shadow-lg">
                 <div className="flex items-center gap-1">
                     <h1 className="font-black text-lg uppercase italic tracking-tight">Horizon</h1>
@@ -1112,11 +1060,8 @@ function AdminApp() {
             </nav>
 
             <main className="p-3 md:p-6 max-w-7xl mx-auto w-full flex-1">
-
-                {/* ── CRM VIEW ── */}
                 {view==='crm' && (
                     <div className="space-y-4 animate-fadeIn">
-                        {/* Stats Bar */}
                         <div className="card p-4">
                             <div className="flex flex-wrap md:grid md:grid-cols-6 gap-3 items-center">
                                 <select className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest text-slate-600 border border-slate-200 rounded-lg px-2 py-1.5 cursor-pointer md:col-span-1" value={agentFilter} onChange={e=>setAgentFilter(e.target.value)}>
@@ -1124,11 +1069,11 @@ function AdminApp() {
                                     {AGENTS.map(a=><option key={a}>{a}</option>)}
                                 </select>
                                 {[
-                                    {label:'Total',   val:stats.total,     color:'text-slate-700'},
-                                    {label:'Uncalled', val:stats.uncalled,  color:'text-amber-600'},
-                                    {label:'Working',  val:stats.working,   color:'text-blue-600'},
+                                    {label:'Total', val:stats.total, color:'text-slate-700'},
+                                    {label:'Uncalled', val:stats.uncalled, color:'text-amber-600'},
+                                    {label:'Working', val:stats.working, color:'text-blue-600'},
                                     {label:'Converted',val:stats.converted, color:'text-emerald-600'},
-                                    {label:'Rejected', val:stats.rejected,  color:'text-red-600'},
+                                    {label:'Rejected', val:stats.rejected, color:'text-red-600'},
                                 ].map(s=>(
                                     <div key={s.label} className="flex flex-col items-center flex-1 cursor-pointer" onClick={()=>s.label!=='Total'&&setFilter(`STATUS_${s.label==='Uncalled'?'Un called':s.label==='Working'?'Called':s.label}`)}>
                                         <span className={`text-xl font-black ${s.color}`}>{s.val}</span>
@@ -1138,7 +1083,6 @@ function AdminApp() {
                             </div>
                         </div>
 
-                        {/* Tabs + Controls */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                             <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
                                 {['website','bulk','manual'].map(c=>(
@@ -1162,14 +1106,12 @@ function AdminApp() {
                             </div>
                         </div>
 
-                        {/* Search */}
                         <div className="relative">
                             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">🔍</span>
                             <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone or project…" className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-semibold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" />
                             {search&&<button onClick={()=>setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 hover:text-red-500 bg-slate-100 px-2 py-1 rounded-lg uppercase">Clear</button>}
                         </div>
 
-                        {/* Lead Table — Desktop */}
                         {loading ? (
                             <div className="text-center py-16 text-slate-400 font-black uppercase tracking-widest animate-pulse text-xs">Loading Leads…</div>
                         ) : (
@@ -1186,7 +1128,6 @@ function AdminApp() {
                                     <tbody className="divide-y divide-slate-100">
                                         {visLeads.map(l=>(
                                             <tr key={l.id} className={`lead-row border-l-4 ${priorityBorder(l.lead_priority)} ${cardTint(l.lead_status)}`}>
-                                                {/* Customer */}
                                                 <td className="p-3.5 min-w-[175px]">
                                                     <div className="font-black text-slate-900 uppercase text-xs leading-tight">{l.customer_name}</div>
                                                     <div className="text-blue-600 font-bold mt-0.5">{l.phone_number}</div>
@@ -1200,7 +1141,6 @@ function AdminApp() {
                                                         <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-1 rounded-lg text-[8px] font-black uppercase hover:bg-emerald-100 transition">💬 WA</a>
                                                     </div>
                                                 </td>
-                                                {/* Agent & Status */}
                                                 <td className="p-3.5 min-w-[145px] space-y-1.5">
                                                     <select value={l.psa_agent_name||''} onChange={e=>updateLead(l,'psa_agent_name',e.target.value)} className="w-full p-1.5 border border-slate-200 rounded-lg font-black text-[9px] uppercase outline-none bg-white text-blue-800">
                                                         <option value="" disabled>Assign Agent</option>
@@ -1220,7 +1160,6 @@ function AdminApp() {
                                                         {['Hot','Warm','Cold'].map(p=><option key={p}>{p}</option>)}
                                                     </select>
                                                 </td>
-                                                {/* Schedule */}
                                                 <td className="p-3.5 min-w-[155px]">
                                                     {['Called','RNR','Details Shared'].includes(l.lead_status)&&(
                                                         <div className="mb-2">
@@ -1235,7 +1174,6 @@ function AdminApp() {
                                                         </div>
                                                     )}
                                                 </td>
-                                                {/* Notes */}
                                                 <td className="p-3.5 min-w-[240px]">
                                                     <div className="h-14 overflow-y-auto bg-slate-50 border border-slate-200 rounded-t-lg p-2 history-scroll text-[9px] font-medium text-slate-500 whitespace-pre-wrap leading-relaxed mb-1">
                                                         {l.call_remark||<span className="italic text-slate-300">No activity yet…</span>}
@@ -1256,7 +1194,6 @@ function AdminApp() {
                                 )}
                             </div>
 
-                            {/* Lead Cards — Mobile */}
                             <div className="lg:hidden space-y-3">
                                 {visLeads.map(l=>(
                                     <div key={`m-${l.id}`} className={`card p-4 border-t-4 ${l.lead_priority==='Hot'?'border-t-red-500':l.lead_priority==='Cold'?'border-t-sky-400':'border-t-amber-400'} ${cardTint(l.lead_status)}`}>
@@ -1328,10 +1265,9 @@ function AdminApp() {
                 )}
 
                 {view==='library' && <Library props={props} onSelect={setSelProp} supabase={supabase} />}
-                {view==='add'     && <AddPropertyForm supabase={supabase} scriptUrl={SCRIPT_URL} />}
+                {view==='add' && <AddPropertyForm supabase={supabase} scriptUrl={SCRIPT_URL} />}
             </main>
 
-            {/* Manual Lead Modal */}
             {manualOpen&&(
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-start justify-center p-4 pt-20 overflow-y-auto">
                     <div className="card p-6 w-full max-w-md animate-slideIn mb-10 shadow-2xl">
