@@ -155,8 +155,7 @@ const cardTint = (s) => {
 
 const priorityBorder = (p) => p==='Hot'?'border-l-red-500':p==='Cold'?'border-l-sky-400':'border-l-amber-400';
 
-// ─── FILE SHARE UTILITIES ───────────────────────────────────────────────────
-
+// ─── FILE SHARE UTILITIES ──────────────────────────────────────────────────
 const getDriveId = (url) => {
     if (!url) return null;
     const m = url.match(/\/d\/([-\w]+)/) || url.match(/[?&]id=([-\w]+)/);
@@ -216,9 +215,9 @@ const triggerDownload = (resolved, filename) => {
 // ─── EMI CALCULATOR ────────────────────────────────────────────────────────
 const EMICalc = ({ priceStr }) => {
     const base = priceInCr(priceStr)>0 ? priceInCr(priceStr)*10000000 : 10000000;
-    const [loan,    setLoan]    = useState(base*0.8);
-    const [rate,    setRate]    = useState(8.5);
-    const [tenure,  setTenure]  = useState(20);
+    const [loan,   setLoan]   = useState(base*0.8);
+    const [rate,   setRate]   = useState(8.5);
+    const [tenure, setTenure] = useState(20);
 
     const { emi, totalInt, pct } = useMemo(()=>{
         const p=loan, r=rate/12/100, n=tenure*12;
@@ -248,9 +247,9 @@ const EMICalc = ({ priceStr }) => {
                 </div>
             </div>
             {[
-                {label:'Loan Amount', val:fmtCurrency(loan), min:1000000, max:50000000, step:100000, onChange:setLoan, cur:loan},
-                {label:'Interest Rate', val:rate+'%', min:6, max:15, step:0.1, onChange:setRate, cur:rate},
-                {label:'Tenure', val:tenure+' Yrs', min:5, max:30, step:1, onChange:setTenure, cur:tenure},
+                {label:'Loan Amount', val:fmtCurrency(loan), min:1000000, max:50000000, step:100000, onChange:setLoan,   cur:loan},
+                {label:'Interest Rate',val:rate+'%',          min:6,       max:15,       step:0.1,   onChange:setRate,   cur:rate},
+                {label:'Tenure',       val:tenure+' Yrs',     min:5,       max:30,       step:1,     onChange:setTenure, cur:tenure},
             ].map(s=>(
                 <div key={s.label} className="mb-4">
                     <div className="flex justify-between mb-1.5">
@@ -264,6 +263,38 @@ const EMICalc = ({ priceStr }) => {
                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Monthly EMI</span>
                 <span className="text-xl font-black text-slate-900">{fmtCurrency(emi)} <span className="text-[9px] text-slate-400 font-bold">/mo</span></span>
             </div>
+        </div>
+    );
+};
+
+// ─── EDIT FIELD (outside PropertyPage — fixes focus-loss bug) ──────────────
+// editState = { editField, editVal, setEditVal, saving, onStartEdit, onSave, onCancel }
+const EF = ({ field, label, val, multiline=false, type='text', editState }) => {
+    const { editField, editVal, setEditVal, saving, onStartEdit, onSave, onCancel } = editState;
+    const editing = editField === field;
+    return (
+        <div className="group/ef">
+            {!editing ? (
+                <div className="flex items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                        {label && <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">{label}</div>}
+                        <div className={`text-sm font-semibold break-words ${val?'text-slate-800':'italic text-slate-300'}`}>{val||'—'}</div>
+                    </div>
+                    <button onClick={()=>onStartEdit(field,val)} className="opacity-0 group-hover/ef:opacity-100 transition-opacity shrink-0 mt-0.5 text-[8px] font-black bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg uppercase tracking-widest hover:bg-blue-100">Edit</button>
+                </div>
+            ) : (
+                <div className="space-y-2">
+                    {label && <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</div>}
+                    {multiline
+                        ? <textarea rows={4} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none resize-none bg-blue-50/50 focus:bg-white transition-colors" />
+                        : <input type={type} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none bg-blue-50/50 focus:bg-white transition-colors" />
+                    }
+                    <div className="flex gap-2">
+                        <button onClick={()=>onSave(field,editVal)} disabled={saving} className="btn-primary text-[9px] py-1.5 px-3">{saving?'…':'Save'}</button>
+                        <button onClick={onCancel} className="btn-ghost text-[9px] py-1.5 px-3">Cancel</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -287,7 +318,7 @@ const PropertyPage = ({ property:init, onBack }) => {
         setTimeout(()=>setToast(null), 4000);
     };
 
-    const startEdit = (field, val) => { setEditField(field); setEditVal(val||''); };
+    const startEdit  = (field, val) => { setEditField(field); setEditVal(val||''); };
     const cancelEdit = () => setEditField(null);
     const saveField  = async (field, val) => {
         setSaving(true);
@@ -298,38 +329,12 @@ const PropertyPage = ({ property:init, onBack }) => {
         setEditField(null);
     };
 
-    const EF = ({field,label,val,multiline=false,type='text'}) => {
-        const editing = editField===field;
-        return (
-            <div className="group/ef">
-                {!editing ? (
-                    <div className="flex items-start gap-2">
-                        <div className="flex-1 min-w-0">
-                            {label && <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">{label}</div>}
-                            <div className={`text-sm font-semibold break-words ${val?'text-slate-800':'italic text-slate-300'}`}>{val||'—'}</div>
-                        </div>
-                        <button onClick={()=>startEdit(field,val)} className="opacity-0 group-hover/ef:opacity-100 transition-opacity shrink-0 mt-0.5 text-[8px] font-black bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg uppercase tracking-widest hover:bg-blue-100">Edit</button>
-                    </div>
-                ) : (
-                    <div className="space-y-2">
-                        {label && <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</div>}
-                        {multiline
-                            ? <textarea rows={4} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none resize-none bg-blue-50/50 focus:bg-white transition-colors" />
-                            : <input type={type} autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)} className="w-full p-2.5 border-2 border-blue-400 rounded-xl text-sm font-semibold outline-none bg-blue-50/50 focus:bg-white transition-colors" />
-                        }
-                        <div className="flex gap-2">
-                            <button onClick={()=>saveField(field,editVal)} disabled={saving} className="btn-primary text-[9px] py-1.5 px-3">{saving?'…':'Save'}</button>
-                            <button onClick={cancelEdit} className="btn-ghost text-[9px] py-1.5 px-3">Cancel</button>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
+    // ✅ Single editState object passed to EF — no more inline component redefinition
+    const editState = { editField, editVal, setEditVal, saving, onStartEdit: startEdit, onSave: saveField, onCancel: cancelEdit };
 
-    const cover   = driveThumb(gv(prop,'cover_image')||gv(prop,'cover-image'));
-    const galRaw  = gv(prop,'gallery_images')||gv(prop,'gallery-images')||'';
-    const imgs    = [cover,...(galRaw?galRaw.split(',').map(l=>driveThumb(l.trim())):[])].filter(Boolean);
+    const cover  = driveThumb(gv(prop,'cover_image')||gv(prop,'cover-image'));
+    const galRaw = gv(prop,'gallery_images')||gv(prop,'gallery-images')||'';
+    const imgs   = [cover,...(galRaw?galRaw.split(',').map(l=>driveThumb(l.trim())):[])].filter(Boolean);
 
     const parseField = (raw) => {
         if (!raw||!raw.trim()) return [];
@@ -339,53 +344,23 @@ const PropertyPage = ({ property:init, onBack }) => {
     const handleShare = (type, rawField) => {
         const items = parseField(rawField);
         if (!items.length) { showToast('⚠️ No '+type+' available for this property.','bg-amber-500'); return; }
-        if (items.length===1) {
-            doShare([items[0]], type);
-        } else {
-            setShareModal({type, items});
-            setSelected(items.map(i=>i.url));
-        }
+        if (items.length===1) { doShare([items[0]], type); }
+        else { setShareModal({type, items}); setSelected(items.map(i=>i.url)); }
     };
 
     const doShare = (items, type) => {
         const propName = gv(prop,'property_name');
         const mobile   = isMobileDevice();
-
         const fileItems = items.filter(i=>i.resolved.kind!=='link');
         const linkItems = items.filter(i=>i.resolved.kind==='link');
-
-        fileItems.forEach((item, i) => {
-            const fname = buildFilename(item.url, i, type);
-            setTimeout(() => triggerDownload(item.resolved, fname), i * 400);
-        });
-
+        fileItems.forEach((item,i)=>{ const fname=buildFilename(item.url,i,type); setTimeout(()=>triggerDownload(item.resolved,fname),i*400); });
         let waMsg = 'Hi! ';
-        if (fileItems.length) {
-            const fileWord = fileItems.length===1 ? 'the file' : fileItems.length+' files';
-            waMsg += 'I\'m sending you '+fileWord+' for *'+propName+'* 📎\n';
-            waMsg += '('+type+' — just sent as attachment)';
-        }
-        if (linkItems.length) {
-            waMsg += (fileItems.length ? '\n\n' : '') + 'Here is the *'+type+'* for *'+propName+'*:\n';
-            waMsg += linkItems.map(i=>i.url).join('\n');
-        }
-
-        const delay = fileItems.length * 400 + 300;
-        setTimeout(() => {
-            if (mobile) {
-                window.open('https://wa.me/?text='+encodeURIComponent(waMsg), '_blank');
-            } else {
-                window.open('https://web.whatsapp.com/','_blank');
-            }
-        }, delay);
-
-        if (fileItems.length && !mobile) {
-            const n = fileItems.length;
-            showToast('📥 '+n+' file'+(n>1?'s':'')+' downloading — WhatsApp Web is opening. Open a chat, attach from Downloads, and send!','bg-blue-600');
-        } else if (fileItems.length && mobile) {
-            showToast('📥 File downloading — WhatsApp is opening. Attach from Downloads and send!','bg-blue-600');
-        }
-
+        if (fileItems.length) { waMsg += 'I\'m sending you '+(fileItems.length===1?'the file':fileItems.length+' files')+' for *'+propName+'* 📎\n('+ type+' — just sent as attachment)'; }
+        if (linkItems.length) { waMsg += (fileItems.length?'\n\n':'')+'Here is the *'+type+'* for *'+propName+'*:\n'+linkItems.map(i=>i.url).join('\n'); }
+        const delay = fileItems.length*400+300;
+        setTimeout(()=>{ if(mobile) window.open('https://wa.me/?text='+encodeURIComponent(waMsg),'_blank'); else window.open('https://web.whatsapp.com/','_blank'); }, delay);
+        if (fileItems.length&&!mobile) showToast('📥 '+fileItems.length+' file'+(fileItems.length>1?'s':'')+' downloading — WhatsApp Web is opening. Open a chat, attach from Downloads, and send!','bg-blue-600');
+        else if (fileItems.length&&mobile) showToast('📥 File downloading — WhatsApp is opening. Attach from Downloads and send!','bg-blue-600');
         setSharing(false);
     };
 
@@ -396,9 +371,9 @@ const PropertyPage = ({ property:init, onBack }) => {
         doShare(toSend, type);
     };
 
-    const regLink = gv(prop,'lead_registration')||gv(prop,'lead_registration_link')||gv(prop,'lead_registration_link_or_email_id');
+    const regLink    = gv(prop,'lead_registration')||gv(prop,'lead_registration_link')||gv(prop,'lead_registration_link_or_email_id');
     const regIsEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
-    const handleReg = () => {
+    const handleReg  = () => {
         if (!regLink) { showToast('⚠️ No registration link set','bg-amber-500'); return; }
         if (regIsEmail) window.location.href=`mailto:${regLink.replace('mailto:','').trim()}?subject=New Lead: ${gv(prop,'property_name')}`;
         else window.open(safeLink(regLink),'_blank');
@@ -420,9 +395,7 @@ const PropertyPage = ({ property:init, onBack }) => {
                             <button onClick={()=>setShareModal(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
                         </div>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{shareModal.type} · {shareModal.items.length} available</p>
-                        <p className="text-[9px] text-blue-600 font-bold mb-4">
-                            📱 Mobile: files share directly · 💻 Desktop: files download, attach in WhatsApp Web
-                        </p>
+                        <p className="text-[9px] text-blue-600 font-bold mb-4">📱 Mobile: files share directly · 💻 Desktop: files download, attach in WhatsApp Web</p>
                         <div className="space-y-2 mb-5 max-h-56 overflow-y-auto">
                             {shareModal.items.map((item,i)=>{
                                 const chk = selected.includes(item.url);
@@ -442,9 +415,7 @@ const PropertyPage = ({ property:init, onBack }) => {
                         <div className="flex gap-2">
                             <button onClick={()=>setSelected(shareModal.items.map(i=>i.url))} className="btn-ghost flex-1 text-[9px] py-2.5">All</button>
                             <button onClick={()=>setSelected([])} className="btn-ghost flex-1 text-[9px] py-2.5">None</button>
-                            <button onClick={sendSelected} disabled={!selected.length||sharing} className="btn-primary flex-1 text-[9px] py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40">
-                                Share ({selected.length}) 💬
-                            </button>
+                            <button onClick={sendSelected} disabled={!selected.length||sharing} className="btn-primary flex-1 text-[9px] py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40">Share ({selected.length}) 💬</button>
                         </div>
                     </div>
                 </div>
@@ -486,21 +457,21 @@ const PropertyPage = ({ property:init, onBack }) => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                     <div className="lg:col-span-2 space-y-5">
                         <div className="card p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <EF field="bhk"                 label="Configurations" val={gv(prop,'bhk')} />
-                            <EF field="construction_status" label="Status"          val={gv(prop,'construction_status')} />
-                            <EF field="possession_date"     label="Possession"      val={gv(prop,'possession_date')} type="date" />
-                            <EF field="approval"            label="Approvals"       val={gv(prop,'approval')} />
+                            <EF field="bhk"                 label="Configurations" val={gv(prop,'bhk')}                 editState={editState} />
+                            <EF field="construction_status" label="Status"          val={gv(prop,'construction_status')} editState={editState} />
+                            <EF field="possession_date"     label="Possession"      val={gv(prop,'possession_date')}     editState={editState} type="date" />
+                            <EF field="approval"            label="Approvals"       val={gv(prop,'approval')}            editState={editState} />
                         </div>
 
                         <div className="card p-5">
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">About The Project</div>
-                            <EF field="description" label="" val={gv(prop,'description')} multiline />
+                            <EF field="description" label="" val={gv(prop,'description')} multiline editState={editState} />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="card p-5 bg-blue-50 border-blue-100">
                                 <div className="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-3">Key Highlights</div>
-                                <EF field="usp_details" label="" val={gv(prop,'usp_details')} multiline />
+                                <EF field="usp_details" label="" val={gv(prop,'usp_details')} multiline editState={editState} />
                             </div>
                             <div className="card p-5 bg-slate-900 border-slate-800">
                                 <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Amenities</div>
@@ -524,14 +495,14 @@ const PropertyPage = ({ property:init, onBack }) => {
                         <div className="card p-5">
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 pb-2 border-b border-slate-100">Links & Internal Info</div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <EF field="video_link"             label="Video Link"             val={gv(prop,'video_link')} />
-                                <EF field="website_link"           label="Builder Website"        val={gv(prop,'website_link')} />
-                                <EF field="lead_registration_link" label="Lead Registration"      val={gv(prop,'lead_registration_link')} />
-                                <EF field="map_link"               label="Map Link"               val={gv(prop,'map_link')} />
-                                <EF field="point_of_contact"       label="Point of Contact"       val={gv(prop,'point_of_contact')} />
-                                <EF field="commission_details"     label="Commission"             val={gv(prop,'commission_details')} />
-                                <EF field="availability"           label="Availability"           val={gv(prop,'availability')} />
-                                <EF field="total_units"            label="Total Units"            val={gv(prop,'total_units')} />
+                                <EF field="video_link"             label="Video Link"        val={gv(prop,'video_link')}             editState={editState} />
+                                <EF field="website_link"           label="Builder Website"   val={gv(prop,'website_link')}           editState={editState} />
+                                <EF field="lead_registration_link" label="Lead Registration" val={gv(prop,'lead_registration_link')} editState={editState} />
+                                <EF field="map_link"               label="Map Link"          val={gv(prop,'map_link')}               editState={editState} />
+                                <EF field="point_of_contact"       label="Point of Contact"  val={gv(prop,'point_of_contact')}       editState={editState} />
+                                <EF field="commission_details"     label="Commission"        val={gv(prop,'commission_details')}     editState={editState} />
+                                <EF field="availability"           label="Availability"      val={gv(prop,'availability')}           editState={editState} />
+                                <EF field="total_units"            label="Total Units"       val={gv(prop,'total_units')}            editState={editState} />
                             </div>
                         </div>
                     </div>
@@ -541,7 +512,7 @@ const PropertyPage = ({ property:init, onBack }) => {
                             <div className="card p-5">
                                 <div className="mb-4 pb-4 border-b border-slate-100">
                                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Starting Price</div>
-                                    <EF field="price" label="" val={gv(prop,'price')} />
+                                    <EF field="price" label="" val={gv(prop,'price')} editState={editState} />
                                 </div>
                                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 mb-3">
                                     <div className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-0.5">Commission</div>
@@ -562,12 +533,12 @@ const PropertyPage = ({ property:init, onBack }) => {
                                     </div>
                                     <div className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-2">Share with Client via WhatsApp</div>
                                     <div className="grid grid-cols-2 gap-1.5">
-                                        <button disabled={sharing} onClick={()=>handleShare('Brochure',       gv(prop,'brochure'))}       className="share-btn">📥 Brochure</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Cost Sheet',    gv(prop,'cost_sheet'))}     className="share-btn">📄 Cost Sheet</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Location Map',  gv(prop,'map_link'))}       className="share-btn">📍 Location</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Property Video',gv(prop,'video_link'))}     className="share-btn">🎥 Video</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Floor Plan',    gv(prop,'floor_plan'))}     className="share-btn col-span-2">📐 Floor Plan</button>
-                                        <button disabled={sharing} onClick={()=>handleShare('Gallery',       gv(prop,'gallery_images'))} className="share-btn col-span-2">🖼️ Gallery Images</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Brochure',        gv(prop,'brochure'))}       className="share-btn">📥 Brochure</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Cost Sheet',     gv(prop,'cost_sheet'))}     className="share-btn">📄 Cost Sheet</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Location Map',   gv(prop,'map_link'))}       className="share-btn">📍 Location</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Property Video', gv(prop,'video_link'))}     className="share-btn">🎥 Video</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Floor Plan',     gv(prop,'floor_plan'))}     className="share-btn col-span-2">📐 Floor Plan</button>
+                                        <button disabled={sharing} onClick={()=>handleShare('Gallery',        gv(prop,'gallery_images'))} className="share-btn col-span-2">🖼️ Gallery Images</button>
                                     </div>
                                 </div>
                             </div>
@@ -580,40 +551,27 @@ const PropertyPage = ({ property:init, onBack }) => {
     );
 };
 
+// ─── LIBRARY ───────────────────────────────────────────────────────────────
 const Library = ({ props: initProps, onSelect, supabase }) => {
     const [props,      setProps]      = useState(initProps || []);
     const [togglingId, setTogglingId] = useState(null);
     const [search,     setSearch]     = useState('');
 
-    // ✅ Only sync from parent on initial mount, or when a full refresh is needed
-    // Don't blindly overwrite on every parent re-render
     const prevInitRef = useRef(initProps);
     useEffect(() => {
-        // Only reset if parent has genuinely pushed a new dataset (e.g. after a fresh fetch)
-        // Compare lengths + ids as a lightweight diff
         const prev = prevInitRef.current || [];
         const next = initProps || [];
-        const changed =
-            prev.length !== next.length ||
-            next.some((p, i) => p.id !== (prev[i]?.id));
-        if (changed) {
-            setProps(next);
-            prevInitRef.current = next;
-        }
+        const changed = prev.length !== next.length || next.some((p,i) => p.id !== (prev[i]?.id));
+        if (changed) { setProps(next); prevInitRef.current = next; }
     }, [initProps]);
 
     const toggle = async (e, p) => {
         e.stopPropagation();
         const newVal = p.is_live !== true;
         setTogglingId(p.id);
-
-        // ✅ Optimistic update first
         setProps(prev => prev.map(x => x.id === p.id ? { ...x, is_live: newVal } : x));
-
         const { error } = await supabase.from('properties').update({ is_live: newVal }).eq('id', p.id);
-
         if (error) {
-            // ✅ Revert on failure
             setProps(prev => prev.map(x => x.id === p.id ? { ...x, is_live: p.is_live } : x));
             alert('Update failed: ' + error.message);
         }
@@ -676,9 +634,8 @@ const Library = ({ props: initProps, onSelect, supabase }) => {
         </div>
     );
 };
-    
-// ─── HELPER COMPONENTS (outside AddPropertyForm) ────────────────────────────
 
+// ─── HELPER COMPONENTS (outside AddPropertyForm) ───────────────────────────
 const F = ({ label, children }) => (
     <div className="field-group">
         <label>{label}</label>
@@ -693,7 +650,7 @@ const FileChip = ({ field, name, multi = false, idx = null, onRemove }) => (
     </div>
 );
 
-// ─── ADD PROPERTY FORM ──────────────────────────────────────────────────────
+// ─── ADD PROPERTY FORM ─────────────────────────────────────────────────────
 const AddPropertyForm = ({ supabase, scriptUrl }) => {
     const blank = { property_name:'',builder_name:'',property_region:'',property_type:'',location:'',price:'',bhk:'',super_built_up_area:'',possession_date:'',construction_status:'',approval:'',total_units:'',availability:'',description:'',usp_details:'',amenities:'',point_of_contact:'',commission_details:'',video_link:'',website_link:'',lead_registration_link:'',map_link:'',cover_image:'',gallery_images:'',floor_plan:'',brochure:'',cost_sheet:'',miscellaneous:'' };
     const [form,        setForm]        = useState(blank);
@@ -758,7 +715,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     {saved && <div className="bg-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-emerald-200 animate-fadeIn">✅ Published!</div>}
                 </div>
 
-                {/* Basic Info */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Basic Information</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -781,7 +737,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     </div>
                 </div>
 
-                {/* Specs */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Specifications</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -793,9 +748,7 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                         </div>
                         <F label="Super Built-up Area"><input value={form.super_built_up_area} onChange={e => set('super_built_up_area', e.target.value)} placeholder="SqFt" /></F>
                         <F label="Total Units"><input value={form.total_units} onChange={e => set('total_units', e.target.value)} placeholder="e.g. 420" /></F>
-                        <F label="Possession Date">
-                            <input type="date" value={form.possession_date} onChange={e => set('possession_date', e.target.value)} />
-                        </F>
+                        <F label="Possession Date"><input type="date" value={form.possession_date} onChange={e => set('possession_date', e.target.value)} /></F>
                         <F label="Construction Status">
                             <select value={form.construction_status} onChange={e => set('construction_status', e.target.value)}>
                                 <option value="">Select</option>
@@ -807,7 +760,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     </div>
                 </div>
 
-                {/* Content */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Content</div>
                     <div className="space-y-4">
@@ -825,38 +777,18 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     </div>
                 </div>
 
-                {/* Internal / Links */}
                 <div className="bg-slate-900 rounded-2xl p-5">
                     <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-4 pb-2 border-b border-slate-700">Internal Data & Links</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="field-group">
-                            <label className="text-slate-400">Internal POC</label>
-                            <input className="dark-field" value={form.point_of_contact} onChange={e => set('point_of_contact', e.target.value)} placeholder="Agent name / phone" />
-                        </div>
-                        <div className="field-group">
-                            <label className="text-slate-400">Commission %</label>
-                            <input className="dark-field" value={form.commission_details} onChange={e => set('commission_details', e.target.value)} placeholder="e.g. 2%" />
-                        </div>
-                        <div className="field-group">
-                            <label className="text-slate-400">Video Link</label>
-                            <input className="dark-field" value={form.video_link} onChange={e => set('video_link', e.target.value)} placeholder="YouTube / Drive URL" />
-                        </div>
-                        <div className="field-group">
-                            <label className="text-slate-400">Builder Website</label>
-                            <input className="dark-field" value={form.website_link} onChange={e => set('website_link', e.target.value)} placeholder="https://…" />
-                        </div>
-                        <div className="field-group">
-                            <label className="text-slate-400">Lead Registration Link / Email</label>
-                            <input className="dark-field" value={form.lead_registration_link} onChange={e => set('lead_registration_link', e.target.value)} placeholder="URL or email@domain.com" />
-                        </div>
-                        <div className="field-group">
-                            <label className="text-slate-400">Google Maps Link</label>
-                            <input className="dark-field" value={form.map_link} onChange={e => set('map_link', e.target.value)} placeholder="https://maps.google.com/…" />
-                        </div>
+                        <div className="field-group"><label className="text-slate-400">Internal POC</label><input className="dark-field" value={form.point_of_contact} onChange={e => set('point_of_contact', e.target.value)} placeholder="Agent name / phone" /></div>
+                        <div className="field-group"><label className="text-slate-400">Commission %</label><input className="dark-field" value={form.commission_details} onChange={e => set('commission_details', e.target.value)} placeholder="e.g. 2%" /></div>
+                        <div className="field-group"><label className="text-slate-400">Video Link</label><input className="dark-field" value={form.video_link} onChange={e => set('video_link', e.target.value)} placeholder="YouTube / Drive URL" /></div>
+                        <div className="field-group"><label className="text-slate-400">Builder Website</label><input className="dark-field" value={form.website_link} onChange={e => set('website_link', e.target.value)} placeholder="https://…" /></div>
+                        <div className="field-group"><label className="text-slate-400">Lead Registration Link / Email</label><input className="dark-field" value={form.lead_registration_link} onChange={e => set('lead_registration_link', e.target.value)} placeholder="URL or email@domain.com" /></div>
+                        <div className="field-group"><label className="text-slate-400">Google Maps Link</label><input className="dark-field" value={form.map_link} onChange={e => set('map_link', e.target.value)} placeholder="https://maps.google.com/…" /></div>
                     </div>
                 </div>
 
-                {/* Media */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Media & Documents</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -890,7 +822,8 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
         </div>
     );
 };
-// ─── MANUAL LEAD FORM ──────────────────────────────────────────────────────
+
+// ─── MANUAL LEAD FORM ─────────────────────────────────────────────────────
 const ManualLeadForm = ({ supabase, properties, onSuccess }) => {
     const [form, setForm] = useState({name:'',phone:'',email:'',project:'General Enquiry',note:'',source:'Manual Entry'});
     const [loading, setLoading] = useState(false);
@@ -938,7 +871,7 @@ const ManualLeadForm = ({ supabase, properties, onSuccess }) => {
     );
 };
 
-// ─── LOGIN ─────────────────────────────────────────────────────────────────
+// ─── LOGIN ────────────────────────────────────────────────────────────────
 const Login = () => {
     const [email,setEmail]=useState(''); const [pass,setPass]=useState('');
     const [loading,setLoading]=useState(false); const [err,setErr]=useState('');
@@ -962,7 +895,7 @@ const Login = () => {
     );
 };
 
-// ─── ADMIN APP ─────────────────────────────────────────────────────────────
+// ─── ADMIN APP ────────────────────────────────────────────────────────────
 const getRoute = () => {
     const h=window.location.hash.replace('#','');
     if (h.startsWith('/library')) return {v:'library',c:'website'};
@@ -1040,10 +973,10 @@ function AdminApp() {
         }
         let updates={};
         const t=stamp();
-        if(field==='lead_status')      { updates.lead_status=value; updates.call_remark=`[${t}] Status → ${value}\n\n${lead.call_remark||''}`; }
-        else if(field==='follow_up_at'){ updates.follow_up_at=value; updates.call_remark=`[${t}] Callback: ${new Date(value).toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}\n\n${lead.call_remark||''}`; }
+        if(field==='lead_status')       { updates.lead_status=value; updates.call_remark=`[${t}] Status → ${value}\n\n${lead.call_remark||''}`; }
+        else if(field==='follow_up_at') { updates.follow_up_at=value; updates.call_remark=`[${t}] Callback: ${new Date(value).toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}\n\n${lead.call_remark||''}`; }
         else if(field==='site_visit_at'){ updates.site_visit_at=value; updates.call_remark=`[${t}] SV Booked: ${value}\n\n${lead.call_remark||''}`; }
-        else if(field==='add_note')    { if(!value.trim()) return; updates.add_note=value; updates.call_remark=`[${t}] Note: ${value}\n\n${lead.call_remark||''}`; }
+        else if(field==='add_note')     { if(!value.trim()) return; updates.add_note=value; updates.call_remark=`[${t}] Note: ${value}\n\n${lead.call_remark||''}`; }
         else if(field==='reject_reason'){ updates.reject_reason=value; updates.call_remark=`[${t}] Rejected: ${value}\n\n${lead.call_remark||''}`; }
         else updates[field]=value;
 
@@ -1056,10 +989,10 @@ function AdminApp() {
     const displayed=useMemo(()=>{
         let f=leads;
         const td=new Date().toISOString().split('T')[0];
-        if(filter==='TODAY_CB')   f=f.filter(l=>l.follow_up_at?.startsWith(td)&&!['Rejected','Converted'].includes(l.lead_status));
-        else if(filter==='TODAY_SV')  f=f.filter(l=>l.site_visit_at===td&&!['Rejected','Converted'].includes(l.lead_status));
-        else if(filter==='MISSED_CB') f=f.filter(l=>l.follow_up_at&&l.follow_up_at<td&&!['Rejected','Converted'].includes(l.lead_status));
-        else if(filter==='MISSED_SV') f=f.filter(l=>l.site_visit_at&&l.site_visit_at<td&&!['Rejected','Converted'].includes(l.lead_status));
+        if(filter==='TODAY_CB')        f=f.filter(l=>l.follow_up_at?.startsWith(td)&&!['Rejected','Converted'].includes(l.lead_status));
+        else if(filter==='TODAY_SV')   f=f.filter(l=>l.site_visit_at===td&&!['Rejected','Converted'].includes(l.lead_status));
+        else if(filter==='MISSED_CB')  f=f.filter(l=>l.follow_up_at&&l.follow_up_at<td&&!['Rejected','Converted'].includes(l.lead_status));
+        else if(filter==='MISSED_SV')  f=f.filter(l=>l.site_visit_at&&l.site_visit_at<td&&!['Rejected','Converted'].includes(l.lead_status));
         else if(filter.startsWith('STATUS_')) f=f.filter(l=>(l.lead_status||'Un called')===filter.replace('STATUS_',''));
         if(agentFilter!=='All') f=f.filter(l=>l.psa_agent_name===agentFilter);
         if(search.trim()){ const t=search.toLowerCase(); f=f.filter(l=>(l.customer_name||'').toLowerCase().includes(t)||(l.phone_number||'').toLowerCase().includes(t)||(l.project_interested_in||'').toLowerCase().includes(t)); }
@@ -1116,7 +1049,7 @@ function AdminApp() {
                                     {AGENTS.map(a=><option key={a}>{a}</option>)}
                                 </select>
                                 {[
-                                    {label:'Total',   val:stats.total,     color:'text-slate-700'},
+                                    {label:'Total',    val:stats.total,     color:'text-slate-700'},
                                     {label:'Uncalled', val:stats.uncalled,  color:'text-amber-600'},
                                     {label:'Working',  val:stats.working,   color:'text-blue-600'},
                                     {label:'Converted',val:stats.converted, color:'text-emerald-600'},
@@ -1179,9 +1112,7 @@ function AdminApp() {
                                                     <div className="font-black text-slate-900 uppercase text-xs leading-tight">{l.customer_name}</div>
                                                     <div className="text-blue-600 font-bold mt-0.5">{l.phone_number}</div>
                                                     {l.customer_email&&<div className="text-slate-400 text-[9px] mt-0.5 lowercase truncate font-medium max-w-[160px]">{l.customer_email}</div>}
-                                                    <div className="text-[8px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
-                                                        {tab==='bulk'&&!isOwner?'[Restricted]':(l.project_interested_in||'General')}
-                                                    </div>
+                                                    <div className="text-[8px] text-slate-400 font-bold mt-1 uppercase tracking-widest">{tab==='bulk'&&!isOwner?'[Restricted]':(l.project_interested_in||'General')}</div>
                                                     {l.created_at&&<div className="text-[8px] text-slate-300 font-bold mt-0.5">{l.display_date||l.created_at}</div>}
                                                     <div className="flex gap-1.5 mt-2">
                                                         <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1 rounded-lg text-[8px] font-black uppercase hover:bg-blue-100 transition">📞 Call</a>
