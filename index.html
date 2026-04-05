@@ -557,41 +557,7 @@
                     finally { setLoading(false); }
                 };
                 fetchProperties();
-
-                // Real-time: reflect admin edits and live/hide toggles instantly
-                const channel = supabase.channel('properties-realtime')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'properties' }, (payload) => {
-                        if (payload.eventType === 'UPDATE') {
-                            const updated = payload.new;
-                            const live = updated.is_live === true || updated.is_live === 'true';
-                            setProperties(prev => {
-                                const exists = prev.find(p => p.id === updated.id);
-                                if (!live) {
-                                    // Remove hidden properties
-                                    return prev.filter(p => p.id !== updated.id);
-                                }
-                                if (exists) {
-                                    return prev.map(p => p.id === updated.id ? updated : p);
-                                } else {
-                                    return [...prev, updated];
-                                }
-                            });
-                            // Sync selected property if it's the one being edited
-                            setSelectedProperty(prev => prev && prev.id === updated.id ? updated : prev);
-                        } else if (payload.eventType === 'INSERT') {
-                            const inserted = payload.new;
-                            const live = inserted.is_live === true || inserted.is_live === 'true';
-                            if (live) setProperties(prev => [inserted, ...prev]);
-                        } else if (payload.eventType === 'DELETE') {
-                            setProperties(prev => prev.filter(p => p.id !== payload.old.id));
-                        }
-                    })
-                    .subscribe();
-
-                return () => {
-                    window.removeEventListener('hashchange', handleHashChange);
-                    supabase.removeChannel(channel);
-                };
+                return () => window.removeEventListener('hashchange', handleHashChange);
             }, []);
 
             const handleLeadSubmit = async (dataToSubmit, projectName, actionType = "General Enquiry", event = null) => {
