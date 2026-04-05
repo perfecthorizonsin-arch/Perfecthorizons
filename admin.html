@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horizon CRM | Command Center</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50' y='54' font-family='Arial' font-size='60' font-weight='900' font-style='italic' fill='%233b82f6' dominant-baseline='middle' text-anchor='middle'>H</text></svg>">
-  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -55,7 +55,7 @@
 <body class="bg-slate-100 font-sans text-slate-900 pb-20 md:pb-0" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 
 <!-- FIX #1 BLANK PAGE: Show error if critical CDN scripts fail to load -->
-<div id="load-error" style="display:none;position:fixed;inset:0;z-index:9999;background:#0f172a;color:#f1f5f9;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:2rem;">
+<div id="load-error" style="display:none;position:fixed;inset:0;z-index:9999;background:#0f172a;color:#f1f5f9;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:2rem;">
     <div style="font-size:2rem;margin-bottom:1rem;">⚠️</div>
     <div style="font-size:1.25rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem;">Failed to Load</div>
     <div style="color:#94a3b8;font-size:.875rem;margin-bottom:1.5rem;">A required library could not be loaded. Check your internet connection and refresh.</div>
