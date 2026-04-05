@@ -149,7 +149,6 @@
             { id: 4, tag: "Legal Guide", title: "A Khata vs B Khata in Bengaluru: The Ultimate Buyer's Guide", excerpt: "Confused about Khatas? Buying a 'B Khata' property can lead to loan rejections and legal trouble. Here is how to verify property records.", content: `<p>If you are buying property in Bengaluru (especially plots or independent houses), the word "Khata" will come up immediately. It is a BBMP (Bruhat Bengaluru Mahanagara Palike) document assessing the property for tax records.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is 'A' Khata?</h3><p>An 'A' Khata certificate means the property is completely legal, fully approved by the BBMP, BDA, or BMRDA, and all property taxes have been paid. <strong>You can easily get home loans and building plan approvals with an 'A' Khata.</strong></p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is 'B' Khata?</h3><p>A 'B' Khata is technically not a certificate; it's just an entry in a register. It signifies that the property is illegal or built in violation of government regulations (e.g., built on unauthorized layouts or lacking DC conversion), but the government is collecting tax on it anyway.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">Why you should avoid B Khata:</h3><ul style="list-style-type: disc; margin-left: 20px;"><li>Nationalized banks (SBI, HDFC) will <strong>not</strong> give you a home loan.</li><li>You cannot get an official building plan approval to construct a house.</li><li>Selling the property later will be extremely difficult.</li></ul><br/><p>Never fall for the "we will upgrade it to A Khata later" promise without verifying with a legal expert.</p>` }
         ];
 
-        // --- ADVANCED EMI CALCULATOR ---
         const EMICalculator = ({ propertyPriceStr, onApplyAction }) => {
             const extractRawNumber = (str) => {
                 const val = extractPriceInCr(str);
@@ -237,7 +236,6 @@
             );
         };
 
-        // --- FULL PAGE PROPERTY DETAILS ---
         const PropertyDetailsPage = ({ property, allProperties, onBack, onSubmitLead, isAdmin, onSelectProperty }) => {
             const [actionModal, setActionModal] = useState(null); 
             const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
@@ -311,7 +309,6 @@
 
                     <div className="max-w-7xl mx-auto w-full p-4 md:p-8 animate-fadeIn">
                         
-                        {/* Scrollable Gallery */}
                         <div className="relative mb-8 w-full max-w-full overflow-hidden rounded-3xl">
                             <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 hide-scroll h-[40vh] md:h-[60vh]">
                                 {allImgs.length > 0 ? allImgs.map((img, i) => (
@@ -341,13 +338,10 @@
                             )}
                         </div>
 
-                        {/* Main Content Layout */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                             
-                            {/* Left Column */}
                             <div className="lg:col-span-2 space-y-10">
                                 
-                                {/* Quick Overview */}
                                 <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 relative">
                                     <div>
                                         <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div>
@@ -403,7 +397,6 @@
                                     )}
                                 </div>
 
-                                {/* ADMIN PROTECTED SECRETS */}
                                 {isAdmin && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-8 border-t border-slate-200">
                                         <div className="bg-[#fffbeb] border border-[#fde68a] p-5 md:p-6 rounded-2xl md:rounded-3xl text-[#92400e]">
@@ -431,11 +424,9 @@
 
                             </div>
 
-                            {/* Right Column (Sticky Sidebar) */}
                             <div className="lg:col-span-1">
                                 <div className="sticky top-24 space-y-6">
                                     
-                                    {/* Action Box */}
                                     <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm">
                                         <div className="mb-6 pb-6 border-b border-slate-100">
                                             <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Starting Price</div>
@@ -455,14 +446,12 @@
                                         </div>
                                     </div>
 
-                                    {/* EMI Calculator */}
                                     <EMICalculator propertyPriceStr={getVal(property, "Price")} onApplyAction={() => openAction('apply_now')} />
 
                                 </div>
                             </div>
                         </div>
 
-                        {/* Similar Properties Section */}
                         {similarProperties.length > 0 && (
                             <div className="mt-16 pt-8 border-t border-slate-200 relative z-0">
                                 <h2 className="text-xl md:text-2xl font-black uppercase tracking-wide text-slate-900 mb-6 border-l-4 border-blue-500 pl-4">Similar Properties</h2>
@@ -487,7 +476,6 @@
                         )}
                     </div>
 
-                    {/* Dynamic Action Modal */}
                     {actionModal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setActionModal(null)}>
                             <div className="bg-white rounded-3xl md:rounded-[40px] p-8 md:p-10 w-full max-w-sm shadow-2xl text-center relative" onClick={e => e.stopPropagation()}>
@@ -534,8 +522,7 @@
             const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
             const [activeBlog, setActiveBlog] = useState(null);
 
-            // Legal Modals State
-            const [legalModal, setLegalModal] = useState(null); // 'terms', 'privacy'
+            const [legalModal, setLegalModal] = useState(null);
 
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -551,13 +538,45 @@
                 
                 const fetchProperties = async () => {
                     try {
-                        const { data, error } = await supabase.from('properties').select('*').or('is_live.eq.true,is_live.is.null');
+                        const { data, error } = await supabase.from('properties').select('*').eq('is_live', true);
                         if (!error) setProperties(data || []);
                     } catch (error) { console.error(error); } 
                     finally { setLoading(false); }
                 };
                 fetchProperties();
-                return () => window.removeEventListener('hashchange', handleHashChange);
+
+                const channel = supabase
+                    .channel('public:properties')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'properties' }, (payload) => {
+                        if (payload.eventType === 'INSERT') {
+                            if (payload.new.is_live === true) {
+                                setProperties(prev => [payload.new, ...prev]);
+                            }
+                        } else if (payload.eventType === 'UPDATE') {
+                            const updated = payload.new;
+                            if (updated.is_live === true) {
+                                setProperties(prev => {
+                                    const exists = prev.some(p => p.id === updated.id);
+                                    return exists
+                                        ? prev.map(p => p.id === updated.id ? updated : p)
+                                        : [updated, ...prev];
+                                });
+                                setSelectedProperty(prev => prev && prev.id === updated.id ? updated : prev);
+                            } else {
+                                setProperties(prev => prev.filter(p => p.id !== updated.id));
+                                setSelectedProperty(prev => prev && prev.id === updated.id ? null : prev);
+                            }
+                        } else if (payload.eventType === 'DELETE') {
+                            setProperties(prev => prev.filter(p => p.id !== payload.old.id));
+                            setSelectedProperty(prev => prev && prev.id === payload.old.id ? null : prev);
+                        }
+                    })
+                    .subscribe();
+
+                return () => {
+                    window.removeEventListener('hashchange', handleHashChange);
+                    supabase.removeChannel(channel);
+                };
             }, []);
 
             const handleLeadSubmit = async (dataToSubmit, projectName, actionType = "General Enquiry", event = null) => {
@@ -586,7 +605,6 @@
 
                     if (error) throw error; 
 
-                    // Trigger Email Alert
                     fetch(GOOGLE_SCRIPT_URL, {
                         method: "POST",
                         body: JSON.stringify({
@@ -1112,7 +1130,6 @@
                         </div>
                     </footer>
 
-                    {/* AI ASSISTANT WHATSAPP BUTTON (Hidden on mobile when viewing a property) */}
                     {!(window.innerWidth < 768 && selectedProperty) && (
                         <div className="fixed bottom-6 right-6 z-[55] flex flex-col items-end animate-fadeIn group">
                             <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, what properties are available?`} target="_blank" className="bg-gradient-to-tr from-green-500 to-green-400 text-white p-4 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-transform flex items-center justify-center">
@@ -1121,7 +1138,6 @@
                         </div>
                     )}
 
-                    {/* Legal Modals */}
                     {legalModal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setLegalModal(null)}>
                             <div className="bg-white rounded-3xl p-8 max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl relative" onClick={e => e.stopPropagation()}>
@@ -1142,7 +1158,6 @@
                         </div>
                     )}
 
-                    {/* General Lead Form */}
                     {showLeadForm && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setShowLeadForm(false)}>
                             <div className="bg-white rounded-3xl md:rounded-[40px] p-8 md:p-10 w-full max-w-sm shadow-2xl text-center relative" onClick={e => e.stopPropagation()}>
