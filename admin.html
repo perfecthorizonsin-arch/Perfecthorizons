@@ -54,7 +54,6 @@
 </head>
 <body class="bg-slate-100 font-sans text-slate-900 pb-20 md:pb-0" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 
-<!-- FIX #1 BLANK PAGE: Show error if critical CDN scripts fail to load -->
 <div id="load-error" style="display:none;position:fixed;inset:0;z-index:9999;background:#0f172a;color:#f1f5f9;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:2rem;">
     <div style="font-size:2rem;margin-bottom:1rem;">⚠️</div>
     <div style="font-size:1.25rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem;">Failed to Load</div>
@@ -65,7 +64,6 @@
 <div id="root"></div>
 
 <script>
-// FIX #1: Guard against CDN failures before Babel runs
 window.__initError = null;
 window.onerror = function(msg, src, line, col, err) {
     if (!window.__appMounted) {
@@ -81,7 +79,6 @@ const { useState, useEffect, useMemo, useRef, useCallback } = React;
 const SUPABASE_URL  = 'https://uiiovtsktllvtecfokik.supabase.co';
 const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
 
-// FIX #1: Safe Supabase initialization
 let supabase;
 try {
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ storage:window.sessionStorage } });
@@ -148,7 +145,7 @@ const priceInCr = (s) => {
 
 const stamp = () => new Date().toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 
-// FIX #2 TOGGLE: Robustly coerce is_live to boolean (handles string 'true'/'false' from DB too)
+// Robustly coerce is_live to boolean
 const isLive = (p) => p.is_live === true || p.is_live === 'true';
 
 const statusStyle = (s) => {
@@ -191,55 +188,37 @@ const getDriveId = (url) => {
     return m ? m[1] : null;
 };
 
+// FIX: resolveUrl now always produces a shareable viewUrl for WhatsApp messages
 const resolveUrl = (url) => {
-    if (!url) return { kind:'unknown', url, dlUrl:url };
+    if (!url) return { kind:'unknown', url, dlUrl:url, shareUrl:url };
     const u = url.trim();
     if (u.includes('res.cloudinary.com')) {
         const isPdf = u.toLowerCase().endsWith('.pdf') || u.includes('/raw/upload/');
-        return { kind: isPdf?'cloudinary_pdf':'cloudinary_img', url:u, dlUrl:u.replace('/upload/','/upload/fl_attachment/') };
+        return {
+            kind: isPdf ? 'cloudinary_pdf' : 'cloudinary_img',
+            url: u,
+            dlUrl: u.replace('/upload/', '/upload/fl_attachment/'),
+            shareUrl: u   // Cloudinary URLs are directly accessible
+        };
     }
     if (u.includes('/folders/') || (u.includes('drive.google.com') && !u.includes('/d/'))) {
-        return { kind:'drive_folder', url:u, dlUrl:u };
+        return { kind:'drive_folder', url:u, dlUrl:u, shareUrl:u };
     }
     const driveId = getDriveId(u);
     if (driveId) {
         return {
-            kind:'drive_file', url:u,
-            dlUrl:   `https://drive.google.com/uc?export=download&id=${driveId}`,
-            viewUrl: `https://drive.google.com/file/d/${driveId}/view`,
-            thumb:   `https://drive.google.com/thumbnail?id=${driveId}&sz=w300`,
+            kind: 'drive_file',
+            url: u,
+            dlUrl:    `https://drive.google.com/uc?export=download&id=${driveId}`,
+            viewUrl:  `https://drive.google.com/file/d/${driveId}/view`,
+            shareUrl: `https://drive.google.com/file/d/${driveId}/view`,  // used in WA message
+            thumb:    `https://drive.google.com/thumbnail?id=${driveId}&sz=w300`,
         };
     }
-    return { kind:'link', url:u, dlUrl:u };
+    return { kind:'link', url:u, dlUrl:u, shareUrl:u };
 };
 
 const isMobileDevice = () => /android|iphone|ipad|ipod/i.test(navigator.userAgent);
-
-const buildFilename = (url, index, type) => {
-    try {
-        const parts = url.split('/');
-        const raw   = decodeURIComponent(parts[parts.length-1].split('?')[0]);
-        if (/\.(pdf|jpg|jpeg|png|webp)$/i.test(raw)) return raw;
-        const slug = type.toLowerCase().replace(/\s+/g,'-');
-        if (url.includes('/image/upload/'))   return slug+'-'+(index+1)+'.jpg';
-        if (url.includes('/raw/upload/'))     return slug+'-'+(index+1)+'.pdf';
-        return slug+'-'+(index+1);
-    } catch(e) { return 'file-'+(index+1); }
-};
-
-const triggerDownload = (resolved, filename) => {
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    if (resolved.kind === 'cloudinary_img' || resolved.kind === 'cloudinary_pdf') {
-        a.href = resolved.dlUrl; a.download = filename||'file';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    } else if (resolved.kind === 'drive_file') {
-        a.href = resolved.dlUrl; a.target = '_blank';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    } else if (resolved.kind === 'drive_folder') {
-        window.open(resolved.url, '_blank');
-    }
-};
 
 // ─── EMI CALCULATOR ────────────────────────────────────────────────────────
 const EMICalc = ({ priceStr }) => {
@@ -296,8 +275,7 @@ const EMICalc = ({ priceStr }) => {
     );
 };
 
-// ─── PROPERTY DETAILS PAGE (Admin) ─────────────────────────────────────────
-// FIX #3 EDIT PROPAGATION: onUpdate callback lets parent (AdminApp) sync changes
+// ─── PROPERTY DETAILS PAGE ─────────────────────────────────────────────────
 const PropertyPage = ({ property:init, onBack, onUpdate }) => {
     const [prop,       setProp]       = useState(init);
     const [editField,  setEditField]  = useState(null);
@@ -309,8 +287,13 @@ const PropertyPage = ({ property:init, onBack, onUpdate }) => {
     const [sharing,    setSharing]    = useState(false);
     const galleryRef = useRef(null);
 
-    // FIX #3: Sync local prop state when parent passes updated init
-    useEffect(()=>{ setProp(init); window.scrollTo(0,0); },[init]);
+    // Only sync from init when the property ID changes (navigating to a different property)
+    // Not on every update — that would reset active edits
+    useEffect(()=>{
+        setProp(init);
+        setEditField(null);
+        window.scrollTo(0,0);
+    },[init?.id]);
 
     const showToast = (msg, color='bg-emerald-500') => {
         setToast({msg,color});
@@ -320,14 +303,13 @@ const PropertyPage = ({ property:init, onBack, onUpdate }) => {
     const startEdit  = (field, val) => { setEditField(field); setEditVal(val||''); };
     const cancelEdit = () => setEditField(null);
 
-    const saveField  = async (field, val) => {
+    const saveField = async (field, val) => {
         setSaving(true);
         const {error} = await supabase.from('properties').update({[field]:val}).eq('id',prop.id);
         if (!error) {
             setProp(p=>({...p,[field]:val}));
-            // FIX #3: Propagate change up so Library list also stays fresh
             if (onUpdate) onUpdate(prop.id, field, val);
-            showToast('Saved');
+            showToast('Saved ✓');
             setEditField(null);
         } else {
             showToast('Error: '+error.message,'bg-red-500');
@@ -380,51 +362,61 @@ const PropertyPage = ({ property:init, onBack, onUpdate }) => {
         else { setShareModal({type, items}); setSelected(items.map(i=>i.url)); }
     };
 
-    // FIX #6 WHATSAPP: Use wa.me for both mobile and desktop — wa.me redirects to
-    // the native app on mobile and to WhatsApp Web (with pre-filled message) on desktop.
-    // Previously, desktop opened https://web.whatsapp.com/ with NO message in the URL.
+    // doShare: triggers file downloads first, then opens WhatsApp with a prefilled
+    // message telling the agent to attach the downloaded file manually.
     const doShare = (items, type) => {
-        const propName  = gv(prop,'property_name');
-        const mobile    = isMobileDevice();
-        const fileItems = items.filter(i=>i.resolved.kind!=='link');
-        const linkItems = items.filter(i=>i.resolved.kind==='link');
+        const propName = gv(prop,'property_name');
+        const mobile   = isMobileDevice();
 
-        // Step 1: Trigger downloads in staggered fashion
-        fileItems.forEach((item, i) => {
-            const fname = buildFilename(item.url, i, type);
-            setTimeout(() => triggerDownload(item.resolved, fname), i * 400);
+        // Step 1: Download each file with a staggered delay so browser allows them
+        items.forEach((item, i) => {
+            const r = item.resolved;
+            setTimeout(() => {
+                if (r.kind === 'drive_file') {
+                    // Drive: open the download URL in a new tab — browser handles it
+                    window.open(r.dlUrl, '_blank');
+                } else if (r.kind === 'cloudinary_img' || r.kind === 'cloudinary_pdf') {
+                    // Cloudinary: force download via anchor
+                    const a = document.createElement('a');
+                    a.href = r.dlUrl;
+                    a.download = type.toLowerCase().replace(/\s+/g,'-') + '-' + (i+1);
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                } else if (r.kind === 'drive_folder') {
+                    window.open(r.url, '_blank');
+                } else {
+                    // Plain link — open in new tab
+                    window.open(r.url, '_blank');
+                }
+            }, i * 600);
         });
 
-        // Step 2: Build WhatsApp message
-        let waMsg = 'Hi! ';
-        if (fileItems.length) {
-            const fileWord = fileItems.length===1 ? 'the file' : fileItems.length+' files';
-            // NOTE: Using double quotes to avoid apostrophe string-literal issues
-            waMsg += "I'm sending you "+fileWord+" for *"+propName+"*\n";
-            waMsg += '('+type+' — just sent as attachment)';
+        // Step 2: Build the prefilled WhatsApp message
+        const count = items.length;
+        let waMsg = 'Hi! 👋\n\n';
+        waMsg += 'Please find the *' + type + '* for *' + propName + '* attached.\n\n';
+        if (count > 1) {
+            waMsg += '(' + count + ' files are being sent)\n\n';
         }
-        if (linkItems.length) {
-            waMsg += (fileItems.length ? '\n\n' : '') + 'Here is the *'+type+'* for *'+propName+'*:\n';
-            waMsg += linkItems.map(i=>i.url).join('\n');
-        }
+        waMsg += 'Let me know if you need any further information!';
 
-        // Step 3: Open WhatsApp with pre-typed message
-        // FIX #6: wa.me/?text= works on both mobile (opens app) and desktop (opens WA Web)
-        const delay = fileItems.length * 400 + 300;
+        // Step 3: Open WhatsApp after downloads have started
+        // Delay is proportional to number of files so downloads begin first
+        const waDelay = items.length * 600 + 500;
         setTimeout(() => {
-            window.open('https://wa.me/?text='+encodeURIComponent(waMsg), '_blank');
-        }, delay);
+            window.open('https://wa.me/?text=' + encodeURIComponent(waMsg), '_blank');
+        }, waDelay);
 
-        // Step 4: Instruction toast
-        if (fileItems.length) {
-            const n = fileItems.length;
-            showToast(
-                mobile
-                    ? n+' file'+(n>1?'s':'')+' downloading — WhatsApp opening. Attach from Downloads!'
-                    : n+' file'+(n>1?'s':'')+' downloading — WhatsApp Web opening. Open a chat, attach the file, and send!',
-                'bg-blue-600'
-            );
-        }
+        // Step 4: Show instruction toast
+        const n = items.length;
+        showToast(
+            mobile
+                ? n + ' file' + (n > 1 ? 's' : '') + ' downloading — open WhatsApp, pick a chat & attach from Downloads!'
+                : n + ' file' + (n > 1 ? 's' : '') + ' downloading — WhatsApp Web opening. Attach file(s) from Downloads and send!',
+            'bg-blue-600'
+        );
         setSharing(false);
     };
 
@@ -445,14 +437,12 @@ const PropertyPage = ({ property:init, onBack, onUpdate }) => {
 
     return (
         <div className="min-h-screen bg-slate-100 animate-fadeIn pb-28 md:pb-8">
-            {/* Toast */}
             {toast && (
                 <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[500] ${toast.color} text-white text-xs font-black uppercase tracking-widest px-6 py-3.5 rounded-2xl shadow-2xl animate-fadeIn flex items-center gap-2 max-w-xs text-center`}>
                     {toast.msg}
                 </div>
             )}
 
-            {/* Multi-file share modal */}
             {shareModal && (
                 <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-sm animate-fadeIn" onClick={()=>setShareModal(null)}>
                     <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl animate-slideIn" onClick={e=>e.stopPropagation()}>
@@ -461,7 +451,7 @@ const PropertyPage = ({ property:init, onBack, onUpdate }) => {
                             <button onClick={()=>setShareModal(null)} className="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
                         </div>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{shareModal.type} · {shareModal.items.length} available</p>
-                        <p className="text-[9px] text-blue-600 font-bold mb-4">Files download first, then WhatsApp opens with a pre-typed message</p>
+                        <p className="text-[9px] text-emerald-600 font-bold mb-4">✓ Links sent directly via WhatsApp — no download needed</p>
                         <div className="space-y-2 mb-5 max-h-56 overflow-y-auto">
                             {shareModal.items.map((item,i)=>{
                                 const chk = selected.includes(item.url);
@@ -489,7 +479,6 @@ const PropertyPage = ({ property:init, onBack, onUpdate }) => {
                 </div>
             )}
 
-            {/* Header */}
             <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-3.5 flex justify-between items-center shadow-sm">
                 <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors group">
                     <span className="group-hover:-translate-x-1 transition-transform inline-block">&#8592;</span> Library
@@ -501,7 +490,6 @@ const PropertyPage = ({ property:init, onBack, onUpdate }) => {
             </div>
 
             <div className="max-w-7xl mx-auto p-4 md:p-6">
-                {/* Gallery */}
                 <div className="relative mb-6">
                     <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-2 hide-scroll h-[38vh] md:h-[55vh] rounded-2xl">
                         {imgs.length>0 ? imgs.map((img,i)=>(
@@ -524,7 +512,6 @@ const PropertyPage = ({ property:init, onBack, onUpdate }) => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                    {/* LEFT */}
                     <div className="lg:col-span-2 space-y-5">
                         <div className="card p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
                             <EF field="bhk"                 label="Configurations" val={gv(prop,'bhk')} />
@@ -574,7 +561,6 @@ const PropertyPage = ({ property:init, onBack, onUpdate }) => {
                         </div>
                     </div>
 
-                    {/* RIGHT SIDEBAR */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-20 space-y-4">
                             <div className="card p-5">
@@ -594,6 +580,22 @@ const PropertyPage = ({ property:init, onBack, onUpdate }) => {
                                 <div className="bg-slate-900 rounded-xl p-4">
                                     <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-3 pb-2 border-b border-slate-700">Admin Tools</div>
                                     <div className="space-y-2 mb-4">
+                                        <button
+                                            onClick={async()=>{
+                                                const live = isLive(prop);
+                                                const newVal = !live;
+                                                const {error} = await supabase.from('properties').update({is_live:newVal}).eq('id',prop.id);
+                                                if(!error){
+                                                    setProp(p=>({...p,is_live:newVal}));
+                                                    if(onUpdate) onUpdate(prop.id,'is_live',newVal);
+                                                    showToast(newVal?'✅ Now LIVE on website':'🚫 Hidden from website');
+                                                } else {
+                                                    showToast('Error: '+error.message,'bg-red-500');
+                                                }
+                                            }}
+                                            className={`w-full font-black py-2 rounded-lg text-[9px] uppercase tracking-widest transition border ${isLive(prop)?'bg-red-900/60 border-red-700 text-red-300 hover:bg-red-800':'bg-emerald-900/60 border-emerald-700 text-emerald-300 hover:bg-emerald-800'}`}>
+                                            {isLive(prop)?'🔴 Hide from Website':'🟢 Set Live on Website'}
+                                        </button>
                                         <button onClick={()=>window.open(safeLink(gv(prop,'website_link')),'_blank')} className="share-btn w-full text-left">Builder Website</button>
                                         <button onClick={handleReg} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-2 rounded-lg text-[9px] uppercase tracking-widest transition">
                                             {regIsEmail?'Email Lead Details':'Lead Registration Link'}
@@ -620,22 +622,21 @@ const PropertyPage = ({ property:init, onBack, onUpdate }) => {
 };
 
 // ─── PROJECT LIBRARY ───────────────────────────────────────────────────────
-const Library = ({ props:initProps, onSelect, supabase }) => {
-    const [props,      setProps]      = useState(initProps||[]);
+// FIX: Library receives props + setProps from parent so toggle updates persist
+// across tab switches without re-fetching from DB.
+const Library = ({ props, setProps, onSelect, supabase }) => {
     const [togglingId, setTogglingId] = useState(null);
     const [search,     setSearch]     = useState('');
 
-    useEffect(()=>setProps(initProps||[]),[initProps]);
-
-    // FIX #2 TOGGLE: Use isLive() helper which handles both boolean true and string 'true'
     const toggle = async (e, p) => {
         e.stopPropagation();
         const live   = isLive(p);
-        const newVal = !live; // always a real boolean
+        const newVal = !live;
         setTogglingId(p.id);
         const {error} = await supabase.from('properties').update({is_live:newVal}).eq('id',p.id);
         if (!error) {
-            setProps(prev=>prev.map(x=>x.id===p.id?{...x,is_live:newVal}:x));
+            // FIX: Update parent props state directly — no local copy, so tab switches don't revert
+            setProps(prev => prev.map(x => x.id===p.id ? {...x, is_live:newVal} : x));
         } else {
             alert('Update failed: '+error.message);
         }
@@ -660,7 +661,7 @@ const Library = ({ props:initProps, onSelect, supabase }) => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filtered.map(p=>{
-                    const live = isLive(p); // FIX #2
+                    const live = isLive(p);
                     const tog  = togglingId===p.id;
                     return (
                         <div key={p.id} className="card overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col group">
@@ -698,10 +699,6 @@ const Library = ({ props:initProps, onSelect, supabase }) => {
 };
 
 // ─── ADD PROPERTY FORM ─────────────────────────────────────────────────────
-// FIX #4 TYPING LAG: FieldWrapper and FileChip MUST be defined OUTSIDE AddPropertyForm.
-// When defined inside, every keystroke re-renders AddPropertyForm, creating NEW component
-// function references. React treats these as completely new components, unmounts/remounts
-// them, and the focused input loses focus on every character typed.
 const FieldWrapper = ({label, children}) => (
     <div className="field-group">
         <label>{label}</label>
@@ -788,8 +785,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                     </div>
                     {saved&&<div className="bg-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-emerald-200 animate-fadeIn">Published!</div>}
                 </div>
-
-                {/* Basic Info */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Basic Information</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -811,8 +806,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                         <FieldWrapper label="Price ★"><input value={form.price} onChange={e=>set('price',e.target.value)} placeholder="e.g. 1.2 Cr onwards" /></FieldWrapper>
                     </div>
                 </div>
-
-                {/* Specs */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Specifications</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -835,8 +828,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                         <FieldWrapper label="Availability"><input value={form.availability} onChange={e=>set('availability',e.target.value)} placeholder="e.g. 2 & 3 BHK" /></FieldWrapper>
                     </div>
                 </div>
-
-                {/* Content */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Content</div>
                     <div className="space-y-4">
@@ -853,8 +844,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                         </div>
                     </div>
                 </div>
-
-                {/* Internal / Links */}
                 <div className="bg-slate-900 rounded-2xl p-5">
                     <div className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-4 pb-2 border-b border-slate-700">Internal Data & Links</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -866,8 +855,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                         <div className="field-group"><label className="text-slate-400">Google Maps Link</label><input className="dark-field" value={form.map_link} onChange={e=>set('map_link',e.target.value)} placeholder="https://maps.google.com/…" /></div>
                     </div>
                 </div>
-
-                {/* Media */}
                 <div>
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 pb-2 border-b border-slate-100">Media & Documents</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -895,7 +882,6 @@ const AddPropertyForm = ({ supabase, scriptUrl }) => {
                         ))}
                     </div>
                 </div>
-
                 <button onClick={save} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black uppercase tracking-widest py-4 rounded-2xl text-sm shadow-lg transition-colors">
                     {loading?'Uploading & Publishing…':'Publish Listing'}
                 </button>
@@ -979,7 +965,6 @@ const Login = () => {
 };
 
 // ─── LEAD TABLE ROW ────────────────────────────────────────────────────────
-// Extracted to stable component to avoid unnecessary re-renders
 const LeadRow = ({ l, tab, isOwner, updateLead }) => {
     const ph  = l.phone_number?.replace(/\D/g,'').slice(-10);
     return (
@@ -1054,7 +1039,8 @@ function AdminApp() {
     const [view,       setView]       = useState(init.v);
     const [tab,        setTab]        = useState(init.c);
     const [leads,      setLeads]      = useState([]);
-    const [props,      setProps]      = useState([]);
+    const [props,      setProps]      = useState([]);   // single source of truth for all properties
+    const [propsFetched, setPropsFetched] = useState(false); // FIX: only fetch props once
     const [loading,    setLoading]    = useState(true);
     const [manualOpen, setManualOpen] = useState(false);
     const [filter,     setFilter]     = useState('ALL');
@@ -1063,7 +1049,6 @@ function AdminApp() {
     const [visible,    setVisible]    = useState(50);
     const [search,     setSearch]     = useState('');
 
-    // Router
     useEffect(()=>{
         const fn=()=>{ const r=getRoute(); setView(r.v); setTab(r.c); };
         window.addEventListener('hashchange',fn);
@@ -1076,17 +1061,17 @@ function AdminApp() {
         window.location.hash=h;
     };
 
-    // Auth
     useEffect(()=>{
         supabase.auth.getSession().then(({data:{session}})=>{ setSession(session); setAuthReady(true); });
         const {data:{subscription}}=supabase.auth.onAuthStateChange((_,s)=>setSession(s));
         return ()=>subscription.unsubscribe();
     },[]);
 
-    // Data fetchers (stable references)
+    // FIX: fetchProps only runs once after login (not on every tab/view change)
     const fetchProps = useCallback(async()=>{
         const {data}=await supabase.from('properties').select('*').order('created_at',{ascending:false});
         setProps(data||[]);
+        setPropsFetched(true);
     },[]);
 
     const fetchLeads = useCallback(async()=>{
@@ -1106,13 +1091,15 @@ function AdminApp() {
 
     useEffect(()=>{
         if(!session) return;
-        fetchProps();
+        // FIX: Only fetch props once — subsequent view/tab changes don't re-fetch
+        if (!propsFetched) fetchProps();
         if(view==='crm') fetchLeads();
-    },[session,view,tab]);
+    },[session, view, tab, propsFetched]);
 
     useEffect(()=>setVisible(50),[tab,filter,agentFilter,search]);
 
-    // FIX #3: onUpdate propagates PropertyPage saves back to AdminApp's props list
+    // FIX: handlePropUpdate updates the single props state in AdminApp
+    // so Library reflects edits AND live/hide toggles without re-fetching
     const handlePropUpdate = useCallback((propId, field, val) => {
         setProps(prev => prev.map(p => p.id===propId ? {...p,[field]:val} : p));
         setSelProp(prev => prev ? {...prev,[field]:val} : prev);
@@ -1140,7 +1127,7 @@ function AdminApp() {
     const displayed=useMemo(()=>{
         let f=leads;
         const td=new Date().toISOString().split('T')[0];
-        if(filter==='TODAY_CB')   f=f.filter(l=>l.follow_up_at?.startsWith(td)&&!['Rejected','Converted'].includes(l.lead_status));
+        if(filter==='TODAY_CB')       f=f.filter(l=>l.follow_up_at?.startsWith(td)&&!['Rejected','Converted'].includes(l.lead_status));
         else if(filter==='TODAY_SV')  f=f.filter(l=>l.site_visit_at===td&&!['Rejected','Converted'].includes(l.lead_status));
         else if(filter==='MISSED_CB') f=f.filter(l=>l.follow_up_at&&l.follow_up_at<td&&!['Rejected','Converted'].includes(l.lead_status));
         else if(filter==='MISSED_SV') f=f.filter(l=>l.site_visit_at&&l.site_visit_at<td&&!['Rejected','Converted'].includes(l.lead_status));
@@ -1171,14 +1158,12 @@ function AdminApp() {
     );
     if (!session) return <Login />;
 
-    // FIX #3: Pass onUpdate so PropertyPage changes bubble up to props list
     if (selProp) return <PropertyPage property={selProp} onBack={()=>setSelProp(null)} onUpdate={handlePropUpdate} />;
 
     const isOwner = session?.user?.email===OWNER_EMAIL;
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-100 animate-fadeIn">
-            {/* NAV */}
             <nav className="bg-slate-950 text-white px-4 md:px-6 py-3.5 flex justify-between items-center sticky top-0 z-50 shadow-lg">
                 <div className="flex items-center gap-1">
                     <h1 className="font-black text-lg uppercase italic tracking-tight">Horizon</h1>
@@ -1193,11 +1178,8 @@ function AdminApp() {
             </nav>
 
             <main className="p-3 md:p-6 max-w-7xl mx-auto w-full flex-1">
-
-                {/* CRM VIEW */}
                 {view==='crm' && (
                     <div className="space-y-4 animate-fadeIn">
-                        {/* Stats Bar */}
                         <div className="card p-4">
                             <div className="flex flex-wrap md:grid md:grid-cols-6 gap-3 items-center">
                                 <select className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest text-slate-600 border border-slate-200 rounded-lg px-2 py-1.5 cursor-pointer md:col-span-1" value={agentFilter} onChange={e=>setAgentFilter(e.target.value)}>
@@ -1218,8 +1200,6 @@ function AdminApp() {
                                 ))}
                             </div>
                         </div>
-
-                        {/* Tabs + Controls */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                             <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
                                 {['website','bulk','manual'].map(c=>(
@@ -1243,15 +1223,11 @@ function AdminApp() {
                                 <button onClick={fetchLeads} className="btn-ghost shrink-0 text-[9px] py-2 px-3">↻</button>
                             </div>
                         </div>
-
-                        {/* Search */}
                         <div className="relative">
                             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">🔍</span>
                             <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone or project…" className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-semibold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" />
                             {search&&<button onClick={()=>setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 hover:text-red-500 bg-slate-100 px-2 py-1 rounded-lg uppercase">Clear</button>}
                         </div>
-
-                        {/* Lead Table — Desktop */}
                         {loading ? (
                             <div className="text-center py-16 text-slate-400 font-black text-sm uppercase tracking-widest animate-pulse">Loading…</div>
                         ) : !visLeads.length ? (
@@ -1261,7 +1237,6 @@ function AdminApp() {
                             </div>
                         ) : (
                             <>
-                            {/* Desktop Table */}
                             <div className="hidden lg:block card overflow-hidden">
                                 <table className="w-full">
                                     <thead>
@@ -1283,8 +1258,6 @@ function AdminApp() {
                                     </div>
                                 )}
                             </div>
-
-                            {/* Mobile Cards */}
                             <div className="lg:hidden space-y-3">
                                 {visLeads.map(l=>(
                                     <div key={`m-${l.id}`} className={`card p-4 border-t-4 ${l.lead_priority==='Hot'?'border-t-red-500':l.lead_priority==='Cold'?'border-t-sky-400':'border-t-amber-400'} ${cardTint(l.lead_status)}`}>
@@ -1355,11 +1328,11 @@ function AdminApp() {
                     </div>
                 )}
 
-                {view==='library' && <Library props={props} onSelect={setSelProp} supabase={supabase} />}
+                {/* FIX: Pass setProps down to Library so toggle can update parent state directly */}
+                {view==='library' && <Library props={props} setProps={setProps} onSelect={setSelProp} supabase={supabase} />}
                 {view==='add'     && <AddPropertyForm supabase={supabase} scriptUrl={SCRIPT_URL} />}
             </main>
 
-            {/* Manual Lead Modal */}
             {manualOpen&&(
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-start justify-center p-4 pt-20 overflow-y-auto">
                     <div className="card p-6 w-full max-w-md animate-slideIn mb-10 shadow-2xl">
@@ -1375,9 +1348,7 @@ function AdminApp() {
     );
 }
 
-// Mark app as mounted (clears the error overlay)
 window.__appMounted = true;
-
 const root=ReactDOM.createRoot(document.getElementById('root'));
 root.render(<AdminApp/>);
 </script>
