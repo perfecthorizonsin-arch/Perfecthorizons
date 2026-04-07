@@ -13,42 +13,416 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
+    <!-- PREMIUM FONT: Cormorant Garamond for headings, DM Sans for body - refined Indian real estate aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet">
+
     <style>
-        body { overflow-x: hidden; width: 100%; position: relative; }
+        /* ============================================================
+           DESIGN TOKENS — Premium Navy + Gold Indian Real Estate Palette
+           ============================================================ */
+        :root {
+            --navy:       #0F172A;    /* Deep navy – primary brand */
+            --navy-mid:   #1E3A5F;    /* Mid navy – secondary surfaces */
+            --teal:       #1E3A8A;    /* Teal blue – interactive */
+            --gold:       #D97706;    /* Warm gold – CTA accent */
+            --gold-light: #FEF3C7;    /* Soft gold tint */
+            --emerald:    #059669;    /* Status – ready to move */
+            --cream:      #F8F4ED;    /* Warm off-white background */
+            --parchment:  #F0EBE1;    /* Slightly deeper cream for sections */
+            --card-bg:    #FFFFFF;    /* Card background */
+            --slate-soft: #64748B;    /* Secondary text */
+            --border:     #E8E2D9;    /* Warm border tone */
+            --shadow-sm:  0 2px 12px rgba(15,23,42,0.07);
+            --shadow-md:  0 8px 32px rgba(15,23,42,0.12);
+            --shadow-lift: 0 20px 48px rgba(15,23,42,0.18);
+            --radius-card: 1.5rem;
+            --radius-btn: 0.875rem;
+        }
+
+        /* ============================================================
+           BASE — Typography & Body
+           ============================================================ */
+        body {
+            overflow-x: hidden;
+            width: 100%;
+            position: relative;
+            font-family: 'DM Sans', system-ui, sans-serif;
+            background-color: var(--cream);
+            color: var(--navy);
+            /* subtle warm texture */
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D97706' fill-opacity='0.018'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
-        .dropdown-arrow { display: inline-block; margin-left: 4px; width: 0; height: 0; vertical-align: middle; border-top: 4px solid currentColor; border-right: 4px solid transparent; border-left: 4px solid transparent; }
-        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-        
-        @keyframes pulse-fast { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.98); } }
-        .splash-title { font-family: sans-serif; color: #1e3a8a; font-size: 2rem; font-weight: 900; font-style: italic; text-transform: uppercase; animation: pulse-fast 1.2s ease-in-out infinite; }
-        .splash-sub { font-family: sans-serif; color: #64748b; font-size: 0.75rem; margin-top: 1rem; font-weight: bold; letter-spacing: 0.15em; text-transform: uppercase; }
 
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        .animate-marquee { display: flex; white-space: nowrap; animation: marquee 20s linear infinite; }
+        /* ============================================================
+           ANIMATIONS — Refined micro-interactions
+           ============================================================ */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        /* Dropdown slide-down: premium feel */
+        @keyframes dropdownSlide {
+            from { opacity: 0; transform: translateY(-8px) scaleY(0.96); }
+            to   { opacity: 1; transform: translateY(0) scaleY(1); }
+        }
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.6; transform: scale(0.98); }
+        }
+        @keyframes marquee {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        @keyframes shimmer {
+            0%   { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        @keyframes drawHouse { to { stroke-dashoffset: 0; } }
+
+        .animate-fadeIn    { animation: fadeIn 0.35s cubic-bezier(.22,.68,0,1.2) forwards; }
+        .animate-marquee   { display: flex; white-space: nowrap; animation: marquee 20s linear infinite; }
         .marquee-container:hover .animate-marquee { animation-play-state: paused; }
-        
+
+        /* ============================================================
+           SPLASH SCREEN — Premium loading
+           ============================================================ */
+        .splash-title {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            color: var(--navy);
+            font-size: 2.25rem;
+            font-weight: 700;
+            font-style: italic;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            animation: pulse-fast 1.2s ease-in-out infinite;
+        }
+        .splash-sub {
+            font-family: 'DM Sans', sans-serif;
+            color: var(--slate-soft);
+            font-size: 0.7rem;
+            margin-top: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+        .splash-house-path {
+            stroke-dasharray: 300;
+            stroke-dashoffset: 300;
+            animation: drawHouse 1.5s ease-in-out forwards;
+        }
+
+        /* ============================================================
+           PREMIUM DROPDOWN — Slide + fade, glass-like surface
+           ============================================================ */
+        .dropdown-arrow {
+            display: inline-block;
+            margin-left: 5px;
+            width: 0; height: 0;
+            vertical-align: middle;
+            border-top: 4px solid currentColor;
+            border-right: 4px solid transparent;
+            border-left: 4px solid transparent;
+            transition: transform 0.25s ease;
+        }
+        /* Desktop nav dropdown */
+        .nav-dropdown-group { position: relative; }
+        .nav-dropdown-group .nav-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            min-width: 200px;
+            background: rgba(15, 23, 42, 0.97);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(217,119,6,0.12);
+            overflow: hidden;
+            z-index: 60;
+            transform-origin: top right;
+        }
+        .nav-dropdown-group:hover .nav-dropdown-menu,
+        .nav-dropdown-group:focus-within .nav-dropdown-menu {
+            display: block;
+            animation: dropdownSlide 0.25s cubic-bezier(.22,.68,0,1.2) forwards;
+        }
+        .nav-dropdown-group:hover .dropdown-arrow { transform: rotate(180deg); }
+        .nav-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 13px 18px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: rgba(255,255,255,0.75);
+            cursor: pointer;
+            transition: background 0.18s ease, color 0.18s ease, padding-left 0.18s ease;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .nav-dropdown-item:last-child { border-bottom: none; }
+        .nav-dropdown-item:hover {
+            background: rgba(217,119,6,0.12);
+            color: #FCD34D;
+            padding-left: 24px;
+        }
+        .nav-dropdown-item .icon {
+            width: 28px; height: 28px;
+            border-radius: 7px;
+            background: rgba(255,255,255,0.06);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            transition: background 0.18s;
+        }
+        .nav-dropdown-item:hover .icon { background: rgba(217,119,6,0.2); }
+
+        /* Mobile dropdown accordion */
+        .mobile-accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+            opacity: 0;
+        }
+        .mobile-accordion-content.open {
+            max-height: 200px;
+            opacity: 1;
+        }
+
+        /* ============================================================
+           PREMIUM FILTER SELECTS — Custom styled dropdowns
+           ============================================================ */
+        .ph-select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%230F172A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px !important;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+        }
+        .ph-select:hover {
+            border-color: var(--gold) !important;
+            box-shadow: 0 0 0 3px rgba(217,119,6,0.1);
+        }
+        .ph-select:focus {
+            border-color: var(--teal) !important;
+            box-shadow: 0 0 0 3px rgba(30,58,138,0.12);
+            outline: none;
+        }
+
+        /* ============================================================
+           PROPERTY CARDS — Premium lift + shimmer hover
+           ============================================================ */
+        .prop-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-card);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(.22,.68,0,1.1), box-shadow 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+        .prop-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-lift);
+        }
+        .prop-card:hover .card-img { transform: scale(1.08); }
+        .card-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transition: transform 0.7s cubic-bezier(.22,.68,0,1.1);
+        }
+        /* Gold accent line on card hover */
+        .prop-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .prop-card:hover::after { opacity: 1; }
+
+        /* Status badge */
+        .status-badge {
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            padding: 4px 10px;
+            border-radius: 999px;
+        }
+        .status-ready    { background: #DCFCE7; color: #166534; }
+        .status-under    { background: #FEF3C7; color: #92400E; }
+        .status-new      { background: #EFF6FF; color: #1E40AF; }
+        .status-default  { background: #F1F5F9; color: #475569; }
+
+        /* Type badge (top left of card image) */
+        .type-badge {
+            position: absolute;
+            top: 14px; left: 0;
+            background: rgba(15,23,42,0.88);
+            backdrop-filter: blur(8px);
+            color: #FCD34D;
+            font-size: 0.6rem;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            padding: 5px 14px 5px 12px;
+            border-radius: 0 8px 8px 0;
+            border-left: 3px solid var(--gold);
+            box-shadow: 2px 0 12px rgba(0,0,0,0.25);
+        }
+
+        /* ============================================================
+           RANGE SLIDER — Premium gold thumb
+           ============================================================ */
         input[type=range] { -webkit-appearance: none; background: transparent; width: 100%; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; background: #2563eb; cursor: pointer; margin-top: -7px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px; width: 20px;
+            background: linear-gradient(135deg, var(--gold), #F59E0B);
+            cursor: pointer;
+            margin-top: -8px;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(217,119,6,0.4);
+            border: 2px solid white;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 3px 14px rgba(217,119,6,0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px;
+            cursor: pointer;
+            background: linear-gradient(90deg, var(--teal), #cbd5e1);
+            border-radius: 2px;
+        }
+
+        /* ============================================================
+           PIE CHART
+           ============================================================ */
         .pie-chart { border-radius: 50%; display: inline-block; }
 
-        .splash-house-path { stroke-dasharray: 300; stroke-dashoffset: 300; animation: drawHouse 1.5s ease-in-out forwards; }
-        @keyframes drawHouse { to { stroke-dashoffset: 0; } }
+        /* ============================================================
+           LINE CLAMP
+           ============================================================ */
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* ============================================================
+           NAV — Active link gold underline
+           ============================================================ */
+        .nav-link-active {
+            color: #FCD34D !important;
+            position: relative;
+        }
+        .nav-link-active::after {
+            content: '';
+            position: absolute;
+            bottom: -4px; left: 0; right: 0;
+            height: 2px;
+            background: var(--gold);
+            border-radius: 1px;
+        }
+
+        /* ============================================================
+           CTA BUTTON — Gold gradient
+           ============================================================ */
+        .btn-gold {
+            background: linear-gradient(135deg, #D97706, #F59E0B);
+            color: white;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border-radius: var(--radius-btn);
+            box-shadow: 0 4px 14px rgba(217,119,6,0.35);
+            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+        }
+        .btn-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(217,119,6,0.45);
+            filter: brightness(1.05);
+        }
+        .btn-gold:active { transform: scale(0.97); }
+
+        /* ============================================================
+           FILTER BAR — Warm background
+           ============================================================ */
+        .filter-bar { background: var(--parchment); border-bottom: 1px solid var(--border); }
+
+        /* ============================================================
+           MOBILE BOTTOM NAV — Remove extra padding on iOS
+           ============================================================ */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            body { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+        }
+
+        /* ============================================================
+           MOBILE TOUCH — Larger hit targets
+           ============================================================ */
+        @media (max-width: 768px) {
+            .ph-select { min-height: 48px; font-size: 0.8rem !important; }
+            .mobile-nav-item { min-height: 52px; padding: 14px 16px; }
+            .prop-card { border-radius: 1.25rem; }
+        }
+
+        /* ============================================================
+           FOOTER — Warm dark
+           ============================================================ */
+        .ph-footer {
+            background: linear-gradient(135deg, #0A1628, #0F172A);
+            border-top: 1px solid rgba(217,119,6,0.15);
+        }
+
+        /* Section label pill */
+        .section-pill {
+            display: inline-block;
+            background: var(--gold-light);
+            color: var(--gold);
+            font-size: 0.6rem;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            padding: 6px 16px;
+            border-radius: 999px;
+            border: 1px solid rgba(217,119,6,0.25);
+        }
+
+        /* ============================================================
+           SCROLLBAR (Desktop) — Thin warm tone
+           ============================================================ */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--cream); }
+        ::-webkit-scrollbar-thumb { background: rgba(217,119,6,0.3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans pb-24 md:pb-0 overflow-x-hidden w-full max-w-[100vw]">
+<body class="text-gray-900 pb-24 md:pb-0 overflow-x-hidden w-full max-w-[100vw]">
     
-    <div id="native-splash" style="position: fixed; inset: 0; z-index: 99999; background-color: #f8fafc; display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.4s ease;">
-        <svg width="120" height="120" viewBox="0 0 100 100" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 15px;">
-            <path class="splash-house-path" d="M10 50 L50 15 L90 50" stroke="#f59e0b" />
-            <path class="splash-house-path" d="M20 42 V85 H80 V42" stroke="#3b82f6" />
-            <path class="splash-house-path" d="M40 85 V60 H60 V85" stroke="#10b981" />
+    <!-- PREMIUM SPLASH SCREEN — Animated house draw + refined typography -->
+    <div id="native-splash" style="position: fixed; inset: 0; z-index: 99999; background: linear-gradient(135deg, #F8F4ED 0%, #F0EBE1 100%); display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.5s ease;">
+        <svg width="110" height="110" viewBox="0 0 100 100" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 18px; filter: drop-shadow(0 8px 24px rgba(217,119,6,0.2));">
+            <path class="splash-house-path" d="M10 50 L50 15 L90 50" stroke="#D97706" />
+            <path class="splash-house-path" d="M20 42 V85 H80 V42" stroke="#1E3A8A" />
+            <path class="splash-house-path" d="M40 85 V60 H60 V85" stroke="#059669" />
         </svg>
         <div class="splash-title">Perfect Horizons</div>
-        <div class="splash-sub">Curating Properties...</div>
+        <div class="splash-sub">Curating your perfect property&hellip;</div>
     </div>
 
     <script>
@@ -149,6 +523,7 @@
             { id: 4, tag: "Legal Guide", title: "A Khata vs B Khata in Bengaluru: The Ultimate Buyer's Guide", excerpt: "Confused about Khatas? Buying a 'B Khata' property can lead to loan rejections and legal trouble. Here is how to verify property records.", content: `<p>If you are buying property in Bengaluru (especially plots or independent houses), the word "Khata" will come up immediately. It is a BBMP (Bruhat Bengaluru Mahanagara Palike) document assessing the property for tax records.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is 'A' Khata?</h3><p>An 'A' Khata certificate means the property is completely legal, fully approved by the BBMP, BDA, or BMRDA, and all property taxes have been paid. <strong>You can easily get home loans and building plan approvals with an 'A' Khata.</strong></p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">What is 'B' Khata?</h3><p>A 'B' Khata is technically not a certificate; it's just an entry in a register. It signifies that the property is illegal or built in violation of government regulations (e.g., built on unauthorized layouts or lacking DC conversion), but the government is collecting tax on it anyway.</p><br/><h3 style="font-weight: 900; font-size: 1.1rem; color: #1e3a8a;">Why you should avoid B Khata:</h3><ul style="list-style-type: disc; margin-left: 20px;"><li>Nationalized banks (SBI, HDFC) will <strong>not</strong> give you a home loan.</li><li>You cannot get an official building plan approval to construct a house.</li><li>Selling the property later will be extremely difficult.</li></ul><br/><p>Never fall for the "we will upgrade it to A Khata later" promise without verifying with a legal expert.</p>` }
         ];
 
+        // --- ADVANCED EMI CALCULATOR ---
         const EMICalculator = ({ propertyPriceStr, onApplyAction }) => {
             const extractRawNumber = (str) => {
                 const val = extractPriceInCr(str);
@@ -180,21 +555,21 @@
             }, [loanAmount, interestRate, tenureYears]);
 
             return (
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm mt-6">
-                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-6 flex items-center">
-                        <span className="mr-2 text-xl">📊</span> EMI Calculator
+                <div style={{background:'var(--card-bg)', padding:'1.5rem', borderRadius:'1.25rem', border:'1px solid var(--border)', boxShadow:'var(--shadow-sm)', marginTop:'1.5rem'}}>
+                    <h3 style={{fontSize:'0.65rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--navy)', marginBottom:'1.5rem', display:'flex', alignItems:'center', gap:'8px'}}>
+                        <span style={{fontSize:'1.2rem'}}>📊</span> EMI Calculator
                     </h3>
                     
                     <div className="flex items-center gap-6 mb-8">
-                        <div className="w-20 h-20 pie-chart shrink-0 shadow-inner" style={{ background: `conic-gradient(#2563eb ${principalPct}%, #e2e8f0 ${principalPct}% 100%)` }}></div>
+                        <div className="w-20 h-20 pie-chart shrink-0 shadow-inner" style={{ background: `conic-gradient(#1E3A8A ${principalPct}%, #E8E2D9 ${principalPct}% 100%)` }}></div>
                         <div className="flex flex-col gap-2 w-full">
-                            <div className="flex justify-between items-center border-b border-slate-100 pb-1">
-                                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span><span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Principal</span></div>
-                                <span className="text-[10px] font-black text-slate-900">{formatIndianCurrencyCompact(loanAmount)}</span>
+                            <div className="flex justify-between items-center border-b pb-1" style={{borderColor:'var(--border)'}}>
+                                <div className="flex items-center gap-1.5"><span style={{width:'10px', height:'10px', borderRadius:'50%', background:'var(--teal)', display:'inline-block'}}></span><span style={{fontSize:'0.6rem', fontWeight:700, color:'var(--slate-soft)', letterSpacing:'0.15em', textTransform:'uppercase'}}>Principal</span></div>
+                                <span style={{fontSize:'0.7rem', fontWeight:800, color:'var(--navy)'}}>{formatIndianCurrencyCompact(loanAmount)}</span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span><span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Interest</span></div>
-                                <span className="text-[10px] font-black text-slate-900">{formatIndianCurrencyCompact(totalInterest)}</span>
+                                <div className="flex items-center gap-1.5"><span style={{width:'10px', height:'10px', borderRadius:'50%', background:'var(--border)', display:'inline-block'}}></span><span style={{fontSize:'0.6rem', fontWeight:700, color:'var(--slate-soft)', letterSpacing:'0.15em', textTransform:'uppercase'}}>Interest</span></div>
+                                <span style={{fontSize:'0.7rem', fontWeight:800, color:'var(--navy)'}}>{formatIndianCurrencyCompact(totalInterest)}</span>
                             </div>
                         </div>
                     </div>
@@ -202,40 +577,43 @@
                     <div className="space-y-6">
                         <div>
                             <div className="flex justify-between mb-2">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Loan Amount</label>
-                                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{formatIndianCurrencyCompact(loanAmount)}</span>
+                                <label style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.15em', color:'var(--slate-soft)'}}>Loan Amount</label>
+                                <span style={{fontSize:'0.7rem', fontWeight:800, color:'var(--teal)', background:'rgba(30,58,138,0.07)', padding:'2px 8px', borderRadius:'6px'}}>{formatIndianCurrencyCompact(loanAmount)}</span>
                             </div>
                             <input type="range" min="1000000" max="50000000" step="100000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} />
                         </div>
 
                         <div>
                             <div className="flex justify-between mb-2">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Interest Rate</label>
-                                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{interestRate}%</span>
+                                <label style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.15em', color:'var(--slate-soft)'}}>Interest Rate</label>
+                                <span style={{fontSize:'0.7rem', fontWeight:800, color:'var(--teal)', background:'rgba(30,58,138,0.07)', padding:'2px 8px', borderRadius:'6px'}}>{interestRate}%</span>
                             </div>
                             <input type="range" min="6" max="15" step="0.1" value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))} />
                         </div>
 
                         <div>
                             <div className="flex justify-between mb-2">
-                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tenure</label>
-                                <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{tenureYears} Yrs</span>
+                                <label style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.15em', color:'var(--slate-soft)'}}>Tenure</label>
+                                <span style={{fontSize:'0.7rem', fontWeight:800, color:'var(--teal)', background:'rgba(30,58,138,0.07)', padding:'2px 8px', borderRadius:'6px'}}>{tenureYears} Yrs</span>
                             </div>
                             <input type="range" min="5" max="30" step="1" value={tenureYears} onChange={(e) => setTenureYears(Number(e.target.value))} />
                         </div>
 
-                        <div className="pt-5 border-t border-slate-100 flex justify-between items-center">
+                        <div className="pt-5 flex justify-between items-center" style={{borderTop:'1px solid var(--border)'}}>
                             <div>
-                                <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">Estimated EMI</div>
-                                <div className="text-2xl font-black text-slate-900 tracking-tighter">{formatIndianCurrencyCompact(emi)} <span className="text-[10px] text-slate-400 font-bold tracking-normal uppercase">/mo</span></div>
+                                <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'4px'}}>Estimated EMI</div>
+                                <div style={{fontSize:'1.5rem', fontWeight:800, color:'var(--navy)', lineHeight:1, fontFamily:"'DM Sans', sans-serif"}}>
+                                    {formatIndianCurrencyCompact(emi)} <span style={{fontSize:'0.65rem', color:'var(--slate-soft)', fontWeight:500}}>/mo</span>
+                                </div>
                             </div>
-                            <button onClick={onApplyAction} className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-5 py-3 rounded-xl hover:bg-blue-600 transition shadow-md">Apply Now</button>
+                            <button onClick={onApplyAction} className="btn-gold text-white font-black uppercase tracking-widest px-5 py-3 rounded-xl" style={{fontSize:'0.65rem'}}>Apply Now</button>
                         </div>
                     </div>
                 </div>
             );
         };
 
+        // --- FULL PAGE PROPERTY DETAILS ---
         const PropertyDetailsPage = ({ property, allProperties, onBack, onSubmitLead, isAdmin, onSelectProperty }) => {
             const [actionModal, setActionModal] = useState(null); 
             const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
@@ -290,106 +668,122 @@
             }, [property, allProperties]);
 
             return (
-                <div className="min-h-screen bg-slate-50 overflow-x-hidden w-full max-w-[100vw]">
+                <div className="min-h-screen overflow-x-hidden w-full max-w-[100vw]" style={{backgroundColor:'var(--cream)'}}>
                     
-                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center shadow-sm w-full">
-                        <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
-                            <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> <span className="hidden sm:inline">Back to Search</span><span className="sm:hidden">Back</span>
+                    {/* PROPERTY DETAIL — Top bar with premium back button */}
+                    <div style={{background:'var(--card-bg)', borderBottom:'1px solid var(--border)', boxShadow:'var(--shadow-sm)'}} className="sticky top-0 z-40 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center w-full">
+                        <button onClick={onBack} style={{color:'var(--teal)', fontSize:'0.65rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.16em'}} className="flex items-center gap-2 transition group hover:opacity-70">
+                            <span style={{fontSize:'1.1rem', transition:'transform 0.2s'}} className="group-hover:-translate-x-1 inline-block">←</span>
+                            <span className="hidden sm:inline">Back to Search</span><span className="sm:hidden">Back</span>
                         </button>
                         
-                        <div className="flex items-center gap-4">
-                            <div className="hidden md:block text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-200 pr-4">
-                                {getVal(property, "Location")} • {getVal(property, "Builder Name")}
+                        <div className="flex items-center gap-3 md:gap-4">
+                            <div className="hidden md:block pr-4" style={{borderRight:'1px solid var(--border)', fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--slate-soft)'}}>
+                                📍 {getVal(property, "Location")} &nbsp;·&nbsp; {getVal(property, "Builder Name")}
                             </div>
-                            <a href={`tel:${String(getVal(property, "point_of_contact")).replace(/\D/g,'') || WHATSAPP_NUMBER}`} className="bg-white text-slate-700 px-3 md:px-4 py-1.5 md:py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:border-blue-500 hover:text-blue-600 transition shadow-sm border border-slate-300 flex items-center gap-1.5">
-                                <span className="text-sm">📞</span> Call Us
+                            <a
+                                href={`tel:${String(getVal(property, "point_of_contact")).replace(/\D/g,'') || WHATSAPP_NUMBER}`}
+                                style={{border:'1px solid var(--border)', borderRadius:'999px', fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--navy)', padding:'8px 16px', minHeight:'40px', display:'flex', alignItems:'center', gap:'6px', boxShadow:'var(--shadow-sm)', transition:'all 0.2s'}}
+                                className="hover:border-yellow-400 hover:text-yellow-600"
+                            >
+                                📞 Call Us
                             </a>
                         </div>
                     </div>
 
                     <div className="max-w-7xl mx-auto w-full p-4 md:p-8 animate-fadeIn">
                         
-                        <div className="relative mb-8 w-full max-w-full overflow-hidden rounded-3xl">
-                            <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 hide-scroll h-[40vh] md:h-[60vh]">
+                        {/* GALLERY — Premium rounded with gold nav arrows */}
+                        <div className="relative mb-8 w-full max-w-full overflow-hidden" style={{borderRadius:'1.5rem'}}>
+                            <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 hide-scroll" style={{height:'40vh'}}>
                                 {allImgs.length > 0 ? allImgs.map((img, i) => (
-                                    <div key={i} className="min-w-full md:min-w-[80%] h-full shrink-0 snap-center relative rounded-3xl overflow-hidden bg-slate-200 border border-slate-100">
-                                        <img src={img} className="w-full h-full object-cover" />
+                                    <div key={i} className="shrink-0 snap-center relative overflow-hidden bg-slate-200" style={{minWidth:'100%', height:'100%', borderRadius:'1.25rem'}}>
+                                        <img src={img} className="w-full h-full object-cover" style={{transition:'transform 0.5s ease'}} />
                                         {i === 0 && (
-                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent flex flex-col justify-end p-6 md:p-10">
-                                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{getVal(property, "Property Type") || 'Apartment'}</div>
-                                                <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-white mb-2">{getVal(property, "Property Name")}</h1>
-                                                <p className="text-white/80 font-medium text-sm md:text-base">📍 {getVal(property, "Location")}</p>
+                                            <div style={{position:'absolute', inset:0, background:'linear-gradient(to top, rgba(10,22,40,0.85) 0%, rgba(10,22,40,0.2) 50%, transparent 100%)', display:'flex', flexDirection:'column', justifyContent:'flex-end', padding:'1.5rem 2rem'}}>
+                                                <div style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'#FCD34D', marginBottom:'6px'}}>{getVal(property, "Property Type") || 'Apartment'}</div>
+                                                <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.6rem, 5vw, 3.5rem)', fontWeight:700, fontStyle:'italic', color:'white', lineHeight:1.05, marginBottom:'8px'}}>
+                                                    {getVal(property, "Property Name")}
+                                                </h1>
+                                                <p style={{color:'rgba(255,255,255,0.75)', fontSize:'0.8rem', fontWeight:500}}>📍 {getVal(property, "Location")}</p>
                                             </div>
                                         )}
                                     </div>
                                 )) : (
-                                    <div className="w-full h-full bg-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-400">
-                                        <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none text-slate-500 mb-2">{getVal(property, "Property Name")}</h1>
-                                        <p className="text-sm font-bold uppercase tracking-widest">Images Coming Soon</p>
+                                    <div className="w-full h-full flex flex-col items-center justify-center" style={{background:'var(--parchment)', borderRadius:'1.25rem'}}>
+                                        <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.6rem,4vw,3rem)', fontStyle:'italic', fontWeight:700, color:'var(--navy)', marginBottom:'8px'}}>{getVal(property, "Property Name")}</h1>
+                                        <p style={{fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)'}}>Images Coming Soon</p>
                                     </div>
                                 )}
                             </div>
                             
                             {allImgs.length > 1 && (
                                 <>
-                                    <button onClick={() => scrollGallery('left')} className="hidden md:flex absolute top-1/2 -left-4 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur rounded-full items-center justify-center shadow-lg text-slate-800 hover:bg-white transition hover:scale-110 z-10 border border-slate-100">←</button>
-                                    <button onClick={() => scrollGallery('right')} className="hidden md:flex absolute top-1/2 -right-4 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur rounded-full items-center justify-center shadow-lg text-slate-800 hover:bg-white transition hover:scale-110 z-10 border border-slate-100">→</button>
+                                    <button onClick={() => scrollGallery('left')} style={{position:'absolute', top:'50%', left:'-14px', transform:'translateY(-50%)', width:'40px', height:'40px', background:'white', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', display:'none', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10, fontSize:'1rem', transition:'transform 0.2s'}} className="md:flex hover:scale-110">←</button>
+                                    <button onClick={() => scrollGallery('right')} style={{position:'absolute', top:'50%', right:'-14px', transform:'translateY(-50%)', width:'40px', height:'40px', background:'white', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', display:'none', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10, fontSize:'1rem', transition:'transform 0.2s'}} className="md:flex hover:scale-110">→</button>
                                 </>
                             )}
                         </div>
 
+                        {/* MAIN CONTENT LAYOUT */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                             
-                            <div className="lg:col-span-2 space-y-10">
+                            {/* LEFT COLUMN */}
+                            <div className="lg:col-span-2 space-y-8">
                                 
-                                <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 relative">
+                                {/* QUICK OVERVIEW STATS — Premium card */}
+                                <div style={{background:'var(--card-bg)', borderRadius:'1.25rem', border:'1px solid var(--border)', boxShadow:'var(--shadow-sm)', padding:'1.5rem 2rem', position:'relative', overflow:'hidden'}} className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                    {/* Gold accent top border */}
+                                    <div style={{position:'absolute', top:0, left:0, right:0, height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)'}}></div>
                                     <div>
-                                        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Configurations</div>
-                                        <div className="text-sm md:text-lg font-black text-slate-900 mt-1">{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div>
+                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Configurations</div>
+                                        <div style={{fontSize:'1rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div>
                                     </div>
                                     <div>
-                                        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Status</div>
-                                        <div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "Construction Status") || getVal(property, "construction_sta") || 'N/A'}</div>
+                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Status</div>
+                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "Construction Status") || getVal(property, "construction_sta") || 'N/A'}</div>
                                     </div>
                                     <div>
-                                        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Possession</div>
-                                        <div className="text-sm md:text-base font-black text-slate-900 mt-1">
-                                            {getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).toLocaleDateString('en-IN', {month: 'short', year: 'numeric'}) : 'On Request'}
+                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Possession</div>
+                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>
+                                            {getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).toLocaleDateString('en-IN', {month:'short', year:'numeric'}) : 'On Request'}
                                         </div>
                                     </div>
                                     <div>
-                                        <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Approvals</div>
-                                        <div className="text-sm md:text-base font-black text-slate-900 mt-1">{getVal(property, "approval") || getVal(property, "approvals") || 'N/A'}</div>
+                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Approvals</div>
+                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "approval") || getVal(property, "approvals") || 'N/A'}</div>
                                     </div>
                                 </div>
 
+                                {/* ABOUT THE PROJECT */}
                                 <div>
-                                    <h2 className="text-xl md:text-2xl font-black uppercase tracking-wide text-slate-900 mb-4 border-b border-slate-200 pb-2">About The Project</h2>
-                                    <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
+                                    <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.5rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'1rem', borderBottom:'1px solid var(--border)', paddingBottom:'0.75rem'}}>About The Project</h2>
+                                    <p style={{color:'var(--slate-soft)', lineHeight:1.85, fontSize:'0.9rem'}} className="whitespace-pre-wrap">
                                         {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${getVal(property, "bhk") || "premium"} homes. Discover a lifestyle defined by modern architecture, vast open spaces, and world-class connectivity.`}
                                     </p>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* HIGHLIGHTS + AMENITIES — Premium grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {projectUsps && (
-                                        <div className="bg-blue-50 p-6 md:p-8 rounded-3xl border border-blue-100">
-                                            <h3 className="text-sm font-black uppercase tracking-widest text-blue-900 mb-6">Key Highlights</h3>
-                                            <ul className="space-y-4">
+                                        <div style={{background:'var(--gold-light)', borderRadius:'1.25rem', border:'1px solid rgba(217,119,6,0.2)', padding:'1.75rem'}}>
+                                            <h3 style={{fontSize:'0.62rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--gold)', marginBottom:'1.25rem'}}>✦ Key Highlights</h3>
+                                            <ul className="space-y-3">
                                                 {String(projectUsps).split('\n').filter(u => u.trim() !== "").map((u, i) => (
-                                                    <li key={i} className="flex items-start text-xs md:text-sm text-blue-800 font-medium leading-relaxed">
-                                                        <span className="mr-3 text-blue-500 mt-0.5">✦</span> {u.trim()}
+                                                    <li key={i} style={{display:'flex', alignItems:'flex-start', gap:'10px', fontSize:'0.82rem', color:'#78350F', fontWeight:500, lineHeight:1.6}}>
+                                                        <span style={{color:'var(--gold)', marginTop:'2px', flexShrink:0}}>✦</span> {u.trim()}
                                                     </li>
                                                 ))}
                                             </ul>
                                         </div>
                                     )}
                                     {getVal(property, "Amenities") && (
-                                        <div className="bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-800">
-                                            <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">World-Class Amenities</h3>
-                                            <ul className="space-y-4">
+                                        <div style={{background:'var(--navy)', borderRadius:'1.25rem', padding:'1.75rem'}}>
+                                            <h3 style={{fontSize:'0.62rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'#FCD34D', marginBottom:'1.25rem'}}>✓ World-Class Amenities</h3>
+                                            <ul className="space-y-3">
                                                 {String(getVal(property, "Amenities")).split(',').filter(u => u.trim() !== "").map((u, i) => (
-                                                    <li key={i} className="flex items-start text-xs md:text-sm text-slate-300 font-medium leading-relaxed">
-                                                        <span className="mr-3 text-blue-400 mt-0.5">✓</span> {u.trim()}
+                                                    <li key={i} style={{display:'flex', alignItems:'flex-start', gap:'10px', fontSize:'0.82rem', color:'rgba(255,255,255,0.7)', fontWeight:500, lineHeight:1.6}}>
+                                                        <span style={{color:'var(--emerald)', marginTop:'2px', flexShrink:0}}>✓</span> {u.trim()}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -397,76 +791,109 @@
                                     )}
                                 </div>
 
+                                {/* ADMIN — Commission & Details */}
                                 {isAdmin && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-8 border-t border-slate-200">
-                                        <div className="bg-[#fffbeb] border border-[#fde68a] p-5 md:p-6 rounded-2xl md:rounded-3xl text-[#92400e]">
-                                            <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-2">Commission & Payout</h4>
-                                            <p className="text-3xl md:text-4xl font-black">{formatPercent(getVal(property, "commision_deta") || getVal(property, "commission"))}</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-8" style={{borderTop:'1px solid var(--border)'}}>
+                                        <div style={{background:'#FFFBEB', border:'1px solid #FDE68A', padding:'1.25rem 1.5rem', borderRadius:'1rem', color:'#92400E'}}>
+                                            <h4 style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', marginBottom:'8px'}}>Commission & Payout</h4>
+                                            <p style={{fontSize:'2rem', fontWeight:800}}>{formatPercent(getVal(property, "commision_deta") || getVal(property, "commission"))}</p>
                                         </div>
-                                        <div className="bg-[#f0f9ff] border border-[#bae6fd] p-5 md:p-6 rounded-2xl md:rounded-3xl text-[#0369a1]">
-                                            <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-3">Internal Details</h4>
-                                            <p className="text-xs md:text-sm font-bold mb-1">POC: {getVal(property, "point_of_contact") || "N/A"}</p>
-                                            <p className="text-[10px] font-bold">Avail: {getVal(property, "availability") || "N/A"}</p>
+                                        <div style={{background:'#F0F9FF', border:'1px solid #BAE6FD', padding:'1.25rem 1.5rem', borderRadius:'1rem', color:'#0369A1'}}>
+                                            <h4 style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', marginBottom:'10px'}}>Internal Details</h4>
+                                            <p style={{fontSize:'0.8rem', fontWeight:700, marginBottom:'4px'}}>POC: {getVal(property, "point_of_contact") || "N/A"}</p>
+                                            <p style={{fontSize:'0.7rem', fontWeight:700}}>Avail: {getVal(property, "availability") || "N/A"}</p>
                                         </div>
                                     </div>
                                 )}
                                 
                                 {isAdmin && (
-                                    <div className="bg-slate-50 border border-slate-100 p-6 md:p-8 rounded-2xl md:rounded-[35px] mt-4">
-                                        <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-3 text-slate-400">Admin Actions</h4>
+                                    <div style={{background:'var(--parchment)', border:'1px solid var(--border)', padding:'1.5rem', borderRadius:'1.25rem'}}>
+                                        <h4 style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'12px'}}>Admin Actions</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <a href={getSafeLink(getVal(property, "website_link"))} target="_blank" className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm hover:bg-slate-100 transition">Builder Site</a>
-                                            <a href={getSafeLink(getVal(property, "lead_registration") || getVal(property, "lead_registration_link_or_email_id"))} target="_blank" className="bg-[#0f172a] text-white p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-md hover:bg-blue-600 transition">Register Lead</a>
-                                            <a href={getSafeLink(getVal(property, "map_link"))} target="_blank" className="bg-white border border-slate-200 p-4 rounded-xl md:rounded-2xl text-[10px] font-black text-center uppercase tracking-widest shadow-sm md:col-span-2 hover:bg-slate-100 transition">Share Location Map</a>
+                                            <a href={getSafeLink(getVal(property, "website_link"))} target="_blank" style={{background:'white', border:'1px solid var(--border)', padding:'14px', borderRadius:'12px', fontSize:'0.62rem', fontWeight:800, textAlign:'center', textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--navy)', transition:'all 0.2s'}} className="hover:border-yellow-400 hover:shadow-sm">Builder Site</a>
+                                            <a href={getSafeLink(getVal(property, "lead_registration") || getVal(property, "lead_registration_link_or_email_id"))} target="_blank" style={{background:'var(--navy)', color:'white', padding:'14px', borderRadius:'12px', fontSize:'0.62rem', fontWeight:800, textAlign:'center', textTransform:'uppercase', letterSpacing:'0.14em', transition:'all 0.2s'}} className="hover:opacity-80">Register Lead</a>
+                                            <a href={getSafeLink(getVal(property, "map_link"))} target="_blank" style={{background:'white', border:'1px solid var(--border)', padding:'14px', borderRadius:'12px', fontSize:'0.62rem', fontWeight:800, textAlign:'center', textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--navy)', transition:'all 0.2s'}} className="md:col-span-2 hover:border-yellow-400 hover:shadow-sm">Share Location Map</a>
                                         </div>
                                     </div>
                                 )}
 
                             </div>
 
+                            {/* RIGHT COLUMN — Premium sticky sidebar */}
                             <div className="lg:col-span-1">
-                                <div className="sticky top-24 space-y-6">
+                                <div className="sticky top-24 space-y-5">
                                     
-                                    <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm">
-                                        <div className="mb-6 pb-6 border-b border-slate-100">
-                                            <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Starting Price</div>
-                                            <div className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">{getVal(property, "Price") || 'On Request'}</div>
+                                    {/* PRICE + ACTION BOX */}
+                                    <div style={{background:'var(--card-bg)', borderRadius:'1.25rem', border:'1px solid var(--border)', boxShadow:'var(--shadow-md)', padding:'1.75rem', overflow:'hidden', position:'relative'}}>
+                                        {/* Gold accent top */}
+                                        <div style={{position:'absolute', top:0, left:0, right:0, height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)'}}></div>
+                                        
+                                        <div style={{marginBottom:'1.25rem', paddingBottom:'1.25rem', borderBottom:'1px solid var(--border)'}}>
+                                            <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Starting Price</div>
+                                            <div style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'2.25rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', lineHeight:1}}>
+                                                {getVal(property, "Price") || 'On Request'}
+                                            </div>
                                         </div>
 
                                         <div className="space-y-3">
-                                            <button onClick={() => openAction('interest')} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg hover:-translate-y-1 transition-all text-xs md:text-sm mb-2">
+                                            {/* Primary CTA — Gold */}
+                                            <button
+                                                onClick={() => openAction('interest')}
+                                                className="btn-gold w-full font-black py-4 rounded-xl uppercase tracking-widest text-white"
+                                                style={{fontSize:'0.75rem'}}
+                                            >
                                                 I Am Interested
                                             </button>
-                                            <button onClick={() => openAction('cost_sheet')} className="w-full bg-slate-900 text-white font-black py-3.5 rounded-xl uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-sm flex justify-center items-center gap-2 text-[10px] md:text-xs">
-                                                <span className="text-sm">📄</span> Request Cost Sheet
+                                            {/* Secondary — Navy */}
+                                            <button
+                                                onClick={() => openAction('cost_sheet')}
+                                                style={{width:'100%', background:'var(--navy)', color:'white', fontWeight:800, fontSize:'0.65rem', textTransform:'uppercase', letterSpacing:'0.14em', padding:'13px', borderRadius:'12px', display:'flex', justifyContent:'center', alignItems:'center', gap:'8px', transition:'opacity 0.2s'}}
+                                                className="hover:opacity-80"
+                                            >
+                                                📄 Request Cost Sheet
                                             </button>
-                                            <button onClick={() => openAction('brochure')} className="w-full bg-white border border-slate-200 text-slate-900 font-black py-3 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition-colors flex justify-center items-center gap-2 text-[10px] md:text-xs shadow-sm">
-                                                <span className="text-sm">📥</span> Download Brochure
+                                            {/* Tertiary — Outline */}
+                                            <button
+                                                onClick={() => openAction('brochure')}
+                                                style={{width:'100%', background:'transparent', border:'1px solid var(--border)', color:'var(--navy)', fontWeight:800, fontSize:'0.65rem', textTransform:'uppercase', letterSpacing:'0.14em', padding:'12px', borderRadius:'12px', display:'flex', justifyContent:'center', alignItems:'center', gap:'8px', transition:'all 0.2s'}}
+                                                className="hover:border-yellow-400"
+                                            >
+                                                📥 Download Brochure
                                             </button>
                                         </div>
                                     </div>
 
+                                    {/* EMI Calculator */}
                                     <EMICalculator propertyPriceStr={getVal(property, "Price")} onApplyAction={() => openAction('apply_now')} />
 
                                 </div>
                             </div>
                         </div>
 
+                        {/* SIMILAR PROPERTIES */}
                         {similarProperties.length > 0 && (
-                            <div className="mt-16 pt-8 border-t border-slate-200 relative z-0">
-                                <h2 className="text-xl md:text-2xl font-black uppercase tracking-wide text-slate-900 mb-6 border-l-4 border-blue-500 pl-4">Similar Properties</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="mt-14 pt-8" style={{borderTop:'1px solid var(--border)'}}>
+                                <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.5rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'1.5rem', borderLeft:'4px solid var(--gold)', paddingLeft:'1rem'}}>
+                                    Similar Properties
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                                     {similarProperties.map((simProp, i) => (
-                                        <div key={i} onClick={() => { window.scrollTo(0,0); onSelectProperty(simProp); }} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col relative z-10">
-                                            <div className="relative h-40 w-full overflow-hidden shrink-0 bg-slate-100">
-                                                <img src={fixImageUrl(getVal(simProp, "Cover Image") || getVal(simProp, "cover_image")) || 'https://via.placeholder.com/600x300'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none" />
+                                        <div
+                                            key={i}
+                                            onClick={() => { window.scrollTo(0,0); onSelectProperty(simProp); }}
+                                            className="prop-card group flex flex-col"
+                                            style={{cursor:'pointer'}}
+                                        >
+                                            <div className="relative overflow-hidden shrink-0" style={{height:'150px', background:'var(--parchment)'}}>
+                                                <img src={fixImageUrl(getVal(simProp, "Cover Image") || getVal(simProp, "cover_image"))} className="card-img" />
                                             </div>
-                                            <div className="p-5 flex-grow flex flex-col pointer-events-none">
-                                                <h3 className="text-lg font-black text-slate-900 leading-tight truncate uppercase">{getVal(simProp, "Property Name")}</h3>
-                                                <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-bold">📍 {getVal(simProp, "Location")}</p>
-                                                <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-end">
-                                                    <span className="text-blue-600 font-black text-lg">{getVal(simProp, "Price")}</span>
-                                                    <span className="bg-slate-100 px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest">{getVal(simProp, "bhk")} BHK</span>
+                                            <div style={{padding:'1rem 1.25rem', flexGrow:1, display:'flex', flexDirection:'column'}}>
+                                                <p style={{fontSize:'0.55rem', fontWeight:700, color:'var(--gold)', textTransform:'uppercase', letterSpacing:'0.12em', marginBottom:'3px'}}>{getVal(simProp, "Builder Name")}</p>
+                                                <h3 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.05rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', lineHeight:1.2}} className="truncate">{getVal(simProp, "Property Name")}</h3>
+                                                <p style={{fontSize:'0.6rem', color:'var(--slate-soft)', textTransform:'uppercase', letterSpacing:'0.1em', marginTop:'4px', fontWeight:600}}>📍 {getVal(simProp, "Location")}</p>
+                                                <div className="mt-3 pt-3 flex justify-between items-end" style={{borderTop:'1px solid var(--border)'}}>
+                                                    <span style={{fontWeight:800, fontSize:'1rem', color:'var(--navy)'}}>{getVal(simProp, "Price")}</span>
+                                                    <span style={{background:'var(--parchment)', border:'1px solid var(--border)', padding:'3px 8px', borderRadius:'6px', fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.12em', color:'var(--slate-soft)'}}>{getVal(simProp, "bhk")} BHK</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -476,22 +903,32 @@
                         )}
                     </div>
 
+                    {/* PROPERTY ACTION MODAL — Premium gold-accented */}
                     {actionModal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setActionModal(null)}>
-                            <div className="bg-white rounded-3xl md:rounded-[40px] p-8 md:p-10 w-full max-w-sm shadow-2xl text-center relative" onClick={e => e.stopPropagation()}>
-                                <button onClick={() => setActionModal(null)} className="absolute top-4 right-6 text-2xl text-slate-400 hover:text-slate-900">&times;</button>
-                                <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-2 italic tracking-tighter uppercase">
+                            <div style={{background:'var(--card-bg)', borderRadius:'24px', maxWidth:'380px', width:'100%', padding:'2.5rem', boxShadow:'0 32px 80px rgba(15,23,42,0.5), 0 0 0 1px rgba(217,119,6,0.12)', position:'relative'}} onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setActionModal(null)} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.5)', fontWeight:300, lineHeight:1}} className="hover:text-slate-900 transition">&times;</button>
+                                <div style={{height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)', borderRadius:'2px', marginBottom:'1.5rem'}}></div>
+                                <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.6rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'4px', textTransform:'uppercase'}}>
                                     {actionModal === 'brochure' ? "Get The Brochure" : actionModal === 'cost_sheet' ? "Get Cost Sheet" : actionModal === 'apply_now' ? "Apply for Loan" : "Enquiry"}
                                 </h2>
-                                <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">Please enter details to proceed</p>
+                                <p style={{fontSize:'0.6rem', fontWeight:700, color:'var(--slate-soft)', textTransform:'uppercase', letterSpacing:'0.18em', marginBottom:'1.5rem'}}>Please enter details to proceed</p>
                                 
-                                <form onSubmit={handleActionSubmit} className="space-y-4 text-left">
-                                    <input type="text" placeholder="Full Name" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
-                                    <input type="tel" placeholder="Mobile Number (10 Digits)" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
-                                    <input type="email" placeholder="Email Address (Optional)" className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.email} onChange={e => setLeadData({...leadData, email: e.target.value})} />
-                                    
-                                    <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg mt-4 active:scale-95 transition-transform">
-                                        {isSubmitting ? "Processing..." : actionModal === 'apply_now' ? "Submit Application" : actionModal === 'interest' ? "Submit Interest" : "Unlock Download"}
+                                <form onSubmit={handleActionSubmit} className="space-y-3 text-left">
+                                    <input type="text" placeholder="Full Name" required
+                                        style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}}
+                                        className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400"
+                                        value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
+                                    <input type="tel" placeholder="Mobile Number (10 Digits)" required
+                                        style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}}
+                                        className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400"
+                                        value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
+                                    <input type="email" placeholder="Email Address (Optional)"
+                                        style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}}
+                                        className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400"
+                                        value={leadData.email} onChange={e => setLeadData({...leadData, email: e.target.value})} />
+                                    <button disabled={isSubmitting} type="submit" className="btn-gold w-full font-black py-4 rounded-xl uppercase tracking-widest mt-2 active:scale-95 text-white" style={{fontSize:'0.72rem'}}>
+                                        {isSubmitting ? "Processing…" : actionModal === 'apply_now' ? "Submit Application" : actionModal === 'interest' ? "Submit Interest" : "Unlock Download"}
                                     </button>
                                 </form>
                             </div>
@@ -522,7 +959,8 @@
             const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
             const [activeBlog, setActiveBlog] = useState(null);
 
-            const [legalModal, setLegalModal] = useState(null);
+            // Legal Modals State
+            const [legalModal, setLegalModal] = useState(null); // 'terms', 'privacy'
 
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -545,6 +983,7 @@
                 };
                 fetchProperties();
 
+                // Realtime: instantly reflect admin edits and live/hide changes on this page
                 const channel = supabase
                     .channel('public:properties')
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'properties' }, (payload) => {
@@ -555,14 +994,17 @@
                         } else if (payload.eventType === 'UPDATE') {
                             const updated = payload.new;
                             if (updated.is_live === true) {
+                                // Upsert: update existing or add if newly set live
                                 setProperties(prev => {
                                     const exists = prev.some(p => p.id === updated.id);
                                     return exists
                                         ? prev.map(p => p.id === updated.id ? updated : p)
                                         : [updated, ...prev];
                                 });
+                                // Also sync the detail view if this property is open
                                 setSelectedProperty(prev => prev && prev.id === updated.id ? updated : prev);
                             } else {
+                                // Hidden — remove from frontend immediately
                                 setProperties(prev => prev.filter(p => p.id !== updated.id));
                                 setSelectedProperty(prev => prev && prev.id === updated.id ? null : prev);
                             }
@@ -605,6 +1047,7 @@
 
                     if (error) throw error; 
 
+                    // Trigger Email Alert
                     fetch(GOOGLE_SCRIPT_URL, {
                         method: "POST",
                         body: JSON.stringify({
@@ -676,135 +1119,283 @@
             }
 
             return (
-                <div className="min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
+                <div className="min-h-screen flex flex-col overflow-x-hidden" style={{backgroundColor:'var(--cream)'}}>
                     
-                    <div className="sticky top-0 z-40 w-full shadow-sm flex flex-col bg-white">
-                        <nav className="bg-slate-950 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center relative z-50 gap-4">
-                            <h1 onClick={() => navTo('home')} className="text-xl md:text-2xl font-black text-white tracking-tighter uppercase italic cursor-pointer hover:text-blue-400 transition shrink-0">Perfect Horizons</h1>
+                    {/* ── STICKY HEADER ── Premium navy with gold accents */}
+                    <div className="sticky top-0 z-40 w-full flex flex-col" style={{boxShadow:'0 4px 24px rgba(15,23,42,0.18)'}}>
+                        <nav style={{background:'linear-gradient(135deg, #0A1628 0%, #0F172A 100%)'}} className="px-4 md:px-8 py-3 md:py-4 flex justify-between items-center relative z-50 gap-4">
+                            {/* LOGO — Cormorant Garamond italic */}
+                            <h1
+                                onClick={() => navTo('home')}
+                                style={{fontFamily:"'Cormorant Garamond', Georgia, serif", letterSpacing:'-0.02em'}}
+                                className="text-xl md:text-2xl font-bold text-white uppercase italic cursor-pointer transition shrink-0 hover:text-yellow-300"
+                            >
+                                Perfect Horizons
+                            </h1>
                             
+                            {/* DESKTOP SEARCH */}
                             {activePage === 'home' && (
                                 <div className="hidden lg:flex flex-1 justify-center px-4 max-w-2xl">
                                     <div className="relative w-full group">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm z-10 transition-colors group-focus-within:text-blue-400">🔍</span>
-                                        <input type="text" placeholder="Search Location, Project or Builder..." className="w-full bg-slate-900 text-white placeholder-slate-400 border border-slate-700 rounded-full pl-10 pr-5 py-2 text-xs font-bold outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all" value={search} onChange={e => setSearch(e.target.value)} />
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm z-10 transition-colors group-focus-within:text-yellow-400">
+                                            {/* Search icon SVG */}
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                                        </span>
+                                        <input
+                                            type="text"
+                                            placeholder="Search location, project or builder..."
+                                            style={{background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', fontSize:'0.75rem', fontFamily:"'DM Sans', sans-serif"}}
+                                            className="w-full text-white placeholder-slate-400 rounded-full pl-11 pr-5 py-2.5 font-medium outline-none focus:ring-2 focus:ring-yellow-400/40 focus:border-yellow-400/50 transition-all"
+                                            value={search}
+                                            onChange={e => setSearch(e.target.value)}
+                                        />
                                     </div>
                                 </div>
                             )}
 
-                            <div className="hidden md:flex gap-4 lg:gap-6 items-center shrink-0">
-                                <button onClick={() => navTo('home')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'home' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Properties</button>
+                            {/* DESKTOP NAV LINKS */}
+                            <div className="hidden md:flex gap-5 lg:gap-7 items-center shrink-0">
+                                <button
+                                    onClick={() => navTo('home')}
+                                    className={`text-[0.65rem] font-black uppercase tracking-widest transition relative pb-1 ${activePage === 'home' ? 'nav-link-active text-yellow-300' : 'text-slate-300 hover:text-white'}`}
+                                >Properties</button>
                                 
-                                <div className="relative group cursor-pointer py-2">
-                                    <span className={`text-xs font-black uppercase tracking-widest transition flex items-center ${['about-us', 'our-journey'].includes(activePage) ? 'text-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>About <span className="dropdown-arrow"></span></span>
-                                    <div className="absolute hidden group-hover:block top-full right-0 mt-0 w-48 bg-slate-800 border border-slate-700 shadow-2xl rounded-xl overflow-hidden z-50 animate-fadeIn text-right">
-                                        <div onClick={() => navTo('about-us')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition">About Us</div>
-                                        <div onClick={() => navTo('our-journey')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition border-t border-slate-700">Our Journey</div>
+                                {/* ABOUT DROPDOWN — Premium glass menu */}
+                                <div className="nav-dropdown-group py-2 cursor-pointer">
+                                    <span className={`text-[0.65rem] font-black uppercase tracking-widest transition flex items-center gap-1 ${['about-us','our-journey'].includes(activePage) ? 'text-yellow-300' : 'text-slate-300 hover:text-white'}`}>
+                                        About <span className="dropdown-arrow"></span>
+                                    </span>
+                                    <div className="nav-dropdown-menu">
+                                        <div className="nav-dropdown-item" onClick={() => navTo('about-us')}>
+                                            <span className="icon">🏛️</span> About Us
+                                        </div>
+                                        <div className="nav-dropdown-item" onClick={() => navTo('our-journey')}>
+                                            <span className="icon">🗺️</span> Our Journey
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="relative group cursor-pointer py-2">
-                                    <span className={`text-xs font-black uppercase tracking-widest transition flex items-center ${['what-we-do', 'what-we-dont-do'].includes(activePage) ? 'text-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Services <span className="dropdown-arrow"></span></span>
-                                    <div className="absolute hidden group-hover:block top-full right-0 mt-0 w-56 bg-slate-800 border border-slate-700 shadow-2xl rounded-xl overflow-hidden z-50 animate-fadeIn text-right">
-                                        <div onClick={() => navTo('what-we-do')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition">What We Do</div>
-                                        <div onClick={() => navTo('what-we-dont-do')} className="p-4 hover:bg-slate-700 text-xs font-bold cursor-pointer text-slate-200 hover:text-white transition border-t border-slate-700">What We Don't Do</div>
+                                {/* SERVICES DROPDOWN */}
+                                <div className="nav-dropdown-group py-2 cursor-pointer">
+                                    <span className={`text-[0.65rem] font-black uppercase tracking-widest transition flex items-center gap-1 ${['what-we-do','what-we-dont-do'].includes(activePage) ? 'text-yellow-300' : 'text-slate-300 hover:text-white'}`}>
+                                        Services <span className="dropdown-arrow"></span>
+                                    </span>
+                                    <div className="nav-dropdown-menu">
+                                        <div className="nav-dropdown-item" onClick={() => navTo('what-we-do')}>
+                                            <span className="icon">✅</span> What We Do
+                                        </div>
+                                        <div className="nav-dropdown-item" onClick={() => navTo('what-we-dont-do')}>
+                                            <span className="icon">🚫</span> What We Don't Do
+                                        </div>
                                     </div>
                                 </div>
 
-                                <button onClick={() => navTo('advisor')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'advisor' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Advisors</button>
-                                <button onClick={() => navTo('blogs')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'blogs' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Insights</button>
-                                <button onClick={() => navTo('customers')} className={`text-xs font-black uppercase tracking-widest transition ${activePage === 'customers' ? 'text-blue-400 border-b-2 border-blue-400 pb-1' : 'text-slate-300 hover:text-white'}`}>Reviews</button>
+                                <button onClick={() => navTo('advisor')} className={`text-[0.65rem] font-black uppercase tracking-widest transition relative pb-1 ${activePage === 'advisor' ? 'nav-link-active text-yellow-300' : 'text-slate-300 hover:text-white'}`}>Advisors</button>
+                                <button onClick={() => navTo('blogs')} className={`text-[0.65rem] font-black uppercase tracking-widest transition relative pb-1 ${activePage === 'blogs' ? 'nav-link-active text-yellow-300' : 'text-slate-300 hover:text-white'}`}>Insights</button>
+                                <button onClick={() => navTo('customers')} className={`text-[0.65rem] font-black uppercase tracking-widest transition relative pb-1 ${activePage === 'customers' ? 'nav-link-active text-yellow-300' : 'text-slate-300 hover:text-white'}`}>Reviews</button>
                             </div>
                             
+                            {/* MOBILE CONTROLS */}
                             <div className="md:hidden flex items-center gap-3 shrink-0">
                                 {activePage === 'home' && (
-                                    <button onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)} className="flex items-center gap-1 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-400 transition">
-                                        <span className="text-sm">🔍</span> Search
+                                    <button
+                                        onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+                                        style={{border:'1px solid rgba(255,255,255,0.15)', minHeight:'40px'}}
+                                        className="flex items-center gap-1.5 text-slate-300 px-3 py-1.5 rounded-full text-[0.6rem] font-black uppercase tracking-widest hover:border-yellow-400 hover:text-yellow-300 transition active:scale-95"
+                                    >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                                        Search
                                     </button>
                                 )}
-                                <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-white focus:outline-none ml-1">
-                                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}></path></svg>
+                                {/* Hamburger */}
+                                <button
+                                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                    style={{minWidth:'44px', minHeight:'44px'}}
+                                    className="text-white focus:outline-none flex items-center justify-center rounded-xl transition active:scale-90"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}></path>
+                                    </svg>
                                 </button>
                             </div>
                         </nav>
 
                         {activePage === 'home' && (
                             <>
-                            <div className="bg-white border-b py-3 md:py-4 overflow-hidden flex flex-col items-center">
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Associated With</p>
+                            {/* PARTNER LOGOS MARQUEE — Warm cream background */}
+                            <div style={{background:'var(--parchment)', borderBottom:'1px solid var(--border)'}} className="py-2.5 md:py-3 overflow-hidden flex flex-col items-center marquee-container">
+                                <p style={{fontSize:'0.55rem', letterSpacing:'0.22em', color:'var(--slate-soft)'}} className="font-black uppercase mb-1.5">Authorized Channel Partner</p>
                                 <div className="animate-marquee flex items-center">
                                     {AUTHORIZED_PARTNERS.concat(AUTHORIZED_PARTNERS).map((logo, index) => (
-                                        <img key={index} src={logo} className="h-8 md:h-10 mx-8 md:mx-12" />
+                                        <img key={index} src={logo} className="h-7 md:h-9 mx-8 md:mx-12 opacity-80 hover:opacity-100 transition-opacity" style={{filter:'drop-shadow(0 1px 4px rgba(0,0,0,0.1))'}} />
                                     ))}
                                 </div>
                             </div>
                             
-                            <div className="bg-slate-50 border-b border-gray-200 py-2 px-4 relative z-40 shadow-sm w-full">
+                            {/* FILTER BAR — Premium warm surface with custom selects */}
+                            <div className="filter-bar py-2.5 md:py-3 px-4 relative z-40 w-full">
                                 <div className="max-w-7xl mx-auto w-full">
+                                    {/* Mobile search (when open) */}
                                     {isMobileSearchOpen && (
-                                        <div className="md:hidden w-full relative animate-fadeIn mb-2">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 text-sm">🔍</span>
-                                            <input type="text" placeholder="Search Location, Project..." className="w-full bg-white border-2 border-blue-400 rounded-xl pl-10 pr-4 py-2 text-xs font-bold outline-none shadow-sm" value={search} onChange={e => setSearch(e.target.value)} autoFocus />
+                                        <div className="md:hidden w-full relative animate-fadeIn mb-3">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                                            </span>
+                                            <input
+                                                type="text"
+                                                placeholder="Search location, project..."
+                                                style={{border:'2px solid var(--teal)', fontFamily:"'DM Sans', sans-serif", fontSize:'0.8rem', minHeight:'48px'}}
+                                                className="w-full bg-white pl-10 pr-4 py-3 rounded-xl font-medium outline-none shadow-sm"
+                                                value={search}
+                                                onChange={e => setSearch(e.target.value)}
+                                                autoFocus
+                                            />
                                         </div>
                                     )}
                                     
-                                    <div className="md:hidden flex justify-between items-center h-5">
-                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Property Finder</span>
-                                        <button onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)} className="text-[10px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-1 active:scale-95 transition-transform">
-                                            FILTERS {isMobileFilterOpen ? '▲' : '▼'}
+                                    {/* Mobile filter toggle */}
+                                    <div className="md:hidden flex justify-between items-center h-6">
+                                        <span style={{fontSize:'0.6rem', letterSpacing:'0.2em', color:'var(--slate-soft)'}} className="font-black uppercase">Property Finder</span>
+                                        <button
+                                            onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
+                                            style={{color:'var(--teal)', minHeight:'44px', fontSize:'0.65rem'}}
+                                            className="font-black uppercase tracking-widest flex items-center gap-1.5 active:scale-95 transition-transform px-2"
+                                        >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                                            Filters {isMobileFilterOpen ? '▲' : '▼'}
                                         </button>
                                     </div>
 
-                                    <div className={`${isMobileFilterOpen ? 'grid' : 'hidden'} md:grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 mt-3 md:mt-0 animate-fadeIn w-full`}>
-                                        <select className="w-full bg-white px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer" value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}>
-                                            <option value="">Configurations</option><option value="1">1 BHK</option><option value="2">2 BHK</option><option value="3">3 BHK</option><option value="4">4 BHK</option><option value="5">5+ BHK</option>
+                                    {/* FILTER SELECTS */}
+                                    <div className={`${isMobileFilterOpen ? 'grid' : 'hidden'} md:grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3 mt-3 md:mt-0 animate-fadeIn w-full`}>
+                                        {/* BHK */}
+                                        <select
+                                            className="ph-select w-full bg-white px-3 md:px-4 py-2.5 rounded-xl text-[0.7rem] md:text-xs font-semibold outline-none border text-gray-700"
+                                            style={{borderColor:'var(--border)', fontFamily:"'DM Sans', sans-serif"}}
+                                            value={filters.bhk}
+                                            onChange={e => setFilters({...filters, bhk: e.target.value})}
+                                        >
+                                            <option value="">🏠 Configuration</option>
+                                            <option value="1">1 BHK</option>
+                                            <option value="2">2 BHK</option>
+                                            <option value="3">3 BHK</option>
+                                            <option value="4">4 BHK</option>
+                                            <option value="5">5+ BHK</option>
                                         </select>
-                                        <select className="w-full bg-white px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer" value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
-                                            <option value="">Status</option><option value="Ready to Move">Ready</option><option value="Under Construction">Under Const.</option><option value="New Launch">New Launch</option>
+                                        {/* Status */}
+                                        <select
+                                            className="ph-select w-full bg-white px-3 md:px-4 py-2.5 rounded-xl text-[0.7rem] md:text-xs font-semibold outline-none border text-gray-700"
+                                            style={{borderColor:'var(--border)', fontFamily:"'DM Sans', sans-serif"}}
+                                            value={filters.status}
+                                            onChange={e => setFilters({...filters, status: e.target.value})}
+                                        >
+                                            <option value="">🔑 Status</option>
+                                            <option value="Ready to Move">Ready to Move</option>
+                                            <option value="Under Construction">Under Construction</option>
+                                            <option value="New Launch">New Launch</option>
                                         </select>
-                                        <select className="w-full bg-white px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer" value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})}>
-                                            <option value="">Property Type</option><option value="Apartment">Apartment</option><option value="Villa">Villa</option><option value="Plot">Plot</option>
+                                        {/* Type */}
+                                        <select
+                                            className="ph-select w-full bg-white px-3 md:px-4 py-2.5 rounded-xl text-[0.7rem] md:text-xs font-semibold outline-none border text-gray-700"
+                                            style={{borderColor:'var(--border)', fontFamily:"'DM Sans', sans-serif"}}
+                                            value={filters.type}
+                                            onChange={e => setFilters({...filters, type: e.target.value})}
+                                        >
+                                            <option value="">🏗️ Property Type</option>
+                                            <option value="Apartment">Apartment</option>
+                                            <option value="Villa">Villa</option>
+                                            <option value="Plot">Plot</option>
                                         </select>
-                                        <select className="w-full bg-white px-3 md:px-4 py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-xs font-bold outline-none border border-gray-200 text-gray-700 cursor-pointer" value={filters.priceBracket} onChange={e => setFilters({...filters, priceBracket: e.target.value})}>
-                                            <option value="">Budget</option><option value="under1">Under 1 Cr</option><option value="1-2">1 - 2 Cr</option><option value="2-3">2 - 3 Cr</option><option value="3-4">3 - 4 Cr</option><option value="4-5">4 - 5 Cr</option><option value="5plus">5 Cr & Above</option>
+                                        {/* Budget */}
+                                        <select
+                                            className="ph-select w-full bg-white px-3 md:px-4 py-2.5 rounded-xl text-[0.7rem] md:text-xs font-semibold outline-none border text-gray-700"
+                                            style={{borderColor:'var(--border)', fontFamily:"'DM Sans', sans-serif"}}
+                                            value={filters.priceBracket}
+                                            onChange={e => setFilters({...filters, priceBracket: e.target.value})}
+                                        >
+                                            <option value="">💰 Budget</option>
+                                            <option value="under1">Under ₹1 Cr</option>
+                                            <option value="1-2">₹1 – 2 Cr</option>
+                                            <option value="2-3">₹2 – 3 Cr</option>
+                                            <option value="3-4">₹3 – 4 Cr</option>
+                                            <option value="4-5">₹4 – 5 Cr</option>
+                                            <option value="5plus">₹5 Cr & Above</option>
                                         </select>
-                                        <button onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:"", priceBracket:""}); setIsMobileSearchOpen(false); setIsMobileFilterOpen(false);}} className="w-full col-span-2 md:col-span-1 text-slate-500 font-black text-[10px] md:text-xs uppercase tracking-widest border border-slate-200 bg-white rounded-lg md:rounded-xl shadow-sm py-2.5">Reset</button>
+                                        {/* Reset */}
+                                        <button
+                                            onClick={() => {setSearch(""); setFilters({bhk:"", status:"", type:"", priceBracket:""}); setIsMobileSearchOpen(false); setIsMobileFilterOpen(false);}}
+                                            style={{border:'1px solid var(--border)', color:'var(--slate-soft)', fontSize:'0.65rem', fontFamily:"'DM Sans', sans-serif", minHeight:'44px'}}
+                                            className="w-full col-span-2 md:col-span-1 font-black uppercase tracking-widest bg-white rounded-xl shadow-sm py-2.5 hover:border-red-300 hover:text-red-500 transition-colors active:scale-95"
+                                        >
+                                            ✕ Reset Filters
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                             </>
                         )}
 
+                        {/* MOBILE MENU — Premium accordion with slide animation */}
                         {isMobileMenuOpen && (
-                            <div className="md:hidden bg-slate-900 border-t border-slate-800 py-6 px-6 space-y-4 shadow-2xl absolute w-full left-0 top-[60px] animate-fadeIn z-50 flex flex-col items-end">
-                                <div onClick={() => navTo('home')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Properties</div>
-                                
-                                <div className="w-full flex flex-col items-end">
-                                    <div onClick={() => setMobileAboutOpen(!mobileAboutOpen)} className="text-sm font-black uppercase tracking-widest text-slate-300 cursor-pointer hover:text-blue-400 flex items-center gap-2">
-                                        About <span className="text-xs">{mobileAboutOpen ? '▲' : '▼'}</span>
-                                    </div>
-                                    {mobileAboutOpen && (
-                                        <div className="flex flex-col items-end mt-3 space-y-3 pr-4 border-r-2 border-slate-700 animate-fadeIn">
-                                            <div onClick={() => navTo('about-us')} className="text-xs font-bold uppercase tracking-widest text-slate-400 cursor-pointer hover:text-blue-400">About Us</div>
-                                            <div onClick={() => navTo('our-journey')} className="text-xs font-bold uppercase tracking-widest text-slate-400 cursor-pointer hover:text-blue-400">Our Journey</div>
-                                        </div>
-                                    )}
+                            <div
+                                style={{background:'linear-gradient(180deg, #0A1628 0%, #0F172A 100%)', borderTop:'1px solid rgba(217,119,6,0.15)', position:'absolute', width:'100%', left:0, top:'60px', zIndex:50}}
+                                className="md:hidden py-4 px-5 shadow-2xl animate-fadeIn flex flex-col"
+                            >
+                                {/* Each item: tall touch target */}
+                                <div onClick={() => navTo('home')} className="mobile-nav-item flex items-center gap-3 text-white font-black uppercase tracking-widest cursor-pointer border-b py-4" style={{borderColor:'rgba(255,255,255,0.05)', fontSize:'0.75rem'}}>
+                                    <span style={{fontSize:'1rem'}}>🏠</span> Properties
                                 </div>
 
-                                <div className="w-full flex flex-col items-end">
-                                    <div onClick={() => setMobileServicesOpen(!mobileServicesOpen)} className="text-sm font-black uppercase tracking-widest text-slate-300 cursor-pointer hover:text-blue-400 flex items-center gap-2">
-                                        Services <span className="text-xs">{mobileServicesOpen ? '▲' : '▼'}</span>
+                                {/* ABOUT ACCORDION */}
+                                <div className="border-b" style={{borderColor:'rgba(255,255,255,0.05)'}}>
+                                    <div
+                                        onClick={() => setMobileAboutOpen(!mobileAboutOpen)}
+                                        className="mobile-nav-item flex items-center justify-between text-slate-300 font-black uppercase tracking-widest cursor-pointer py-4"
+                                        style={{fontSize:'0.75rem'}}
+                                    >
+                                        <span className="flex items-center gap-3"><span style={{fontSize:'1rem'}}>🏛️</span> About</span>
+                                        <span style={{fontSize:'0.6rem', transition:'transform 0.25s', display:'inline-block', transform: mobileAboutOpen ? 'rotate(180deg)' : 'rotate(0deg)'}}>▼</span>
                                     </div>
-                                    {mobileServicesOpen && (
-                                        <div className="flex flex-col items-end mt-3 space-y-3 pr-4 border-r-2 border-slate-700 animate-fadeIn">
-                                            <div onClick={() => navTo('what-we-do')} className="text-xs font-bold uppercase tracking-widest text-slate-400 cursor-pointer hover:text-blue-400">What We Do</div>
-                                            <div onClick={() => navTo('what-we-dont-do')} className="text-xs font-bold uppercase tracking-widest text-slate-400 cursor-pointer hover:text-blue-400">What We Don't Do</div>
+                                    {/* Animated accordion */}
+                                    <div className={`mobile-accordion-content ${mobileAboutOpen ? 'open' : ''}`}>
+                                        <div onClick={() => navTo('about-us')} className="py-3 pl-10 pr-4 text-xs font-semibold uppercase tracking-widest cursor-pointer hover:text-yellow-300 transition" style={{color:'rgba(255,255,255,0.55)', fontSize:'0.65rem'}}>
+                                            → About Us
                                         </div>
-                                    )}
+                                        <div onClick={() => navTo('our-journey')} className="py-3 pl-10 pr-4 text-xs font-semibold uppercase tracking-widest cursor-pointer hover:text-yellow-300 transition mb-2" style={{color:'rgba(255,255,255,0.55)', fontSize:'0.65rem'}}>
+                                            → Our Journey
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div onClick={() => navTo('advisor')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Advisors</div>
-                                <div onClick={() => navTo('blogs')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Insights</div>
-                                <div onClick={() => navTo('customers')} className="text-sm font-black uppercase tracking-widest text-white cursor-pointer hover:text-blue-400">Reviews</div>
+                                {/* SERVICES ACCORDION */}
+                                <div className="border-b" style={{borderColor:'rgba(255,255,255,0.05)'}}>
+                                    <div
+                                        onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
+                                        className="mobile-nav-item flex items-center justify-between text-slate-300 font-black uppercase tracking-widest cursor-pointer py-4"
+                                        style={{fontSize:'0.75rem'}}
+                                    >
+                                        <span className="flex items-center gap-3"><span style={{fontSize:'1rem'}}>✨</span> Services</span>
+                                        <span style={{fontSize:'0.6rem', transition:'transform 0.25s', display:'inline-block', transform: mobileServicesOpen ? 'rotate(180deg)' : 'rotate(0deg)'}}>▼</span>
+                                    </div>
+                                    <div className={`mobile-accordion-content ${mobileServicesOpen ? 'open' : ''}`}>
+                                        <div onClick={() => navTo('what-we-do')} className="py-3 pl-10 pr-4 cursor-pointer hover:text-yellow-300 transition mb-0" style={{color:'rgba(255,255,255,0.55)', fontSize:'0.65rem', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.12em'}}>
+                                            → What We Do
+                                        </div>
+                                        <div onClick={() => navTo('what-we-dont-do')} className="py-3 pl-10 pr-4 cursor-pointer hover:text-yellow-300 transition mb-2" style={{color:'rgba(255,255,255,0.55)', fontSize:'0.65rem', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.12em'}}>
+                                            → What We Don't Do
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div onClick={() => navTo('advisor')} className="mobile-nav-item flex items-center gap-3 text-slate-300 font-black uppercase tracking-widest cursor-pointer border-b py-4" style={{borderColor:'rgba(255,255,255,0.05)', fontSize:'0.75rem'}}>
+                                    <span style={{fontSize:'1rem'}}>👤</span> Advisors
+                                </div>
+                                <div onClick={() => navTo('blogs')} className="mobile-nav-item flex items-center gap-3 text-slate-300 font-black uppercase tracking-widest cursor-pointer border-b py-4" style={{borderColor:'rgba(255,255,255,0.05)', fontSize:'0.75rem'}}>
+                                    <span style={{fontSize:'1rem'}}>📖</span> Insights
+                                </div>
+                                <div onClick={() => navTo('customers')} className="mobile-nav-item flex items-center gap-3 text-slate-300 font-black uppercase tracking-widest cursor-pointer py-4" style={{fontSize:'0.75rem'}}>
+                                    <span style={{fontSize:'1rem'}}>⭐</span> Reviews
+                                </div>
                             </div>
                         )}
                     </div>
@@ -813,48 +1404,91 @@
                         {activePage === 'home' && (
                             <>
                                 {loading ? (
-                                    <div className="text-center py-20 animate-pulse font-black text-blue-900 tracking-widest uppercase">Curating Properties...</div>
+                                    <div className="text-center py-24 animate-pulse font-black uppercase tracking-widest" style={{color:'var(--teal)', fontFamily:"'DM Sans', sans-serif"}}>
+                                        <div style={{fontSize:'2rem', marginBottom:'0.75rem'}}>🏗️</div>
+                                        Curating Properties…
+                                    </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mt-2 md:mt-0">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mt-2 md:mt-2">
                                         {filtered.length === 0 ? (
-                                             <div className="col-span-1 md:col-span-3 text-center py-20">
-                                                <h3 className="text-xl font-black text-slate-400 uppercase tracking-widest">No Properties Found</h3>
-                                                <p className="text-sm text-slate-500 mt-2">Adjust your filters or try a different search.</p>
+                                             <div className="col-span-1 md:col-span-3 text-center py-24">
+                                                <div style={{fontSize:'3rem', marginBottom:'1rem'}}>🔍</div>
+                                                <h3 className="text-xl font-black uppercase tracking-widest" style={{color:'var(--slate-soft)'}}>No Properties Found</h3>
+                                                <p className="text-sm mt-2" style={{color:'var(--slate-soft)'}}>Adjust your filters or try a different search.</p>
                                             </div>
                                         ) : (
-                                            filtered.map((p, i) => (
-                                                <div key={i} onClick={() => setSelectedProperty(p)} className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] transition-all duration-300 group flex flex-col">
-                                                    
-                                                    <div className="relative h-56 md:h-64 w-full overflow-hidden shrink-0 bg-slate-100">
-                                                        <img src={fixImageUrl(getVal(p, "Cover Image") || getVal(p, "cover_image"))} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                                        <div className="absolute top-4 left-0 bg-slate-900/90 backdrop-blur-sm text-white text-[10px] font-black px-4 py-1.5 rounded-r-lg shadow-md uppercase tracking-widest">
-                                                            {getVal(p, "Property Type") || 'Apartment'}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="p-6 flex-grow flex flex-col">
-                                                        <h2 className="text-xl md:text-2xl font-black text-slate-900 leading-tight mb-1 uppercase tracking-tighter truncate">
-                                                            {getVal(p, "Property Name") || "Listed Property"}
-                                                        </h2>
-                                                        <p className="text-sm text-blue-600 mb-4 truncate font-bold">{getVal(p, "Builder Name") || "Premium Builder"}</p>
-                                                        
-                                                        <div className="flex flex-wrap gap-2 text-[10px] font-bold text-slate-600 mb-6">
-                                                            <span className="bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100 uppercase tracking-widest">📍 {getVal(p, "Location")}</span>
-                                                            <span className="bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100 uppercase tracking-widest">🔑 {getVal(p, "Construction Status") || "Status"}</span>
-                                                        </div>
-
-                                                        <div className="flex justify-between items-end border-t border-slate-100 pt-5 mt-auto">
-                                                            <div className="flex flex-col">
-                                                                <span className="text-[9px] text-slate-400 font-bold mb-1 uppercase tracking-widest">Starting from</span>
-                                                                <span className="text-xl md:text-2xl font-black text-slate-900 leading-none">{getVal(p, "Price") || "On Request"}</span>
+                                            filtered.map((p, i) => {
+                                                // Compute status badge class
+                                                const st = String(getVal(p, "Construction Status")).toLowerCase();
+                                                const badgeClass = st.includes('ready') ? 'status-ready' : st.includes('under') ? 'status-under' : st.includes('new') ? 'status-new' : 'status-default';
+                                                return (
+                                                    <div
+                                                        key={i}
+                                                        onClick={() => setSelectedProperty(p)}
+                                                        className="prop-card group flex flex-col relative"
+                                                        style={{position:'relative'}}
+                                                    >
+                                                        {/* IMAGE AREA */}
+                                                        <div className="relative overflow-hidden shrink-0 bg-slate-100" style={{height:'220px'}}>
+                                                            <img
+                                                                src={fixImageUrl(getVal(p, "Cover Image") || getVal(p, "cover_image"))}
+                                                                className="card-img"
+                                                                alt={getVal(p, "Property Name")}
+                                                            />
+                                                            {/* Gradient overlay */}
+                                                            <div style={{position:'absolute', inset:0, background:'linear-gradient(to top, rgba(15,23,42,0.5) 0%, transparent 50%)'}}></div>
+                                                            {/* Property type badge */}
+                                                            <div className="type-badge">{getVal(p, "Property Type") || 'Apartment'}</div>
+                                                            {/* Location tag (bottom of image) */}
+                                                            <div style={{position:'absolute', bottom:'12px', left:'14px', display:'flex', alignItems:'center', gap:'5px'}}>
+                                                                <span style={{fontSize:'0.6rem', fontWeight:700, color:'rgba(255,255,255,0.9)', letterSpacing:'0.1em', textTransform:'uppercase', textShadow:'0 1px 4px rgba(0,0,0,0.4)'}}>
+                                                                    📍 {getVal(p, "Location")}
+                                                                </span>
                                                             </div>
-                                                            <button className="bg-slate-900 text-white text-[10px] md:text-xs font-bold px-4 py-2 md:px-5 md:py-2.5 rounded-xl hover:bg-blue-600 transition-colors shadow-md uppercase tracking-widest group-hover:bg-blue-600">
-                                                                View Details
-                                                            </button>
+                                                        </div>
+
+                                                        {/* CARD BODY */}
+                                                        <div className="p-5 md:p-6 flex-grow flex flex-col" style={{fontFamily:"'DM Sans', sans-serif"}}>
+                                                            {/* Builder name */}
+                                                            <p style={{fontSize:'0.65rem', fontWeight:700, color:'var(--gold)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'4px'}}>
+                                                                {getVal(p, "Builder Name") || "Premium Builder"}
+                                                            </p>
+                                                            {/* Project name */}
+                                                            <h2 style={{fontSize:'1.2rem', fontWeight:800, color:'var(--navy)', lineHeight:1.2, marginBottom:'10px', fontFamily:"'Cormorant Garamond', Georgia, serif", fontStyle:'italic'}} className="truncate">
+                                                                {getVal(p, "Property Name") || "Listed Property"}
+                                                            </h2>
+                                                            
+                                                            {/* Tags row */}
+                                                            <div className="flex flex-wrap gap-1.5 mb-4">
+                                                                <span className={`status-badge ${badgeClass}`}>
+                                                                    {getVal(p, "Construction Status") || "Status"}
+                                                                </span>
+                                                                {getVal(p, "No of BHK's") && (
+                                                                    <span className="status-badge status-default">
+                                                                        {getVal(p, "No of BHK's")} BHK
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Price + CTA */}
+                                                            <div className="flex justify-between items-end mt-auto pt-4" style={{borderTop:'1px solid var(--border)'}}>
+                                                                <div>
+                                                                    <span style={{fontSize:'0.55rem', fontWeight:700, color:'var(--slate-soft)', letterSpacing:'0.18em', textTransform:'uppercase', display:'block', marginBottom:'2px'}}>Starting from</span>
+                                                                    <span style={{fontSize:'1.4rem', fontWeight:800, color:'var(--navy)', lineHeight:1, fontFamily:"'DM Sans', sans-serif"}}>
+                                                                        {getVal(p, "Price") || "On Request"}
+                                                                    </span>
+                                                                </div>
+                                                                <button
+                                                                    className="btn-gold text-white text-[0.6rem] font-black px-4 py-2.5 rounded-xl uppercase tracking-widest"
+                                                                    style={{fontSize:'0.62rem'}}
+                                                                >
+                                                                    View Details
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ))
+                                                );
+                                            })
                                         )}
                                     </div>
                                 )}
@@ -862,11 +1496,13 @@
                         )}
 
                         {activePage === 'about-us' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
+                            <div style={{background:'var(--card-bg)', borderRadius:'2rem', padding:'2.5rem', boxShadow:'var(--shadow-sm)', border:'1px solid var(--border)'}} className="animate-fadeIn md:p-16">
                                 <div className="text-center mb-10 md:mb-16">
-                                    <span className="text-blue-600 font-black uppercase tracking-[0.2em] text-[10px] md:text-xs bg-blue-50 px-4 py-2 rounded-full">About Perfect Horizons</span>
-                                    <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic mt-6 mb-4 leading-tight">A Luxury Standard in Real Estate Advisory</h1>
-                                    <p className="text-gray-500 max-w-2xl mx-auto text-sm md:text-base">We redefine what it means to buy a home.</p>
+                                    <span className="section-pill">About Perfect Horizons</span>
+                                    <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.8rem, 5vw, 3.5rem)', fontWeight:700, fontStyle:'italic', color:'var(--navy)', letterSpacing:'-0.02em', marginTop:'1.5rem', marginBottom:'1rem', lineHeight:1.1}}>
+                                        A Luxury Standard in Real Estate Advisory
+                                    </h1>
+                                    <p style={{color:'var(--slate-soft)', maxWidth:'36rem', margin:'0 auto', fontSize:'0.95rem'}}>We redefine what it means to buy a home.</p>
                                 </div>
                                 
                                 <div className="text-gray-600 text-sm md:text-base leading-relaxed space-y-6 max-w-3xl mx-auto mb-16">
@@ -916,51 +1552,50 @@
                         )}
 
                         {activePage === 'our-journey' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
-                                <h1 className="text-3xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-4">The Perfect Horizons Story</h1>
-                                <p className="text-gray-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-8 md:mb-12">A platform where honesty comes before profit.</p>
-                                
-                                <div className="space-y-8 md:space-y-12 max-w-3xl mx-auto">
-                                    <div className="border-l-4 border-blue-600 pl-4 md:pl-6">
-                                        <p className="text-gray-700 leading-relaxed text-sm md:text-base font-medium">Perfect Horizons was built on a simple but powerful realization — The real estate market is filled with noise, pressure, and misinformation, leaving buyers confused and vulnerable while making one of the biggest decisions of their lives.</p>
-                                    </div>
-                                    <div className="border-l-4 border-blue-600 pl-4 md:pl-6">
-                                        <p className="text-gray-700 leading-relaxed text-sm md:text-base">Having closely observed how buyers were often pushed into the wrong projects for the sake of commissions, the vision behind Perfect Horizons was clear: To create a platform where honesty comes before profit.</p>
-                                    </div>
-                                    <div className="border-l-4 border-blue-600 pl-4 md:pl-6">
-                                        <p className="text-gray-700 leading-relaxed text-sm md:text-base">What started as a mission to guide a few buyers the right way has now evolved into a trusted advisory where every client receives genuine, unbiased, and thoughtful guidance.</p>
-                                    </div>
+                            <div style={{background:'var(--card-bg)', borderRadius:'2rem', padding:'2rem', boxShadow:'var(--shadow-sm)', border:'1px solid var(--border)'}} className="animate-fadeIn md:p-16">
+                                <span className="section-pill">Our Story</span>
+                                <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.8rem,5vw,3.5rem)', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginTop:'1.25rem', marginBottom:'0.5rem', lineHeight:1.1}}>The Perfect Horizons Story</h1>
+                                <p style={{fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'2.5rem'}}>A platform where honesty comes before profit.</p>
+                                <div className="space-y-7 max-w-3xl mx-auto">
+                                    {[
+                                        "Perfect Horizons was built on a simple but powerful realization — The real estate market is filled with noise, pressure, and misinformation, leaving buyers confused and vulnerable while making one of the biggest decisions of their lives.",
+                                        "Having closely observed how buyers were often pushed into the wrong projects for the sake of commissions, the vision behind Perfect Horizons was clear: To create a platform where honesty comes before profit.",
+                                        "What started as a mission to guide a few buyers the right way has now evolved into a trusted advisory where every client receives genuine, unbiased, and thoughtful guidance."
+                                    ].map((para, i) => (
+                                        <div key={i} style={{borderLeft:'3px solid var(--gold)', paddingLeft:'1.25rem'}}>
+                                            <p style={{color:'var(--slate-soft)', lineHeight:1.85, fontSize:'0.9rem'}}>{para}</p>
+                                        </div>
+                                    ))}
                                 </div>
-                                
-                                <div className="mt-16 bg-slate-50 p-6 md:p-12 rounded-3xl border border-slate-100 max-w-4xl mx-auto text-center">
-                                    <h3 className="text-sm md:text-lg font-black text-slate-900 uppercase tracking-widest mb-6 md:mb-8">The foundation of Perfect Horizons is built on three core values:</h3>
-                                    <div className="flex flex-col md:flex-row justify-center gap-3 md:gap-8">
-                                        <div className="bg-white px-4 py-3 md:px-6 md:py-4 rounded-xl border border-gray-100 shadow-sm font-bold text-blue-900 uppercase text-[10px] md:text-xs tracking-widest">Trust over transactions</div>
-                                        <div className="bg-white px-4 py-3 md:px-6 md:py-4 rounded-xl border border-gray-100 shadow-sm font-bold text-blue-900 uppercase text-[10px] md:text-xs tracking-widest">Clarity over confusion</div>
-                                        <div className="bg-white px-4 py-3 md:px-6 md:py-4 rounded-xl border border-gray-100 shadow-sm font-bold text-blue-900 uppercase text-[10px] md:text-xs tracking-widest">Relationships over gains</div>
+                                <div style={{marginTop:'3rem', background:'var(--parchment)', padding:'2rem', borderRadius:'1.25rem', border:'1px solid var(--border)', maxWidth:'48rem', marginLeft:'auto', marginRight:'auto', textAlign:'center'}}>
+                                    <h3 style={{fontSize:'0.72rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--navy)', marginBottom:'1.5rem'}}>The foundation of Perfect Horizons is built on three core values:</h3>
+                                    <div className="flex flex-col md:flex-row justify-center gap-3 md:gap-6">
+                                        {['Trust over transactions', 'Clarity over confusion', 'Relationships over gains'].map((v, i) => (
+                                            <div key={i} style={{background:'var(--card-bg)', padding:'12px 20px', borderRadius:'10px', border:'1px solid var(--border)', fontWeight:800, color:'var(--navy)', fontSize:'0.62rem', textTransform:'uppercase', letterSpacing:'0.14em', boxShadow:'var(--shadow-sm)'}}>{v}</div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
                         )}
 
                         {activePage === 'advisor' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border flex flex-col-reverse md:flex-row gap-8 md:gap-12 items-center animate-fadeIn">
+                            <div style={{background:'var(--card-bg)', borderRadius:'2rem', padding:'2rem', boxShadow:'var(--shadow-sm)', border:'1px solid var(--border)'}} className="flex flex-col-reverse md:flex-row gap-8 md:gap-12 items-center animate-fadeIn md:p-16">
                                 <div className="w-full md:w-1/2">
-                                    <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic mb-2 md:mb-4 leading-tight">Meet Your Advisor</h1>
-                                    <h3 className="text-[10px] md:text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-6 md:mb-8">Tharun | Lead Luxury Advisor</h3>
-                                    
-                                    <div className="text-gray-600 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6">
+                                    <span className="section-pill">Your Expert</span>
+                                    <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.8rem,5vw,3rem)', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginTop:'1rem', marginBottom:'6px', lineHeight:1.1}}>Meet Your Advisor</h1>
+                                    <h3 style={{fontSize:'0.65rem', fontWeight:800, color:'var(--gold)', textTransform:'uppercase', letterSpacing:'0.22em', marginBottom:'1.75rem'}}>Tharun &nbsp;·&nbsp; Lead Luxury Advisor</h3>
+                                    <div style={{color:'var(--slate-soft)', lineHeight:1.85, fontSize:'0.9rem'}} className="space-y-4">
                                         <p>Hi, I'm Tharun. I built Perfect Horizons because I saw how confusing and overwhelming buying a home in Bengaluru can be.</p>
                                         <p>As your dedicated channel partner, I don't just show you brochures. I provide you with complete, unbiased analysis of floor plans, builder histories, and locality growth potential.</p>
                                         <p>My goal isn't just to help you buy a house; it's to ensure you make the smartest, safest financial decision for your family's future.</p>
                                     </div>
-
-                                    <button onClick={() => setShowLeadForm(true)} className="w-full md:w-auto mt-6 md:mt-8 bg-slate-900 text-white font-black py-4 px-10 rounded-xl md:rounded-2xl uppercase tracking-widest shadow-xl hover:bg-blue-600 transition-all active:scale-95">
+                                    <button onClick={() => setShowLeadForm(true)} className="btn-gold text-white font-black py-4 px-10 rounded-xl uppercase tracking-widest active:scale-95" style={{marginTop:'1.75rem', fontSize:'0.72rem', display:'inline-block'}}>
                                         Schedule Consultation
                                     </button>
                                 </div>
                                 <div className="w-full md:w-1/2 flex justify-center mb-4 md:mb-0">
-                                    <div className="w-56 h-56 md:w-96 md:h-96 bg-slate-100 rounded-full md:rounded-[40px] border-4 md:border-8 border-white shadow-2xl overflow-hidden relative">
+                                    <div style={{width:'220px', height:'220px', background:'var(--parchment)', borderRadius:'1.5rem', border:'4px solid white', boxShadow:'0 24px 64px rgba(15,23,42,0.2), 0 0 0 1px var(--border)', overflow:'hidden', position:'relative'}} className="md:w-80 md:h-80">
+                                        <div style={{position:'absolute', inset:0, background:'linear-gradient(135deg, rgba(217,119,6,0.08), transparent)', zIndex:1}}></div>
                                         <img src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w1000" alt="Tharun Profile" className="w-full h-full object-cover object-top" onError={(e) => { e.target.src = 'https://i.ibb.co/Y7Y6K3r/professional-placeholder.jpg'; }} />
                                     </div>
                                 </div>
@@ -968,121 +1603,97 @@
                         )}
 
                         {activePage === 'what-we-do' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
-                                <h1 className="text-2xl md:text-5xl font-black text-green-700 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">Our Services</h1>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
-                                    <div className="bg-green-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-green-100 hover:shadow-lg transition">
-                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-green-900">Project Discovery & Shortlisting</h4>
-                                        <p className="text-green-800/80 text-xs md:text-sm leading-relaxed">We filter out the noise. We sit with you to understand your lifestyle and budget, then show you only the properties that match your specific requirements and have clear legal titles.</p>
-                                    </div>
-                                    <div className="bg-green-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-green-100 hover:shadow-lg transition">
-                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-green-900">Guided Site Visits</h4>
-                                        <p className="text-green-800/80 text-xs md:text-sm leading-relaxed">We assist you in site visits, accompanying you on-site to provide honest insights about construction quality, location pros and cons, and floor plan efficiency.</p>
-                                    </div>
-                                    <div className="bg-green-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-green-100 hover:shadow-lg transition">
-                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-green-900">Inventory Selection & Negotiation</h4>
-                                        <p className="text-green-800/80 text-xs md:text-sm leading-relaxed">We help you pick the best unit (Vastu, ventilation, views) and sit across the table from the builders to negotiate the absolute best price and payment plan on your behalf.</p>
-                                    </div>
-                                    <div className="bg-green-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-green-100 hover:shadow-lg transition">
-                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-green-900">End-to-End Post-Sales Support</h4>
-                                        <p className="text-green-800/80 text-xs md:text-sm leading-relaxed">Our relationship doesn't end at booking. We assist with home loan coordination, legal document verification, and support you all the way until the final handover of your keys.</p>
-                                    </div>
+                            <div style={{background:'var(--card-bg)', borderRadius:'2rem', padding:'2rem', boxShadow:'var(--shadow-sm)', border:'1px solid var(--border)'}} className="animate-fadeIn md:p-16">
+                                <div className="text-center mb-10">
+                                    <span className="section-pill">Our Services</span>
+                                    <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.8rem,5vw,3rem)', fontWeight:700, fontStyle:'italic', color:'var(--emerald)', marginTop:'1.25rem', lineHeight:1.1}}>What We Do</h1>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-5xl mx-auto">
+                                    {[
+                                        {icon:'🔍', title:'Project Discovery & Shortlisting', desc:'We filter out the noise. We sit with you to understand your lifestyle and budget, then show you only the properties that match your specific requirements and have clear legal titles.'},
+                                        {icon:'🏗️', title:'Guided Site Visits', desc:'We assist you in site visits, accompanying you on-site to provide honest insights about construction quality, location pros and cons, and floor plan efficiency.'},
+                                        {icon:'🤝', title:'Inventory Selection & Negotiation', desc:'We help you pick the best unit (Vastu, ventilation, views) and sit across the table from the builders to negotiate the absolute best price and payment plan on your behalf.'},
+                                        {icon:'🗝️', title:'End-to-End Post-Sales Support', desc:"Our relationship doesn't end at booking. We assist with home loan coordination, legal document verification, and support you all the way until the final handover of your keys."},
+                                    ].map((s, i) => (
+                                        <div key={i} style={{background:'rgba(5,150,105,0.05)', borderRadius:'1.25rem', border:'1px solid rgba(5,150,105,0.15)', padding:'1.75rem', transition:'box-shadow 0.2s, transform 0.2s'}} className="hover:shadow-lg hover:-translate-y-0.5">
+                                            <div style={{fontSize:'1.75rem', marginBottom:'12px'}}>{s.icon}</div>
+                                            <h4 style={{fontSize:'0.72rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.14em', color:'#065F46', marginBottom:'8px'}}>{s.title}</h4>
+                                            <p style={{color:'#064E3B', opacity:0.75, fontSize:'0.85rem', lineHeight:1.75}}>{s.desc}</p>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )}
 
                         {activePage === 'what-we-dont-do' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
-                                <h1 className="text-2xl md:text-5xl font-black text-red-700 tracking-tighter uppercase italic mb-8 md:mb-12 text-center">What We Don't Do</h1>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
-                                    <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
-                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">We Don't Charge Buyers</h4>
-                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed">As authorized channel partners, we are compensated by the developers out of their marketing budgets. Our premium advisory services are 100% free for home buyers.</p>
-                                    </div>
-                                    <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
-                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">We Don't Push Bad Projects</h4>
-                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed">If a project has legal issues, poor construction quality, or a bad track record, we refuse to list it or recommend it. We protect your money above all else.</p>
-                                    </div>
-                                    <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
-                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">We Don't Spam Call</h4>
-                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed">We respect your privacy. Once you register interest, we provide the facts and step back to let you decide. No aggressive sales tactics or relentless follow-up calls.</p>
-                                    </div>
-                                    <div className="bg-red-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-red-100">
-                                        <h4 className="font-black uppercase tracking-widest text-sm md:text-lg mb-2 md:mb-3 text-slate-900">We Don't Hide Facts</h4>
-                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed">Every project has pros and cons. We will tell you the absolute truth about a property's downsides—like traffic bottlenecks or water issues—not just the marketing highlights.</p>
-                                    </div>
+                            <div style={{background:'var(--card-bg)', borderRadius:'2rem', padding:'2rem', boxShadow:'var(--shadow-sm)', border:'1px solid var(--border)'}} className="animate-fadeIn md:p-16">
+                                <div className="text-center mb-10">
+                                    <span className="section-pill">Our Commitments</span>
+                                    <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.8rem,5vw,3rem)', fontWeight:700, fontStyle:'italic', color:'#B91C1C', marginTop:'1.25rem', lineHeight:1.1}}>What We Don't Do</h1>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-5xl mx-auto">
+                                    {[
+                                        {icon:'🆓', title:"We Don't Charge Buyers", desc:'As authorized channel partners, we are compensated by the developers out of their marketing budgets. Our premium advisory services are 100% free for home buyers.'},
+                                        {icon:'🚫', title:"We Don't Push Bad Projects", desc:'If a project has legal issues, poor construction quality, or a bad track record, we refuse to list it or recommend it. We protect your money above all else.'},
+                                        {icon:'📵', title:"We Don't Spam Call", desc:'We respect your privacy. Once you register interest, we provide the facts and step back to let you decide. No aggressive sales tactics or relentless follow-up calls.'},
+                                        {icon:'👁️', title:"We Don't Hide Facts", desc:"Every project has pros and cons. We will tell you the absolute truth about a property's downsides—like traffic bottlenecks or water issues—not just the marketing highlights."},
+                                    ].map((s, i) => (
+                                        <div key={i} style={{background:'rgba(185,28,28,0.04)', borderRadius:'1.25rem', border:'1px solid rgba(185,28,28,0.12)', padding:'1.75rem', transition:'box-shadow 0.2s, transform 0.2s'}} className="hover:shadow-lg hover:-translate-y-0.5">
+                                            <div style={{fontSize:'1.75rem', marginBottom:'12px'}}>{s.icon}</div>
+                                            <h4 style={{fontSize:'0.72rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--navy)', marginBottom:'8px'}}>{s.title}</h4>
+                                            <p style={{color:'var(--slate-soft)', fontSize:'0.85rem', lineHeight:1.75}}>{s.desc}</p>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )}
 
                         {activePage === 'customers' && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
-                                <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-2 md:mb-4 text-center">Happy Homeowners</h1>
-                                <p className="text-gray-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-8 md:mb-12 text-center">Don't just take our word for it.</p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-5xl mx-auto">
-                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 relative">
-                                        <div className="text-yellow-400 text-sm md:text-base mb-3 md:mb-4">★★★★★</div>
-                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed italic mb-4 md:mb-6">"We were completely lost trying to find a 3BHK in East Bangalore. Tharun didn't just show us properties; he explained the actual ROI and negotiated a price we couldn't have gotten directly from the builder."</p>
-                                        <div className="flex items-center gap-3 md:gap-4">
-                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-600 text-sm md:text-base">SK</div>
-                                            <div>
-                                                <h5 className="font-black text-xs md:text-sm uppercase tracking-widest text-slate-900">Sandeep & Kavya</h5>
-                                                <p className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-widest">Bought in Sarjapur</p>
+                            <div style={{background:'var(--card-bg)', borderRadius:'2rem', padding:'2rem', boxShadow:'var(--shadow-sm)', border:'1px solid var(--border)'}} className="animate-fadeIn md:p-16">
+                                <div className="text-center mb-10">
+                                    <span className="section-pill">Client Stories</span>
+                                    <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.8rem,5vw,3rem)', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginTop:'1.25rem', marginBottom:'0.5rem', lineHeight:1.1}}>Happy Homeowners</h1>
+                                    <p style={{fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)'}}>Don't just take our word for it.</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto">
+                                    {[
+                                        {initials:'SK', name:'Sandeep & Kavya', location:'Bought in Sarjapur', review:"We were completely lost trying to find a 3BHK in East Bangalore. Tharun didn't just show us properties; he explained the actual ROI and negotiated a price we couldn't have gotten directly from the builder."},
+                                        {initials:'AN', name:'Arjun Nair', location:'Bought in Chandapura', review:'We were looking for a budget-friendly plot in Chandapura. Tharun provided a clear legal vetting report and made sure the khata transfer was smooth. Highly reliable!'},
+                                        {initials:'AT', name:'Ananya T.', location:'Bought in Whitefield', review:'From the free site visits to handling the endless paperwork with the bank and the builder, the team made the entire process stress-free. Highly recommend them to any first-time buyer.'},
+                                    ].map((r,i) => (
+                                        <div key={i} style={{background:'var(--parchment)', borderRadius:'1.25rem', border:'1px solid var(--border)', padding:'1.75rem', position:'relative', overflow:'hidden'}}>
+                                            <div style={{position:'absolute', top:0, left:0, right:0, height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)'}}></div>
+                                            <div style={{color:'#D97706', fontSize:'1rem', marginBottom:'1rem', letterSpacing:'2px'}}>★★★★★</div>
+                                            <p style={{color:'var(--slate-soft)', fontSize:'0.88rem', lineHeight:1.8, fontStyle:'italic', marginBottom:'1.25rem'}}>"{r.review}"</p>
+                                            <div className="flex items-center gap-3">
+                                                <div style={{width:'44px', height:'44px', borderRadius:'50%', background:'linear-gradient(135deg, var(--teal), var(--navy))', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'0.75rem', flexShrink:0}}>{r.initials}</div>
+                                                <div>
+                                                    <h5 style={{fontWeight:800, fontSize:'0.72rem', textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--navy)'}}>{r.name}</h5>
+                                                    <p style={{fontSize:'0.6rem', color:'var(--slate-soft)', textTransform:'uppercase', letterSpacing:'0.16em', fontWeight:600, marginTop:'2px'}}>📍 {r.location}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 relative">
-                                        <div className="text-yellow-400 text-sm md:text-base mb-3 md:mb-4">★★★★★</div>
-                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed italic mb-4 md:mb-6">"We were looking for a budget-friendly plot in Chandapura. Tharun provided a clear legal vetting report and made sure the khata transfer was smooth. Highly reliable!"</p>
-                                        <div className="flex items-center gap-3 md:gap-4">
-                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-600 text-sm md:text-base">AN</div>
-                                            <div>
-                                                <h5 className="font-black text-xs md:text-sm uppercase tracking-widest text-slate-900">Arjun Nair</h5>
-                                                <p className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-widest">Bought in Chandapura</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 relative">
-                                        <div className="text-yellow-400 text-sm md:text-base mb-3 md:mb-4">★★★★★</div>
-                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed italic mb-4 md:mb-6">"Excellent experience buying our weekend home near Marsur. Perfect Horizons handles all the site visits and documentation. Zero brokerage but 100% premium service."</p>
-                                        <div className="flex items-center gap-3 md:gap-4">
-                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-600 text-sm md:text-base">PS</div>
-                                            <div>
-                                                <h5 className="font-black text-xs md:text-sm uppercase tracking-widest text-slate-900">Priya Sharma</h5>
-                                                <p className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-widest">Bought in Marsur</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-gray-50 p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 relative">
-                                        <div className="text-yellow-400 text-sm md:text-base mb-3 md:mb-4">★★★★★</div>
-                                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed italic mb-4 md:mb-6">"From the free site visits to handling the endless paperwork with the bank and the builder, the team made the entire process stress-free. Highly recommend them to any first-time buyer."</p>
-                                        <div className="flex items-center gap-3 md:gap-4">
-                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-600 text-sm md:text-base">AT</div>
-                                            <div>
-                                                <h5 className="font-black text-xs md:text-sm uppercase tracking-widest text-slate-900">Ananya T.</h5>
-                                                <p className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-widest">Bought in Whitefield</p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
                             </div>
                         )}
 
                         {activePage === 'blogs' && !activeBlog && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border animate-fadeIn">
-                                <h1 className="text-2xl md:text-5xl font-black text-blue-900 tracking-tighter uppercase italic mb-2 md:mb-4">Real Estate Insights</h1>
-                                <p className="text-gray-400 text-[10px] md:text-sm font-bold uppercase tracking-widest mb-8 md:mb-12">Expert guides for Bengaluru buyers</p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                            <div style={{background:'var(--card-bg)', borderRadius:'2rem', padding:'2rem', boxShadow:'var(--shadow-sm)', border:'1px solid var(--border)'}} className="animate-fadeIn md:p-16">
+                                <span className="section-pill">Knowledge Hub</span>
+                                <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.8rem,5vw,3rem)', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginTop:'1.25rem', marginBottom:'0.5rem', lineHeight:1.1}}>Real Estate Insights</h1>
+                                <p style={{fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'2.5rem'}}>Expert guides for Bengaluru buyers</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
                                     {BLOG_ARTICLES.map((blog) => (
-                                        <div key={blog.id} onClick={() => { setActiveBlog(blog); window.scrollTo(0,0); }} className="bg-gray-50 rounded-[20px] md:rounded-[30px] border overflow-hidden hover:shadow-lg transition group flex flex-col cursor-pointer hover:-translate-y-1">
-                                            <div className="p-6 md:p-8 flex-grow">
-                                                <span className="text-slate-900 text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-gray-200 px-3 py-1 rounded-lg mb-4 inline-block">{blog.tag}</span>
-                                                <h3 className="font-black text-base md:text-lg uppercase tracking-tighter leading-tight mb-3 text-blue-900 group-hover:text-blue-600 transition">{blog.title}</h3>
-                                                <p className="text-gray-600 text-xs md:text-sm line-clamp-3 leading-relaxed">{blog.excerpt}</p>
+                                        <div key={blog.id} onClick={() => { setActiveBlog(blog); window.scrollTo(0,0); }} className="group flex flex-col cursor-pointer" style={{background:'var(--parchment)', borderRadius:'1.25rem', border:'1px solid var(--border)', overflow:'hidden', transition:'box-shadow 0.25s, transform 0.25s', boxShadow:'var(--shadow-sm)'}} onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-lift)'; e.currentTarget.style.transform = 'translateY(-4px)'; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+                                            <div style={{padding:'1.5rem', flexGrow:1}}>
+                                                <span style={{display:'inline-block', background:'var(--gold-light)', color:'var(--gold)', fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.16em', padding:'4px 12px', borderRadius:'999px', border:'1px solid rgba(217,119,6,0.2)', marginBottom:'1rem'}}>{blog.tag}</span>
+                                                <h3 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.05rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', lineHeight:1.3, marginBottom:'0.75rem'}}>{blog.title}</h3>
+                                                <p style={{color:'var(--slate-soft)', fontSize:'0.8rem', lineHeight:1.7}} className="line-clamp-3">{blog.excerpt}</p>
                                             </div>
-                                            <div className="px-6 md:px-8 pb-6 md:pb-8 border-t border-gray-200 pt-4 mt-auto">
-                                                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest group-hover:text-blue-800 transition flex items-center">
-                                                    Read Article <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                                            <div style={{padding:'1rem 1.5rem', borderTop:'1px solid var(--border)'}}>
+                                                <span style={{fontSize:'0.65rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--teal)', display:'flex', alignItems:'center', gap:'6px'}}>
+                                                    Read Article <span style={{transition:'transform 0.2s'}} className="group-hover:translate-x-1 inline-block">→</span>
                                                 </span>
                                             </div>
                                         </div>
@@ -1092,16 +1703,20 @@
                         )}
 
                         {activePage === 'blogs' && activeBlog && (
-                            <div className="bg-white p-6 md:p-16 rounded-3xl md:rounded-[40px] shadow-sm border max-w-4xl mx-auto animate-fadeIn">
-                                <button onClick={() => setActiveBlog(null)} className="text-gray-400 text-xs font-bold uppercase tracking-widest hover:text-blue-600 transition mb-8 flex items-center">
+                            <div style={{background:'var(--card-bg)', borderRadius:'2rem', padding:'2rem', boxShadow:'var(--shadow-sm)', border:'1px solid var(--border)', maxWidth:'56rem', margin:'0 auto'}} className="animate-fadeIn md:p-16">
+                                <button onClick={() => setActiveBlog(null)} style={{fontSize:'0.65rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.16em', color:'var(--slate-soft)', display:'flex', alignItems:'center', gap:'6px', marginBottom:'2rem', transition:'color 0.2s'}} className="hover:text-yellow-600">
                                     ← Back to Insights
                                 </button>
-                                <span className="text-slate-900 text-[10px] font-black uppercase tracking-widest bg-gray-200 px-3 py-1 rounded-lg mb-4 inline-block">{activeBlog.tag}</span>
-                                <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase leading-tight mb-8">{activeBlog.title}</h1>
-                                <div className="text-gray-700 text-sm md:text-base leading-relaxed space-y-4 md:space-y-6" dangerouslySetInnerHTML={{__html: activeBlog.content}}></div>
-                                <div className="mt-12 pt-8 border-t border-gray-100 text-center">
-                                    <p className="text-gray-500 text-[10px] md:text-xs uppercase font-black tracking-widest mb-4">Get off the internet; trust a professional.</p>
-                                    <button onClick={() => setShowLeadForm(true)} className="bg-slate-900 text-white font-black py-4 px-10 rounded-xl uppercase tracking-widest shadow-xl hover:bg-blue-600 transition-all active:scale-95">
+                                <span style={{display:'inline-block', background:'var(--gold-light)', color:'var(--gold)', fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.16em', padding:'4px 12px', borderRadius:'999px', border:'1px solid rgba(217,119,6,0.2)', marginBottom:'1rem'}}>{activeBlog.tag}</span>
+                                <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.6rem,4vw,2.5rem)', fontWeight:700, fontStyle:'italic', color:'var(--navy)', lineHeight:1.15, marginBottom:'2rem'}}>{activeBlog.title}</h1>
+                                <div style={{color:'var(--slate-soft)', lineHeight:1.85, fontSize:'0.9rem'}} className="space-y-4" dangerouslySetInnerHTML={{__html: activeBlog.content}}></div>
+                                <div className="mt-14 pt-8 border-t text-center" style={{borderColor:'var(--border)'}}>
+                                    <p style={{fontSize:'0.65rem', fontWeight:800, letterSpacing:'0.2em', textTransform:'uppercase', color:'var(--slate-soft)', marginBottom:'1rem'}}>Get off the internet; trust a professional.</p>
+                                    <button
+                                        onClick={() => setShowLeadForm(true)}
+                                        className="btn-gold text-white font-black py-4 px-10 rounded-xl uppercase tracking-widest"
+                                        style={{fontSize:'0.75rem'}}
+                                    >
                                         Talk with Advisor
                                     </button>
                                 </div>
@@ -1109,27 +1724,29 @@
                         )}
                     </main>
 
-                    <footer className="bg-slate-950 text-white p-8 md:p-12 mt-auto border-t border-slate-900 relative z-10">
+                    <footer className="ph-footer text-white p-8 md:p-12 mt-auto relative z-10">
                         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center md:items-start gap-8 text-center md:text-left">
                             <div className="flex flex-col items-center md:items-start">
-                                <h1 className="text-xl font-black italic uppercase text-slate-300 tracking-tighter">Perfect Horizons</h1>
-                                <p className="text-slate-600 text-xs mt-2 font-medium">© 2026 Perfect Horizons. All rights reserved.</p>
-                                
-                                <div className="flex gap-4 mt-4 text-[9px] text-slate-500 uppercase tracking-widest font-bold">
-                                    <button onClick={() => setLegalModal('terms')} className="hover:text-slate-300 transition">Terms & Conditions</button>
-                                    <span>|</span>
-                                    <button onClick={() => setLegalModal('privacy')} className="hover:text-slate-300 transition">Privacy Policy</button>
+                                <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.5rem', fontStyle:'italic', fontWeight:700, letterSpacing:'-0.02em', color:'rgba(255,255,255,0.9)'}}>
+                                    Perfect Horizons
+                                </h1>
+                                <p style={{fontSize:'0.6rem', letterSpacing:'0.15em', color:'rgba(255,255,255,0.3)', marginTop:'8px', fontWeight:500}}>© 2026 Perfect Horizons. All rights reserved.</p>
+                                <div className="flex gap-4 mt-4" style={{fontSize:'0.6rem', color:'rgba(255,255,255,0.35)', textTransform:'uppercase', letterSpacing:'0.15em', fontWeight:700}}>
+                                    <button onClick={() => setLegalModal('terms')} className="hover:text-yellow-400 transition">Terms & Conditions</button>
+                                    <span style={{opacity:0.3}}>|</span>
+                                    <button onClick={() => setLegalModal('privacy')} className="hover:text-yellow-400 transition">Privacy Policy</button>
                                 </div>
                             </div>
                             <div className="space-y-3">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Contact Us</h3>
-                                <p className="text-sm font-medium text-slate-300">📞 +91 9113261205</p>
-                                <a href="mailto:perfecthorizons.in@gmail.com" className="text-sm font-medium text-slate-300 hover:text-blue-400 transition block">✉️ perfecthorizons.in@gmail.com</a>
-                                <p className="text-sm text-slate-500 italic">📍 Bengaluru, Karnataka</p>
+                                <h3 style={{fontSize:'0.6rem', fontWeight:800, color:'rgba(217,119,6,0.7)', textTransform:'uppercase', letterSpacing:'0.2em', marginBottom:'12px'}}>Contact Us</h3>
+                                <p style={{fontSize:'0.85rem', fontWeight:500, color:'rgba(255,255,255,0.75)'}}>📞 +91 9113261205</p>
+                                <a href="mailto:perfecthorizons.in@gmail.com" style={{fontSize:'0.85rem', fontWeight:500, color:'rgba(255,255,255,0.75)', display:'block'}} className="hover:text-yellow-300 transition">✉️ perfecthorizons.in@gmail.com</a>
+                                <p style={{fontSize:'0.85rem', fontStyle:'italic', color:'rgba(255,255,255,0.4)'}}>📍 Bengaluru, Karnataka</p>
                             </div>
                         </div>
                     </footer>
 
+                    {/* AI ASSISTANT WHATSAPP BUTTON (Hidden on mobile when viewing a property) */}
                     {!(window.innerWidth < 768 && selectedProperty) && (
                         <div className="fixed bottom-6 right-6 z-[55] flex flex-col items-end animate-fadeIn group">
                             <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, what properties are available?`} target="_blank" className="bg-gradient-to-tr from-green-500 to-green-400 text-white p-4 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-transform flex items-center justify-center">
@@ -1138,15 +1755,17 @@
                         </div>
                     )}
 
+                    {/* LEGAL MODALS — Premium cream surface */}
                     {legalModal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setLegalModal(null)}>
-                            <div className="bg-white rounded-3xl p-8 max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl relative" onClick={e => e.stopPropagation()}>
-                                <button onClick={() => setLegalModal(null)} className="absolute top-4 right-6 text-2xl text-slate-400 hover:text-slate-900">&times;</button>
-                                <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-6 uppercase tracking-widest border-b border-slate-100 pb-4">
+                            <div style={{background:'var(--card-bg)', borderRadius:'24px', padding:'2.5rem', maxWidth:'640px', width:'100%', maxHeight:'80vh', overflowY:'auto', boxShadow:'0 32px 80px rgba(15,23,42,0.45)', position:'relative'}} onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setLegalModal(null)} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.5)', fontWeight:300}} className="hover:text-slate-900 transition">&times;</button>
+                                <div style={{height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)', borderRadius:'2px', marginBottom:'1.5rem'}}></div>
+                                <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.5rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', textTransform:'uppercase', marginBottom:'1.5rem', paddingBottom:'1rem', borderBottom:'1px solid var(--border)'}}>
                                     {legalModal === 'terms' ? "Terms & Conditions" : "Privacy Policy"}
                                 </h2>
-                                <div className="text-xs md:text-sm text-slate-600 leading-relaxed space-y-4">
-                                    <p className="font-bold text-slate-800 bg-amber-50 p-4 rounded-xl border border-amber-100">
+                                <div style={{fontSize:'0.8rem', color:'var(--slate-soft)', lineHeight:1.8}} className="space-y-4">
+                                    <p style={{fontWeight:600, color:'var(--navy)', background:'var(--gold-light)', padding:'1rem', borderRadius:'10px', border:'1px solid rgba(217,119,6,0.15)', fontSize:'0.78rem'}}>
                                         Disclaimer: Perfect Horizons acts solely as an authorized channel partner and real estate advisory. We are not the developers or builders of the properties listed on this website. 
                                     </p>
                                     <p><strong>Logos & Trademarks:</strong> Any builder logos used on this platform are for representative and associative purposes only and remain the absolute property of their respective trademark owners.</p>
@@ -1158,20 +1777,31 @@
                         </div>
                     )}
 
+                    {/* GENERAL LEAD FORM MODAL — Premium gold-accented */}
                     {showLeadForm && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setShowLeadForm(false)}>
-                            <div className="bg-white rounded-3xl md:rounded-[40px] p-8 md:p-10 w-full max-w-sm shadow-2xl text-center relative" onClick={e => e.stopPropagation()}>
-                                <button onClick={() => setShowLeadForm(false)} className="absolute top-4 right-6 text-2xl text-slate-400 hover:text-slate-900">&times;</button>
-                                <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-2 italic tracking-tighter uppercase">Enquiry</h2>
-                                <p className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">Please enter details to proceed</p>
+                            <div style={{background:'var(--card-bg)', borderRadius:'28px', maxWidth:'380px', width:'100%', padding:'2.5rem', boxShadow:'0 32px 80px rgba(15,23,42,0.5), 0 0 0 1px rgba(217,119,6,0.12)'}} onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setShowLeadForm(false)} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.6)', fontWeight:300, lineHeight:1}} className="hover:text-slate-900 transition">&times;</button>
+                                {/* Gold accent line at top */}
+                                <div style={{height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)', borderRadius:'2px', marginBottom:'1.5rem'}}></div>
+                                <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.6rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'4px', textTransform:'uppercase'}}>Enquiry</h2>
+                                <p style={{fontSize:'0.6rem', fontWeight:700, color:'var(--slate-soft)', textTransform:'uppercase', letterSpacing:'0.18em', marginBottom:'1.5rem'}}>Please enter details to proceed</p>
                                 
-                                <form onSubmit={(e) => handleLeadSubmit(null, "General Enquiry", "Website - General", e)} className="space-y-4 text-left">
-                                    <input type="text" placeholder="Full Name" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
-                                    <input type="tel" placeholder="Mobile Number (10 Digits)" required className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
-                                    <input type="email" placeholder="Email Address (Optional)" className="w-full border border-gray-200 bg-gray-50 p-4 rounded-xl outline-none font-bold text-sm focus:ring-2 focus:ring-blue-500 transition" value={leadData.email} onChange={e => setLeadData({...leadData, email: e.target.value})} />
-                                    
-                                    <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg mt-4 active:scale-95 transition-transform">
-                                        {isSubmitting ? "Processing..." : "Submit Interest"}
+                                <form onSubmit={(e) => handleLeadSubmit(null, "General Enquiry", "Website - General", e)} className="space-y-3 text-left">
+                                    <input type="text" placeholder="Full Name" required
+                                        style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500, transition:'border-color 0.2s, box-shadow 0.2s'}}
+                                        className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400"
+                                        value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
+                                    <input type="tel" placeholder="Mobile Number (10 Digits)" required
+                                        style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}}
+                                        className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400"
+                                        value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
+                                    <input type="email" placeholder="Email Address (Optional)"
+                                        style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}}
+                                        className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400"
+                                        value={leadData.email} onChange={e => setLeadData({...leadData, email: e.target.value})} />
+                                    <button disabled={isSubmitting} type="submit" className="btn-gold w-full font-black py-4 rounded-xl uppercase tracking-widest mt-2 active:scale-95" style={{fontSize:'0.75rem'}}>
+                                        {isSubmitting ? "Processing…" : "Submit Interest"}
                                     </button>
                                 </form>
                             </div>
