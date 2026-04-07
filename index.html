@@ -7,13 +7,13 @@
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%22 y=%2254%22 font-family=%22Arial, sans-serif%22 font-size=%2260%22 font-weight=%22900%22 font-style=%22italic%22 fill=%22%233b82f6%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22>PH</text></svg>">
     
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <link rel="preconnect" href="https://uiiovtsktllvtecfokik.supabase.co" crossorigin />
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- PREMIUM FONT: Cormorant Garamond for headings, DM Sans for body - refined Indian real estate aesthetic -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet">
@@ -77,10 +77,6 @@
             0%   { transform: translateX(0); }
             100% { transform: translateX(-50%); }
         }
-        @keyframes shimmer {
-            0%   { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
         @keyframes drawHouse { to { stroke-dashoffset: 0; } }
 
         .animate-fadeIn    { animation: fadeIn 0.35s cubic-bezier(.22,.68,0,1.2) forwards; }
@@ -130,10 +126,22 @@
         }
         /* Desktop nav dropdown */
         .nav-dropdown-group { position: relative; }
+        
+        /* THE BRIDGE: Prevents dropdown from closing when cursor moves over the gap */
+        .nav-dropdown-group::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            height: 16px;
+            z-index: 55;
+        }
+
         .nav-dropdown-group .nav-dropdown-menu {
             display: none;
             position: absolute;
-            top: calc(100% + 6px);
+            top: calc(100% + 10px);
             right: 0;
             min-width: 200px;
             background: rgba(15, 23, 42, 0.97);
@@ -219,7 +227,7 @@
         }
 
         /* ============================================================
-           PROPERTY CARDS — Premium lift + shimmer hover
+           PROPERTY CARDS — Premium lift hover
            ============================================================ */
         .prop-card {
             background: var(--card-bg);
@@ -310,13 +318,9 @@
         }
 
         /* ============================================================
-           PIE CHART
+           PIE CHART & CLAMP
            ============================================================ */
         .pie-chart { border-radius: 50%; display: inline-block; }
-
-        /* ============================================================
-           LINE CLAMP
-           ============================================================ */
         .line-clamp-3 {
             display: -webkit-box;
             -webkit-line-clamp: 3;
@@ -360,36 +364,23 @@
         }
         .btn-gold:active { transform: scale(0.97); }
 
-        /* ============================================================
-           FILTER BAR — Warm background
-           ============================================================ */
         .filter-bar { background: var(--parchment); border-bottom: 1px solid var(--border); }
 
         /* ============================================================
-           MOBILE BOTTOM NAV — Remove extra padding on iOS
+           MOBILE TWEAKS & FOOTER
            ============================================================ */
         @supports (padding-bottom: env(safe-area-inset-bottom)) {
             body { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
         }
-
-        /* ============================================================
-           MOBILE TOUCH — Larger hit targets
-           ============================================================ */
         @media (max-width: 768px) {
             .ph-select { min-height: 48px; font-size: 0.8rem !important; }
             .mobile-nav-item { min-height: 52px; padding: 14px 16px; }
             .prop-card { border-radius: 1.25rem; }
         }
-
-        /* ============================================================
-           FOOTER — Warm dark
-           ============================================================ */
         .ph-footer {
             background: linear-gradient(135deg, #0A1628, #0F172A);
             border-top: 1px solid rgba(217,119,6,0.15);
         }
-
-        /* Section label pill */
         .section-pill {
             display: inline-block;
             background: var(--gold-light);
@@ -403,9 +394,6 @@
             border: 1px solid rgba(217,119,6,0.25);
         }
 
-        /* ============================================================
-           SCROLLBAR (Desktop) — Thin warm tone
-           ============================================================ */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: var(--cream); }
         ::-webkit-scrollbar-thumb { background: rgba(217,119,6,0.3); border-radius: 3px; }
@@ -414,7 +402,6 @@
 </head>
 <body class="text-gray-900 pb-24 md:pb-0 overflow-x-hidden w-full max-w-[100vw]">
     
-    <!-- PREMIUM SPLASH SCREEN — Animated house draw + refined typography -->
     <div id="native-splash" style="position: fixed; inset: 0; z-index: 99999; background: linear-gradient(135deg, #F8F4ED 0%, #F0EBE1 100%); display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.5s ease;">
         <svg width="110" height="110" viewBox="0 0 100 100" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 18px; filter: drop-shadow(0 8px 24px rgba(217,119,6,0.2));">
             <path class="splash-house-path" d="M10 50 L50 15 L90 50" stroke="#D97706" />
@@ -436,7 +423,8 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
-        const WHATSAPP_NUMBER = "919113261205";
+        const WHATSAPP_NUMBER = "919113261205"; // For WhatsApp Link ONLY
+        const CALL_NUMBER = "9113261205"; // For Call buttons & Footer
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwaOLlqAQZMZczkAWuyK2F2DEHZ2ILgxlJnlDDZrrDNBSdszBZpX3M0f_p9mVtUePobDQ/exec";
         
         const supabaseUrl = 'https://uiiovtsktllvtecfokik.supabase.co';
@@ -682,7 +670,7 @@
                                 📍 {getVal(property, "Location")} &nbsp;·&nbsp; {getVal(property, "Builder Name")}
                             </div>
                             <a
-                                href={`tel:${String(getVal(property, "point_of_contact")).replace(/\D/g,'') || WHATSAPP_NUMBER}`}
+                                href={`tel:${String(getVal(property, "point_of_contact")).replace(/\D/g,'') || CALL_NUMBER}`}
                                 style={{border:'1px solid var(--border)', borderRadius:'999px', fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--navy)', padding:'8px 16px', minHeight:'40px', display:'flex', alignItems:'center', gap:'6px', boxShadow:'var(--shadow-sm)', transition:'all 0.2s'}}
                                 className="hover:border-yellow-400 hover:text-yellow-600"
                             >
@@ -698,7 +686,7 @@
                             <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 hide-scroll" style={{height:'40vh'}}>
                                 {allImgs.length > 0 ? allImgs.map((img, i) => (
                                     <div key={i} className="shrink-0 snap-center relative overflow-hidden bg-slate-200" style={{minWidth:'100%', height:'100%', borderRadius:'1.25rem'}}>
-                                        <img src={img} className="w-full h-full object-cover" style={{transition:'transform 0.5s ease'}} />
+                                        <img src={img} loading="lazy" decoding="async" className="w-full h-full object-cover" style={{transition:'transform 0.5s ease'}} />
                                         {i === 0 && (
                                             <div style={{position:'absolute', inset:0, background:'linear-gradient(to top, rgba(10,22,40,0.85) 0%, rgba(10,22,40,0.2) 50%, transparent 100%)', display:'flex', flexDirection:'column', justifyContent:'flex-end', padding:'1.5rem 2rem'}}>
                                                 <div style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'#FCD34D', marginBottom:'6px'}}>{getVal(property, "Property Type") || 'Apartment'}</div>
@@ -885,7 +873,7 @@
                                             style={{cursor:'pointer'}}
                                         >
                                             <div className="relative overflow-hidden shrink-0" style={{height:'150px', background:'var(--parchment)'}}>
-                                                <img src={fixImageUrl(getVal(simProp, "Cover Image") || getVal(simProp, "cover_image"))} className="card-img" />
+                                                <img src={fixImageUrl(getVal(simProp, "Cover Image") || getVal(simProp, "cover_image"))} loading="lazy" decoding="async" className="card-img" />
                                             </div>
                                             <div style={{padding:'1rem 1.25rem', flexGrow:1, display:'flex', flexDirection:'column'}}>
                                                 <p style={{fontSize:'0.55rem', fontWeight:700, color:'var(--gold)', textTransform:'uppercase', letterSpacing:'0.12em', marginBottom:'3px'}}>{getVal(simProp, "Builder Name")}</p>
@@ -1222,12 +1210,12 @@
 
                         {activePage === 'home' && (
                             <>
-                            {/* PARTNER LOGOS MARQUEE — Warm cream background */}
-                            <div style={{background:'var(--parchment)', borderBottom:'1px solid var(--border)'}} className="py-2.5 md:py-3 overflow-hidden flex flex-col items-center marquee-container">
-                                <p style={{fontSize:'0.55rem', letterSpacing:'0.22em', color:'var(--slate-soft)'}} className="font-black uppercase mb-1.5">Authorized Channel Partner</p>
+                            {/* PARTNER LOGOS MARQUEE — Warm gold-light gradient background */}
+                            <div style={{background:'linear-gradient(135deg, #FDF6E3 0%, #F5E6C8 100%)', borderBottom:'1px solid rgba(217,119,6,0.3)'}} className="py-2.5 md:py-3 overflow-hidden flex flex-col items-center marquee-container shadow-inner">
+                                <p style={{fontSize:'0.55rem', letterSpacing:'0.22em', color:'#B45309'}} className="font-black uppercase mb-1.5">Associated With</p>
                                 <div className="animate-marquee flex items-center">
                                     {AUTHORIZED_PARTNERS.concat(AUTHORIZED_PARTNERS).map((logo, index) => (
-                                        <img key={index} src={logo} className="h-7 md:h-9 mx-8 md:mx-12 opacity-80 hover:opacity-100 transition-opacity" style={{filter:'drop-shadow(0 1px 4px rgba(0,0,0,0.1))'}} />
+                                        <img key={index} src={logo} loading="lazy" decoding="async" className="h-7 md:h-9 mx-8 md:mx-12 opacity-80 hover:opacity-100 transition-opacity mix-blend-multiply" style={{filter:'drop-shadow(0 1px 2px rgba(0,0,0,0.05))'}} />
                                     ))}
                                 </div>
                             </div>
@@ -1432,6 +1420,8 @@
                                                         <div className="relative overflow-hidden shrink-0 bg-slate-100" style={{height:'220px'}}>
                                                             <img
                                                                 src={fixImageUrl(getVal(p, "Cover Image") || getVal(p, "cover_image"))}
+                                                                loading="lazy"
+                                                                decoding="async"
                                                                 className="card-img"
                                                                 alt={getVal(p, "Property Name")}
                                                             />
@@ -1594,9 +1584,9 @@
                                     </button>
                                 </div>
                                 <div className="w-full md:w-1/2 flex justify-center mb-4 md:mb-0">
-                                    <div style={{width:'220px', height:'220px', background:'var(--parchment)', borderRadius:'1.5rem', border:'4px solid white', boxShadow:'0 24px 64px rgba(15,23,42,0.2), 0 0 0 1px var(--border)', overflow:'hidden', position:'relative'}} className="md:w-80 md:h-80">
+                                    <div style={{background:'var(--parchment)', borderRadius:'1.5rem', border:'4px solid white', boxShadow:'0 24px 64px rgba(15,23,42,0.2), 0 0 0 1px var(--border)', overflow:'hidden', position:'relative'}} className="w-[220px] h-[220px] md:w-[400px] md:h-[400px] lg:w-[450px] lg:h-[450px]">
                                         <div style={{position:'absolute', inset:0, background:'linear-gradient(135deg, rgba(217,119,6,0.08), transparent)', zIndex:1}}></div>
-                                        <img src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w1000" alt="Tharun Profile" className="w-full h-full object-cover object-top" onError={(e) => { e.target.src = 'https://i.ibb.co/Y7Y6K3r/professional-placeholder.jpg'; }} />
+                                        <img src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w1000" loading="lazy" decoding="async" alt="Tharun Profile" className="w-full h-full object-cover object-top" onError={(e) => { e.target.src = 'https://i.ibb.co/Y7Y6K3r/professional-placeholder.jpg'; }} />
                                     </div>
                                 </div>
                             </div>
@@ -1739,7 +1729,7 @@
                             </div>
                             <div className="space-y-3">
                                 <h3 style={{fontSize:'0.6rem', fontWeight:800, color:'rgba(217,119,6,0.7)', textTransform:'uppercase', letterSpacing:'0.2em', marginBottom:'12px'}}>Contact Us</h3>
-                                <p style={{fontSize:'0.85rem', fontWeight:500, color:'rgba(255,255,255,0.75)'}}>📞 +91 9113261205</p>
+                                <p style={{fontSize:'0.85rem', fontWeight:500, color:'rgba(255,255,255,0.75)'}}>📞 {CALL_NUMBER}</p>
                                 <a href="mailto:perfecthorizons.in@gmail.com" style={{fontSize:'0.85rem', fontWeight:500, color:'rgba(255,255,255,0.75)', display:'block'}} className="hover:text-yellow-300 transition">✉️ perfecthorizons.in@gmail.com</a>
                                 <p style={{fontSize:'0.85rem', fontStyle:'italic', color:'rgba(255,255,255,0.4)'}}>📍 Bengaluru, Karnataka</p>
                             </div>
