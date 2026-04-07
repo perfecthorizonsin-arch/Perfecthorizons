@@ -604,6 +604,7 @@
         // --- FULL PAGE PROPERTY DETAILS ---
         const PropertyDetailsPage = ({ property, allProperties, onBack, onSubmitLead, isAdmin, onSelectProperty }) => {
             const [actionModal, setActionModal] = useState(null); 
+            const [downloadReadyUrl, setDownloadReadyUrl] = useState(null);
             const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
             const [isSubmitting, setIsSubmitting] = useState(false);
             
@@ -620,6 +621,7 @@
 
             const openAction = (type) => {
                 setActionModal(type);
+                setDownloadReadyUrl(null);
                 setLeadData({ name: "", phone: "", email: "" });
             };
 
@@ -633,11 +635,19 @@
                 
                 if (success) {
                     if (actionModal === 'brochure' && getVal(property, "brochure")) {
-                        window.open(getVal(property, "brochure"), '_blank');
+                        let link = getVal(property, "brochure");
+                        // Attempt to extract Google Drive ID to create a direct download link
+                        let idMatch = link.match(/\/d\/(.*?)\//) || link.match(/id=([a-zA-Z0-9_-]+)/);
+                        if (idMatch && idMatch[1]) {
+                            link = `https://drive.google.com/uc?export=download&id=${idMatch[1]}`;
+                        }
+                        setDownloadReadyUrl(link);
                     } else if (actionModal === 'cost_sheet' && getVal(property, "cost_sheet")) {
                         window.open(getVal(property, "cost_sheet"), '_blank');
+                        setActionModal(null);
+                    } else {
+                        setActionModal(null);
                     }
-                    setActionModal(null);
                 }
             };
 
@@ -670,7 +680,7 @@
                                 📍 {getVal(property, "Location")} &nbsp;·&nbsp; {getVal(property, "Builder Name")}
                             </div>
                             <a
-                                href={`tel:${String(getVal(property, "point_of_contact")).replace(/\D/g,'') || CALL_NUMBER}`}
+                                href={`tel:${CALL_NUMBER}`}
                                 style={{border:'1px solid var(--border)', borderRadius:'999px', fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--navy)', padding:'8px 16px', minHeight:'40px', display:'flex', alignItems:'center', gap:'6px', boxShadow:'var(--shadow-sm)', transition:'all 0.2s'}}
                                 className="hover:border-yellow-400 hover:text-yellow-600"
                             >
@@ -893,32 +903,52 @@
 
                     {/* PROPERTY ACTION MODAL — Premium gold-accented */}
                     {actionModal && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setActionModal(null)}>
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => { setActionModal(null); setDownloadReadyUrl(null); }}>
                             <div style={{background:'var(--card-bg)', borderRadius:'24px', maxWidth:'380px', width:'100%', padding:'2.5rem', boxShadow:'0 32px 80px rgba(15,23,42,0.5), 0 0 0 1px rgba(217,119,6,0.12)', position:'relative'}} onClick={e => e.stopPropagation()}>
-                                <button onClick={() => setActionModal(null)} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.5)', fontWeight:300, lineHeight:1}} className="hover:text-slate-900 transition">&times;</button>
+                                <button onClick={() => { setActionModal(null); setDownloadReadyUrl(null); }} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.5)', fontWeight:300, lineHeight:1}} className="hover:text-slate-900 transition">&times;</button>
                                 <div style={{height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)', borderRadius:'2px', marginBottom:'1.5rem'}}></div>
-                                <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.6rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'4px', textTransform:'uppercase'}}>
-                                    {actionModal === 'brochure' ? "Get The Brochure" : actionModal === 'cost_sheet' ? "Get Cost Sheet" : actionModal === 'apply_now' ? "Apply for Loan" : "Enquiry"}
-                                </h2>
-                                <p style={{fontSize:'0.6rem', fontWeight:700, color:'var(--slate-soft)', textTransform:'uppercase', letterSpacing:'0.18em', marginBottom:'1.5rem'}}>Please enter details to proceed</p>
                                 
-                                <form onSubmit={handleActionSubmit} className="space-y-3 text-left">
-                                    <input type="text" placeholder="Full Name" required
-                                        style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}}
-                                        className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400"
-                                        value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
-                                    <input type="tel" placeholder="Mobile Number (10 Digits)" required
-                                        style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}}
-                                        className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400"
-                                        value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
-                                    <input type="email" placeholder="Email Address (Optional)"
-                                        style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}}
-                                        className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400"
-                                        value={leadData.email} onChange={e => setLeadData({...leadData, email: e.target.value})} />
-                                    <button disabled={isSubmitting} type="submit" className="btn-gold w-full font-black py-4 rounded-xl uppercase tracking-widest mt-2 active:scale-95 text-white" style={{fontSize:'0.72rem'}}>
-                                        {isSubmitting ? "Processing…" : actionModal === 'apply_now' ? "Submit Application" : actionModal === 'interest' ? "Submit Interest" : "Unlock Download"}
-                                    </button>
-                                </form>
+                                {downloadReadyUrl ? (
+                                    <div className="text-center py-4 animate-fadeIn">
+                                        <div style={{fontSize:'3.5rem', marginBottom:'1rem', lineHeight:1}}>🎉</div>
+                                        <h3 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.4rem', fontWeight:700, color:'var(--navy)', marginBottom:'0.5rem'}}>Brochure Unlocked</h3>
+                                        <p style={{fontSize:'0.75rem', color:'var(--slate-soft)', marginBottom:'1.5rem'}}>Your download is ready.</p>
+                                        <a 
+                                            href={downloadReadyUrl} 
+                                            download="Brochure.pdf"
+                                            onClick={() => { setActionModal(null); setDownloadReadyUrl(null); }} 
+                                            className="btn-gold w-full block font-black py-4 rounded-xl uppercase tracking-widest text-white text-center shadow-lg" 
+                                            style={{fontSize:'0.75rem'}}
+                                        >
+                                            ⬇ Click to Download
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.6rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'4px', textTransform:'uppercase'}}>
+                                            {actionModal === 'brochure' ? "Get The Brochure" : actionModal === 'cost_sheet' ? "Get Cost Sheet" : actionModal === 'apply_now' ? "Apply for Loan" : "Enquiry"}
+                                        </h2>
+                                        <p style={{fontSize:'0.6rem', fontWeight:700, color:'var(--slate-soft)', textTransform:'uppercase', letterSpacing:'0.18em', marginBottom:'1.5rem'}}>Please enter details to proceed</p>
+                                        
+                                        <form onSubmit={handleActionSubmit} className="space-y-3 text-left">
+                                            <input type="text" placeholder="Full Name" required
+                                                style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}}
+                                                className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400"
+                                                value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
+                                            <input type="tel" placeholder="Mobile Number (10 Digits)" required
+                                                style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}}
+                                                className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400"
+                                                value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
+                                            <input type="email" placeholder="Email Address (Optional)"
+                                                style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}}
+                                                className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400"
+                                                value={leadData.email} onChange={e => setLeadData({...leadData, email: e.target.value})} />
+                                            <button disabled={isSubmitting} type="submit" className="btn-gold w-full font-black py-4 rounded-xl uppercase tracking-widest mt-2 active:scale-95 text-white" style={{fontSize:'0.72rem'}}>
+                                                {isSubmitting ? "Processing…" : actionModal === 'apply_now' ? "Submit Application" : actionModal === 'interest' ? "Submit Interest" : "Unlock Download"}
+                                            </button>
+                                        </form>
+                                    </>
+                                )}
                             </div>
                         </div>
                     )}
@@ -1210,8 +1240,8 @@
 
                         {activePage === 'home' && (
                             <>
-                            {/* PARTNER LOGOS MARQUEE — Warm gold-light gradient background */}
-                            <div style={{background:'linear-gradient(135deg, #FDF6E3 0%, #F5E6C8 100%)', borderBottom:'1px solid rgba(217,119,6,0.3)'}} className="py-2.5 md:py-3 overflow-hidden flex flex-col items-center marquee-container shadow-inner">
+                            {/* PARTNER LOGOS MARQUEE — Soft yellow background */}
+                            <div style={{background:'var(--gold-light)', borderBottom:'1px solid rgba(217,119,6,0.2)'}} className="py-2.5 md:py-3 overflow-hidden flex flex-col items-center marquee-container shadow-inner">
                                 <p style={{fontSize:'0.55rem', letterSpacing:'0.22em', color:'#B45309'}} className="font-black uppercase mb-1.5">Associated With</p>
                                 <div className="animate-marquee flex items-center">
                                     {AUTHORIZED_PARTNERS.concat(AUTHORIZED_PARTNERS).map((logo, index) => (
@@ -1729,7 +1759,7 @@
                             </div>
                             <div className="space-y-3">
                                 <h3 style={{fontSize:'0.6rem', fontWeight:800, color:'rgba(217,119,6,0.7)', textTransform:'uppercase', letterSpacing:'0.2em', marginBottom:'12px'}}>Contact Us</h3>
-                                <p style={{fontSize:'0.85rem', fontWeight:500, color:'rgba(255,255,255,0.75)'}}>📞 {CALL_NUMBER}</p>
+                                <a href={`tel:${CALL_NUMBER}`} style={{fontSize:'0.85rem', fontWeight:500, color:'rgba(255,255,255,0.75)', display:'block', marginBottom:'4px'}} className="hover:text-yellow-300 transition">📞 {CALL_NUMBER}</a>
                                 <a href="mailto:perfecthorizons.in@gmail.com" style={{fontSize:'0.85rem', fontWeight:500, color:'rgba(255,255,255,0.75)', display:'block'}} className="hover:text-yellow-300 transition">✉️ perfecthorizons.in@gmail.com</a>
                                 <p style={{fontSize:'0.85rem', fontStyle:'italic', color:'rgba(255,255,255,0.4)'}}>📍 Bengaluru, Karnataka</p>
                             </div>
