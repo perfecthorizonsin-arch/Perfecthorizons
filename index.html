@@ -688,12 +688,12 @@
                         
                         {/* GALLERY — desktop bigger, uniform */}
                         <div className="relative mb-8 w-full max-w-full overflow-hidden" style={{borderRadius:'1.5rem'}}>
-                            <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 hide-scroll" style={{height: 'clamp(280px, 68vh, 760px)'}}>
+                            <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 hide-scroll" style={{height: 'clamp(280px, 70vh, 820px)'}}>
                                 {allImgs.length > 0 ? allImgs.map((img, i) => (
                                     <div key={i} className="shrink-0 snap-center relative overflow-hidden bg-slate-200" style={{minWidth:'100%', height:'100%', borderRadius:'1.25rem'}}>
                                         <img src={img} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" fetchpriority={i === 0 ? 'high' : 'auto'} className="w-full h-full object-cover" style={{transition:'transform 0.5s ease'}} />
                                         {i === 0 && (
-                                            <div style={{position:'absolute', inset:0, background:'linear-gradient(to top, rgba(10,22,40,0.45) 0%, rgba(10,22,40,0.1) 50%, transparent 100%)', display:'flex', flexDirection:'column', justifyContent:'flex-end', padding:'1.5rem 2rem'}}>
+                                            <div style={{position:'absolute', inset:0, background: 'linear-gradient(to top, rgba(10,22,40,0.35) 0%, rgba(10,22,40,0.08) 45%, transparent 100%)',, display:'flex', flexDirection:'column', justifyContent:'flex-end', padding:'1.5rem 2rem'}}>
                                                 <div style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'#FCD34D', marginBottom:'6px'}}>{getVal(property, "Property Type") || 'Apartment'}</div>
                                                 <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.6rem, 5vw, 3.5rem)', fontWeight:700, fontStyle:'italic', color:'white', lineHeight:1.05, marginBottom:'8px'}}>
                                                     {getVal(property, "Property Name")}
