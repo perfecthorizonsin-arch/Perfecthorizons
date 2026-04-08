@@ -13,7 +13,11 @@
     <style>
         * { box-sizing: border-box; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(8px);} to { opacity:1; transform:translateY(0);} }
+        @keyframes slideUp { from { opacity:0; transform:translateY(24px);} to { opacity:1; transform:translateY(0);} }
+        @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
         .animate-fadeIn { animation: fadeIn 0.18s ease-out forwards; }
+        .animate-slideUp { animation: slideUp 0.22s cubic-bezier(.16,1,.3,1) forwards; }
+        .skeleton { background: linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%); background-size:400px 100%; animation:shimmer 1.4s ease-in-out infinite; border-radius:10px; }
         .hide-scroll::-webkit-scrollbar { display:none; }
         .hide-scroll { -ms-overflow-style:none; scrollbar-width:none; }
         ::-webkit-scrollbar { width:5px; height:5px; }
@@ -28,6 +32,7 @@
         .lead-row { transition: background 0.1s; }
         .lead-row:hover { filter: brightness(0.97); }
         input, select, textarea { font-family: inherit; }
+        select option { font-size: 12px; }
         @media(max-width:640px){ .hide-mobile{ display:none !important; } }
     </style>
 </head>
@@ -229,6 +234,8 @@ const EMICalculator = ({ propertyPriceStr }) => {
 
 // ─── INLINE EDITABLE FIELD ─────────────────────────────────────────────────
 // CRITICAL: This MUST be defined OUTSIDE PropertyDetailsPage.
+// Defining it inside causes React to treat it as a new component type on every
+// render, which unmounts/remounts the input and destroys focus on every keystroke.
 const EditableField = ({ field, label, value, multiline, type = 'text', onSave, darkMode = false }) => {
     const [editing,  setEditing]  = useState(false);
     const [draft,    setDraft]    = useState('');
@@ -238,6 +245,7 @@ const EditableField = ({ field, label, value, multiline, type = 'text', onSave, 
     const startEdit = () => { setDraft(value || ''); setEditing(true); };
     const cancel    = () => setEditing(false);
 
+    // Focus the input once editing mode is entered
     useEffect(() => {
         if (editing && inputRef.current) inputRef.current.focus();
     }, [editing]);
@@ -251,6 +259,7 @@ const EditableField = ({ field, label, value, multiline, type = 'text', onSave, 
 
     const handleKey = (e) => {
         if (e.key === 'Escape') cancel();
+        // Ctrl+Enter saves in multiline mode
         if (e.key === 'Enter' && (e.ctrlKey || !multiline)) { e.preventDefault(); save(); }
     };
 
@@ -278,21 +287,25 @@ const EditableField = ({ field, label, value, multiline, type = 'text', onSave, 
                 {label && <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">{label}</div>}
                 <div className={`text-sm font-semibold break-words ${value ? (darkMode ? 'text-slate-200' : 'text-slate-800') : 'italic text-slate-400'}`}>{value || '—'}</div>
             </div>
-            <button onClick={startEdit} className="opacity-0 group-hover/ef:opacity-100 transition-opacity shrink-0 mt-0.5 text-[8px] font-black bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg uppercase tracking-widest hover:bg-blue-100">✏️ Edit</button>
+            <button
+                onClick={startEdit}
+                className="opacity-0 group-hover/ef:opacity-100 transition-opacity shrink-0 mt-0.5 text-[8px] font-black bg-blue-50 text-blue-600 border border-blue-200 px-2 py-1 rounded-lg uppercase tracking-widest hover:bg-blue-100"
+            >✏️ Edit</button>
         </div>
     );
 };
 
 // ─── NOTE CELL (Desktop) ───────────────────────────────────────────────────
+// Separate component so useState is stable and not recreated on parent re-renders
 const NoteCell = ({ lead, onSave }) => {
     const [note, setNote] = useState(lead.add_note || '');
     useEffect(() => { setNote(lead.add_note || ''); }, [lead.add_note]);
     return (
         <div className="flex gap-2">
-            <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder="Manual notes / requirements..."
-                className="flex-1 p-2 border border-slate-200 rounded-lg text-[10px] outline-none focus:ring-1 focus:ring-blue-500 shadow-sm resize-none" />
+            <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder="Add notes / requirements..."
+                className="flex-1 p-2 border-2 border-slate-200 rounded-xl text-[10px] outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-300 shadow-sm resize-none bg-white transition" />
             <button onClick={() => onSave(lead, 'add_note', note)}
-                className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition">Save</button>
+                className="bg-slate-900 text-white px-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition shadow-sm">Save</button>
         </div>
     );
 };
@@ -303,10 +316,10 @@ const NoteCellMobile = ({ lead, onSave }) => {
     useEffect(() => { setNote(lead.add_note || ''); }, [lead.add_note]);
     return (
         <div className="flex gap-2">
-            <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder="Manual notes / requirements..."
-                className="w-full p-2 border border-slate-200 rounded-b-xl text-[10px] resize-none focus:ring-1 focus:ring-blue-500 outline-none shadow-sm" />
+            <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder="Add notes / requirements..."
+                className="w-full p-2.5 border-2 border-slate-200 rounded-xl text-[10px] resize-none focus:ring-2 focus:ring-blue-400 focus:border-blue-300 outline-none bg-white transition" />
             <button onClick={() => onSave(lead, 'add_note', note)}
-                className="bg-slate-900 text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-blue-600 transition">Save</button>
+                className="bg-slate-900 text-white px-4 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md hover:bg-blue-600 transition self-stretch">Save</button>
         </div>
     );
 };
@@ -335,6 +348,7 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
         setTimeout(() => setToast(null), 4500);
     }, []);
 
+    // Save a field back to Supabase and update local state
     const saveField = useCallback(async (field, value) => {
         const { error } = await supabase.from('properties').update({ [field]: value }).eq('id', property.id);
         if (!error) {
@@ -345,6 +359,7 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
         }
     }, [property.id, showToast]);
 
+    // ── Gallery — use Cloudinary URLs ──
     const cover  = getDisplayUrl(getVal(property, "cover_image") || getVal(property, "cover-image"));
     const galRaw = getVal(property, "gallery_images") || getVal(property, "gallery-images") || "";
     const imgs   = [cover, ...(galRaw ? galRaw.split(',').map(u => getDisplayUrl(u.trim())) : [])].filter(Boolean);
@@ -355,6 +370,7 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
         window.open(getSafeLink(rawLink), '_blank');
     };
 
+    // ── Lead registration button ──
     const regLink    = getVal(property, "lead_registration") || getVal(property, "lead_registration_link") || getVal(property, "lead_registration_link_or_email_id");
     const regIsEmail = regLink && regLink.includes('@') && !regLink.startsWith('http');
     const regText    = regIsEmail ? "✉️ Email Lead Details" : "🌐 Direct to Website Link";
@@ -370,9 +386,11 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
         }
     };
 
+    // ── Sharing ──
     const shareViaWhatsApp = (type, linkStr) => {
         if (!linkStr || !linkStr.trim()) return alert(`${type} is not available for this property.`);
         const urls = linkStr.split(',').map(u => u.trim()).filter(Boolean);
+        // Links (maps, video) go straight to WhatsApp as text — no file download needed
         if (type === 'Location Map' || type === 'Property Video') {
             executeShare(type, urls);
         } else {
@@ -390,60 +408,73 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
         setIsSharing(true);
 
         const propName = getVal(property, "property_name");
-        const textMsg  = `Hello! Here is the ${type} for *${propName}*:`;
-        const waUrl    = `https://wa.me/?text=${encodeURIComponent(textMsg + '\n\n' + urlsToShare.join('\n\n'))}`;
+        const waText   = `Hello! Here is the *${type}* for *${propName}*. Please find the attached file(s) below. 🏡`;
+        const waTextLinks = `Hello! Here is the *${type}* for *${propName}*:\n\n${urlsToShare.join('\n\n')}`;
 
+        // Plain links (maps, video) — send as WhatsApp text message
         if (type === 'Location Map' || type === 'Property Video') {
+            const waUrl = `https://wa.me/?text=${encodeURIComponent(waTextLinks)}`;
             if (isMobile()) window.location.href = waUrl;
-            else window.open(waUrl, '_blank');
+            else window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(waTextLinks)}`, '_blank');
             setShareModal(null);
             setIsSharing(false);
             return;
         }
 
+        // Mobile: try Web Share API (native share sheet with file attachments)
         if (isMobile() && navigator.share) {
             try {
                 const fileObjs = [];
                 for (let i = 0; i < urlsToShare.length; i++) {
-                    const dlUrl   = getDownloadUrl(urlsToShare[i]);
-                    const resp    = await fetch(dlUrl, { mode: 'cors' });
-                    const blob    = await resp.blob();
+                    const dlUrl = getDownloadUrl(urlsToShare[i]);
+                    const resp  = await fetch(dlUrl, { mode: 'cors' });
+                    const blob  = await resp.blob();
                     if (blob.type.includes('text/html')) throw new Error("Got HTML, not a file");
-                    const isPdf   = urlsToShare[i].toLowerCase().includes('.pdf') || blob.type.includes('pdf') || urlsToShare[i].includes('/raw/upload/');
-                    const ext     = isPdf ? 'pdf' : 'jpg';
-                    const mime    = isPdf ? 'application/pdf' : (blob.type || 'image/jpeg');
-                    const name    = `${propName.replace(/[^a-zA-Z0-9]/g, '_')}_${type.replace(/\s+/g, '')}${urlsToShare.length > 1 ? '_' + (i + 1) : ''}.${ext}`;
+                    const isPdf = urlsToShare[i].toLowerCase().includes('.pdf') || blob.type.includes('pdf') || urlsToShare[i].includes('/raw/upload/');
+                    const ext   = isPdf ? 'pdf' : 'jpg';
+                    const mime  = isPdf ? 'application/pdf' : (blob.type || 'image/jpeg');
+                    const name  = `${propName.replace(/[^a-zA-Z0-9]/g, '_')}_${type.replace(/\s+/g, '')}${urlsToShare.length > 1 ? '_' + (i + 1) : ''}.${ext}`;
                     fileObjs.push(new File([blob], name, { type: mime }));
                 }
-                await navigator.share({ files: fileObjs, title: `${propName} — ${type}`, text: textMsg });
-                setShareModal(null);
-                setIsSharing(false);
+                await navigator.share({ files: fileObjs, title: `${propName} — ${type}`, text: waText });
+                setShareModal(null); setIsSharing(false);
                 return;
             } catch (err) {
+                // If native share fails on mobile, fall through to download + wa.me
                 console.log("Native share failed, falling back:", err);
             }
         }
 
+        // Download files in background
+        let downloadedCount = 0;
         for (let i = 0; i < urlsToShare.length; i++) {
             try {
-                const dlUrl  = getDownloadUrl(urlsToShare[i]);
-                const resp   = await fetch(dlUrl, { mode: 'cors' });
-                const blob   = await resp.blob();
-                const isPdf  = urlsToShare[i].includes('.pdf') || blob.type.includes('pdf') || urlsToShare[i].includes('/raw/upload/');
-                const ext    = isPdf ? 'pdf' : 'jpg';
-                const fname  = `${propName.replace(/[^a-zA-Z0-9]/g, '_')}_${type.replace(/\s+/g,'_')}${urlsToShare.length > 1 ? '_'+(i+1) : ''}.${ext}`;
+                const dlUrl   = getDownloadUrl(urlsToShare[i]);
+                const resp    = await fetch(dlUrl, { mode: 'cors' });
+                const blob    = await resp.blob();
+                const isPdf   = urlsToShare[i].includes('.pdf') || blob.type.includes('pdf') || urlsToShare[i].includes('/raw/upload/');
+                const ext     = isPdf ? 'pdf' : 'jpg';
+                const fname   = `${propName.replace(/[^a-zA-Z0-9]/g, '_')}_${type.replace(/\s+/g,'_')}${urlsToShare.length > 1 ? '_'+(i+1) : ''}.${ext}`;
                 const blobUrl = URL.createObjectURL(blob);
                 const a = document.createElement('a'); a.href = blobUrl; a.download = fname;
                 document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+                downloadedCount++;
             } catch (err) { console.error("Download failed for", urlsToShare[i], err); }
         }
 
-        setIsSharing(false);
-        setShareModal(null);
-        const n = urlsToShare.length;
-        showToast(`✅ ${n} file${n > 1 ? 's' : ''} downloaded — WhatsApp Web is opening. Open a chat, click 📎 and attach from Downloads.`, 'bg-blue-600');
-        setTimeout(() => window.open('https://web.whatsapp.com/', '_blank'), 600);
+        setIsSharing(false); setShareModal(null);
+        const n = downloadedCount;
+
+        if (isMobile()) {
+            // On mobile fallback: open WhatsApp with pre-filled message, admin attaches manually
+            showToast(`✅ ${n} file${n>1?'s':''} downloaded! Opening WhatsApp — attach from Downloads 📎`, 'bg-green-600');
+            setTimeout(() => { window.location.href = `https://wa.me/?text=${encodeURIComponent(waText)}`; }, 800);
+        } else {
+            // Desktop: open WhatsApp Web with pre-filled message
+            showToast(`✅ ${n} file${n>1?'s':''} saved to Downloads! Opening WhatsApp Web — click 📎 Attach and select the file${n>1?'s':''}.`, 'bg-blue-600');
+            setTimeout(() => window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(waText)}`, '_blank'), 700);
+        }
     };
 
     const pocNumber = getVal(property, "point_of_contact")?.replace(/\D/g, '') || WHATSAPP_NUMBER;
@@ -453,47 +484,100 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
     return (
         <div className="min-h-screen bg-slate-50 animate-fadeIn pb-24 md:pb-0 relative">
 
+            {/* Toast */}
             {toast && (
                 <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[500] ${toast.color} text-white text-xs font-black uppercase tracking-widest px-6 py-3.5 rounded-2xl shadow-2xl animate-fadeIn max-w-sm text-center`}>
                     {toast.msg}
                 </div>
             )}
 
+            {/* Share Modal */}
             {shareModal && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fadeIn">
-                    <div className="bg-white rounded-[30px] w-full max-w-md shadow-2xl p-6 relative flex flex-col max-h-[80vh]">
-                        <button onClick={() => setShareModal(null)} className="absolute top-6 right-6 text-xl text-slate-400 hover:text-slate-800">✕</button>
-                        <h2 className="text-lg font-black uppercase text-slate-900 mb-1">Select Files to Share</h2>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 pb-3 border-b">{shareModal.type}</p>
-                        <p className="text-[9px] text-blue-600 font-bold mt-2 mb-3">📱 Mobile: files share as attachments · 💻 Desktop: files download, then attach in WhatsApp Web</p>
-                        <div className="overflow-y-auto pr-1 space-y-2 flex-grow mb-4">
-                            {shareModal.urls.map((url, idx) => {
-                                const displayUrl = getDisplayUrl(url);
-                                const isImg = displayUrl && (url.includes('/image/upload/') || /\.(jpg|jpeg|png|webp)/i.test(url));
-                                return (
-                                    <label key={idx} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition ${selectedUrls.includes(url) ? 'bg-blue-50 border-blue-500' : 'bg-slate-50 border-slate-200'}`}>
-                                        <input type="checkbox" className="w-5 h-5 accent-blue-600 cursor-pointer shrink-0" checked={selectedUrls.includes(url)} onChange={() => toggleSelection(url)} />
-                                        {isImg
-                                            ? <img src={displayUrl} className="w-12 h-12 rounded object-cover border border-slate-200 shrink-0" onError={e => e.target.style.display='none'} />
-                                            : <div className="w-12 h-12 rounded flex items-center justify-center bg-red-100 text-red-600 text-xl shrink-0">📄</div>
-                                        }
-                                        <span className="text-[10px] font-bold text-slate-700 truncate flex-1">{shareModal.type} {idx + 1}</span>
-                                        <a href={displayUrl} target="_blank" onClick={e => e.stopPropagation()} className="text-[9px] text-blue-500 font-bold uppercase tracking-widest shrink-0 hover:text-blue-700">Preview</a>
-                                    </label>
-                                );
-                            })}
+                <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/80 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-white rounded-t-[32px] md:rounded-[28px] w-full max-w-md shadow-2xl relative flex flex-col max-h-[88vh]">
+                        <div className="p-6 pb-0">
+                            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5 md:hidden"></div>
+                            <div className="flex items-center justify-between mb-1">
+                                <div>
+                                    <h2 className="text-base font-black uppercase text-slate-900 tracking-tight">Share via WhatsApp</h2>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-green-600 mt-0.5">📤 {shareModal.type}</p>
+                                </div>
+                                <button onClick={() => setShareModal(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 text-sm font-black transition">✕</button>
+                            </div>
+                            <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-2xl px-3 py-2 mt-3 mb-4">
+                                <span className="text-base shrink-0">💡</span>
+                                <p className="text-[9px] text-blue-700 font-bold leading-relaxed">
+                                    File(s) will auto-download &amp; WhatsApp will open with a pre-filled message — manually attach the downloaded file.
+                                </p>
+                            </div>
+                            <div className="border-b border-slate-100 -mx-6 mb-3"></div>
                         </div>
-                        <div className="flex gap-2">
-                            <button onClick={() => setSelectedUrls(shareModal.urls)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-2.5 rounded-xl text-[9px] uppercase tracking-widest transition">All</button>
-                            <button disabled={isSharing || !selectedUrls.length} onClick={() => executeShare(shareModal.type, selectedUrls)}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl text-[9px] uppercase tracking-widest transition disabled:opacity-50 shadow-md">
-                                {isSharing ? "Preparing..." : `Send (${selectedUrls.length}) 💬`}
+                        <div className="overflow-y-auto px-6 space-y-2 flex-grow">
+                            {shareModal.urls.length === 1 ? (
+                                (() => {
+                                    const url = shareModal.urls[0];
+                                    const displayUrl = getDisplayUrl(url);
+                                    const isImg = url.includes('/image/upload/') || /\.(jpg|jpeg|png|webp)/i.test(url);
+                                    return (
+                                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-green-50 border-2 border-green-400">
+                                            {isImg
+                                                ? <img src={displayUrl} className="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0" onError={e => e.target.style.display='none'} />
+                                                : <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-red-100 text-red-500 text-2xl shrink-0">📄</div>
+                                            }
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest truncate">{shareModal.type}</p>
+                                                <p className="text-[9px] text-green-600 font-bold mt-0.5">✓ Ready to send</p>
+                                            </div>
+                                            <a href={displayUrl} target="_blank" onClick={e => e.stopPropagation()} className="text-[9px] text-blue-500 font-black uppercase tracking-widest shrink-0 bg-blue-50 px-2 py-1 rounded-lg hover:bg-blue-100 transition">👁 View</a>
+                                        </div>
+                                    );
+                                })()
+                            ) : (
+                                <>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{selectedUrls.length}/{shareModal.urls.length} Selected</p>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => setSelectedUrls(shareModal.urls)} className="text-[9px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-1 rounded-lg hover:bg-blue-100 transition">All</button>
+                                            <button onClick={() => setSelectedUrls([])} className="text-[9px] font-black text-slate-500 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-lg hover:bg-slate-200 transition">None</button>
+                                        </div>
+                                    </div>
+                                    {shareModal.urls.map((url, idx) => {
+                                        const displayUrl = getDisplayUrl(url);
+                                        const isImg = url.includes('/image/upload/') || /\.(jpg|jpeg|png|webp)/i.test(url);
+                                        const selected = selectedUrls.includes(url);
+                                        return (
+                                            <label key={idx} className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${selected ? 'bg-green-50 border-green-400 shadow-sm' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}>
+                                                <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all ${selected ? 'bg-green-500' : 'bg-white border-2 border-slate-300'}`}>
+                                                    {selected && <span className="text-white text-[10px] font-black">✓</span>}
+                                                </div>
+                                                <input type="checkbox" className="hidden" checked={selected} onChange={() => toggleSelection(url)} />
+                                                {isImg
+                                                    ? <img src={displayUrl} className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0" onError={e => e.target.style.display='none'} />
+                                                    : <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-red-50 text-red-500 text-xl shrink-0 border border-red-100">📄</div>
+                                                }
+                                                <span className="text-[10px] font-bold text-slate-700 truncate flex-1">{shareModal.type} {idx + 1}</span>
+                                                <a href={displayUrl} target="_blank" onClick={e => e.stopPropagation()} className="text-[9px] text-blue-500 font-black uppercase tracking-widest shrink-0 bg-blue-50 px-2 py-1 rounded-lg hover:bg-blue-100 transition">View</a>
+                                            </label>
+                                        );
+                                    })}
+                                </>
+                            )}
+                        </div>
+                        <div className="p-6 pt-4">
+                            <button
+                                disabled={isSharing || !selectedUrls.length}
+                                onClick={() => executeShare(shareModal.type, selectedUrls)}
+                                className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-black py-4 rounded-2xl text-sm uppercase tracking-widest transition shadow-lg flex items-center justify-center gap-2">
+                                {isSharing
+                                    ? <><span className="animate-spin inline-block">⏳</span> Preparing files...</>
+                                    : <><span>💬</span> Send via WhatsApp{shareModal.urls.length > 1 ? ` (${selectedUrls.length})` : ''}</>}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
+            {/* Header */}
             <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
                 <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
                     <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> Back
@@ -505,6 +589,7 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
             </div>
 
             <div className="max-w-7xl mx-auto w-full p-4 md:p-8">
+                {/* Gallery — Cloudinary URLs */}
                 <div className="relative mb-8">
                     <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scroll h-[40vh] md:h-[60vh] rounded-3xl">
                         {imgs.length > 0 ? imgs.map((img, i) => (
@@ -527,7 +612,9 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+                    {/* ── Left column ── */}
                     <div className="lg:col-span-2 space-y-8">
+                        {/* Quick stats */}
                         <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6">
                             <EditableField field="bhk"                 label="Configurations" value={getVal(property,'bhk')}                 onSave={saveField} />
                             <EditableField field="construction_status" label="Status"          value={getVal(property,'construction_status')} onSave={saveField} />
@@ -535,11 +622,13 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                             <EditableField field="approval"            label="Approvals"       value={getVal(property,'approval')}            onSave={saveField} />
                         </div>
 
+                        {/* About */}
                         <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm">
                             <h2 className="text-xl font-black uppercase tracking-wide text-slate-900 mb-4 border-b border-slate-100 pb-2">About The Project</h2>
                             <EditableField field="description" label="" value={getVal(property,'description')} multiline onSave={saveField} />
                         </div>
 
+                        {/* USPs & Amenities */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="bg-blue-50 p-6 md:p-8 rounded-3xl border border-blue-100">
                                 <h3 className="text-sm font-black uppercase tracking-widest text-blue-900 mb-4">Key Highlights</h3>
@@ -551,6 +640,7 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                             </div>
                         </div>
 
+                        {/* Links & Internal */}
                         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 pb-2 border-b border-slate-100">Links & Internal Info</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -566,6 +656,7 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                         </div>
                     </div>
 
+                    {/* ── Right sidebar ── */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-24 space-y-6">
                             <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
@@ -583,20 +674,52 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                                     <p className="text-[10px] font-bold">Avail: {getVal(property,'availability') || "N/A"}</p>
                                 </div>
                                 <div className="bg-slate-900 text-white p-5 rounded-2xl">
-                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-3 border-b border-slate-700 pb-2">Admin Tools</h4>
-                                    <div className="space-y-2 mb-4">
-                                        <button onClick={() => openLink(getVal(property,'website_link'))} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-2.5 rounded-xl uppercase tracking-widest text-[9px] border border-slate-700 transition">🌐 Builder Website</button>
+                                    <h4 className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-3 border-b border-slate-700 pb-2 flex items-center gap-2">⚙️ Admin Tools</h4>
+                                    <div className="space-y-2 mb-5">
+                                        <button onClick={() => openLink(getVal(property,'website_link'))} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-2.5 rounded-xl uppercase tracking-widest text-[9px] border border-slate-700 transition flex items-center justify-center gap-2">🌐 Builder Website</button>
                                         <button onClick={handleRegisterLead} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-2.5 rounded-xl uppercase tracking-widest text-[9px] shadow-md transition">{regText}</button>
                                     </div>
-                                    <h4 className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mb-2">Share With Client (WhatsApp)</h4>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <button onClick={() => shareViaWhatsApp('Brochure',       getVal(property,'brochure'))}      className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📥 Brochure</button>
-                                        <button onClick={() => shareViaWhatsApp('Cost Sheet',     getVal(property,'cost_sheet'))}    className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📄 Cost Sheet</button>
-                                        <button onClick={() => shareViaWhatsApp('Location Map',   getVal(property,'map_link'))}      className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📍 Location</button>
-                                        <button onClick={() => shareViaWhatsApp('Property Video', getVal(property,'video_link'))}   className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">🎥 Video</button>
-                                        <button onClick={() => shareViaWhatsApp('Floor Plan',     getVal(property,'floor_plan'))}    className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📐 Floor Plan</button>
-                                        <button onClick={() => shareViaWhatsApp('Miscellaneous',  getVal(property,'miscellaneous'))} className="bg-slate-800 hover:bg-slate-700 font-bold py-2 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition">📂 Misc</button>
-                                        <button onClick={() => shareViaWhatsApp('Gallery Images', getVal(property,'gallery_images') || getVal(property,'cover_image'))} className="col-span-2 bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-lg text-[9px] uppercase tracking-wider text-slate-200 transition border border-slate-600">🖼️ Share Images</button>
+                                    <div className="border-t border-slate-700 pt-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="text-[8px] font-black uppercase tracking-widest text-slate-400">📤 Share via WhatsApp</h4>
+                                            <span className="text-[7px] bg-green-900/50 text-green-400 border border-green-800 px-2 py-0.5 rounded-full font-bold uppercase">Auto-Download</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                            {[
+                                                { label: 'Brochure',    emoji: '📥', field: 'brochure',       type: 'Brochure' },
+                                                { label: 'Cost Sheet',  emoji: '📄', field: 'cost_sheet',     type: 'Cost Sheet' },
+                                                { label: 'Floor Plan',  emoji: '📐', field: 'floor_plan',     type: 'Floor Plan' },
+                                                { label: 'Misc Docs',   emoji: '📂', field: 'miscellaneous',  type: 'Miscellaneous' },
+                                            ].map(item => {
+                                                const val = getVal(property, item.field);
+                                                const count = val ? val.split(',').filter(Boolean).length : 0;
+                                                return (
+                                                    <button key={item.field} onClick={() => shareViaWhatsApp(item.type, val)}
+                                                        className={`relative font-bold py-3 rounded-xl text-[8px] uppercase tracking-wider transition flex flex-col items-center gap-1 border ${count > 0 ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-green-500' : 'bg-slate-800/50 text-slate-500 border-slate-800 cursor-not-allowed'}`}
+                                                        disabled={!val}>
+                                                        <span className="text-lg leading-none">{item.emoji}</span>
+                                                        <span>{item.label}</span>
+                                                        {count > 1 && <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-blue-500 rounded-full text-[7px] font-black flex items-center justify-center text-white">{count}</span>}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+                                            <button onClick={() => shareViaWhatsApp('Location Map', getVal(property,'map_link'))}
+                                                className={`font-bold py-3 rounded-xl text-[8px] uppercase tracking-wider transition flex flex-col items-center gap-1 border ${getVal(property,'map_link') ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-green-500' : 'bg-slate-800/50 text-slate-500 border-slate-800 cursor-not-allowed'}`}
+                                                disabled={!getVal(property,'map_link')}>
+                                                <span className="text-lg leading-none">📍</span><span>Location</span>
+                                            </button>
+                                            <button onClick={() => shareViaWhatsApp('Property Video', getVal(property,'video_link'))}
+                                                className={`font-bold py-3 rounded-xl text-[8px] uppercase tracking-wider transition flex flex-col items-center gap-1 border ${getVal(property,'video_link') ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-green-500' : 'bg-slate-800/50 text-slate-500 border-slate-800 cursor-not-allowed'}`}
+                                                disabled={!getVal(property,'video_link')}>
+                                                <span className="text-lg leading-none">🎥</span><span>Video</span>
+                                            </button>
+                                        </div>
+                                        <button onClick={() => shareViaWhatsApp('Gallery Images', getVal(property,'gallery_images') || getVal(property,'cover_image'))}
+                                            className="mt-1.5 w-full bg-green-600 hover:bg-green-500 text-white font-black py-3 rounded-xl text-[9px] uppercase tracking-widest transition border border-green-500 flex items-center justify-center gap-2 shadow-lg shadow-green-900/30">
+                                            🖼️ Share Gallery Images
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -646,6 +769,7 @@ function ProjectLibrary({ properties, setProp, supabase, setProperties, onEdit }
                 {filtered.map(p => (
                     <div key={p.id} onClick={() => setProp(p)} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col relative">
                         <div className="relative h-48 bg-slate-100 overflow-hidden">
+                            {/* ✅ Cloudinary URL for card image */}
                             <img src={getDisplayUrl(getVal(p,'cover_image') || getVal(p,'cover-image'))} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="" />
                             <div className="absolute top-3 left-0 bg-slate-900/90 text-white text-[10px] font-black px-3 py-1.5 rounded-r-lg uppercase tracking-widest shadow-md">
                                 {getVal(p,'property_type') || 'Property'}
@@ -690,6 +814,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
     const [loading,       setLoading]       = useState(false);
     const [uploadingField,setUploadingField] = useState(null);
 
+    // Pre-fill when editing
     useEffect(() => { setForm(editingProp ? { ...blank, ...editingProp } : blank); }, [editingProp]);
 
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -706,6 +831,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
 
+            // ── Step 1: Upload to Cloudinary (primary) ──
             let cloudUrl = null;
             try {
                 const fd = new FormData();
@@ -717,6 +843,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                 if (data.secure_url) cloudUrl = data.secure_url;
             } catch (err) { console.error("Cloudinary upload failed:", err); }
 
+            // ── Step 2: Drive backup (fire-and-forget, non-blocking) ──
             const reader = new FileReader();
             reader.onload = () => {
                 fetch(scriptUrl, {
@@ -726,6 +853,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
             };
             reader.readAsDataURL(file);
 
+            // ── Only save Cloudinary URL to Supabase ──
             if (cloudUrl) newUrls.push(cloudUrl);
         }
 
@@ -861,8 +989,9 @@ function ManualLeadForm({ supabase, properties, onSuccess }) {
     const [loading, setLoading] = useState(false);
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-    const handleSubmit = async (e) => {
-        e.preventDefault(); setLoading(true);
+    const handleSubmit = async () => {
+        if (!form.name || !form.phone) { alert('Name and Phone are required.'); return; }
+        setLoading(true);
         const stamp = new Date().toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
         const { error } = await supabase.from('leads').insert([{
             customer_name: form.name, phone_number: form.phone, customer_email: form.email || null,
@@ -880,22 +1009,42 @@ function ManualLeadForm({ supabase, properties, onSuccess }) {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <input required className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Client Name *" onChange={e => set('name', e.target.value)} />
-            <input required className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Phone Number *" onChange={e => set('phone', e.target.value)} />
-            <input type="email" className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Email ID (Optional)" onChange={e => set('email', e.target.value)} />
-            <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" value={form.project} onChange={e => set('project', e.target.value)}>
-                <option value="General Enquiry">General Enquiry</option>
-                {properties?.map(p => <option key={p.id} value={getVal(p,'property_name')}>{getVal(p,'property_name')}</option>)}
-            </select>
-            <textarea className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500 h-24" placeholder="Customer Requirements / Enquiry Details..." onChange={e => set('note', e.target.value)} />
-            <select className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" value={form.source} onChange={e => set('source', e.target.value)}>
-                <option>Manual Entry</option><option>Walk-in</option><option>Referral</option><option>MagicBricks</option><option>Housing.com</option>
-            </select>
-            <button disabled={loading} className="w-full bg-blue-600 text-white p-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-md transition disabled:opacity-50">
-                {loading ? "Injecting..." : "Inject Lead"}
+        <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                    <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Client Name *</label>
+                    <input required className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition" placeholder="Full Name" onChange={e => set('name', e.target.value)} />
+                </div>
+                <div>
+                    <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Phone *</label>
+                    <input required className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition" placeholder="10-digit" onChange={e => set('phone', e.target.value)} />
+                </div>
+                <div>
+                    <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Email</label>
+                    <input type="email" className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition" placeholder="Optional" onChange={e => set('email', e.target.value)} />
+                </div>
+            </div>
+            <div>
+                <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Project Interested In</label>
+                <select className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition text-slate-700 cursor-pointer" value={form.project} onChange={e => set('project', e.target.value)}>
+                    <option value="General Enquiry">General Enquiry</option>
+                    {properties?.map(p => <option key={p.id} value={getVal(p,'property_name')}>{getVal(p,'property_name')}</option>)}
+                </select>
+            </div>
+            <div>
+                <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Lead Source</label>
+                <select className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition text-slate-700 cursor-pointer" value={form.source} onChange={e => set('source', e.target.value)}>
+                    <option>Manual Entry</option><option>Walk-in</option><option>Referral</option><option>MagicBricks</option><option>Housing.com</option>
+                </select>
+            </div>
+            <div>
+                <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Requirements / Notes</label>
+                <textarea className="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition h-20" placeholder="Budget, BHK preference, timeline..." onChange={e => set('note', e.target.value)} />
+            </div>
+            <button disabled={loading} onClick={handleSubmit} className="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-2xl font-black uppercase tracking-widest shadow-lg transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm">
+                {loading ? <><span className="animate-spin inline-block">⏳</span> Injecting...</> : '⚡ Inject Lead'}
             </button>
-        </form>
+        </div>
     );
 }
 
@@ -955,6 +1104,7 @@ function AdminApp() {
     const [visibleCount,   setVisibleCount]   = useState(50);
     const [searchTerm,     setSearchTerm]     = useState("");
 
+    // Router
     useEffect(() => {
         const onHashChange = () => {
             const r = getInitialRoute();
@@ -975,12 +1125,14 @@ function AdminApp() {
 
     useEffect(() => { setVisibleCount(50); }, [leadCategory, filterType, summaryAgent, searchTerm]);
 
+    // Auth
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); setAuthChecking(false); });
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
         return () => subscription.unsubscribe();
     }, []);
 
+    // Data fetching
     useEffect(() => {
         if (session) { fetchProperties(); if (view === 'dashboard') fetchLeads(); }
     }, [session, view, leadCategory]);
@@ -1072,125 +1224,203 @@ function AdminApp() {
 
     return (
         <div className="min-h-screen flex flex-col animate-fadeIn">
-            <nav className="bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
-                <h1 className="font-black tracking-tighter text-xl uppercase italic">Horizon <span className="text-blue-500">CRM</span></h1>
-                <div className="flex gap-4 md:gap-6 text-[10px] md:text-[11px] font-bold uppercase tracking-widest items-center">
-                    <button onClick={() => handleNavigate('dashboard', leadCategory)} className={view==='dashboard'?'text-blue-400':'hover:text-slate-300 transition'}>CRM</button>
-                    <button onClick={() => handleNavigate('library')}                 className={view==='library'  ?'text-blue-400':'hover:text-slate-300 transition'}>Library</button>
-                    <button onClick={() => handleNavigate('add')}                     className={view==='add'      ?'text-blue-400':'hover:text-slate-300 transition'}>+ Project</button>
-                    <button onClick={() => supabase.auth.signOut()} className="text-red-400 border border-red-900 px-3 py-1.5 rounded hover:bg-red-900/50 transition font-bold uppercase">Logout</button>
+            {/* ── Top Nav ── */}
+            <nav className="bg-slate-900 text-white px-4 md:px-8 py-3 flex justify-between items-center sticky top-0 z-50 shadow-lg border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                    <h1 className="font-black tracking-tighter text-lg md:text-xl uppercase italic">Horizon <span className="text-blue-400">CRM</span></h1>
+                    {session?.user?.email && (
+                        <span className="hidden md:block text-[9px] font-bold text-slate-500 bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg uppercase tracking-widest truncate max-w-[160px]">
+                            {session.user.email.split('@')[0]}
+                        </span>
+                    )}
                 </div>
+                <div className="hidden md:flex gap-1 items-center">
+                    {[
+                        { id:'dashboard', label:'📊 CRM',        cat: leadCategory },
+                        { id:'library',   label:'🏢 Library',    cat: 'website' },
+                        { id:'add',       label:'➕ Add Project', cat: 'website' },
+                    ].map(n => (
+                        <button key={n.id} onClick={() => handleNavigate(n.id, n.cat)}
+                            className={`px-5 py-2 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${view===n.id?'bg-white text-slate-900 shadow-inner':'hover:bg-slate-800'}`}>
+                            {n.label}
+                        </button>
+                    ))}
+                    <button onClick={() => supabase.auth.signOut()} className="ml-3 text-[9px] font-black uppercase tracking-widest text-red-400 border border-red-900/60 px-3 py-2 rounded-xl hover:bg-red-900/40 transition">Logout</button>
+                </div>
+                <button onClick={() => supabase.auth.signOut()} className="md:hidden text-[9px] font-black uppercase text-red-400 border border-red-900/60 px-3 py-1.5 rounded-xl hover:bg-red-900/40 transition">Out</button>
             </nav>
 
-            <main className="p-3 md:p-8 max-w-7xl mx-auto w-full">
+            {/* ── Mobile Bottom Nav ── */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-2xl flex">
+                {[
+                    { id:'dashboard', emoji:'📊', label:'CRM',     cat: leadCategory },
+                    { id:'library',   emoji:'🏢', label:'Library',  cat: 'website' },
+                    { id:'add',       emoji:'➕', label:'Add',      cat: 'website' },
+                ].map(n => (
+                    <button key={n.id} onClick={() => handleNavigate(n.id, n.cat)}
+                        className={`flex-1 flex flex-col items-center py-2 text-xs font-black uppercase transition ${view===n.id?'text-blue-600':'text-slate-500'}`}>
+                        <span className="text-2xl mb-0.5">{n.emoji}</span>
+                        <span>{n.label}</span>
+                        {view===n.id && <span className="w-5 h-1 bg-blue-600 rounded-full mt-1"></span>}
+                    </button>
+                ))}
+            </div>
+
+            <main className="p-3 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
                 {view === 'dashboard' && (
                     <div className="space-y-6">
+                        {/* Stats bar */}
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
                             <div className="flex flex-wrap justify-between md:grid md:grid-cols-5 gap-4 items-center">
                                 <div className="w-full md:w-auto border-b md:border-none pb-2 md:pb-0">
-                                    <select className="bg-transparent outline-none cursor-pointer text-slate-700 text-[10px] font-black uppercase w-full md:w-auto" value={summaryAgent} onChange={e => setSummaryAgent(e.target.value)}>
-                                        <option value="All">Total (All Agents)</option>
-                                        <option value="Tharun">Tharun</option><option value="Shivaji">Shivaji</option><option value="Ramswami">Ramswami</option>
+                                    <select className="bg-transparent outline-none cursor-pointer text-slate-700 text-[10px] font-black uppercase w-full md:w-auto border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500" value={summaryAgent} onChange={e => setSummaryAgent(e.target.value)}>
+                                        <option value="All">📊 All Agents</option>
+                                        <option value="Tharun">👤 Tharun</option><option value="Shivaji">👤 Shivaji</option><option value="Ramswami">👤 Ramswami</option>
                                     </select>
                                 </div>
-                                <div className="flex flex-col items-center flex-1"><span className="text-[9px] uppercase font-black text-slate-400">Total</span><span className="font-bold text-slate-700 text-lg">{stats.total}</span></div>
-                                <div className="flex flex-col items-center flex-1"><span className="text-[9px] uppercase font-black text-green-600">Uncalled</span><span className="font-bold text-green-600 text-lg">{stats.uncalled}</span></div>
-                                <div className="flex flex-col items-center flex-1"><span className="text-[9px] uppercase font-black text-blue-600">Working</span><span className="font-bold text-blue-600 text-lg">{stats.called}</span></div>
-                                <div className="flex flex-col items-center flex-1"><span className="text-[9px] uppercase font-black text-red-600">Rejected</span><span className="font-bold text-red-600 text-lg">{stats.rejected}</span></div>
+                                <div className="flex flex-col items-center flex-1 p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                                    <span className="text-[9px] uppercase font-black text-slate-400 mb-1">Total</span>
+                                    <span className="font-black text-slate-700 text-2xl leading-none">{stats.total}</span>
+                                </div>
+                                <div className="flex flex-col items-center flex-1 p-3 rounded-2xl bg-amber-50 border border-amber-100">
+                                    <span className="text-[9px] uppercase font-black text-amber-500 mb-1">Uncalled</span>
+                                    <span className="font-black text-amber-600 text-2xl leading-none">{stats.uncalled}</span>
+                                </div>
+                                <div className="flex flex-col items-center flex-1 p-3 rounded-2xl bg-blue-50 border border-blue-100">
+                                    <span className="text-[9px] uppercase font-black text-blue-500 mb-1">Working</span>
+                                    <span className="font-black text-blue-600 text-2xl leading-none">{stats.called}</span>
+                                </div>
+                                <div className="flex flex-col items-center flex-1 p-3 rounded-2xl bg-red-50 border border-red-100">
+                                    <span className="text-[9px] uppercase font-black text-red-500 mb-1">Rejected</span>
+                                    <span className="font-black text-red-600 text-2xl leading-none">{stats.rejected}</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-b pb-4">
-                            <div className="flex gap-4">
-                                {['website','bulk','manual'].map(c => (
-                                    <button key={c} onClick={() => { handleNavigate('dashboard', c); setVisibleCount(50); }}
-                                        className={`pb-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${leadCategory===c?'border-blue-500 text-blue-600':'border-transparent text-slate-500 hover:text-slate-800'}`}>{c}</button>
+                        {/* Tabs + filter */}
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div className="flex gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm w-full md:w-auto">
+                                {[{id:'website',label:'🌐 Website'},{id:'bulk',label:'📦 Bulk'},{id:'manual',label:'✍️ Manual'}].map(c => (
+                                    <button key={c.id} onClick={() => { handleNavigate('dashboard', c.id); setVisibleCount(50); }}
+                                        className={`flex-1 md:flex-none px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${leadCategory===c.id?'bg-blue-600 text-white shadow-md':'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}>{c.label}</button>
                                 ))}
                             </div>
-                            <div className="flex gap-3 items-center w-full md:w-auto">
+                            <div className="flex gap-2 items-center w-full md:w-auto">
                                 <select value={filterType} onChange={e => setFilterType(e.target.value)}
-                                    className="px-4 py-2 rounded-full text-[9px] font-black uppercase border bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-auto">
-                                    <option value="ALL">All Leads</option>
-                                    <optgroup label="Schedule Filters">
+                                    className="flex-1 md:flex-none px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase border-2 bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 border-slate-200 cursor-pointer">
+                                    <option value="ALL">📋 All Leads</option>
+                                    <optgroup label="— Schedule Filters —">
                                         <option value="TODAY_CB">📅 Today's Callbacks</option>
                                         <option value="TODAY_SV">📅 Today's Site Visits</option>
                                         <option value="MISSED_CB">⚠️ Missed Callbacks</option>
                                         <option value="MISSED_SV">⚠️ Missed Site Visits</option>
                                     </optgroup>
-                                    <optgroup label="Status Filters">
+                                    <optgroup label="— Status Filters —">
                                         {['Un called','Called','RNR','Details Shared','SV Scheduled','Converted','Rejected'].map(s => (
                                             <option key={s} value={`STATUS_${s}`}>{s}</option>
                                         ))}
                                     </optgroup>
                                 </select>
-                                <button onClick={() => setShowManualModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded-full text-[9px] font-black uppercase shadow-sm shrink-0">+ Manual Lead</button>
+                                <button onClick={() => setShowManualModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase shadow-md shrink-0 transition border border-blue-500">+ Lead</button>
                             </div>
                         </div>
 
-                        <div className="mb-4 relative">
-                            <input type="text" placeholder="Search Name, Phone or Project..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full p-4 pl-12 bg-white border border-slate-200 rounded-2xl text-xs font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
-                            <span className="absolute left-4 top-4 opacity-50 text-lg">🔍</span>
-                            {searchTerm && <button onClick={() => setSearchTerm("")} className="absolute right-4 top-4 text-[10px] font-black text-slate-400 hover:text-red-500 uppercase bg-slate-100 px-3 py-1 rounded-lg transition">Clear</button>}
+                        {/* Search */}
+                        <div className="relative">
+                            <input type="text" placeholder="Search by name, phone or project..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                                className="w-full p-4 pl-12 pr-24 bg-white border-2 border-slate-200 rounded-2xl text-xs font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all" />
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg opacity-40 pointer-events-none">🔍</span>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                {!loading && <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-lg tracking-widest">{displayedLeads.length} leads</span>}
+                                {searchTerm && <button onClick={() => setSearchTerm("")} className="text-[9px] font-black text-red-400 hover:text-red-600 bg-red-50 border border-red-200 px-2 py-1 rounded-lg uppercase tracking-widest transition">✕</button>}
+                            </div>
                         </div>
 
+                        {/* Desktop table */}
                         <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                            {loading ? (
+                                <div className="p-6 space-y-3">
+                                    {[...Array(6)].map((_,i) => (
+                                        <div key={i} className="flex gap-4">
+                                            <div className="skeleton h-14 flex-1 rounded-xl"></div>
+                                            <div className="skeleton h-14 w-44 rounded-xl"></div>
+                                            <div className="skeleton h-14 w-36 rounded-xl"></div>
+                                            <div className="skeleton h-14 flex-1 rounded-xl"></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : visibleLeads.length === 0 ? (
+                                <div className="py-20 flex flex-col items-center text-center">
+                                    <div className="text-5xl mb-4">🔍</div>
+                                    <div className="text-sm font-black uppercase tracking-widest text-slate-400 mb-1">No leads found</div>
+                                    <div className="text-[10px] text-slate-400 font-medium">Try adjusting your filter or search term</div>
+                                </div>
+                            ) : (
                             <table className="w-full text-left text-xs">
-                                <thead className="bg-slate-50 text-slate-400 font-black uppercase text-[9px] tracking-widest border-b">
-                                    <tr><th className="p-4">Customer</th><th className="p-4">Status & Agent</th><th className="p-4">Scheduling</th><th className="p-4 min-w-[250px]">Activity & Notes</th></tr>
+                                <thead className="bg-slate-900 text-slate-400 font-black uppercase text-[9px] tracking-widest">
+                                    <tr>
+                                        <th className="px-5 py-3.5">Customer</th>
+                                        <th className="px-5 py-3.5">Agent &amp; Status</th>
+                                        <th className="px-5 py-3.5">Scheduling</th>
+                                        <th className="px-5 py-3.5 min-w-[260px]">Activity &amp; Notes</th>
+                                    </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {visibleLeads.map(l => (
-                                        <tr key={l.id} className={`transition-colors border-l-4 hover:brightness-95 ${l.lead_priority==='Hot'?'border-l-red-500':l.lead_priority==='Cold'?'border-l-blue-400':'border-l-amber-400'} ${getCardTint(l.lead_status)}`}>
-                                            <td className="p-4 uppercase font-bold min-w-[180px]">
-                                                {l.customer_name}
-                                                <div className="text-blue-600 mt-1">{l.phone_number}</div>
-                                                <div className="text-slate-400 text-[10px] mt-1 lowercase truncate font-medium">{l.customer_email || ''}</div>
-                                                {l.created_at && <div className="text-[8px] text-slate-400 font-bold mt-2 tracking-widest uppercase">Logged: {leadCategory==='bulk'?l.created_at:l.display_date}</div>}
-                                                <div className="text-[8px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate max-w-[150px]">
-                                                    Inq: {leadCategory==='bulk'&&session?.user?.email!=='saishetty1623@gmail.com'?'[Restricted]':(l.project_interested_in||'General')}
-                                                </div>
-                                                <div className="mt-3 flex gap-2">
-                                                    <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-green-500 text-white text-[8px] font-black px-3 py-1.5 rounded uppercase tracking-widest shadow-sm hover:scale-105 transition">WhatsApp 💬</a>
+                                        <tr key={l.id} className={`border-l-[5px] hover:brightness-[0.97] transition-all ${l.lead_priority==='Hot'?'border-l-red-500':l.lead_priority==='Cold'?'border-l-blue-400':'border-l-amber-400'} ${getCardTint(l.lead_status)}`}>
+                                            <td className="px-5 py-4 min-w-[200px]">
+                                                <p className="font-black text-[11px] uppercase text-slate-900 leading-tight">{l.customer_name}</p>
+                                                <p className="text-blue-600 font-black text-[11px] mt-0.5">{l.phone_number}</p>
+                                                {l.customer_email && <p className="text-slate-400 text-[9px] mt-0.5 lowercase truncate font-medium max-w-[160px]">{l.customer_email}</p>}
+                                                <p className="text-[8px] text-slate-500 font-bold mt-1.5 tracking-widest uppercase truncate max-w-[160px]">
+                                                    🏠 {leadCategory==='bulk'&&session?.user?.email!=='saishetty1623@gmail.com'?'[Restricted]':(l.project_interested_in||'General')}
+                                                </p>
+                                                {l.created_at && <p className="text-[8px] text-slate-400 font-bold mt-1 tracking-widest uppercase">🕐 {leadCategory==='bulk'?l.created_at:l.display_date}</p>}
+                                                <div className="mt-2.5 flex gap-1.5">
+                                                    <a href={`tel:${l.phone_number}`} className="bg-slate-100 text-slate-600 text-[8px] font-black px-2.5 py-1.5 rounded-lg uppercase tracking-widest hover:bg-slate-200 transition border border-slate-200">📞 Call</a>
+                                                    <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="bg-green-500 text-white text-[8px] font-black px-2.5 py-1.5 rounded-lg uppercase tracking-widest hover:bg-green-600 transition shadow-sm">💬 WA</a>
                                                 </div>
                                             </td>
-                                            <td className="p-4 min-w-[140px]">
-                                                <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''} className="w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none bg-slate-50 border-slate-300 text-blue-800">
-                                                    <option value="" disabled>Assign Agent</option>
-                                                    <option value="Tharun">Tharun</option><option value="Shivaji">Shivaji</option><option value="Ramswami">Ramswami</option>
+                                            <td className="p-4 min-w-[160px]">
+                                                <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''} className="w-full p-2 mb-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none bg-slate-900 border-slate-700 text-blue-300 cursor-pointer">
+                                                    <option value="" disabled>⚡ Assign Agent</option>
+                                                    <option value="Tharun">👤 Tharun</option><option value="Shivaji">👤 Shivaji</option><option value="Ramswami">👤 Ramswami</option>
                                                 </select>
-                                                <select onChange={e => updateLead(l,'lead_status',e.target.value)} value={l.lead_status||''} className={`w-full p-2 mb-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 ${getStatusStyles(l.lead_status)}`}>
-                                                    {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">Un called</option>}
-                                                    <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option><option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
+                                                <select onChange={e => updateLead(l,'lead_status',e.target.value)} value={l.lead_status||''} className={`w-full p-2 mb-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`}>
+                                                    {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">🔵 Un called</option>}
+                                                    <option value="Called">✅ Called</option><option value="RNR">🔔 RNR</option><option value="Details Shared">📤 Details Shared</option><option value="SV Scheduled">📅 SV Scheduled</option><option value="Converted">🏆 Converted</option><option value="Rejected">❌ Rejected</option>
                                                 </select>
                                                 {l.lead_status==='Rejected'&&(
-                                                    <select onChange={e => updateLead(l,'reject_reason',e.target.value)} value={l.reject_reason||''} className="w-full p-2 mb-2 border border-red-300 rounded-lg font-bold uppercase text-[9px] outline-none bg-red-50 text-red-800">
+                                                    <select onChange={e => updateLead(l,'reject_reason',e.target.value)} value={l.reject_reason||''} className="w-full p-2 mb-2 border-2 border-red-300 rounded-xl font-black uppercase text-[9px] outline-none bg-red-50 text-red-800 cursor-pointer">
                                                         <option value="" disabled>Select Reason</option>
                                                         <option value="Not Interested">Not Interested</option><option value="No Response">No Response</option><option value="Wrong Number">Wrong Number</option><option value="No Incoming Call">No Incoming Call</option>
                                                     </select>
                                                 )}
-                                                <select onChange={e => updateLead(l,'lead_priority',e.target.value)} value={l.lead_priority||'Warm'} className={`w-full p-2 border rounded-lg font-bold uppercase text-[9px] outline-none border-2 ${getPriorityColor(l.lead_priority)}`}>
-                                                    <option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option>
+                                                <select onChange={e => updateLead(l,'lead_priority',e.target.value)} value={l.lead_priority||'Warm'} className={`w-full p-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getPriorityColor(l.lead_priority)}`}>
+                                                    <option value="Hot">🔥 Hot</option><option value="Warm">🌤 Warm</option><option value="Cold">❄️ Cold</option>
                                                 </select>
                                             </td>
-                                            <td className="p-4 min-w-[160px]">
+                                            <td className="px-5 py-4 min-w-[170px]">
                                                 {['Called','RNR','Details Shared'].includes(l.lead_status)&&(
                                                     <div>
-                                                        <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">Call Back Date</span>
-                                                        <input type="datetime-local" className="w-full p-2 border border-blue-200 bg-blue-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.follow_up_at?.slice(0,16)||''} onChange={e => updateLead(l,'follow_up_at',e.target.value)} />
+                                                        <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">📅 Callback Date</span>
+                                                        <input type="datetime-local" className="w-full p-2 border-2 border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:border-blue-400" value={l.follow_up_at?.slice(0,16)||''} onChange={e => updateLead(l,'follow_up_at',e.target.value)} />
                                                     </div>
                                                 )}
                                                 {l.lead_status==='SV Scheduled'&&(
-                                                    <div className="mt-2 pt-2 border-t border-slate-100">
-                                                        <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">Site Visit Date</span>
-                                                        <input type="date" className="w-full p-2 border border-teal-200 bg-teal-50 rounded-lg text-[10px] font-bold text-slate-700 outline-none" value={l.site_visit_at||''} onChange={e => updateLead(l,'site_visit_at',e.target.value)} />
+                                                    <div className="mt-2">
+                                                        <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">📍 Site Visit</span>
+                                                        <input type="date" className="w-full p-2 border-2 border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:border-teal-400" value={l.site_visit_at||''} onChange={e => updateLead(l,'site_visit_at',e.target.value)} />
                                                     </div>
                                                 )}
+                                                {!['Called','RNR','Details Shared','SV Scheduled'].includes(l.lead_status) && (
+                                                    <span className="text-[9px] text-slate-300 font-bold italic">—</span>
+                                                )}
                                             </td>
-                                            <td className="p-4">
+                                            <td className="px-5 py-4">
                                                 <div className="flex flex-col gap-2">
-                                                    <div className="h-16 overflow-y-auto bg-slate-50 p-2 rounded-lg history-scroll whitespace-pre-wrap border border-slate-100 leading-relaxed font-medium text-slate-400 mb-1 text-[9px]">
-                                                        {l.call_remark || <span className="italic">System logs...</span>}
+                                                    <div className="h-[60px] overflow-y-auto bg-slate-900/5 p-2 rounded-xl history-scroll whitespace-pre-wrap border border-slate-200 leading-relaxed font-medium text-slate-500 text-[9px]">
+                                                        {l.call_remark || <span className="italic text-slate-300">No activity yet...</span>}
                                                     </div>
                                                     <NoteCell lead={l} onSave={updateLead} />
                                                 </div>
@@ -1199,7 +1429,8 @@ function AdminApp() {
                                     ))}
                                 </tbody>
                             </table>
-                            {visibleCount < displayedLeads.length && (
+                            )}
+                            {!loading && visibleCount < displayedLeads.length && (
                                 <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-center">
                                     <button onClick={() => setVisibleCount(v => v + 50)} className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition shadow-sm">
                                         Load More Leads ({displayedLeads.length - visibleCount} hidden)
@@ -1208,80 +1439,105 @@ function AdminApp() {
                             )}
                         </div>
 
-                        <div className="lg:hidden space-y-4">
-                            {visibleLeads.map(l => (
-                                <div key={`m-${l.id}`} className={`p-4 rounded-2xl shadow-sm border border-t-8 transition-colors ${l.lead_priority==='Hot'?'border-t-red-500':l.lead_priority==='Cold'?'border-t-blue-400':'border-t-amber-400'} ${getCardTint(l.lead_status)}`}>
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="font-black text-sm uppercase">{l.customer_name}</h3>
-                                            <p className="font-bold text-blue-600">{l.phone_number}</p>
-                                            <p className="font-bold text-slate-400 text-[10px] truncate mt-1">{l.customer_email}</p>
-                                            <p className="text-[10px] text-slate-500 font-bold mt-1 tracking-widest uppercase">
-                                                Inq: {leadCategory==='bulk'&&session?.user?.email!=='saishetty1623@gmail.com'?'[Restricted]':(l.project_interested_in||'General')}
-                                            </p>
-                                            {l.created_at && <div className="text-[8px] text-slate-400 font-bold mt-1 tracking-widest uppercase">Logged: {leadCategory==='bulk'?l.created_at:l.display_date}</div>}
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <a href={`tel:${l.phone_number}`} className="bg-blue-50 text-blue-600 border border-blue-100 p-2.5 rounded-full shadow-sm">📞</a>
-                                            <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="bg-green-50 text-green-600 border border-green-100 p-2.5 rounded-full shadow-sm">💬</a>
-                                        </div>
+                        {/* Mobile cards */}
+                        <div className="lg:hidden space-y-3">
+                            {loading ? (
+                                [...Array(4)].map((_,i) => (
+                                    <div key={i} className="bg-white rounded-2xl p-4 border border-slate-200 space-y-3">
+                                        <div className="flex justify-between"><div className="space-y-2 flex-1"><div className="skeleton h-4 w-32 rounded"></div><div className="skeleton h-3 w-24 rounded"></div></div><div className="skeleton h-12 w-24 rounded-xl"></div></div>
+                                        <div className="flex gap-2"><div className="skeleton h-10 flex-1 rounded-xl"></div><div className="skeleton h-10 flex-1 rounded-xl"></div></div>
+                                        <div className="skeleton h-9 w-full rounded-xl"></div>
+                                        <div className="grid grid-cols-2 gap-2"><div className="skeleton h-9 rounded-xl"></div><div className="skeleton h-9 rounded-xl"></div></div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2 mb-4 mt-2">
+                                ))
+                            ) : visibleLeads.length === 0 ? (
+                                <div className="py-16 flex flex-col items-center text-center bg-white rounded-2xl border border-slate-200">
+                                    <div className="text-4xl mb-3">📭</div>
+                                    <div className="text-sm font-black uppercase tracking-widest text-slate-400 mb-1">No leads found</div>
+                                    <div className="text-[10px] text-slate-400 font-medium">Adjust filters or search</div>
+                                </div>
+                            ) : visibleLeads.map(l => (
+                                <div key={`m-${l.id}`} className={`rounded-2xl shadow-sm border-2 overflow-hidden animate-fadeIn ${l.lead_priority==='Hot'?'border-red-200':l.lead_priority==='Cold'?'border-blue-200':'border-amber-200'} ${getCardTint(l.lead_status)}`}>
+                                    <div className={`h-1 w-full ${l.lead_priority==='Hot'?'bg-red-500':l.lead_priority==='Cold'?'bg-blue-400':'bg-amber-400'}`}></div>
+                                    <div className="p-4">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex-1 min-w-0 pr-2">
+                                                <h3 className="font-black text-[13px] uppercase text-slate-900 leading-tight truncate">{l.customer_name}</h3>
+                                                <p className="font-black text-blue-600 text-[12px] mt-0.5">{l.phone_number}</p>
+                                                {l.customer_email && <p className="font-medium text-slate-400 text-[9px] truncate mt-0.5">{l.customer_email}</p>}
+                                                <p className="text-[9px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate">
+                                                    🏠 {leadCategory==='bulk'&&session?.user?.email!=='saishetty1623@gmail.com'?'[Restricted]':(l.project_interested_in||'General')}
+                                                </p>
+                                                {l.created_at && <p className="text-[8px] text-slate-400 font-bold mt-0.5 tracking-widest uppercase">🕐 {leadCategory==='bulk'?l.created_at:l.display_date}</p>}
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                                <span className={`text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${getStatusStyles(l.lead_status)}`}>{l.lead_status||'Un called'}</span>
+                                                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${getPriorityColor(l.lead_priority||'Warm')}`}>{l.lead_priority==='Hot'?'🔥':l.lead_priority==='Cold'?'❄️':'🌤'} {l.lead_priority||'Warm'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 mb-3">
+                                            <a href={`tel:${l.phone_number}`} className="flex-1 flex items-center justify-center gap-1 bg-white border-2 border-slate-200 text-slate-700 text-[9px] font-black uppercase tracking-widest py-2.5 rounded-xl hover:border-blue-400 transition">📞 Call</a>
+                                            <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="flex-1 flex items-center justify-center gap-1 bg-green-500 text-white text-[9px] font-black uppercase tracking-widest py-2.5 rounded-xl hover:bg-green-600 transition shadow-sm">💬 WhatsApp</a>
+                                        </div>
+                                        <div className="border-t border-slate-200/80 pt-3 space-y-2">
+                                    <div className="grid grid-cols-2 gap-2 mb-1">
                                         <div className="flex flex-col gap-1 col-span-2">
                                             <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">PSA Agent</label>
-                                            <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''} className="p-2 border border-slate-300 bg-slate-50 rounded-xl font-bold uppercase text-[9px] outline-none text-blue-800">
-                                                <option value="" disabled>Assign Agent</option>
-                                                <option value="Tharun">Tharun</option><option value="Shivaji">Shivaji</option><option value="Ramswami">Ramswami</option>
+                                            <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''} className="p-2.5 border-2 border-slate-700 bg-slate-900 rounded-xl font-black uppercase text-[9px] outline-none text-blue-300 cursor-pointer">
+                                                <option value="" disabled>⚡ Assign Agent</option>
+                                                <option value="Tharun">👤 Tharun</option><option value="Shivaji">👤 Shivaji</option><option value="Ramswami">👤 Ramswami</option>
                                             </select>
                                         </div>
                                         <div className="flex flex-col gap-1">
                                             <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</label>
-                                            <select onChange={e => updateLead(l,'lead_status',e.target.value)} value={l.lead_status||''} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none ${getStatusStyles(l.lead_status)}`}>
-                                                {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">Un called</option>}
-                                                <option value="Called">Called</option><option value="RNR">RNR</option><option value="Details Shared">Details Shared</option><option value="SV Scheduled">SV Scheduled</option><option value="Converted">Converted</option><option value="Rejected">Rejected</option>
+                                            <select onChange={e => updateLead(l,'lead_status',e.target.value)} value={l.lead_status||''} className={`p-2.5 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`}>
+                                                {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">🔵 Un called</option>}
+                                                <option value="Called">✅ Called</option><option value="RNR">🔔 RNR</option><option value="Details Shared">📤 Details</option><option value="SV Scheduled">📅 SV Sched.</option><option value="Converted">🏆 Converted</option><option value="Rejected">❌ Rejected</option>
                                             </select>
                                         </div>
                                         <div className="flex flex-col gap-1">
                                             <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Priority</label>
-                                            <select onChange={e => updateLead(l,'lead_priority',e.target.value)} value={l.lead_priority||'Warm'} className={`p-2 border rounded-xl font-bold uppercase text-[9px] outline-none ${getPriorityColor(l.lead_priority)}`}>
-                                                <option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Cold">Cold</option>
+                                            <select onChange={e => updateLead(l,'lead_priority',e.target.value)} value={l.lead_priority||'Warm'} className={`p-2.5 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getPriorityColor(l.lead_priority)}`}>
+                                                <option value="Hot">🔥 Hot</option><option value="Warm">🌤 Warm</option><option value="Cold">❄️ Cold</option>
                                             </select>
                                         </div>
                                         {l.lead_status==='Rejected'&&(
                                             <div className="flex flex-col gap-1 col-span-2 mt-1">
                                                 <label className="text-[8px] font-black text-red-600 uppercase tracking-widest">Reject Reason</label>
-                                                <select onChange={e => updateLead(l,'reject_reason',e.target.value)} value={l.reject_reason||''} className="p-2 border border-red-300 bg-red-50 text-red-800 rounded-xl font-bold uppercase text-[9px] outline-none">
+                                                <select onChange={e => updateLead(l,'reject_reason',e.target.value)} value={l.reject_reason||''} className="p-2.5 border-2 border-red-300 bg-red-50 text-red-800 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer">
                                                     <option value="" disabled>Select Reason</option>
                                                     <option value="Not Interested">Not Interested</option><option value="No Response">No Response</option><option value="Wrong Number">Wrong Number</option><option value="No Incoming Call">No Incoming Call</option>
                                                 </select>
                                             </div>
                                         )}
                                     </div>
-                                    <div className="mb-4 space-y-2">
-                                        {['Called','RNR','Details Shared'].includes(l.lead_status)&&(
-                                            <div className="flex flex-col gap-1">
-                                                <label className="text-[8px] font-black text-blue-600 uppercase tracking-widest">Callback Date</label>
-                                                <input type="datetime-local" className="p-2 border border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold outline-none" value={l.follow_up_at?.slice(0,16)||''} onChange={e => updateLead(l,'follow_up_at',e.target.value)} />
-                                            </div>
-                                        )}
-                                        {l.lead_status==='SV Scheduled'&&(
-                                            <div className="flex flex-col gap-1 mt-2">
-                                                <label className="text-[8px] font-black text-teal-600 uppercase tracking-widest">Site Visit Date</label>
-                                                <input type="date" className="p-2 border border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold outline-none" value={l.site_visit_at||''} onChange={e => updateLead(l,'site_visit_at',e.target.value)} />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="mt-4 pt-3 border-t border-slate-100">
-                                        <div className="bg-slate-50 p-2 rounded-t-xl h-16 overflow-y-auto text-[9px] font-medium whitespace-pre-wrap border border-slate-200 leading-relaxed text-slate-400 mb-1">
-                                            {l.call_remark || <span className="italic">System logs...</span>}
+                                    {/* Scheduling inputs */}
+                                    {['Called','RNR','Details Shared'].includes(l.lead_status)&&(
+                                        <div className="flex flex-col gap-1 mt-2">
+                                            <label className="text-[8px] font-black text-blue-600 uppercase tracking-widest">📅 Callback Date</label>
+                                            <input type="datetime-local" className="p-2.5 border-2 border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold outline-none focus:border-blue-400" value={l.follow_up_at?.slice(0,16)||''} onChange={e => updateLead(l,'follow_up_at',e.target.value)} />
+                                        </div>
+                                    )}
+                                    {l.lead_status==='SV Scheduled'&&(
+                                        <div className="flex flex-col gap-1 mt-2">
+                                            <label className="text-[8px] font-black text-teal-600 uppercase tracking-widest">📍 Site Visit Date</label>
+                                            <input type="date" className="p-2.5 border-2 border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold outline-none focus:border-teal-400" value={l.site_visit_at||''} onChange={e => updateLead(l,'site_visit_at',e.target.value)} />
+                                        </div>
+                                    )}
+                                    {/* Activity log + note */}
+                                    <div className="mt-3 pt-3 border-t border-slate-100">
+                                        <div className="bg-slate-900/5 p-2.5 rounded-xl h-14 overflow-y-auto text-[9px] font-medium whitespace-pre-wrap history-scroll border border-slate-200 leading-relaxed text-slate-500 mb-2">
+                                            {l.call_remark || <span className="italic text-slate-400">System logs...</span>}
                                         </div>
                                         <NoteCellMobile lead={l} onSave={updateLead} />
                                     </div>
-                                </div>
+                                    </div>{/* end border-t section */}
+                                    </div>{/* end p-4 */}
+                                </div>{/* end card */}
                             ))}
-                            {visibleCount < displayedLeads.length && (
-                                <button onClick={() => setVisibleCount(v => v + 50)} className="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition mt-4 shadow-sm border border-blue-200">
-                                    Load More Leads ({displayedLeads.length - visibleCount} hidden)
+                            {!loading && visibleCount < displayedLeads.length && (
+                                <button onClick={() => setVisibleCount(v => v + 50)} className="w-full bg-white hover:bg-blue-50 text-blue-700 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition border-2 border-blue-200 hover:border-blue-400 shadow-sm">
+                                    Load More ({displayedLeads.length - visibleCount} remaining)
                                 </button>
                             )}
                         </div>
@@ -1298,13 +1554,21 @@ function AdminApp() {
             </main>
 
             {showManualModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-start justify-center p-4 pt-24 overflow-y-auto">
-                    <div className="bg-white p-8 rounded-[30px] w-full max-w-md shadow-2xl animate-fadeIn mb-10">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-black uppercase italic">Manual Entry</h2>
-                            <button onClick={() => setShowManualModal(false)} className="text-2xl text-gray-400 hover:text-slate-900 transition">&times;</button>
+                <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[100] flex items-end md:items-center justify-center p-0 md:p-4" onClick={e => e.target === e.currentTarget && setShowManualModal(false)}>
+                    <div className="bg-white rounded-t-[32px] md:rounded-[28px] w-full max-w-md shadow-2xl animate-slideUp overflow-hidden">
+                        <div className="px-6 pt-5 pb-4 border-b border-slate-100">
+                            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5 md:hidden"></div>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">Manual Lead Entry</h2>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Inject directly into CRM</p>
+                                </div>
+                                <button onClick={() => setShowManualModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 text-sm font-black transition">✕</button>
+                            </div>
                         </div>
-                        <ManualLeadForm properties={properties} supabase={supabase} onSuccess={() => { setShowManualModal(false); fetchLeads(); }} />
+                        <div className="px-6 py-5 max-h-[75vh] overflow-y-auto">
+                            <ManualLeadForm properties={properties} supabase={supabase} onSuccess={() => { setShowManualModal(false); fetchLeads(); }} />
+                        </div>
                     </div>
                 </div>
             )}
