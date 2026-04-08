@@ -618,7 +618,7 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                         <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6">
                             <EditableField field="bhk"                 label="Configurations" value={getVal(property,'bhk')}                 onSave={saveField} />
                             <EditableField field="construction_status" label="Status"          value={getVal(property,'construction_status')} onSave={saveField} />
-                            <EditableField field="possession_date"     label="Possession"      value={getVal(property,'possession_date')}     onSave={saveField} type="date" />
+                            <EditableField field="possession_date"     label="Possession"      value={getVal(property,'possession_date')}     onSave={saveField} type="text" />
                             <EditableField field="approval"            label="Approvals"       value={getVal(property,'approval')}            onSave={saveField} />
                         </div>
 
@@ -914,7 +914,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     <select multiple className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600 h-28"
                         value={form.bhk ? form.bhk.split(',') : []}
                         onChange={e => set('bhk', [...e.target.selectedOptions].map(o => o.value).join(','))}>
-                        {['1 BHK','2 BHK','3 BHK','4 BHK','5+ BHK'].map(b => <option key={b}>{b}</option>)}
+                        {['1 BHK','2 BHK','3 BHK','4 BHK','5 BHK'].map(b => <option key={b}>{b}</option>)}
                     </select>
                     <span className="text-[9px] text-slate-400 mt-1 ml-2 font-bold uppercase tracking-widest">Hold Ctrl/Cmd to select multiple</span>
                 </div>
@@ -924,7 +924,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     <input type="date" className="w-full bg-transparent font-bold text-sm outline-none pt-4 pb-1 pl-16 text-slate-600" value={form.possession_date} onChange={e => set('possession_date', e.target.value)} />
                 </div>
                 <select className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" value={form.construction_status} onChange={e => set('construction_status', e.target.value)}>
-                    <option value="">Status</option><option>Ready to Move</option><option>Under Construction</option><option>New Launch</option>
+                    <option value="">Status</option><option>Ready to Move In</option><option>Under Construction</option><option>New Launch</option><option>Ready to Construct</option>
                 </select>
                 <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Approvals (e.g. BDA, RERA)" value={form.approval} onChange={e => set('approval', e.target.value)} />
                 <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Total Units" value={form.total_units} onChange={e => set('total_units', e.target.value)} />
