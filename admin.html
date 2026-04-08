@@ -1532,10 +1532,10 @@ function AdminApp() {
                                         </div>
                                         <NoteCellMobile lead={l} onSave={updateLead} />
                                     </div>
-                                    </div>{/* end border-t section */}
-                                    </div>{/* end p-4 */}
-                                </div>{/* end card */}
-                            ))}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                             {!loading && visibleCount < displayedLeads.length && (
                                 <button onClick={() => setVisibleCount(v => v + 50)} className="w-full bg-white hover:bg-blue-50 text-blue-700 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition border-2 border-blue-200 hover:border-blue-400 shadow-sm">
                                     Load More ({displayedLeads.length - visibleCount} remaining)
