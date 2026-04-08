@@ -921,7 +921,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                 <input className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 h-[52px]" placeholder="Super Built-up Area (SqFt)" value={form.super_built_up_area} onChange={e => set('super_built_up_area', e.target.value)} />
                 <div className="relative flex items-center bg-slate-50 border rounded-2xl px-4 focus-within:ring-2 focus-within:ring-blue-500 transition">
                     <span className="text-[10px] font-bold text-slate-400 absolute left-4 uppercase tracking-widest">Possession:</span>
-                    <input type="date" className="w-full bg-transparent font-bold text-sm outline-none pt-4 pb-1 pl-16 text-slate-600" value={form.possession_date} onChange={e => set('possession_date', e.target.value)} />
+                    <input type="text" className="w-full bg-transparent font-bold text-sm outline-none pt-4 pb-1 pl-16 text-slate-600" value={form.possession_date} onChange={e => set('possession_date', e.target.value)} />
                 </div>
                 <select className="p-4 bg-slate-50 border rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 text-slate-600" value={form.construction_status} onChange={e => set('construction_status', e.target.value)}>
                     <option value="">Status</option><option>Ready to Move In</option><option>Under Construction</option><option>New Launch</option><option>Ready to Construct</option>
