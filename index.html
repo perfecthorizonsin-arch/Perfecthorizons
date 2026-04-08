@@ -434,14 +434,14 @@
         };
 
         const convertDriveLink = (url) => {
-            if (!url || typeof url !== 'string') return url;
-            let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
-            if (id) {
-                id = id.split('&')[0];
-                return `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
-            }
-            return url;
-        };
+    if (!url || typeof url !== 'string') return url;
+    let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
+    if (id) {
+        id = id.split('&')[0];
+        return `https://drive.google.com/thumbnail?id=${id}&sz=w1920`; // Increased resolution
+    }
+    return url;
+};
 
         const getVal = (obj, searchKey) => {
             if (!obj) return "";
@@ -454,11 +454,11 @@
         };
 
         const fixImageUrl = (u) => {
-            if (!u || typeof u !== 'string') return '';
-            let url = u.split(',')[0].trim();
-            let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
-            return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w800` : url;
-        };
+    if (!u || typeof u !== 'string') return '';
+    let url = u.split(',')[0].trim();
+    let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
+    return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1920` : url; // Increased resolution
+};
 
         const extractPriceInCr = (priceString) => {
             if (!priceString) return 0;
@@ -523,20 +523,25 @@
 
         // Extract map embed src from a Google Maps share link
         const getMapEmbedSrc = (mapLink) => {
-            if (!mapLink) return null;
-            const link = String(mapLink).trim();
-            if (link.includes('maps/embed')) return link;
-            try {
-                const url = new URL(link.startsWith('http') ? link : 'https://' + link);
-                const q = url.searchParams.get('q') || url.searchParams.get('query');
-                if (q) return `https://maps.google.com/maps?q=${encodeURIComponent(q)}&output=embed`;
-                const placeMatch = link.match(/\/maps\/place\/([^/@]+)/);
-                if (placeMatch) return `https://maps.google.com/maps?q=${encodeURIComponent(placeMatch[1])}&output=embed`;
-                return `https://maps.google.com/maps?q=${encodeURIComponent(link)}&output=embed`;
-            } catch(e) {
-                return `https://maps.google.com/maps?q=${encodeURIComponent(link)}&output=embed`;
-            }
-        };
+    if (!mapLink) return null;
+    const link = String(mapLink).trim();
+    if (link.includes('maps/embed')) return link;
+
+    let query = "Bengaluru"; // Fallback
+    try {
+        const url = new URL(link.startsWith('http') ? link : 'https://' + link);
+        query = url.searchParams.get('q') || url.searchParams.get('query');
+        if (!query) {
+            const placeMatch = link.match(/\/maps\/place\/([^/@?]+)/);
+            if (placeMatch) query = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+            else query = link;
+        }
+    } catch(e) {
+        query = link;
+    }
+    
+    return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+};
 
         // --- EMI CALCULATOR ---
         const EMICalculator = ({ propertyPriceStr, onApplyAction }) => {
@@ -694,15 +699,18 @@
         style={{height: 'clamp(280px, 70vh, 820px)'}}
     >
         {allImgs.length > 0 ? allImgs.map((img, i) => (
-            <div key={i} className="shrink-0 snap-center relative overflow-hidden bg-slate-200" 
+            <div key={i} className="shrink-0 snap-center relative overflow-hidden bg-slate-900 flex items-center justify-center" 
                  style={{minWidth:'100%', height:'100%', borderRadius:'1.25rem'}}>
                 
+                {/* Blurred background for premium letterboxing effect */}
+                <img src={img} className="absolute inset-0 w-full h-full object-cover opacity-40 blur-2xl scale-110" alt="" />
+
+                {/* Actual fully visible, uncropped image */}
                 <img 
                     src={img} 
                     loading={i === 0 ? 'eager' : 'lazy'} 
                     decoding="async" 
-                    fetchpriority={i === 0 ? 'high' : 'auto'} 
-                    className="w-full h-full object-cover" 
+                    className="relative z-10 w-full h-full object-contain" 
                     style={{transition:'transform 0.5s ease'}} 
                 />
 
@@ -711,7 +719,8 @@
                     <div style={{
                         position: 'absolute',
                         inset: 0,
-                        background: 'linear-gradient(to top, rgba(10,22,40,0.35) 0%, rgba(10,22,40,0.08) 45%, transparent 100%)',
+                        zIndex: 20,
+                        background: 'linear-gradient(to top, rgba(10,22,40,0.6) 0%, rgba(10,22,40,0.1) 40%, transparent 100%)',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'flex-end',
@@ -731,7 +740,7 @@
                         }}>
                             {getVal(property, "Property Name")}
                         </h1>
-                        <p style={{color:'rgba(255,255,255,0.75)', fontSize:'0.8rem', fontWeight:500}}>
+                        <p style={{color:'rgba(255,255,255,0.85)', fontSize:'0.8rem', fontWeight:500}}>
                             📍 {getVal(property, "Location")}
                         </p>
                     </div>
@@ -750,18 +759,20 @@
         )}
     </div>
 
-    {/* Navigation arrows */}
+    {/* Navigation arrows (display:none removed from inline styles) */}
     {allImgs.length > 1 && (
         <>
             <button onClick={() => scrollGallery('left')} 
-                    style={{position:'absolute', top:'50%', left:'12px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'white', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', display:'none', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10, fontSize:'1rem', transition:'transform 0.2s'}} 
-                    className="md:flex hover:scale-110">←</button>
+                    style={{position:'absolute', top:'50%', left:'16px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'rgba(255,255,255,0.9)', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:30, fontSize:'1.2rem', transition:'all 0.2s'}} 
+                    className="hidden md:flex hover:scale-110 hover:bg-white text-slate-800">←</button>
             <button onClick={() => scrollGallery('right')} 
-                    style={{position:'absolute', top:'50%', right:'12px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'white', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', display:'none', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10, fontSize:'1rem', transition:'transform 0.2s'}} 
-                    className="md:flex hover:scale-110">→</button>
+                    style={{position:'absolute', top:'50%', right:'16px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'rgba(255,255,255,0.9)', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:30, fontSize:'1.2rem', transition:'all 0.2s'}} 
+                    className="hidden md:flex hover:scale-110 hover:bg-white text-slate-800">→</button>
         </>
     )}
 </div>
+
+
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12 mt-8">
     <div className="lg:col-span-2 space-y-8">
 
@@ -1392,7 +1403,7 @@
                                 <div className="w-full md:w-1/2 flex justify-center mb-4 md:mb-0">
                                     <div style={{background:'var(--parchment)', borderRadius:'1.5rem', border:'4px solid white', boxShadow:'0 24px 64px rgba(15,23,42,0.2), 0 0 0 1px var(--border)', overflow:'hidden', position:'relative'}} className="w-[220px] h-[220px] md:w-[400px] md:h-[400px] lg:w-[450px] lg:h-[450px]">
                                         <div style={{position:'absolute', inset:0, background:'linear-gradient(135deg, rgba(217,119,6,0.08), transparent)', zIndex:1}}></div>
-                                        <img src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w800" loading="lazy" decoding="async" alt="Tharun Profile" className="w-full h-full object-cover object-top" onError={(e) => { e.target.src = 'https://i.ibb.co/Y7Y6K3r/professional-placeholder.jpg'; }} />
+                                        <img src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w1920" loading="lazy" decoding="async" alt="Tharun Profile" className="w-full h-full object-cover object-top" onError={(e) => { e.target.src = 'https://i.ibb.co/Y7Y6K3r/professional-placeholder.jpg'; }} />
                                     </div>
                                 </div>
                             </div>
