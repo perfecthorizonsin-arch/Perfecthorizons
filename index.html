@@ -1182,13 +1182,14 @@
                                             <option value="2">2 BHK</option>
                                             <option value="3">3 BHK</option>
                                             <option value="4">4 BHK</option>
-                                            <option value="5">5+ BHK</option>
+                                            <option value="5">5 BHK</option>
                                         </select>
                                         <select className="ph-select w-full bg-white px-3 md:px-4 py-2.5 rounded-xl text-[0.7rem] md:text-xs font-semibold outline-none border text-gray-700" style={{borderColor:'var(--border)', fontFamily:"'DM Sans', sans-serif"}} value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
                                             <option value="">🔑 Status</option>
-                                            <option value="Ready to Move">Ready to Move</option>
+                                            <option value="Ready to Move In">Ready to Move</option>
                                             <option value="Under Construction">Under Construction</option>
                                             <option value="New Launch">New Launch</option>
+                                            <option value="Ready to Construct">New Launch</option>
                                         </select>
                                         <select className="ph-select w-full bg-white px-3 md:px-4 py-2.5 rounded-xl text-[0.7rem] md:text-xs font-semibold outline-none border text-gray-700" style={{borderColor:'var(--border)', fontFamily:"'DM Sans', sans-serif"}} value={filters.type} onChange={e => setFilters({...filters, type: e.target.value})}>
                                             <option value="">🏗️ Property Type</option>
