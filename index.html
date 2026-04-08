@@ -528,7 +528,7 @@
                 query = link;
             }
             
-            return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+            return `http://googleusercontent.com/maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
         };
 
         // --- EMI CALCULATOR ---
@@ -745,7 +745,7 @@
                                 )}
                             </div>
 
-                            {/* Navigation arrows (display:none removed from inline styles) */}
+                            {/* Navigation arrows */}
                             {allImgs.length > 1 && (
                                 <>
                                     <button onClick={() => scrollGallery('left')} 
@@ -1466,7 +1466,7 @@
                                             </div>
                                             <p style={{color:'var(--slate-soft)', fontSize:'0.88rem', lineHeight:1.8, fontStyle:'italic', marginBottom:'1.25rem'}}>"{r.review}"</p>
                                             <div className="flex items-center gap-3">
-                                                <div style={{width:'44px', height:'44px', borderRadius:'50%', background:'linear-gradient(135deg, var(--teal), var(--navy))', display:'flex', alignItems:'center', justify-center:'center', color:'white', fontWeight:800, fontSize:'0.75rem', flexShrink:0}} className="justify-center">{r.initials}</div>
+                                                <div style={{width:'44px', height:'44px', borderRadius:'50%', background:'linear-gradient(135deg, var(--teal), var(--navy))', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'0.75rem', flexShrink:0}} className="justify-center">{r.initials}</div>
                                                 <div>
                                                     <h5 style={{fontWeight:800, fontSize:'0.72rem', textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--navy)'}}>{r.name}</h5>
                                                     <p style={{fontSize:'0.6rem', color:'var(--slate-soft)', textTransform:'uppercase', letterSpacing:'0.16em', fontWeight:600, marginTop:'2px'}}>📍 {r.location}</p>
