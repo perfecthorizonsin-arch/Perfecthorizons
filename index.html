@@ -66,7 +66,7 @@
         }
         @keyframes pulse-fast {
             0%, 100% { opacity: 1; transform: scale(1); }
-            50%       { opacity: 0.6; transform: scale(0.98); }
+            50%      { opacity: 0.6; transform: scale(0.98); }
         }
         @keyframes marquee {
             0%   { transform: translateX(0); }
@@ -396,7 +396,7 @@
             <path class="splash-house-path" d="M40 85 V60 H60 V85" stroke="#059669" />
         </svg>
         <div class="splash-title">Perfect Horizons</div>
-        <div class="splash-sub">Curating your perfect property&hellip;</div>
+        <div class="splash-sub">Curating your perfect property…</div>
     </div>
 
     <script>
@@ -434,14 +434,14 @@
         };
 
         const convertDriveLink = (url) => {
-    if (!url || typeof url !== 'string') return url;
-    let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
-    if (id) {
-        id = id.split('&')[0];
-        return `https://drive.google.com/thumbnail?id=${id}&sz=w1920`; // Increased resolution
-    }
-    return url;
-};
+            if (!url || typeof url !== 'string') return url;
+            let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
+            if (id) {
+                id = id.split('&')[0];
+                return `https://drive.google.com/thumbnail?id=${id}&sz=w1920`;
+            }
+            return url;
+        };
 
         const getVal = (obj, searchKey) => {
             if (!obj) return "";
@@ -454,11 +454,11 @@
         };
 
         const fixImageUrl = (u) => {
-    if (!u || typeof u !== 'string') return '';
-    let url = u.split(',')[0].trim();
-    let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
-    return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1920` : url; // Increased resolution
-};
+            if (!u || typeof u !== 'string') return '';
+            let url = u.split(',')[0].trim();
+            let id = url.match(/\/d\/(.*?)\//)?.[1] || url.split('id=')[1];
+            return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1920` : url;
+        };
 
         const extractPriceInCr = (priceString) => {
             if (!priceString) return 0;
@@ -509,39 +509,27 @@
             return link;
         };
 
-        // Direct download via fetch+blob to force download (bypasses Drive viewer)
-        const triggerDirectDownload = async (rawLink, filename = 'Brochure.pdf') => {
-            const url = getDriveDownloadUrl(rawLink);
-            if (!url) return;
-            try {
-                const resp = await fetch(url, { mode: 'no-cors' });
-                window.open(url, '_blank');
-            } catch(e) {
-                window.open(url, '_blank');
-            }
-        };
-
         // Extract map embed src from a Google Maps share link
         const getMapEmbedSrc = (mapLink) => {
-    if (!mapLink) return null;
-    const link = String(mapLink).trim();
-    if (link.includes('maps/embed')) return link;
+            if (!mapLink) return null;
+            const link = String(mapLink).trim();
+            if (link.includes('maps/embed')) return link;
 
-    let query = "Bengaluru"; // Fallback
-    try {
-        const url = new URL(link.startsWith('http') ? link : 'https://' + link);
-        query = url.searchParams.get('q') || url.searchParams.get('query');
-        if (!query) {
-            const placeMatch = link.match(/\/maps\/place\/([^/@?]+)/);
-            if (placeMatch) query = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
-            else query = link;
-        }
-    } catch(e) {
-        query = link;
-    }
-    
-    return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
-};
+            let query = "Bengaluru"; // Fallback
+            try {
+                const url = new URL(link.startsWith('http') ? link : 'https://' + link);
+                query = url.searchParams.get('q') || url.searchParams.get('query');
+                if (!query) {
+                    const placeMatch = link.match(/\/maps\/place\/([^/@?]+)/);
+                    if (placeMatch) query = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+                    else query = link;
+                }
+            } catch(e) {
+                query = link;
+            }
+            
+            return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+        };
 
         // --- EMI CALCULATOR ---
         const EMICalculator = ({ propertyPriceStr, onApplyAction }) => {
@@ -564,7 +552,7 @@
             }, [loanAmount, interestRate, tenureYears]);
 
             return (
-                <div style={{background:'var(--card-bg)', padding:'1.5rem', borderRadius:'1.25rem', border:'1px solid var(--border)', boxShadow:'var(--shadow-sm)', marginTop:'1.5rem'}}>
+                <div style={{background:'var(--card-bg)', padding:'1.5rem', borderRadius:'1.25rem', border:'1px solid var(--border)', boxShadow:'var(--shadow-sm)'}}>
                     <h3 style={{fontSize:'0.65rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--navy)', marginBottom:'1.5rem', display:'flex', alignItems:'center', gap:'8px'}}>
                         <span style={{fontSize:'1.2rem'}}>📊</span> EMI Calculator
                     </h3>
@@ -681,7 +669,7 @@
                         </button>
                         <div className="flex items-center gap-3 md:gap-4">
                             <div className="hidden md:block pr-4" style={{borderRight:'1px solid var(--border)', fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--slate-soft)'}}>
-                                📍 {getVal(property, "Location")} &nbsp;·&nbsp; {getVal(property, "Builder Name")}
+                                📍 {getVal(property, "Location")}  ·  {getVal(property, "Builder Name")}
                             </div>
                             <a href={`tel:${CALL_NUMBER}`} style={{border:'1px solid var(--border)', borderRadius:'999px', fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--navy)', padding:'8px 16px', minHeight:'40px', display:'flex', alignItems:'center', gap:'6px', boxShadow:'var(--shadow-sm)', transition:'all 0.2s'}} className="hover:border-yellow-400 hover:text-yellow-600">
                                 📞 Call Us
@@ -691,91 +679,87 @@
 
                     <div className="max-w-7xl mx-auto w-full p-4 md:p-8 animate-fadeIn">
                         
-{/* GALLERY — desktop bigger, uniform + brighter + better crop */}
-<div className="relative mb-8 w-full max-w-full overflow-hidden" style={{borderRadius:'1.5rem'}}>
-    <div 
-        ref={galleryRef} 
-        className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 hide-scroll" 
-        style={{height: 'clamp(280px, 70vh, 820px)'}}
-    >
-        {allImgs.length > 0 ? allImgs.map((img, i) => (
-            <div key={i} className="shrink-0 snap-center relative overflow-hidden bg-slate-900 flex items-center justify-center" 
-                 style={{minWidth:'100%', height:'100%', borderRadius:'1.25rem'}}>
-                
-                {/* Blurred background for premium letterboxing effect */}
-                <img src={img} className="absolute inset-0 w-full h-full object-cover opacity-40 blur-2xl scale-110" alt="" />
+                        {/* GALLERY — desktop bigger, uniform + brighter + better crop */}
+                        <div className="relative mb-8 w-full max-w-full overflow-hidden" style={{borderRadius:'1.5rem'}}>
+                            <div 
+                                ref={galleryRef} 
+                                className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 hide-scroll h-[250px] md:h-[450px] lg:h-[550px]" 
+                            >
+                                {allImgs.length > 0 ? allImgs.map((img, i) => (
+                                    <div key={i} className="shrink-0 snap-center relative overflow-hidden bg-slate-900 flex items-center justify-center" 
+                                         style={{minWidth:'100%', height:'100%', borderRadius:'1.25rem'}}>
+                                        
+                                        {/* Blurred background for premium letterboxing effect */}
+                                        <img src={img} className="absolute inset-0 w-full h-full object-cover opacity-40 blur-2xl scale-110" alt="" />
 
-                {/* Actual fully visible, uncropped image */}
-                <img 
-                    src={img} 
-                    loading={i === 0 ? 'eager' : 'lazy'} 
-                    decoding="async" 
-                    className="relative z-10 w-full h-full object-contain" 
-                    style={{transition:'transform 0.5s ease'}} 
-                />
+                                        {/* Actual fully visible, uncropped image */}
+                                        <img 
+                                            src={img} 
+                                            loading={i === 0 ? 'eager' : 'lazy'} 
+                                            decoding="async" 
+                                            className="relative z-10 w-full h-full object-contain" 
+                                            style={{transition:'transform 0.5s ease'}} 
+                                        />
 
-                {/* Overlay - brighter and softer */}
-                {i === 0 && (
-                    <div style={{
-                        position: 'absolute',
-                        inset: 0,
-                        zIndex: 20,
-                        background: 'linear-gradient(to top, rgba(10,22,40,0.6) 0%, rgba(10,22,40,0.1) 40%, transparent 100%)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'flex-end',
-                        padding: '1.5rem 2rem'
-                    }}>
-                        <div style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'#FCD34D', marginBottom:'6px'}}>
-                            {getVal(property, "Property Type") || 'Apartment'}
+                                        {/* Overlay - brighter and softer */}
+                                        {i === 0 && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                zIndex: 20,
+                                                background: 'linear-gradient(to top, rgba(10,22,40,0.6) 0%, rgba(10,22,40,0.1) 40%, transparent 100%)',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                justifyContent: 'flex-end',
+                                                padding: '1.5rem 2rem'
+                                            }}>
+                                                <div style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'#FCD34D', marginBottom:'6px'}}>
+                                                    {getVal(property, "Property Type") || 'Apartment'}
+                                                </div>
+                                                <h1 className="text-2xl md:text-4xl lg:text-5xl" style={{
+                                                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                                                    fontWeight: 700,
+                                                    fontStyle: 'italic',
+                                                    color: 'white',
+                                                    lineHeight: 1.05,
+                                                    marginBottom: '8px'
+                                                }}>
+                                                    {getVal(property, "Property Name")}
+                                                </h1>
+                                                <p style={{color:'rgba(255,255,255,0.85)', fontSize:'0.8rem', fontWeight:500}}>
+                                                    📍 {getVal(property, "Location")}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )) : (
+                                    <div className="w-full h-full flex flex-col items-center justify-center" 
+                                         style={{background:'var(--parchment)', borderRadius:'1.25rem'}}>
+                                        <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.6rem,4vw,3rem)', fontStyle:'italic', fontWeight:700, color:'var(--navy)', marginBottom:'8px'}}>
+                                            {getVal(property, "Property Name")}
+                                        </h1>
+                                        <p style={{fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)'}}>
+                                            Images Coming Soon
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Navigation arrows (display:none removed from inline styles) */}
+                            {allImgs.length > 1 && (
+                                <>
+                                    <button onClick={() => scrollGallery('left')} 
+                                            style={{position:'absolute', top:'50%', left:'16px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'rgba(255,255,255,0.9)', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:30, fontSize:'1.2rem', transition:'all 0.2s'}} 
+                                            className="hidden md:flex hover:scale-110 hover:bg-white text-slate-800">←</button>
+                                    <button onClick={() => scrollGallery('right')} 
+                                            style={{position:'absolute', top:'50%', right:'16px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'rgba(255,255,255,0.9)', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:30, fontSize:'1.2rem', transition:'all 0.2s'}} 
+                                            className="hidden md:flex hover:scale-110 hover:bg-white text-slate-800">→</button>
+                                </>
+                            )}
                         </div>
-                        <h1 style={{
-                            fontFamily: "'Cormorant Garamond', Georgia, serif",
-                            fontSize: 'clamp(1.6rem, 5vw, 3.5rem)',
-                            fontWeight: 700,
-                            fontStyle: 'italic',
-                            color: 'white',
-                            lineHeight: 1.05,
-                            marginBottom: '8px'
-                        }}>
-                            {getVal(property, "Property Name")}
-                        </h1>
-                        <p style={{color:'rgba(255,255,255,0.85)', fontSize:'0.8rem', fontWeight:500}}>
-                            📍 {getVal(property, "Location")}
-                        </p>
-                    </div>
-                )}
-            </div>
-        )) : (
-            <div className="w-full h-full flex flex-col items-center justify-center" 
-                 style={{background:'var(--parchment)', borderRadius:'1.25rem'}}>
-                <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.6rem,4vw,3rem)', fontStyle:'italic', fontWeight:700, color:'var(--navy)', marginBottom:'8px'}}>
-                    {getVal(property, "Property Name")}
-                </h1>
-                <p style={{fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)'}}>
-                    Images Coming Soon
-                </p>
-            </div>
-        )}
-    </div>
-
-    {/* Navigation arrows (display:none removed from inline styles) */}
-    {allImgs.length > 1 && (
-        <>
-            <button onClick={() => scrollGallery('left')} 
-                    style={{position:'absolute', top:'50%', left:'16px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'rgba(255,255,255,0.9)', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:30, fontSize:'1.2rem', transition:'all 0.2s'}} 
-                    className="hidden md:flex hover:scale-110 hover:bg-white text-slate-800">←</button>
-            <button onClick={() => scrollGallery('right')} 
-                    style={{position:'absolute', top:'50%', right:'16px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'rgba(255,255,255,0.9)', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:30, fontSize:'1.2rem', transition:'all 0.2s'}} 
-                    className="hidden md:flex hover:scale-110 hover:bg-white text-slate-800">→</button>
-        </>
-    )}
-</div>
-
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12 mt-8">
-    <div className="lg:col-span-2 space-y-8">
-
+                            <div className="lg:col-span-2 space-y-8">
                                 {/* Highlights + Amenities */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {projectUsps && (
@@ -803,30 +787,6 @@
                                         </div>
                                     )}
                                 </div>
-
-                                {/* MAP SECTION */}
-                                {mapEmbedSrc && (
-                                    <div>
-                                        <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.5rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'1rem', borderBottom:'1px solid var(--border)', paddingBottom:'0.75rem'}}>📍 Location Map</h2>
-                                        <div className="map-embed" style={{height:'340px'}}>
-                                            <iframe
-                                                src={mapEmbedSrc}
-                                                width="100%"
-                                                height="340"
-                                                style={{border:0}}
-                                                allowFullScreen=""
-                                                loading="lazy"
-                                                referrerPolicy="no-referrer-when-downgrade"
-                                                title="Property Location"
-                                            ></iframe>
-                                        </div>
-                                        {mapLink && mapLink !== '#' && (
-                                            <a href={mapLink} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex', alignItems:'center', gap:'6px', marginTop:'10px', fontSize:'0.65rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--teal)'}} className="hover:text-yellow-600 transition">
-                                                Open in Google Maps →
-                                            </a>
-                                        )}
-                                    </div>
-                                )}
 
                                 {/* Admin section */}
                                 {isAdmin && (
@@ -875,6 +835,22 @@
                                             </button>
                                         </div>
                                     </div>
+
+                                    {/* MAP SECTION MOVED HERE (ABOVE EMI) */}
+                                    {mapEmbedSrc && (
+                                        <div style={{background:'var(--card-bg)', borderRadius:'1.25rem', border:'1px solid var(--border)', padding:'1.25rem', boxShadow:'var(--shadow-sm)'}}>
+                                            <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.1rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'0.75rem', borderBottom:'1px solid var(--border)', paddingBottom:'0.5rem'}}>📍 Location Map</h2>
+                                            <div className="map-embed" style={{height:'180px', borderRadius:'1rem', overflow:'hidden'}}>
+                                                <iframe src={mapEmbedSrc} width="100%" height="180" style={{border:0}} allowFullScreen="" loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Property Location"></iframe>
+                                            </div>
+                                            {mapLink && mapLink !== '#' && (
+                                                <a href={mapLink} target="_blank" rel="noopener noreferrer" style={{display:'flex', justifyContent:'center', alignItems:'center', gap:'6px', marginTop:'10px', fontSize:'0.65rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--teal)'}} className="hover:text-yellow-600 transition">
+                                                    Open in Google Maps →
+                                                </a>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <EMICalculator propertyPriceStr={getVal(property, "Price")} onApplyAction={() => openAction('apply_now')} />
                                 </div>
                             </div>
@@ -910,7 +886,7 @@
                     {actionModal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => { setActionModal(null); setDownloadReadyUrl(null); }}>
                             <div style={{background:'var(--card-bg)', borderRadius:'24px', maxWidth:'380px', width:'100%', padding:'2.5rem', boxShadow:'0 32px 80px rgba(15,23,42,0.5), 0 0 0 1px rgba(217,119,6,0.12)', position:'relative'}} onClick={e => e.stopPropagation()}>
-                                <button onClick={() => { setActionModal(null); setDownloadReadyUrl(null); }} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.5)', fontWeight:300, lineHeight:1}} className="hover:text-slate-900 transition">&times;</button>
+                                <button onClick={() => { setActionModal(null); setDownloadReadyUrl(null); }} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.5)', fontWeight:300, lineHeight:1}} className="hover:text-slate-900 transition">×</button>
                                 <div style={{height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)', borderRadius:'2px', marginBottom:'1.5rem'}}></div>
                                 <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.6rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'4px', textTransform:'uppercase'}}>
                                     {actionModal === 'brochure' ? "Get The Brochure" : actionModal === 'cost_sheet' ? "Get Cost Sheet" : actionModal === 'apply_now' ? "Apply for Loan" : "Enquiry"}
@@ -1060,7 +1036,7 @@
                         {showLeadForm && (
                             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setShowLeadForm(false)}>
                                 <div style={{background:'var(--card-bg)', borderRadius:'28px', maxWidth:'380px', width:'100%', padding:'2.5rem', boxShadow:'0 32px 80px rgba(15,23,42,0.5), 0 0 0 1px rgba(217,119,6,0.12)', position:'relative'}} onClick={e => e.stopPropagation()}>
-                                    <button onClick={() => setShowLeadForm(false)} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.6)', fontWeight:300, lineHeight:1}} className="hover:text-slate-900 transition">&times;</button>
+                                    <button onClick={() => setShowLeadForm(false)} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.6)', fontWeight:300, lineHeight:1}} className="hover:text-slate-900 transition">×</button>
                                     <div style={{height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)', borderRadius:'2px', marginBottom:'1.5rem'}}></div>
                                     <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.6rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'4px', textTransform:'uppercase'}}>Quick Enquiry</h2>
                                     <p style={{fontSize:'0.6rem', fontWeight:700, color:'var(--slate-soft)', textTransform:'uppercase', letterSpacing:'0.18em', marginBottom:'1.5rem'}}>Our advisor will call you shortly</p>
@@ -1390,7 +1366,7 @@
                                 <div className="w-full md:w-1/2">
                                     <span className="section-pill">Your Expert</span>
                                     <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.8rem,5vw,3rem)', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginTop:'1rem', marginBottom:'6px', lineHeight:1.1}}>Meet Your Advisor</h1>
-                                    <h3 style={{fontSize:'0.65rem', fontWeight:800, color:'var(--gold)', textTransform:'uppercase', letterSpacing:'0.22em', marginBottom:'1.75rem'}}>Tharun &nbsp;·&nbsp; Lead Luxury Advisor</h3>
+                                    <h3 style={{fontSize:'0.65rem', fontWeight:800, color:'var(--gold)', textTransform:'uppercase', letterSpacing:'0.22em', marginBottom:'1.75rem'}}>Tharun  ·  Lead Luxury Advisor</h3>
                                     <div style={{color:'var(--slate-soft)', lineHeight:1.85, fontSize:'0.9rem'}} className="space-y-4">
                                         <p>Hi, I'm Tharun. I built Perfect Horizons because I saw how confusing and overwhelming buying a home in Bengaluru can be.</p>
                                         <p>As your dedicated channel partner, I don't just show you brochures. I provide you with complete, unbiased analysis of floor plans, builder histories, and locality growth potential.</p>
@@ -1490,7 +1466,7 @@
                                             </div>
                                             <p style={{color:'var(--slate-soft)', fontSize:'0.88rem', lineHeight:1.8, fontStyle:'italic', marginBottom:'1.25rem'}}>"{r.review}"</p>
                                             <div className="flex items-center gap-3">
-                                                <div style={{width:'44px', height:'44px', borderRadius:'50%', background:'linear-gradient(135deg, var(--teal), var(--navy))', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'0.75rem', flexShrink:0}}>{r.initials}</div>
+                                                <div style={{width:'44px', height:'44px', borderRadius:'50%', background:'linear-gradient(135deg, var(--teal), var(--navy))', display:'flex', alignItems:'center', justify-center:'center', color:'white', fontWeight:800, fontSize:'0.75rem', flexShrink:0}} className="justify-center">{r.initials}</div>
                                                 <div>
                                                     <h5 style={{fontWeight:800, fontSize:'0.72rem', textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--navy)'}}>{r.name}</h5>
                                                     <p style={{fontSize:'0.6rem', color:'var(--slate-soft)', textTransform:'uppercase', letterSpacing:'0.16em', fontWeight:600, marginTop:'2px'}}>📍 {r.location}</p>
@@ -1606,7 +1582,7 @@
                     {legalModal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setLegalModal(null)}>
                             <div style={{background:'var(--card-bg)', borderRadius:'24px', padding:'2.5rem', maxWidth:'640px', width:'100%', maxHeight:'80vh', overflowY:'auto', boxShadow:'0 32px 80px rgba(15,23,42,0.45)', position:'relative'}} onClick={e => e.stopPropagation()}>
-                                <button onClick={() => setLegalModal(null)} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.5)', fontWeight:300}} className="hover:text-slate-900 transition">&times;</button>
+                                <button onClick={() => setLegalModal(null)} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.5)', fontWeight:300}} className="hover:text-slate-900 transition">×</button>
                                 <div style={{height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)', borderRadius:'2px', marginBottom:'1.5rem'}}></div>
                                 <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.5rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', textTransform:'uppercase', marginBottom:'1.5rem', paddingBottom:'1rem', borderBottom:'1px solid var(--border)'}}>
                                     {legalModal === 'terms' ? "Terms & Conditions" : "Privacy Policy"}
@@ -1626,7 +1602,7 @@
                     {showLeadForm && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setShowLeadForm(false)}>
                             <div style={{background:'var(--card-bg)', borderRadius:'28px', maxWidth:'380px', width:'100%', padding:'2.5rem', boxShadow:'0 32px 80px rgba(15,23,42,0.5), 0 0 0 1px rgba(217,119,6,0.12)', position:'relative'}} onClick={e => e.stopPropagation()}>
-                                <button onClick={() => setShowLeadForm(false)} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.6)', fontWeight:300, lineHeight:1}} className="hover:text-slate-900 transition">&times;</button>
+                                <button onClick={() => setShowLeadForm(false)} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.6)', fontWeight:300, lineHeight:1}} className="hover:text-slate-900 transition">×</button>
                                 <div style={{height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)', borderRadius:'2px', marginBottom:'1.5rem'}}></div>
                                 <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.6rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'4px', textTransform:'uppercase'}}>Enquiry</h2>
                                 <p style={{fontSize:'0.6rem', fontWeight:700, color:'var(--slate-soft)', textTransform:'uppercase', letterSpacing:'0.18em', marginBottom:'1.5rem'}}>Please enter details to proceed</p>
