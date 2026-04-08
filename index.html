@@ -528,7 +528,8 @@
                 query = link;
             }
             
-            return `http://googleusercontent.com/maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+            // Use the standard and robust maps.google.com format to bypass cross-origin restrictions
+            return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
         };
 
         // --- EMI CALCULATOR ---
@@ -745,22 +746,51 @@
                                 )}
                             </div>
 
-                            {/* Navigation arrows */}
+                            {/* Navigation arrows (display:none removed from inline styles) */}
                             {allImgs.length > 1 && (
                                 <>
                                     <button onClick={() => scrollGallery('left')} 
-                                            style={{position:'absolute', top:'50%', left:'16px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'rgba(255,255,255,0.9)', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:30, fontSize:'1.2rem', transition:'all 0.2s'}} 
-                                            className="hidden md:flex hover:scale-110 hover:bg-white text-slate-800">←</button>
+                                            style={{position:'absolute', top:'50%', left:'16px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'rgba(255,255,255,0.9)', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', alignItems:'center', justify-center:'center', cursor:'pointer', zIndex:30, fontSize:'1.2rem', transition:'all 0.2s'}} 
+                                            className="hidden md:flex hover:scale-110 hover:bg-white text-slate-800 flex items-center justify-center">←</button>
                                     <button onClick={() => scrollGallery('right')} 
-                                            style={{position:'absolute', top:'50%', right:'16px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'rgba(255,255,255,0.9)', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:30, fontSize:'1.2rem', transition:'all 0.2s'}} 
-                                            className="hidden md:flex hover:scale-110 hover:bg-white text-slate-800">→</button>
+                                            style={{position:'absolute', top:'50%', right:'16px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'rgba(255,255,255,0.9)', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', alignItems:'center', justify-center:'center', cursor:'pointer', zIndex:30, fontSize:'1.2rem', transition:'all 0.2s'}} 
+                                            className="hidden md:flex hover:scale-110 hover:bg-white text-slate-800 flex items-center justify-center">→</button>
                                 </>
                             )}
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12 mt-8">
                             <div className="lg:col-span-2 space-y-8">
-                                {/* Highlights + Amenities */}
+                                
+                                {/* 1. Quick Stats Block */}
+                                <div style={{background:'var(--card-bg)', borderRadius:'1.25rem', border:'1px solid var(--border)', padding:'1.75rem', boxShadow:'var(--shadow-sm)'}} className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                    <div>
+                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Configurations</div>
+                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "bhk") || '—'}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Status</div>
+                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "construction_status") || '—'}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Possession</div>
+                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "possession_date") || '—'}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Approvals</div>
+                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "approval") || '—'}</div>
+                                    </div>
+                                </div>
+
+                                {/* 2. About The Project */}
+                                {getVal(property, "description") && (
+                                    <div style={{background:'var(--card-bg)', borderRadius:'1.25rem', border:'1px solid var(--border)', padding:'1.75rem', boxShadow:'var(--shadow-sm)'}}>
+                                        <h3 style={{fontSize:'0.8rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.12em', color:'var(--navy)', marginBottom:'1rem', borderBottom:'1px solid var(--border)', paddingBottom:'0.75rem'}}>About The Project</h3>
+                                        <p style={{color:'var(--slate-soft)', fontSize:'0.85rem', lineHeight:1.8, whiteSpace:'pre-wrap'}}>{getVal(property, "description")}</p>
+                                    </div>
+                                )}
+
+                                {/* 3. Highlights + Amenities */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {projectUsps && (
                                         <div style={{background:'var(--gold-light)', borderRadius:'1.25rem', border:'1px solid rgba(217,119,6,0.2)', padding:'1.75rem'}}>
