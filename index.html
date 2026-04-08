@@ -686,72 +686,82 @@
 
                     <div className="max-w-7xl mx-auto w-full p-4 md:p-8 animate-fadeIn">
                         
-                        {/* GALLERY — desktop bigger, uniform */}
-                        <div className="relative mb-8 w-full max-w-full overflow-hidden" style={{borderRadius:'1.5rem'}}>
-                            <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 hide-scroll" style={{height: 'clamp(280px, 70vh, 820px)'}}>
-                                {allImgs.length > 0 ? allImgs.map((img, i) => (
-                                    <div key={i} className="shrink-0 snap-center relative overflow-hidden bg-slate-200" style={{minWidth:'100%', height:'100%', borderRadius:'1.25rem'}}>
-                                        <img src={img} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" fetchpriority={i === 0 ? 'high' : 'auto'} className="w-full h-full object-cover" style={{transition:'transform 0.5s ease'}} />
-                                        {i === 0 && (
-                                            <div style={{position:'absolute', inset:0, background: 'linear-gradient(to top, rgba(10,22,40,0.35) 0%, rgba(10,22,40,0.08) 45%, transparent 100%)',, display:'flex', flexDirection:'column', justifyContent:'flex-end', padding:'1.5rem 2rem'}}>
-                                                <div style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'#FCD34D', marginBottom:'6px'}}>{getVal(property, "Property Type") || 'Apartment'}</div>
-                                                <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.6rem, 5vw, 3.5rem)', fontWeight:700, fontStyle:'italic', color:'white', lineHeight:1.05, marginBottom:'8px'}}>
-                                                    {getVal(property, "Property Name")}
-                                                </h1>
-                                                <p style={{color:'rgba(255,255,255,0.75)', fontSize:'0.8rem', fontWeight:500}}>📍 {getVal(property, "Location")}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )) : (
-                                    <div className="w-full h-full flex flex-col items-center justify-center" style={{background:'var(--parchment)', borderRadius:'1.25rem'}}>
-                                        <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.6rem,4vw,3rem)', fontStyle:'italic', fontWeight:700, color:'var(--navy)', marginBottom:'8px'}}>{getVal(property, "Property Name")}</h1>
-                                        <p style={{fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)'}}>Images Coming Soon</p>
-                                    </div>
-                                )}
-                            </div>
-                            {allImgs.length > 1 && (
-                                <>
-                                    <button onClick={() => scrollGallery('left')} style={{position:'absolute', top:'50%', left:'12px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'white', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', display:'none', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10, fontSize:'1rem', transition:'transform 0.2s'}} className="md:flex hover:scale-110">←</button>
-                                    <button onClick={() => scrollGallery('right')} style={{position:'absolute', top:'50%', right:'12px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'white', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', display:'none', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10, fontSize:'1rem', transition:'transform 0.2s'}} className="md:flex hover:scale-110">→</button>
-                                </>
-                            )}
+{/* GALLERY — desktop bigger, uniform + brighter + better crop */}
+<div className="relative mb-8 w-full max-w-full overflow-hidden" style={{borderRadius:'1.5rem'}}>
+    <div 
+        ref={galleryRef} 
+        className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 hide-scroll" 
+        style={{height: 'clamp(280px, 70vh, 820px)'}}
+    >
+        {allImgs.length > 0 ? allImgs.map((img, i) => (
+            <div key={i} className="shrink-0 snap-center relative overflow-hidden bg-slate-200" 
+                 style={{minWidth:'100%', height:'100%', borderRadius:'1.25rem'}}>
+                
+                <img 
+                    src={img} 
+                    loading={i === 0 ? 'eager' : 'lazy'} 
+                    decoding="async" 
+                    fetchpriority={i === 0 ? 'high' : 'auto'} 
+                    className="w-full h-full object-cover" 
+                    style={{transition:'transform 0.5s ease'}} 
+                />
+
+                {/* Overlay - brighter and softer */}
+                {i === 0 && (
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(to top, rgba(10,22,40,0.35) 0%, rgba(10,22,40,0.08) 45%, transparent 100%)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-end',
+                        padding: '1.5rem 2rem'
+                    }}>
+                        <div style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'#FCD34D', marginBottom:'6px'}}>
+                            {getVal(property, "Property Type") || 'Apartment'}
                         </div>
+                        <h1 style={{
+                            fontFamily: "'Cormorant Garamond', Georgia, serif",
+                            fontSize: 'clamp(1.6rem, 5vw, 3.5rem)',
+                            fontWeight: 700,
+                            fontStyle: 'italic',
+                            color: 'white',
+                            lineHeight: 1.05,
+                            marginBottom: '8px'
+                        }}>
+                            {getVal(property, "Property Name")}
+                        </h1>
+                        <p style={{color:'rgba(255,255,255,0.75)', fontSize:'0.8rem', fontWeight:500}}>
+                            📍 {getVal(property, "Location")}
+                        </p>
+                    </div>
+                )}
+            </div>
+        )) : (
+            <div className="w-full h-full flex flex-col items-center justify-center" 
+                 style={{background:'var(--parchment)', borderRadius:'1.25rem'}}>
+                <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.6rem,4vw,3rem)', fontStyle:'italic', fontWeight:700, color:'var(--navy)', marginBottom:'8px'}}>
+                    {getVal(property, "Property Name")}
+                </h1>
+                <p style={{fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)'}}>
+                    Images Coming Soon
+                </p>
+            </div>
+        )}
+    </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
-                            
-                            {/* LEFT COLUMN */}
-                            <div className="lg:col-span-2 space-y-8">
-                                
-                                {/* Quick stats */}
-                                <div style={{background:'var(--card-bg)', borderRadius:'1.25rem', border:'1px solid var(--border)', boxShadow:'var(--shadow-sm)', padding:'1.5rem 2rem', position:'relative', overflow:'hidden'}} className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                    <div style={{position:'absolute', top:0, left:0, right:0, height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)'}}></div>
-                                    <div>
-                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Configurations</div>
-                                        <div style={{fontSize:'1rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "bhk") || getVal(property, "No of BHK's")} BHK</div>
-                                    </div>
-                                    <div>
-                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Status</div>
-                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "Construction Status") || getVal(property, "construction_sta") || 'N/A'}</div>
-                                    </div>
-                                    <div>
-                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Possession</div>
-                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>
-                                            {getVal(property, "Possession Date") ? new Date(getVal(property, "Possession Date")).toLocaleDateString('en-IN', {month:'short', year:'numeric'}) : 'On Request'}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Approvals</div>
-                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "approval") || getVal(property, "approvals") || 'N/A'}</div>
-                                    </div>
-                                </div>
-
-                                {/* About */}
-                                <div>
-                                    <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.5rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'1rem', borderBottom:'1px solid var(--border)', paddingBottom:'0.75rem'}}>About The Project</h2>
-                                    <p style={{color:'var(--slate-soft)', lineHeight:1.85, fontSize:'0.9rem'}} className="whitespace-pre-wrap">
-                                        {getVal(property, "description") || `Experience unparalleled luxury and comfort at ${getVal(property, "Property Name")}. Located in the prime neighborhood of ${getVal(property, "Location")}, this project by ${getVal(property, "Builder Name")} offers meticulously designed ${getVal(property, "bhk") || "premium"} homes. Discover a lifestyle defined by modern architecture, vast open spaces, and world-class connectivity.`}
-                                    </p>
-                                </div>
+    {/* Navigation arrows */}
+    {allImgs.length > 1 && (
+        <>
+            <button onClick={() => scrollGallery('left')} 
+                    style={{position:'absolute', top:'50%', left:'12px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'white', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', display:'none', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10, fontSize:'1rem', transition:'transform 0.2s'}} 
+                    className="md:flex hover:scale-110">←</button>
+            <button onClick={() => scrollGallery('right')} 
+                    style={{position:'absolute', top:'50%', right:'12px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'white', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', display:'none', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:10, fontSize:'1rem', transition:'transform 0.2s'}} 
+                    className="md:flex hover:scale-110">→</button>
+        </>
+    )}
+</div>
 
                                 {/* Highlights + Amenities */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
