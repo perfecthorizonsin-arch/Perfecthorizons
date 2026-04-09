@@ -599,22 +599,36 @@
         const getMapEmbedSrc = (mapLink) => {
     if (!mapLink) return null;
     const link = String(mapLink).trim();
-    if (link.includes('maps/embed')) return link;
-
-    let query = "Bengaluru";
-    try {
-        const url = new URL(link.startsWith('http') ? link : 'https://' + link);
-        query = url.searchParams.get('q') || url.searchParams.get('query');
-        if (!query) {
-            const placeMatch = link.match(/\/maps\/place\/([^/@?]+)/);
-            if (placeMatch) query = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
-            else query = link;
-        }
-    } catch(e) { query = link; }
+    if (!link || link === '#') return null;
     
-    return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+    // Already an embed URL
+    if (link.includes('maps/embed')) return link;
+    
+    let query = "";
+    try {
+        // Handle short links like maps.app.goo.gl — can't embed these directly
+        if (link.includes('goo.gl') || link.includes('maps.app')) {
+            // Fall back to place name + Bengaluru
+            query = "Bengaluru, Karnataka";
+        } else {
+            const url = new URL(link.startsWith('http') ? link : 'https://' + link);
+            // Try extracting coordinates first (most precise)
+            const coordMatch = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+            if (coordMatch) {
+                return `https://maps.google.com/maps?q=${coordMatch[1]},${coordMatch[2]}&z=16&output=embed`;
+            }
+            // Try place name from URL
+            query = url.searchParams.get('q') || url.searchParams.get('query') || "";
+            if (!query) {
+                const placeMatch = link.match(/\/maps\/place\/([^/@?]+)/);
+                if (placeMatch) query = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+            }
+        }
+    } catch(e) { query = "Bengaluru, Karnataka"; }
+    
+    if (!query) query = "Bengaluru, Karnataka";
+    return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=15&output=embed`;
 };
-
         // --- EMI CALCULATOR ---
         const EMICalculator = ({ propertyPriceStr, onApplyAction }) => {
             const extractRawNumber = (str) => {
@@ -1426,7 +1440,7 @@
                                                         </div>
                                                         <div className="p-5 md:p-6 flex-grow flex flex-col">
                                                             <p style={{fontSize:'0.65rem', fontWeight:700, color:'var(--gold)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'4px'}}>{getVal(p, "Builder Name") || "Premium Builder"}</p>
-                                                            <h2 style={{fontSize:'1.2rem', fontWeight:800, color:'var(--navy)', lineHeight:1.2, marginBottom:'10px', fontFamily:"'Cormorant Garamond', Georgia, serif", fontStyle:'italic'}} className="truncate">{getVal(p, "Property Name") || "Listed Property"}</h2>
+                                                            <h2 style={{fontSize:'1.05rem', fontWeight:800, color:'var(--navy)', lineHeight:1.2, marginBottom:'10px', fontFamily:"'DM Sans', sans-serif", letterSpacing:'-0.01em'}} className="truncate">{getVal(p, "Property Name") || "Listed Property"}</h2>
                                                             <div className="flex flex-wrap gap-1.5 mb-4">
                                                                 <span className={`status-badge ${badgeClass}`}>{getVal(p, "Construction Status") || "Status"}</span>
                                                                 {getVal(p, "No of BHK's") && <span className="status-badge status-default">{getVal(p, "No of BHK's")} BHK</span>}
