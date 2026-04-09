@@ -916,33 +916,6 @@
                                         <p style={{ color: 'var(--slate-soft)', fontSize: '0.875rem' }}>Details coming soon. Contact us for more information.</p>
                                     )}
 
-                                    {/* Admin section */}
-                                    {isAdmin && (
-                                        <>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-                                                <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '1.25rem 1.5rem', borderRadius: '1rem', color: '#92400E' }}>
-                                                    <h4 style={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '8px' }}>Commission</h4>
-                                                    <p style={{ fontSize: '2rem', fontWeight: 800 }}>{formatPercent(getVal(property, "commision_deta") || getVal(property, "commission"))}</p>
-                                                </div>
-                                                <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', padding: '1.25rem 1.5rem', borderRadius: '1rem', color: '#0369A1' }}>
-                                                    <h4 style={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '10px' }}>Internal Details</h4>
-                                                    <p style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '4px' }}>POC: {getVal(property, "point_of_contact") || "N/A"}</p>
-                                                    <p style={{ fontSize: '0.7rem', fontWeight: 700 }}>Avail: {getVal(property, "availability") || "N/A"}</p>
-                                                </div>
-                                            </div>
-                                            <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', padding: '1.5rem', borderRadius: '1.25rem', marginTop: '1.25rem' }}>
-                                                <h4 style={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em', color: 'var(--slate-soft)', marginBottom: '12px' }}>Admin Actions</h4>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                    <a href={getSafeLink(getVal(property, "website_link"))} target="_blank" style={{ background: 'white', border: '1px solid var(--border)', padding: '12px', borderRadius: '10px', fontSize: '0.62rem', fontWeight: 800, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--navy)', transition: 'all 0.2s' }} className="hover:border-yellow-400">Builder Site</a>
-                                                    <a href={getSafeLink(getVal(property, "lead_registration") || getVal(property, "lead_registration_link_or_email_id"))} target="_blank" style={{ background: 'var(--navy)', color: 'white', padding: '12px', borderRadius: '10px', fontSize: '0.62rem', fontWeight: 800, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.14em', transition: 'all 0.2s' }} className="hover:opacity-80">Register Lead</a>
-                                                    <a href={getSafeLink(mapLink)} target="_blank" style={{ background: 'white', border: '1px solid var(--border)', padding: '12px', borderRadius: '10px', fontSize: '0.62rem', fontWeight: 800, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--navy)', transition: 'all 0.2s' }} className="md:col-span-2 hover:border-yellow-400">Share Location Map</a>
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-
                             {activeTab === 'highlights' && projectUsps && (
                                 <div>
                                     <div className="detail-section-title"><span style={{ fontSize: 16 }}>✦</span> Key Highlights</div>
