@@ -22,370 +22,456 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet">
 
     <style>
-        :root {
-            --navy:       #0F172A;
-            --navy-mid:   #1E3A5F;
-            --teal:       #1E3A8A;
-            --gold:       #D97706;
-            --gold-light: #FEF3C7;
-            --emerald:    #059669;
-            --cream:      #F8F4ED;
-            --parchment:  #F0EBE1;
-            --card-bg:    #FFFFFF;
-            --slate-soft: #64748B;
-            --border:     #E8E2D9;
-            --shadow-sm:  0 2px 12px rgba(15,23,42,0.07);
-            --shadow-md:  0 8px 32px rgba(15,23,42,0.12);
-            --shadow-lift: 0 20px 48px rgba(15,23,42,0.18);
-            --radius-card: 1.5rem;
-            --radius-btn: 0.875rem;
-        }
-        body {
-            overflow-x: hidden;
-            width: 100%;
-            position: relative;
-            font-family: 'DM Sans', system-ui, sans-serif;
-            background-color: var(--cream);
-            color: var(--navy);
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D97706' fill-opacity='0.018'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    :root {
+        --navy: #0F172A;
+        --navy-mid: #1E3A5F;
+        --teal: #1E3A8A;
+        --gold: #D97706;
+        --gold-light: #FEF3C7;
+        --emerald: #059669;
+        --cream: #F8F4ED;
+        --parchment: #F0EBE1;
+        --card-bg: #FFFFFF;
+        --slate-soft: #64748B;
+        --border: #E8E2D9;
+        --shadow-sm: 0 2px 12px rgba(15,23,42,0.07);
+        --shadow-md: 0 8px 32px rgba(15,23,42,0.12);
+        --shadow-lift: 0 20px 48px rgba(15,23,42,0.18);
+        --radius-card: 1.5rem;
+        --radius-btn: 0.875rem;
+    }
+    body {
+        overflow-x: hidden;
+        width: 100%;
+        position: relative;
+        font-family: 'DM Sans', system-ui, sans-serif;
+        background-color: var(--cream);
+        color: var(--navy);
+        background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D97706' fill-opacity='0.018'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideInRight {
+        from { opacity: 0; transform: translateX(60px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes dropdownSlide {
+        from { opacity: 0; transform: translateY(-8px) scaleY(0.96); }
+        to { opacity: 1; transform: translateY(0) scaleY(1); }
+    }
+    @keyframes pulse-fast {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(0.98); }
+    }
+    @keyframes marquee {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+    }
+    @keyframes drawHouse { to { stroke-dashoffset: 0; } }
+    .animate-fadeIn { animation: fadeIn 0.35s cubic-bezier(.22,.68,0,1.2) forwards; }
+    .animate-slideInRight { animation: slideInRight 0.3s cubic-bezier(.22,.68,0,1.1) forwards; }
+    .animate-marquee { display: flex; white-space: nowrap; animation: marquee 20s linear infinite; }
+    .marquee-container:hover .animate-marquee { animation-play-state: paused; }
+    .splash-title {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        color: var(--navy);
+        font-size: 2.25rem;
+        font-weight: 700;
+        font-style: italic;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        animation: pulse-fast 1.2s ease-in-out infinite;
+    }
+    .splash-sub {
+        font-family: 'DM Sans', sans-serif;
+        color: var(--slate-soft);
+        font-size: 0.7rem;
+        margin-top: 1rem;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+    }
+    .splash-house-path {
+        stroke-dasharray: 300;
+        stroke-dashoffset: 300;
+        animation: drawHouse 1.5s ease-in-out forwards;
+    }
+    .dropdown-arrow {
+        display: inline-block;
+        margin-left: 5px;
+        width: 0; height: 0;
+        vertical-align: middle;
+        border-top: 4px solid currentColor;
+        border-right: 4px solid transparent;
+        border-left: 4px solid transparent;
+        transition: transform 0.25s ease;
+    }
+    .nav-dropdown-group { position: relative; }
+    .nav-dropdown-group::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        height: 16px;
+        z-index: 55;
+    }
+    .nav-dropdown-group .nav-dropdown-menu {
+        display: none;
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        min-width: 200px;
+        background: rgba(15, 23, 42, 0.97);
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 14px;
+        box-shadow: 0 24px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(217,119,6,0.12);
+        overflow: hidden;
+        z-index: 60;
+        transform-origin: top right;
+    }
+    .nav-dropdown-group:hover .nav-dropdown-menu,
+    .nav-dropdown-group:focus-within .nav-dropdown-menu {
+        display: block;
+        animation: dropdownSlide 0.25s cubic-bezier(.22,.68,0,1.2) forwards;
+    }
+    .nav-dropdown-group:hover .dropdown-arrow { transform: rotate(180deg); }
+    .nav-dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 13px 18px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: rgba(255,255,255,0.75);
+        cursor: pointer;
+        transition: background 0.18s ease, color 0.18s ease, padding-left 0.18s ease;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .nav-dropdown-item:last-child { border-bottom: none; }
+    .nav-dropdown-item:hover {
+        background: rgba(217,119,6,0.12);
+        color: #FCD34D;
+        padding-left: 24px;
+    }
+    .nav-dropdown-item .icon {
+        width: 28px; height: 28px;
+        border-radius: 7px;
+        background: rgba(255,255,255,0.06);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+        transition: background 0.18s;
+    }
+    .nav-dropdown-item:hover .icon { background: rgba(217,119,6,0.2); }
+    .mobile-accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+        opacity: 0;
+    }
+    .mobile-accordion-content.open {
+        max-height: 200px;
+        opacity: 1;
+    }
+    .ph-select {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%230F172A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        padding-right: 36px !important;
+        cursor: pointer;
+        transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+    }
+    .ph-select:hover { border-color: var(--gold) !important; box-shadow: 0 0 0 3px rgba(217,119,6,0.1); }
+    .ph-select:focus { border-color: var(--teal) !important; box-shadow: 0 0 0 3px rgba(30,58,138,0.12); outline: none; }
+    .prop-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.3s cubic-bezier(.22,.68,0,1.1), box-shadow 0.3s ease;
+        box-shadow: var(--shadow-sm);
+    }
+    .prop-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lift); }
+    .prop-card:hover .card-img { transform: scale(1.08); }
+    .card-img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        transition: transform 0.7s cubic-bezier(.22,.68,0,1.1);
+    }
+    .prop-card::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--gold), transparent);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .prop-card:hover::after { opacity: 1; }
+    .status-badge {
+        font-size: 0.6rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        padding: 4px 10px;
+        border-radius: 999px;
+    }
+    .status-ready { background: #DCFCE7; color: #166534; }
+    .status-under { background: #FEF3C7; color: #92400E; }
+    .status-new { background: #EFF6FF; color: #1E40AF; }
+    .status-default { background: #F1F5F9; color: #475569; }
+    .type-badge {
+        position: absolute;
+        top: 14px; left: 0;
+        background: rgba(15,23,42,0.88);
+        backdrop-filter: blur(8px);
+        color: #FCD34D;
+        font-size: 0.6rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        padding: 5px 14px 5px 12px;
+        border-radius: 0 8px 8px 0;
+        border-left: 3px solid var(--gold);
+        box-shadow: 2px 0 12px rgba(0,0,0,0.25);
+    }
+    input[type=range] { -webkit-appearance: none; background: transparent; width: 100%; }
+    input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 20px; width: 20px;
+        background: linear-gradient(135deg, var(--gold), #F59E0B);
+        cursor: pointer;
+        margin-top: -8px;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(217,119,6,0.4);
+        border: 2px solid white;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); box-shadow: 0 3px 14px rgba(217,119,6,0.5); }
+    input[type=range]::-webkit-slider-runnable-track {
+        width: 100%; height: 4px;
+        cursor: pointer;
+        background: linear-gradient(90deg, var(--teal), #cbd5e1);
+        border-radius: 2px;
+    }
+    .pie-chart { border-radius: 50%; display: inline-block; }
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .nav-link-active { color: #FCD34D !important; position: relative; }
+    .nav-link-active::after {
+        content: '';
+        position: absolute;
+        bottom: -4px; left: 0; right: 0;
+        height: 2px;
+        background: var(--gold);
+        border-radius: 1px;
+    }
+    .btn-gold {
+        background: linear-gradient(135deg, #D97706, #F59E0B);
+        color: white;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        border-radius: var(--radius-btn);
+        box-shadow: 0 4px 14px rgba(217,119,6,0.35);
+        transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+    }
+    .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(217,119,6,0.45); filter: brightness(1.05); }
+    .btn-gold:active { transform: scale(0.97); }
+    .filter-bar { background: var(--parchment); border-bottom: 1px solid var(--border); }
+    /* STICKY ENQUIRE NOW BUTTON */
+    .sticky-enquire-btn {
+        position: fixed;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 50;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        background: linear-gradient(180deg, #D97706, #F59E0B);
+        color: white;
+        font-size: 0.6rem;
+        font-weight: 900;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        padding: 18px 10px;
+        border-radius: 12px 0 0 12px;
+        box-shadow: -4px 0 24px rgba(217,119,6,0.35);
+        cursor: pointer;
+        transition: padding-right 0.2s, box-shadow 0.2s;
+    }
+    .sticky-enquire-btn:hover {
+        padding-right: 14px;
+        box-shadow: -6px 0 32px rgba(217,119,6,0.5);
+    }
+    /* BLOG ARTICLE HEADINGS */
+    .blog-content h3 {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-size: 1.25rem;
+        font-weight: 700;
+        font-style: italic;
+        color: var(--navy);
+        margin-bottom: 0.5rem;
+        padding-left: 0.75rem;
+        border-left: 3px solid var(--gold);
+    }
+    .blog-content h3 strong { font-weight: 700; color: var(--teal); }
+    .blog-content strong { color: var(--navy); }
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+        body { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+    }
+    @media (max-width: 768px) {
+        .ph-select { min-height: 48px; font-size: 0.8rem !important; }
+        .mobile-nav-item { min-height: 52px; padding: 14px 16px; }
+        .prop-card { border-radius: 1.25rem; }
+        .sticky-enquire-btn { display: none; }
+    }
+    .ph-footer {
+        background: linear-gradient(135deg, #0A1628, #0F172A);
+        border-top: 1px solid rgba(217,119,6,0.15);
+    }
+    .section-pill {
+        display: inline-block;
+        background: var(--gold-light);
+        color: var(--gold);
+        font-size: 0.6rem;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        padding: 6px 16px;
+        border-radius: 999px;
+        border: 1px solid rgba(217,119,6,0.25);
+    }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--cream); }
+    ::-webkit-scrollbar-thumb { background: rgba(217,119,6,0.3); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+    /* Map embed */
+    .map-embed { border-radius: 1rem; overflow: hidden; border: 1px solid var(--border); }
+    .map-embed iframe { display: block; width: 100%; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(60px); }
-            to   { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes dropdownSlide {
-            from { opacity: 0; transform: translateY(-8px) scaleY(0.96); }
-            to   { opacity: 1; transform: translateY(0) scaleY(1); }
-        }
-        @keyframes pulse-fast {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50%      { opacity: 0.6; transform: scale(0.98); }
-        }
-        @keyframes marquee {
-            0%   { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-        @keyframes drawHouse { to { stroke-dashoffset: 0; } }
-
-        .animate-fadeIn    { animation: fadeIn 0.35s cubic-bezier(.22,.68,0,1.2) forwards; }
-        .animate-slideInRight { animation: slideInRight 0.3s cubic-bezier(.22,.68,0,1.1) forwards; }
-        .animate-marquee   { display: flex; white-space: nowrap; animation: marquee 20s linear infinite; }
-        .marquee-container:hover .animate-marquee { animation-play-state: paused; }
-
-        .splash-title {
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            color: var(--navy);
-            font-size: 2.25rem;
-            font-weight: 700;
-            font-style: italic;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            animation: pulse-fast 1.2s ease-in-out infinite;
-        }
-        .splash-sub {
-            font-family: 'DM Sans', sans-serif;
-            color: var(--slate-soft);
-            font-size: 0.7rem;
-            margin-top: 1rem;
-            font-weight: 600;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-        }
-        .splash-house-path {
-            stroke-dasharray: 300;
-            stroke-dashoffset: 300;
-            animation: drawHouse 1.5s ease-in-out forwards;
-        }
-
-        .dropdown-arrow {
-            display: inline-block;
-            margin-left: 5px;
-            width: 0; height: 0;
-            vertical-align: middle;
-            border-top: 4px solid currentColor;
-            border-right: 4px solid transparent;
-            border-left: 4px solid transparent;
-            transition: transform 0.25s ease;
-        }
-        .nav-dropdown-group { position: relative; }
-        .nav-dropdown-group::after {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            height: 16px;
-            z-index: 55;
-        }
-        .nav-dropdown-group .nav-dropdown-menu {
-            display: none;
-            position: absolute;
-            top: calc(100% + 10px);
-            right: 0;
-            min-width: 200px;
-            background: rgba(15, 23, 42, 0.97);
-            backdrop-filter: blur(16px) saturate(180%);
-            -webkit-backdrop-filter: blur(16px) saturate(180%);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 14px;
-            box-shadow: 0 24px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(217,119,6,0.12);
-            overflow: hidden;
-            z-index: 60;
-            transform-origin: top right;
-        }
-        .nav-dropdown-group:hover .nav-dropdown-menu,
-        .nav-dropdown-group:focus-within .nav-dropdown-menu {
-            display: block;
-            animation: dropdownSlide 0.25s cubic-bezier(.22,.68,0,1.2) forwards;
-        }
-        .nav-dropdown-group:hover .dropdown-arrow { transform: rotate(180deg); }
-        .nav-dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 13px 18px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: rgba(255,255,255,0.75);
-            cursor: pointer;
-            transition: background 0.18s ease, color 0.18s ease, padding-left 0.18s ease;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .nav-dropdown-item:last-child { border-bottom: none; }
-        .nav-dropdown-item:hover {
-            background: rgba(217,119,6,0.12);
-            color: #FCD34D;
-            padding-left: 24px;
-        }
-        .nav-dropdown-item .icon {
-            width: 28px; height: 28px;
-            border-radius: 7px;
-            background: rgba(255,255,255,0.06);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.85rem;
-            flex-shrink: 0;
-            transition: background 0.18s;
-        }
-        .nav-dropdown-item:hover .icon { background: rgba(217,119,6,0.2); }
-
-        .mobile-accordion-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
-            opacity: 0;
-        }
-        .mobile-accordion-content.open {
-            max-height: 200px;
-            opacity: 1;
-        }
-
-        .ph-select {
-            appearance: none;
-            -webkit-appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%230F172A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 14px center;
-            padding-right: 36px !important;
-            cursor: pointer;
-            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
-        }
-        .ph-select:hover { border-color: var(--gold) !important; box-shadow: 0 0 0 3px rgba(217,119,6,0.1); }
-        .ph-select:focus { border-color: var(--teal) !important; box-shadow: 0 0 0 3px rgba(30,58,138,0.12); outline: none; }
-
-        .prop-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-card);
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.3s cubic-bezier(.22,.68,0,1.1), box-shadow 0.3s ease;
-            box-shadow: var(--shadow-sm);
-        }
-        .prop-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lift); }
-        .prop-card:hover .card-img { transform: scale(1.08); }
-        .card-img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            transition: transform 0.7s cubic-bezier(.22,.68,0,1.1);
-        }
-        .prop-card::after {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--gold), transparent);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .prop-card:hover::after { opacity: 1; }
-
-        .status-badge {
-            font-size: 0.6rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            padding: 4px 10px;
-            border-radius: 999px;
-        }
-        .status-ready    { background: #DCFCE7; color: #166534; }
-        .status-under    { background: #FEF3C7; color: #92400E; }
-        .status-new      { background: #EFF6FF; color: #1E40AF; }
-        .status-default  { background: #F1F5F9; color: #475569; }
-
-        .type-badge {
-            position: absolute;
-            top: 14px; left: 0;
-            background: rgba(15,23,42,0.88);
-            backdrop-filter: blur(8px);
-            color: #FCD34D;
-            font-size: 0.6rem;
-            font-weight: 800;
-            letter-spacing: 0.14em;
-            text-transform: uppercase;
-            padding: 5px 14px 5px 12px;
-            border-radius: 0 8px 8px 0;
-            border-left: 3px solid var(--gold);
-            box-shadow: 2px 0 12px rgba(0,0,0,0.25);
-        }
-
-        input[type=range] { -webkit-appearance: none; background: transparent; width: 100%; }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 20px; width: 20px;
-            background: linear-gradient(135deg, var(--gold), #F59E0B);
-            cursor: pointer;
-            margin-top: -8px;
-            border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(217,119,6,0.4);
-            border: 2px solid white;
-            transition: transform 0.15s, box-shadow 0.15s;
-        }
-        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); box-shadow: 0 3px 14px rgba(217,119,6,0.5); }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 4px;
-            cursor: pointer;
-            background: linear-gradient(90deg, var(--teal), #cbd5e1);
-            border-radius: 2px;
-        }
-
-        .pie-chart { border-radius: 50%; display: inline-block; }
-        .line-clamp-3 {
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .nav-link-active { color: #FCD34D !important; position: relative; }
-        .nav-link-active::after {
-            content: '';
-            position: absolute;
-            bottom: -4px; left: 0; right: 0;
-            height: 2px;
-            background: var(--gold);
-            border-radius: 1px;
-        }
-
-        .btn-gold {
-            background: linear-gradient(135deg, #D97706, #F59E0B);
-            color: white;
-            font-weight: 800;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            border-radius: var(--radius-btn);
-            box-shadow: 0 4px 14px rgba(217,119,6,0.35);
-            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
-        }
-        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(217,119,6,0.45); filter: brightness(1.05); }
-        .btn-gold:active { transform: scale(0.97); }
-
-        .filter-bar { background: var(--parchment); border-bottom: 1px solid var(--border); }
-
-        /* STICKY ENQUIRE NOW BUTTON */
-        .sticky-enquire-btn {
-            position: fixed;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 50;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            background: linear-gradient(180deg, #D97706, #F59E0B);
-            color: white;
-            font-size: 0.6rem;
-            font-weight: 900;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            padding: 18px 10px;
-            border-radius: 12px 0 0 12px;
-            box-shadow: -4px 0 24px rgba(217,119,6,0.35);
-            cursor: pointer;
-            transition: padding-right 0.2s, box-shadow 0.2s;
-        }
-        .sticky-enquire-btn:hover {
-            padding-right: 14px;
-            box-shadow: -6px 0 32px rgba(217,119,6,0.5);
-        }
-
-        /* BLOG ARTICLE HEADINGS */
-        .blog-content h3 {
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-size: 1.25rem;
-            font-weight: 700;
-            font-style: italic;
-            color: var(--navy);
-            margin-bottom: 0.5rem;
-            padding-left: 0.75rem;
-            border-left: 3px solid var(--gold);
-        }
-        .blog-content h3 strong { font-weight: 700; color: var(--teal); }
-        .blog-content strong { color: var(--navy); }
-
-        @supports (padding-bottom: env(safe-area-inset-bottom)) {
-            body { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
-        }
-        @media (max-width: 768px) {
-            .ph-select { min-height: 48px; font-size: 0.8rem !important; }
-            .mobile-nav-item { min-height: 52px; padding: 14px 16px; }
-            .prop-card { border-radius: 1.25rem; }
-            .sticky-enquire-btn { display: none; }
-        }
-
-        .ph-footer {
-            background: linear-gradient(135deg, #0A1628, #0F172A);
-            border-top: 1px solid rgba(217,119,6,0.15);
-        }
-        .section-pill {
-            display: inline-block;
-            background: var(--gold-light);
-            color: var(--gold);
-            font-size: 0.6rem;
-            font-weight: 800;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            padding: 6px 16px;
-            border-radius: 999px;
-            border: 1px solid rgba(217,119,6,0.25);
-        }
-
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: var(--cream); }
-        ::-webkit-scrollbar-thumb { background: rgba(217,119,6,0.3); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
-
-        /* Map embed */
-        .map-embed { border-radius: 1rem; overflow: hidden; border: 1px solid var(--border); }
-        .map-embed iframe { display: block; width: 100%; }
-    </style>
+    /* DETAIL PAGE — professional section styles */
+    .detail-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 1.25rem;
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    .detail-section-title {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.22em;
+        color: var(--slate-soft);
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .rera-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #EFF6FF;
+        border: 1px solid #BFDBFE;
+        color: #1E40AF;
+        font-size: 0.6rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        padding: 5px 12px;
+        border-radius: 6px;
+    }
+    .stat-item {
+        padding: 1rem 1.25rem;
+        background: var(--parchment);
+        border-radius: 1rem;
+        border: 1px solid var(--border);
+    }
+    .stat-label {
+        font-size: 0.55rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--slate-soft);
+        margin-bottom: 5px;
+    }
+    .stat-value {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--navy);
+        line-height: 1.3;
+    }
+    .amenity-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--parchment);
+        border: 1px solid var(--border);
+        padding: 7px 14px;
+        border-radius: 8px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--navy);
+        transition: border-color 0.2s, background 0.2s;
+    }
+    .amenity-pill:hover {
+        border-color: var(--gold);
+        background: var(--gold-light);
+    }
+    .highlight-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.82rem;
+        color: var(--navy);
+        font-weight: 500;
+    }
+    .highlight-row:last-child { border-bottom: none; }
+    .tab-btn {
+        padding: 10px 18px;
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--slate-soft);
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        transition: color 0.2s, border-color 0.2s;
+        white-space: nowrap;
+        background: none;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+    }
+    .tab-btn.active {
+        color: var(--navy);
+        border-bottom-color: var(--gold);
+    }
+    .tab-btn:hover:not(.active) { color: var(--navy); }
+</style>
 </head>
 <body class="text-gray-900 pb-24 md:pb-0 overflow-x-hidden w-full max-w-[100vw]">
     
@@ -606,335 +692,380 @@
         };
 
         // --- PROPERTY DETAILS PAGE ---
-        const PropertyDetailsPage = ({ property, allProperties, onBack, onSubmitLead, isAdmin, onSelectProperty, onOpenEnquiry }) => {
-            const [actionModal, setActionModal] = useState(null); 
-            const [downloadReadyUrl, setDownloadReadyUrl] = useState(null);
-            const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
-            const [isSubmitting, setIsSubmitting] = useState(false);
-            const galleryRef = useRef(null);
+       const PropertyDetailsPage = ({ property, allProperties, onBack, onSubmitLead, isAdmin, onSelectProperty, onOpenEnquiry }) => {
+    const [actionModal, setActionModal] = useState(null);
+    const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [activeTab, setActiveTab] = useState('overview');
+    const galleryRef = useRef(null);
+    const [activeImg, setActiveImg] = useState(0);
 
-            useEffect(() => { window.scrollTo(0, 0); }, [property]);
+    useEffect(() => { window.scrollTo(0, 0); }, [property]);
 
-            const scrollGallery = (dir) => {
-                if (galleryRef.current) {
-                    galleryRef.current.scrollBy({ left: dir === 'right' ? galleryRef.current.clientWidth * 0.8 : -(galleryRef.current.clientWidth * 0.8), behavior: 'smooth' });
-                }
-            };
+    const scrollGallery = (dir) => {
+        const next = dir === 'right' ? Math.min(activeImg + 1, allImgs.length - 1) : Math.max(activeImg - 1, 0);
+        setActiveImg(next);
+        if (galleryRef.current) {
+            const items = galleryRef.current.querySelectorAll('.gallery-thumb');
+            if (items[next]) items[next].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    };
 
-            const openAction = (type) => { setActionModal(type); setDownloadReadyUrl(null); setLeadData({ name: "", phone: "", email: "" }); };
+    const openAction = (type) => { setActionModal(type); setLeadData({ name: "", phone: "", email: "" }); };
 
-            const handleActionSubmit = async (e) => {
-                e.preventDefault();
-                if (!/^[6-9]\d{9}$/.test(leadData.phone)) return alert("Enter valid 10-digit number");
-                setIsSubmitting(true);
-                const success = await onSubmitLead(leadData, getVal(property, "Property Name"), actionModal);
-                setIsSubmitting(false);
-                if (success) {
-                    if (actionModal === 'brochure' && getVal(property, "brochure")) {
-                        const dlUrl = getDriveDownloadUrl(getVal(property, "brochure"));
-                        window.open(dlUrl, '_blank');
-                        setActionModal(null);
-                        setDownloadReadyUrl(null);
-                    } else if (actionModal === 'cost_sheet' && getVal(property, "cost_sheet")) {
-                        window.open(getVal(property, "cost_sheet"), '_blank');
-                        setActionModal(null);
-                    } else {
-                        setActionModal(null);
-                    }
-                }
-            };
+    const handleActionSubmit = async (e) => {
+        e.preventDefault();
+        if (!/^[6-9]\d{9}$/.test(leadData.phone)) return alert("Enter valid 10-digit number");
+        setIsSubmitting(true);
+        const success = await onSubmitLead(leadData, getVal(property, "Property Name"), actionModal);
+        setIsSubmitting(false);
+        if (success) {
+            if (actionModal === 'brochure' && getVal(property, "brochure")) {
+                window.open(getDriveDownloadUrl(getVal(property, "brochure")), '_blank');
+            } else if (actionModal === 'cost_sheet' && getVal(property, "cost_sheet")) {
+                window.open(getVal(property, "cost_sheet"), '_blank');
+            }
+            setActionModal(null);
+        }
+    };
 
-            const cover = convertDriveLink(getVal(property, "cover_image") || getVal(property, "cover-image"));
-            const galRaw = getVal(property, "gallery_images") || getVal(property, "gallery-images") || getVal(property, "Images and short videos \nif any") || "";
-            const imgs = (typeof galRaw === 'string' && galRaw.length > 5) ? galRaw.split(',').map(l => convertDriveLink(l.trim())) : [];
-            const allImgs = [cover, ...imgs].filter(i => i && !i.includes('undefined')); 
+    const propName    = getVal(property, "Property Name");
+    const builder     = getVal(property, "Builder Name");
+    const location    = getVal(property, "Location");
+    const price       = getVal(property, "Price");
+    const bhk         = getVal(property, "bhk") || getVal(property, "No of BHK's");
+    const status      = getVal(property, "construction_status") || getVal(property, "Construction Status");
+    const possession  = getVal(property, "possession_date");
+    const approval    = getVal(property, "approval");
+    const description = getVal(property, "description");
+    const reraNumber  = getVal(property, "rera_number");
+    const projectUsps = getVal(property, "usp-details") || getVal(property, "usp_details") || getVal(property, "USP's") || getVal(property, "Project Highlights");
+    const amenities   = getVal(property, "Amenities");
+    const mapLink     = getVal(property, "map_link") || getVal(property, "map link") || getVal(property, "maplink");
+    const mapEmbedSrc = getMapEmbedSrc(mapLink);
 
-            const projectUsps = getVal(property, "usp-details") || getVal(property, "usp_details") || getVal(property, "USP's") || getVal(property, "Project Highlights");
-            const mapLink = getVal(property, "map_link") || getVal(property, "map link") || getVal(property, "maplink");
-            const mapEmbedSrc = getMapEmbedSrc(mapLink);
+    const cover   = convertDriveLink(getVal(property, "cover_image") || getVal(property, "cover-image"));
+    const galRaw  = getVal(property, "gallery_images") || getVal(property, "gallery-images") || getVal(property, "Images and short videos \nif any") || "";
+    const galImgs = (typeof galRaw === 'string' && galRaw.length > 5) ? galRaw.split(',').map(l => convertDriveLink(l.trim())) : [];
+    const allImgs = [cover, ...galImgs].filter(i => i && !i.includes('undefined'));
 
-            const similarProperties = useMemo(() => {
-                if (!allProperties || allProperties.length === 0) return [];
-                return allProperties.filter(p => p.id !== property.id && (getVal(p, "Location") === getVal(property, "Location") || getVal(p, "Property Type") === getVal(property, "Property Type"))).slice(0, 3);
-            }, [property, allProperties]);
+    const TABS = [
+        { key: 'overview', label: 'Overview' },
+        ...(projectUsps ? [{ key: 'highlights', label: 'Highlights' }] : []),
+        ...(amenities    ? [{ key: 'amenities',  label: 'Amenities'  }] : []),
+        ...(mapEmbedSrc  ? [{ key: 'location',   label: 'Location'   }] : []),
+    ];
 
-            return (
-                <div className="min-h-screen overflow-x-hidden w-full max-w-[100vw]" style={{backgroundColor:'var(--cream)'}}>
-                    
-                    {/* Top bar */}
-                    <div style={{background:'var(--card-bg)', borderBottom:'1px solid var(--border)', boxShadow:'var(--shadow-sm)'}} className="sticky top-0 z-40 px-4 md:px-8 py-3 md:py-4 flex justify-between items-center w-full">
-                        <button onClick={onBack} style={{color:'var(--teal)', fontSize:'0.65rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.16em'}} className="flex items-center gap-2 transition group hover:opacity-70">
-                            <span style={{fontSize:'1.1rem', transition:'transform 0.2s'}} className="group-hover:-translate-x-1 inline-block">←</span>
-                            <span className="hidden sm:inline">Back to Search</span><span className="sm:hidden">Back</span>
-                        </button>
-                        <div className="flex items-center gap-3 md:gap-4">
-                            <div className="hidden md:block pr-4" style={{borderRight:'1px solid var(--border)', fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--slate-soft)'}}>
-                                📍 {getVal(property, "Location")}  ·  {getVal(property, "Builder Name")}
-                            </div>
-                            <a href={`tel:${CALL_NUMBER}`} style={{border:'1px solid var(--border)', borderRadius:'999px', fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--navy)', padding:'8px 16px', minHeight:'40px', display:'flex', alignItems:'center', gap:'6px', boxShadow:'var(--shadow-sm)', transition:'all 0.2s'}} className="hover:border-yellow-400 hover:text-yellow-600">
-                                📞 Call Us
-                            </a>
-                        </div>
+    const similarProperties = useMemo(() => {
+        if (!allProperties || !allProperties.length) return [];
+        return allProperties.filter(p => p.id !== property.id &&
+            (getVal(p, "Location") === location || getVal(p, "Property Type") === getVal(property, "Property Type"))
+        ).slice(0, 3);
+    }, [property, allProperties]);
+
+    return (
+        <div className="min-h-screen overflow-x-hidden w-full" style={{ backgroundColor: 'var(--cream)' }}>
+
+            {/* Top bar */}
+            <div className="sticky top-0 z-40 w-full" style={{ background: 'var(--card-bg)', borderBottom: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+                <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex justify-between items-center">
+                    <button onClick={onBack} style={{ color: 'var(--teal)', fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.16em' }} className="flex items-center gap-2 group hover:opacity-70 transition">
+                        <span className="group-hover:-translate-x-1 inline-block transition-transform">←</span>
+                        <span className="hidden sm:inline">Back to Listings</span><span className="sm:hidden">Back</span>
+                    </button>
+                    <div className="flex items-center gap-3">
+                        <span className="hidden md:block" style={{ fontSize: '0.6rem', fontWeight: 600, color: 'var(--slate-soft)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                            📍 {location} · {builder}
+                        </span>
+                        <a href={`tel:${CALL_NUMBER}`} style={{ border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--navy)', padding: '9px 16px', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }} className="hover:border-yellow-400 hover:text-yellow-600">
+                            📞 Call Us
+                        </a>
                     </div>
+                </div>
+            </div>
 
-                    <div className="max-w-7xl mx-auto w-full p-4 md:p-8 animate-fadeIn">
-                        
-                        {/* GALLERY — desktop bigger, uniform + brighter + better crop */}
-                        <div className="relative mb-8 w-full max-w-full overflow-hidden" style={{borderRadius:'1.5rem'}}>
-                            <div 
-                                ref={galleryRef} 
-                                className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 hide-scroll h-[250px] md:h-[450px] lg:h-[550px]" 
-                            >
-                                {allImgs.length > 0 ? allImgs.map((img, i) => (
-                                    <div key={i} className="shrink-0 snap-center relative overflow-hidden bg-slate-900 flex items-center justify-center" 
-                                         style={{minWidth:'100%', height:'100%', borderRadius:'1.25rem'}}>
-                                        
-                                        {/* Blurred background for premium letterboxing effect */}
-                                        <img src={img} className="absolute inset-0 w-full h-full object-cover opacity-40 blur-2xl scale-110" alt="" />
+            <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 animate-fadeIn">
 
-                                        {/* Actual fully visible, uncropped image */}
-                                        <img 
-                                            src={img} 
-                                            loading={i === 0 ? 'eager' : 'lazy'} 
-                                            decoding="async" 
-                                            className="relative z-10 w-full h-full object-contain" 
-                                            style={{transition:'transform 0.5s ease'}} 
-                                        />
-
-                                        {/* Overlay - brighter and softer */}
-                                        {i === 0 && (
-                                            <div style={{
-                                                position: 'absolute',
-                                                inset: 0,
-                                                zIndex: 20,
-                                                background: 'linear-gradient(to top, rgba(10,22,40,0.6) 0%, rgba(10,22,40,0.1) 40%, transparent 100%)',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                justifyContent: 'flex-end',
-                                                padding: '1.5rem 2rem'
-                                            }}>
-                                                <div style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'#FCD34D', marginBottom:'6px'}}>
-                                                    {getVal(property, "Property Type") || 'Apartment'}
-                                                </div>
-                                                <h1 className="text-2xl md:text-4xl lg:text-5xl" style={{
-                                                    fontFamily: "'Cormorant Garamond', Georgia, serif",
-                                                    fontWeight: 700,
-                                                    fontStyle: 'italic',
-                                                    color: 'white',
-                                                    lineHeight: 1.05,
-                                                    marginBottom: '8px'
-                                                }}>
-                                                    {getVal(property, "Property Name")}
-                                                </h1>
-                                                <p style={{color:'rgba(255,255,255,0.85)', fontSize:'0.8rem', fontWeight:500}}>
-                                                    📍 {getVal(property, "Location")}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )) : (
-                                    <div className="w-full h-full flex flex-col items-center justify-center" 
-                                         style={{background:'var(--parchment)', borderRadius:'1.25rem'}}>
-                                        <h1 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'clamp(1.6rem,4vw,3rem)', fontStyle:'italic', fontWeight:700, color:'var(--navy)', marginBottom:'8px'}}>
-                                            {getVal(property, "Property Name")}
-                                        </h1>
-                                        <p style={{fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)'}}>
-                                            Images Coming Soon
-                                        </p>
-                                    </div>
+                {/* GALLERY */}
+                <div className="mb-6" style={{ borderRadius: '1.25rem', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                    {/* Main image */}
+                    <div className="relative bg-slate-900" style={{ height: 'clamp(220px, 45vw, 520px)' }}>
+                        {allImgs.length > 0 ? (
+                            <>
+                                <img src={allImgs[activeImg]} className="absolute inset-0 w-full h-full opacity-25 blur-2xl scale-110 object-cover" alt="" />
+                                <img src={allImgs[activeImg]} className="relative z-10 w-full h-full object-contain" alt={propName} />
+                                {allImgs.length > 1 && (
+                                    <>
+                                        <button onClick={() => scrollGallery('left')} disabled={activeImg === 0} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 20, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.92)', border: '1px solid var(--border)', fontSize: '1.1rem', cursor: 'pointer', opacity: activeImg === 0 ? 0.3 : 1, transition: 'opacity 0.2s' }} className="hidden md:flex items-center justify-center hover:scale-110 transition-transform">←</button>
+                                        <button onClick={() => scrollGallery('right')} disabled={activeImg === allImgs.length - 1} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', zIndex: 20, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.92)', border: '1px solid var(--border)', fontSize: '1.1rem', cursor: 'pointer', opacity: activeImg === allImgs.length - 1 ? 0.3 : 1, transition: 'opacity 0.2s' }} className="hidden md:flex items-center justify-center hover:scale-110 transition-transform">→</button>
+                                        <div style={{ position: 'absolute', bottom: 12, right: 16, zIndex: 20, background: 'rgba(15,23,42,0.7)', color: 'white', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.1em', padding: '4px 10px', borderRadius: '6px' }}>
+                                            {activeImg + 1} / {allImgs.length}
+                                        </div>
+                                    </>
                                 )}
-                            </div>
-
-                            {/* Navigation arrows */}
-                            {allImgs.length > 1 && (
-                                <>
-                                    <button onClick={() => scrollGallery('left')} 
-                                            style={{position:'absolute', top:'50%', left:'16px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'rgba(255,255,255,0.9)', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:30, fontSize:'1.2rem', transition:'all 0.2s'}} 
-                                            className="hidden md:flex hover:scale-110 hover:bg-white text-slate-800 flex items-center justify-center">←</button>
-                                    <button onClick={() => scrollGallery('right')} 
-                                            style={{position:'absolute', top:'50%', right:'16px', transform:'translateY(-50%)', width:'44px', height:'44px', background:'rgba(255,255,255,0.9)', border:'1px solid var(--border)', borderRadius:'50%', boxShadow:'var(--shadow-md)', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:30, fontSize:'1.2rem', transition:'all 0.2s'}} 
-                                            className="hidden md:flex hover:scale-110 hover:bg-white text-slate-800 flex items-center justify-center">→</button>
-                                </>
-                            )}
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12 mt-8">
-                            <div className="lg:col-span-2 space-y-8">
-                                
-                                {/* 1. Quick Stats Block */}
-                                <div style={{background:'var(--card-bg)', borderRadius:'1.25rem', border:'1px solid var(--border)', padding:'1.75rem', boxShadow:'var(--shadow-sm)'}} className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                    <div>
-                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Configurations</div>
-                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "bhk") || '—'}</div>
-                                    </div>
-                                    <div>
-                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Status</div>
-                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "construction_status") || '—'}</div>
-                                    </div>
-                                    <div>
-                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Possession</div>
-                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "possession_date") || '—'}</div>
-                                    </div>
-                                    <div>
-                                        <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Approvals</div>
-                                        <div style={{fontSize:'0.9rem', fontWeight:800, color:'var(--navy)'}}>{getVal(property, "approval") || '—'}</div>
-                                    </div>
-                                </div>
-
-                                {/* 2. About The Project */}
-                                {getVal(property, "description") && (
-                                    <div style={{background:'var(--card-bg)', borderRadius:'1.25rem', border:'1px solid var(--border)', padding:'1.75rem', boxShadow:'var(--shadow-sm)'}}>
-                                        <h3 style={{fontSize:'0.8rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.12em', color:'var(--navy)', marginBottom:'1rem', borderBottom:'1px solid var(--border)', paddingBottom:'0.75rem'}}>About The Project</h3>
-                                        <p style={{color:'var(--slate-soft)', fontSize:'0.85rem', lineHeight:1.8, whiteSpace:'pre-wrap'}}>{getVal(property, "description")}</p>
-                                    </div>
-                                )}
-
-                                {/* 3. Highlights + Amenities */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {projectUsps && (
-                                        <div style={{background:'var(--gold-light)', borderRadius:'1.25rem', border:'1px solid rgba(217,119,6,0.2)', padding:'1.75rem'}}>
-                                            <h3 style={{fontSize:'0.62rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--gold)', marginBottom:'1.25rem'}}>✦ Key Highlights</h3>
-                                            <ul className="space-y-3">
-                                                {String(projectUsps).split('\n').filter(u => u.trim() !== "").map((u, i) => (
-                                                    <li key={i} style={{display:'flex', alignItems:'flex-start', gap:'10px', fontSize:'0.82rem', color:'#78350F', fontWeight:500, lineHeight:1.6}}>
-                                                        <span style={{color:'var(--gold)', marginTop:'2px', flexShrink:0}}>✦</span> {u.trim()}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                    {getVal(property, "Amenities") && (
-                                        <div style={{background:'var(--navy)', borderRadius:'1.25rem', padding:'1.75rem'}}>
-                                            <h3 style={{fontSize:'0.62rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'#FCD34D', marginBottom:'1.25rem'}}>✓ World-Class Amenities</h3>
-                                            <ul className="space-y-3">
-                                                {String(getVal(property, "Amenities")).split(',').filter(u => u.trim() !== "").map((u, i) => (
-                                                    <li key={i} style={{display:'flex', alignItems:'flex-start', gap:'10px', fontSize:'0.82rem', color:'rgba(255,255,255,0.7)', fontWeight:500, lineHeight:1.6}}>
-                                                        <span style={{color:'var(--emerald)', marginTop:'2px', flexShrink:0}}>✓</span> {u.trim()}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Admin section */}
-                                {isAdmin && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-8" style={{borderTop:'1px solid var(--border)'}}>
-                                        <div style={{background:'#FFFBEB', border:'1px solid #FDE68A', padding:'1.25rem 1.5rem', borderRadius:'1rem', color:'#92400E'}}>
-                                            <h4 style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', marginBottom:'8px'}}>Commission & Payout</h4>
-                                            <p style={{fontSize:'2rem', fontWeight:800}}>{formatPercent(getVal(property, "commision_deta") || getVal(property, "commission"))}</p>
-                                        </div>
-                                        <div style={{background:'#F0F9FF', border:'1px solid #BAE6FD', padding:'1.25rem 1.5rem', borderRadius:'1rem', color:'#0369A1'}}>
-                                            <h4 style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', marginBottom:'10px'}}>Internal Details</h4>
-                                            <p style={{fontSize:'0.8rem', fontWeight:700, marginBottom:'4px'}}>POC: {getVal(property, "point_of_contact") || "N/A"}</p>
-                                            <p style={{fontSize:'0.7rem', fontWeight:700}}>Avail: {getVal(property, "availability") || "N/A"}</p>
-                                        </div>
-                                    </div>
-                                )}
-                                {isAdmin && (
-                                    <div style={{background:'var(--parchment)', border:'1px solid var(--border)', padding:'1.5rem', borderRadius:'1.25rem'}}>
-                                        <h4 style={{fontSize:'0.6rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'12px'}}>Admin Actions</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <a href={getSafeLink(getVal(property, "website_link"))} target="_blank" style={{background:'white', border:'1px solid var(--border)', padding:'14px', borderRadius:'12px', fontSize:'0.62rem', fontWeight:800, textAlign:'center', textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--navy)', transition:'all 0.2s'}} className="hover:border-yellow-400 hover:shadow-sm">Builder Site</a>
-                                            <a href={getSafeLink(getVal(property, "lead_registration") || getVal(property, "lead_registration_link_or_email_id"))} target="_blank" style={{background:'var(--navy)', color:'white', padding:'14px', borderRadius:'12px', fontSize:'0.62rem', fontWeight:800, textAlign:'center', textTransform:'uppercase', letterSpacing:'0.14em', transition:'all 0.2s'}} className="hover:opacity-80">Register Lead</a>
-                                            <a href={getSafeLink(mapLink)} target="_blank" style={{background:'white', border:'1px solid var(--border)', padding:'14px', borderRadius:'12px', fontSize:'0.62rem', fontWeight:800, textAlign:'center', textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--navy)', transition:'all 0.2s'}} className="md:col-span-2 hover:border-yellow-400 hover:shadow-sm">Share Location Map</a>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* RIGHT COLUMN — sticky sidebar */}
-                            <div className="lg:col-span-1">
-                                <div className="sticky top-24 space-y-5">
-                                    <div style={{background:'var(--card-bg)', borderRadius:'1.25rem', border:'1px solid var(--border)', boxShadow:'var(--shadow-md)', padding:'1.75rem', overflow:'hidden', position:'relative'}}>
-                                        <div style={{position:'absolute', top:0, left:0, right:0, height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)'}}></div>
-                                        <div style={{marginBottom:'1.25rem', paddingBottom:'1.25rem', borderBottom:'1px solid var(--border)'}}>
-                                            <div style={{fontSize:'0.55rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.18em', color:'var(--slate-soft)', marginBottom:'6px'}}>Starting Price</div>
-                                            <div style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'2.25rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', lineHeight:1}}>
-                                                {getVal(property, "Price") || 'On Request'}
-                                            </div>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <button onClick={() => openAction('interest')} className="btn-gold w-full font-black py-4 rounded-xl uppercase tracking-widest text-white" style={{fontSize:'0.75rem'}}>I Am Interested</button>
-                                            <button onClick={() => openAction('cost_sheet')} style={{width:'100%', background:'var(--navy)', color:'white', fontWeight:800, fontSize:'0.65rem', textTransform:'uppercase', letterSpacing:'0.14em', padding:'13px', borderRadius:'12px', display:'flex', justifyContent:'center', alignItems:'center', gap:'8px', transition:'opacity 0.2s'}} className="hover:opacity-80">
-                                                📄 Request Cost Sheet
-                                            </button>
-                                            <button onClick={() => openAction('brochure')} style={{width:'100%', background:'transparent', border:'1px solid var(--border)', color:'var(--navy)', fontWeight:800, fontSize:'0.65rem', textTransform:'uppercase', letterSpacing:'0.14em', padding:'12px', borderRadius:'12px', display:'flex', justifyContent:'center', alignItems:'center', gap:'8px', transition:'all 0.2s'}} className="hover:border-yellow-400">
-                                                📥 Download Brochure
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* MAP SECTION MOVED HERE (ABOVE EMI) */}
-                                    {mapEmbedSrc && (
-                                        <div style={{background:'var(--card-bg)', borderRadius:'1.25rem', border:'1px solid var(--border)', padding:'1.25rem', boxShadow:'var(--shadow-sm)'}}>
-                                            <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.1rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'0.75rem', borderBottom:'1px solid var(--border)', paddingBottom:'0.5rem'}}>📍 Location Map</h2>
-                                            <div className="map-embed" style={{height:'180px', borderRadius:'1rem', overflow:'hidden'}}>
-                                                <iframe src={mapEmbedSrc} width="100%" height="180" style={{border:0}} allowFullScreen="" loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Property Location"></iframe>
-                                            </div>
-                                            {mapLink && mapLink !== '#' && (
-                                                <a href={mapLink} target="_blank" rel="noopener noreferrer" style={{display:'flex', justifyContent:'center', alignItems:'center', gap:'6px', marginTop:'10px', fontSize:'0.65rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.14em', color:'var(--teal)'}} className="hover:text-yellow-600 transition">
-                                                    Open in Google Maps →
-                                                </a>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    <EMICalculator propertyPriceStr={getVal(property, "Price")} onApplyAction={() => openAction('apply_now')} />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Similar Properties */}
-                        {similarProperties.length > 0 && (
-                            <div className="mt-14 pt-8" style={{borderTop:'1px solid var(--border)'}}>
-                                <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.5rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'1.5rem', borderLeft:'4px solid var(--gold)', paddingLeft:'1rem'}}>Similar Properties</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                    {similarProperties.map((simProp, i) => (
-                                        <div key={i} onClick={() => { window.scrollTo(0,0); onSelectProperty(simProp); }} className="prop-card group flex flex-col" style={{cursor:'pointer'}}>
-                                            <div className="relative overflow-hidden shrink-0" style={{height:'170px', background:'var(--parchment)'}}>
-                                                <img src={fixImageUrl(getVal(simProp, "Cover Image") || getVal(simProp, "cover_image"))} loading="lazy" decoding="async" className="card-img" />
-                                            </div>
-                                            <div style={{padding:'1rem 1.25rem', flexGrow:1, display:'flex', flexDirection:'column'}}>
-                                                <p style={{fontSize:'0.55rem', fontWeight:700, color:'var(--gold)', textTransform:'uppercase', letterSpacing:'0.12em', marginBottom:'3px'}}>{getVal(simProp, "Builder Name")}</p>
-                                                <h3 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.05rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', lineHeight:1.2}} className="truncate">{getVal(simProp, "Property Name")}</h3>
-                                                <p style={{fontSize:'0.6rem', color:'var(--slate-soft)', textTransform:'uppercase', letterSpacing:'0.1em', marginTop:'4px', fontWeight:600}}>📍 {getVal(simProp, "Location")}</p>
-                                                <div className="mt-3 pt-3 flex justify-between items-end" style={{borderTop:'1px solid var(--border)'}}>
-                                                    <span style={{fontWeight:800, fontSize:'1rem', color:'var(--navy)'}}>{getVal(simProp, "Price")}</span>
-                                                    <span style={{background:'var(--parchment)', border:'1px solid var(--border)', padding:'3px 8px', borderRadius:'6px', fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.12em', color:'var(--slate-soft)'}}>{getVal(simProp, "bhk")} BHK</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                            </>
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center" style={{ background: 'var(--parchment)' }}>
+                                <p style={{ color: 'var(--slate-soft)', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase' }}>Images Coming Soon</p>
                             </div>
                         )}
                     </div>
-
-                    {/* Property Action Modal */}
-                    {actionModal && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => { setActionModal(null); setDownloadReadyUrl(null); }}>
-                            <div style={{background:'var(--card-bg)', borderRadius:'24px', maxWidth:'380px', width:'100%', padding:'2.5rem', boxShadow:'0 32px 80px rgba(15,23,42,0.5), 0 0 0 1px rgba(217,119,6,0.12)', position:'relative'}} onClick={e => e.stopPropagation()}>
-                                <button onClick={() => { setActionModal(null); setDownloadReadyUrl(null); }} style={{position:'absolute', top:'16px', right:'20px', fontSize:'1.5rem', color:'rgba(100,116,139,0.5)', fontWeight:300, lineHeight:1}} className="hover:text-slate-900 transition">×</button>
-                                <div style={{height:'3px', background:'linear-gradient(90deg, var(--gold), transparent)', borderRadius:'2px', marginBottom:'1.5rem'}}></div>
-                                <h2 style={{fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'1.6rem', fontWeight:700, fontStyle:'italic', color:'var(--navy)', marginBottom:'4px', textTransform:'uppercase'}}>
-                                    {actionModal === 'brochure' ? "Get The Brochure" : actionModal === 'cost_sheet' ? "Get Cost Sheet" : actionModal === 'apply_now' ? "Apply for Loan" : "Enquiry"}
-                                </h2>
-                                <p style={{fontSize:'0.6rem', fontWeight:700, color:'var(--slate-soft)', textTransform:'uppercase', letterSpacing:'0.18em', marginBottom:'1.5rem'}}>Please enter details to proceed</p>
-                                <form onSubmit={handleActionSubmit} className="space-y-3 text-left">
-                                    <input type="text" placeholder="Full Name" required style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}} className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400" value={leadData.name} onChange={e => setLeadData({...leadData, name: e.target.value})} />
-                                    <input type="tel" placeholder="Mobile Number (10 Digits)" required style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}} className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400" value={leadData.phone} onChange={e => setLeadData({...leadData, phone: e.target.value})} />
-                                    <input type="email" placeholder="Email Address (Optional)" style={{width:'100%', border:'1px solid var(--border)', background:'var(--cream)', padding:'14px 16px', borderRadius:'12px', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:'0.875rem', fontWeight:500}} className="focus:ring-2 focus:ring-amber-300 focus:border-amber-400" value={leadData.email} onChange={e => setLeadData({...leadData, email: e.target.value})} />
-                                    <button disabled={isSubmitting} type="submit" className="btn-gold w-full font-black py-4 rounded-xl uppercase tracking-widest mt-2 active:scale-95 text-white" style={{fontSize:'0.72rem'}}>
-                                        {isSubmitting ? "Processing…" : actionModal === 'apply_now' ? "Submit Application" : actionModal === 'interest' ? "Submit Interest" : "Unlock Download"}
-                                    </button>
-                                </form>
-                            </div>
+                    {/* Thumbnail strip */}
+                    {allImgs.length > 1 && (
+                        <div ref={galleryRef} className="flex gap-2 p-3 hide-scroll overflow-x-auto" style={{ background: 'var(--parchment)', borderTop: '1px solid var(--border)' }}>
+                            {allImgs.map((img, i) => (
+                                <button key={i} onClick={() => setActiveImg(i)} className="gallery-thumb shrink-0 overflow-hidden rounded-lg transition-all" style={{ width: 72, height: 52, border: i === activeImg ? '2px solid var(--gold)' : '2px solid transparent', borderRadius: '8px', opacity: i === activeImg ? 1 : 0.65, transition: 'all 0.2s' }}>
+                                    <img src={img} className="w-full h-full object-cover" alt="" />
+                                </button>
+                            ))}
                         </div>
                     )}
                 </div>
-            );
-        };
+
+                {/* PROPERTY HEADER BAR */}
+                <div className="detail-section mb-6" style={{ padding: '1.5rem 2rem' }}>
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div className="flex-1">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <span style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{builder}</span>
+                                <span style={{ color: 'var(--border)' }}>·</span>
+                                <span style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--slate-soft)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>📍 {location}</span>
+                                {reraNumber && (
+                                    <span className="rera-badge">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M9 12l2 2 4-4"/><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/></svg>
+                                        RERA: {reraNumber}
+                                    </span>
+                                )}
+                            </div>
+                            <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 'clamp(1.6rem, 4vw, 2.5rem)', fontWeight: 700, color: 'var(--navy)', lineHeight: 1.1, marginBottom: '6px' }}>
+                                {propName}
+                            </h1>
+                            {status && (
+                                <span style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', padding: '5px 12px', borderRadius: '6px', background: status.toLowerCase().includes('ready') ? '#DCFCE7' : status.toLowerCase().includes('under') ? '#FEF3C7' : '#EFF6FF', color: status.toLowerCase().includes('ready') ? '#166534' : status.toLowerCase().includes('under') ? '#92400E' : '#1E40AF' }}>
+                                    {status}
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
+                            <div style={{ fontSize: '0.55rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--slate-soft)' }}>Starting From</div>
+                            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 700, color: 'var(--navy)', lineHeight: 1 }}>
+                                {price || 'On Request'}
+                            </div>
+                            <button onClick={() => openAction('interest')} className="btn-gold text-white font-black py-3 px-8 rounded-xl uppercase tracking-widest" style={{ fontSize: '0.7rem', marginTop: '4px' }}>
+                                I Am Interested
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Quick stats row */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 pt-5" style={{ borderTop: '1px solid var(--border)' }}>
+                        {[
+                            { label: 'Configurations', value: bhk || '—' },
+                            { label: 'Possession', value: possession || '—' },
+                            { label: 'Approvals', value: approval || '—' },
+                            { label: 'Property Type', value: getVal(property, "Property Type") || '—' },
+                        ].map((s, i) => (
+                            <div key={i} className="stat-item">
+                                <div className="stat-label">{s.label}</div>
+                                <div className="stat-value">{s.value}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* TWO-COLUMN LAYOUT */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                    {/* LEFT — tabbed content */}
+                    <div className="lg:col-span-2 space-y-0">
+
+                        {/* TAB BAR */}
+                        {TABS.length > 1 && (
+                            <div className="flex overflow-x-auto hide-scroll" style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: '1rem 1rem 0 0', borderBottom: 'none', padding: '0 1rem' }}>
+                                {TABS.map(t => (
+                                    <button key={t.key} onClick={() => setActiveTab(t.key)} className={`tab-btn ${activeTab === t.key ? 'active' : ''}`}>
+                                        {t.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* TAB CONTENT */}
+                        <div className="detail-section animate-fadeIn" style={{ borderRadius: TABS.length > 1 ? '0 0 1.25rem 1.25rem' : '1.25rem', minHeight: 200 }}>
+
+                            {activeTab === 'overview' && (
+                                <div>
+                                    <div className="detail-section-title">
+                                        <span style={{ fontSize: 16 }}>🏗️</span> About the Project
+                                    </div>
+                                    {description ? (
+                                        <p style={{ color: 'var(--slate-soft)', fontSize: '0.875rem', lineHeight: 1.85, whiteSpace: 'pre-wrap' }}>{description}</p>
+                                    ) : (
+                                        <p style={{ color: 'var(--slate-soft)', fontSize: '0.875rem' }}>Details coming soon. Contact us for more information.</p>
+                                    )}
+
+                                    {/* Admin section */}
+                                    {isAdmin && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
+                                                <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '1.25rem 1.5rem', borderRadius: '1rem', color: '#92400E' }}>
+                                                    <h4 style={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '8px' }}>Commission</h4>
+                                                    <p style={{ fontSize: '2rem', fontWeight: 800 }}>{formatPercent(getVal(property, "commision_deta") || getVal(property, "commission"))}</p>
+                                                </div>
+                                                <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', padding: '1.25rem 1.5rem', borderRadius: '1rem', color: '#0369A1' }}>
+                                                    <h4 style={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '10px' }}>Internal Details</h4>
+                                                    <p style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '4px' }}>POC: {getVal(property, "point_of_contact") || "N/A"}</p>
+                                                    <p style={{ fontSize: '0.7rem', fontWeight: 700 }}>Avail: {getVal(property, "availability") || "N/A"}</p>
+                                                </div>
+                                            </div>
+                                            <div style={{ background: 'var(--parchment)', border: '1px solid var(--border)', padding: '1.5rem', borderRadius: '1.25rem', marginTop: '1.25rem' }}>
+                                                <h4 style={{ fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em', color: 'var(--slate-soft)', marginBottom: '12px' }}>Admin Actions</h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <a href={getSafeLink(getVal(property, "website_link"))} target="_blank" style={{ background: 'white', border: '1px solid var(--border)', padding: '12px', borderRadius: '10px', fontSize: '0.62rem', fontWeight: 800, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--navy)', transition: 'all 0.2s' }} className="hover:border-yellow-400">Builder Site</a>
+                                                    <a href={getSafeLink(getVal(property, "lead_registration") || getVal(property, "lead_registration_link_or_email_id"))} target="_blank" style={{ background: 'var(--navy)', color: 'white', padding: '12px', borderRadius: '10px', fontSize: '0.62rem', fontWeight: 800, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.14em', transition: 'all 0.2s' }} className="hover:opacity-80">Register Lead</a>
+                                                    <a href={getSafeLink(mapLink)} target="_blank" style={{ background: 'white', border: '1px solid var(--border)', padding: '12px', borderRadius: '10px', fontSize: '0.62rem', fontWeight: 800, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--navy)', transition: 'all 0.2s' }} className="md:col-span-2 hover:border-yellow-400">Share Location Map</a>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {activeTab === 'highlights' && projectUsps && (
+                                <div>
+                                    <div className="detail-section-title"><span style={{ fontSize: 16 }}>✦</span> Key Highlights</div>
+                                    <div>
+                                        {String(projectUsps).split('\n').filter(u => u.trim()).map((u, i) => (
+                                            <div key={i} className="highlight-row">
+                                                <span style={{ color: 'var(--gold)', fontSize: '0.7rem', marginTop: '2px', flexShrink: 0 }}>✦</span>
+                                                <span style={{ fontSize: '0.85rem', lineHeight: 1.7 }}>{u.trim()}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'amenities' && amenities && (
+                                <div>
+                                    <div className="detail-section-title"><span style={{ fontSize: 16 }}>✓</span> Amenities</div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {String(amenities).split(',').filter(a => a.trim()).map((a, i) => (
+                                            <span key={i} className="amenity-pill">
+                                                <span style={{ color: 'var(--emerald)', fontSize: '0.75rem' }}>✓</span> {a.trim()}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'location' && mapEmbedSrc && (
+                                <div>
+                                    <div className="detail-section-title"><span style={{ fontSize: 16 }}>📍</span> Location</div>
+                                    <div className="map-embed" style={{ borderRadius: '1rem', overflow: 'hidden', marginBottom: '1rem' }}>
+                                        <iframe src={mapEmbedSrc} width="100%" height="320" style={{ border: 0, display: 'block' }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Property Location" />
+                                    </div>
+                                    {mapLink && mapLink !== '#' && (
+                                        <a href={mapLink} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--teal)' }} className="hover:text-yellow-600 transition">
+                                            Open in Google Maps →
+                                        </a>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* RIGHT — sticky sidebar */}
+                    <div className="lg:col-span-1">
+                        <div className="sticky top-24 space-y-4">
+
+                            {/* Price & CTA card */}
+                            <div className="detail-section" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, var(--gold), transparent)' }} />
+                                <div style={{ marginBottom: '1.25rem', paddingBottom: '1.25rem', borderBottom: '1px solid var(--border)' }}>
+                                    <div style={{ fontSize: '0.55rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--slate-soft)', marginBottom: '6px' }}>Starting Price</div>
+                                    <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '2rem', fontWeight: 700, color: 'var(--navy)', lineHeight: 1 }}>
+                                        {price || 'On Request'}
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <button onClick={() => openAction('interest')} className="btn-gold w-full font-black py-4 rounded-xl uppercase tracking-widest text-white" style={{ fontSize: '0.72rem' }}>
+                                        I Am Interested
+                                    </button>
+                                    <button onClick={() => openAction('cost_sheet')} style={{ width: '100%', background: 'var(--navy)', color: 'white', fontWeight: 800, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.14em', padding: '13px', borderRadius: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', transition: 'opacity 0.2s' }} className="hover:opacity-80">
+                                        📄 Request Cost Sheet
+                                    </button>
+                                    <button onClick={() => openAction('brochure')} style={{ width: '100%', background: 'transparent', border: '1px solid var(--border)', color: 'var(--navy)', fontWeight: 800, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.14em', padding: '12px', borderRadius: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }} className="hover:border-yellow-400">
+                                        📥 Download Brochure
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* WhatsApp CTA */}
+                            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, I'm interested in ${encodeURIComponent(propName)}`} target="_blank" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', background: 'rgba(37,211,102,0.08)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: '12px', padding: '14px', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.14em', color: '#166534', transition: 'background 0.2s' }} className="hover:bg-green-50">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="#22c55e"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.12.553 4.148 1.603 5.946L.2 24l6.195-1.62c1.737.947 3.69 1.445 5.636 1.445 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.615 0 12.031 0zm0 21.846c-1.802 0-3.568-.484-5.115-1.402l-.366-.217-3.805.996.996-3.805-.217-.366a9.92 9.92 0 0 1-1.402-5.115c0-5.514 4.486-10 10-10 5.514 0 10 4.486 10 10 0 5.514-4.486 10-10 10zm5.496-7.518c-.301-.15-1.785-.885-2.062-.986-.277-.1-.478-.15-.678.15-.201.301-.778.986-.954 1.187-.176.201-.351.226-.653.076-1.609-.816-2.73-1.637-3.784-3.411-.176-.301.176-.277.453-.827.076-.15-.038-.277-.038-.427-.076-.15-.678-1.631-.929-2.233-.251-.602-.502-.527-.678-.527-.176 0-.377 0-.578 0-.201 0-.527.076-.803.427-.276.351-1.054 1.028-1.054 2.508 0 1.48 1.079 2.91 1.229 3.111.15.201 2.133 3.262 5.169 4.566.726.301 1.28.478 1.731.628.728.227 1.381.194 1.905.118.578-.084 1.785-.728 2.036-1.431.251-.703.251-1.305.176-1.431-.076-.126-.277-.201-.578-.352z" /></svg>
+                                Chat on WhatsApp
+                            </a>
+
+                            {/* EMI Calculator */}
+                            <EMICalculator propertyPriceStr={price} onApplyAction={() => openAction('apply_now')} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* SIMILAR PROPERTIES */}
+                {similarProperties.length > 0 && (
+                    <div className="mt-12 pt-8" style={{ borderTop: '1px solid var(--border)' }}>
+                        <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '1.5rem', fontWeight: 700, color: 'var(--navy)', marginBottom: '1.5rem', borderLeft: '3px solid var(--gold)', paddingLeft: '1rem' }}>
+                            Similar Properties
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            {similarProperties.map((simProp, i) => (
+                                <div key={i} onClick={() => { window.scrollTo(0, 0); onSelectProperty(simProp); }} className="prop-card group flex flex-col" style={{ cursor: 'pointer' }}>
+                                    <div className="relative overflow-hidden shrink-0" style={{ height: '170px', background: 'var(--parchment)' }}>
+                                        <img src={fixImageUrl(getVal(simProp, "Cover Image") || getVal(simProp, "cover_image"))} loading="lazy" decoding="async" className="card-img" />
+                                    </div>
+                                    <div style={{ padding: '1rem 1.25rem', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                                        <p style={{ fontSize: '0.55rem', fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '3px' }}>{getVal(simProp, "Builder Name")}</p>
+                                        <h3 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '1.05rem', fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2 }} className="truncate">{getVal(simProp, "Property Name")}</h3>
+                                        <p style={{ fontSize: '0.6rem', color: 'var(--slate-soft)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '4px', fontWeight: 600 }}>📍 {getVal(simProp, "Location")}</p>
+                                        <div className="mt-3 pt-3 flex justify-between items-end" style={{ borderTop: '1px solid var(--border)' }}>
+                                            <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--navy)' }}>{getVal(simProp, "Price")}</span>
+                                            <span style={{ background: 'var(--parchment)', border: '1px solid var(--border)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--slate-soft)' }}>{getVal(simProp, "bhk")} BHK</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Action Modal */}
+            {actionModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setActionModal(null)}>
+                    <div style={{ background: 'var(--card-bg)', borderRadius: '20px', maxWidth: '380px', width: '100%', padding: '2.5rem', boxShadow: '0 32px 80px rgba(15,23,42,0.5)', position: 'relative' }} onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setActionModal(null)} style={{ position: 'absolute', top: '16px', right: '20px', fontSize: '1.5rem', color: 'rgba(100,116,139,0.5)', fontWeight: 300, lineHeight: 1 }} className="hover:text-slate-900 transition">×</button>
+                        <div style={{ height: '3px', background: 'linear-gradient(90deg, var(--gold), transparent)', borderRadius: '2px', marginBottom: '1.5rem' }} />
+                        <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '1.5rem', fontWeight: 700, color: 'var(--navy)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                            {actionModal === 'brochure' ? "Get Brochure" : actionModal === 'cost_sheet' ? "Get Cost Sheet" : actionModal === 'apply_now' ? "Apply for Loan" : "Enquiry"}
+                        </h2>
+                        <p style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--slate-soft)', textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '1.5rem' }}>
+                            {propName}
+                        </p>
+                        <form onSubmit={handleActionSubmit} className="space-y-3">
+                            <input type="text" placeholder="Full Name" required style={{ width: '100%', border: '1px solid var(--border)', background: 'var(--cream)', padding: '14px 16px', borderRadius: '10px', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '0.875rem', fontWeight: 500 }} className="focus:ring-2 focus:ring-amber-300" value={leadData.name} onChange={e => setLeadData({ ...leadData, name: e.target.value })} />
+                            <input type="tel" placeholder="Mobile Number (10 Digits)" required style={{ width: '100%', border: '1px solid var(--border)', background: 'var(--cream)', padding: '14px 16px', borderRadius: '10px', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '0.875rem', fontWeight: 500 }} className="focus:ring-2 focus:ring-amber-300" value={leadData.phone} onChange={e => setLeadData({ ...leadData, phone: e.target.value })} />
+                            <input type="email" placeholder="Email Address (Optional)" style={{ width: '100%', border: '1px solid var(--border)', background: 'var(--cream)', padding: '14px 16px', borderRadius: '10px', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: '0.875rem', fontWeight: 500 }} className="focus:ring-2 focus:ring-amber-300" value={leadData.email} onChange={e => setLeadData({ ...leadData, email: e.target.value })} />
+                            <button disabled={isSubmitting} type="submit" className="btn-gold w-full font-black py-4 rounded-xl uppercase tracking-widest mt-2 active:scale-95 text-white" style={{ fontSize: '0.72rem' }}>
+                                {isSubmitting ? "Processing…" : actionModal === 'apply_now' ? "Submit Application" : actionModal === 'interest' ? "Submit Interest" : "Unlock"}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
         // ─── MAIN APP ───
         function App() {
