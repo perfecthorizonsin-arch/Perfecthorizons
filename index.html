@@ -743,10 +743,32 @@
             if (actionModal === 'brochure') {
     const brochureLink = getVal(property, "brochure") || getVal(property, "brochure_link") || getVal(property, "Brochure");
     if (brochureLink && brochureLink !== '#') {
-        window.open(getDriveDownloadUrl(brochureLink), '_blank');
+        const urls = brochureLink.split(',').map(u => u.trim()).filter(Boolean);
+        urls.forEach((url, i) => {
+            setTimeout(() => {
+                let dlUrl = url;
+                // Google Drive
+                const idMatch = url.match(/\/d\/(.*?)\//) || url.match(/id=([a-zA-Z0-9_-]+)/);
+                if (idMatch && idMatch[1]) {
+                    dlUrl = `https://drive.google.com/uc?export=download&id=${idMatch[1]}`;
+                }
+                // Cloudinary — force download
+                if (url.includes('cloudinary.com')) {
+                    dlUrl = url.replace('/upload/', '/upload/fl_attachment/');
+                }
+                const a = document.createElement('a');
+                a.href = dlUrl;
+                a.download = `Brochure_${getVal(property, "Property Name") || 'Property'}_${i + 1}.pdf`;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }, i * 500); // stagger multiple files
+        });
     } else {
         alert("Brochure not available yet. Our advisor will share it with you directly.");
     }
+}
 } else if (actionModal === 'cost_sheet' && getVal(property, "cost_sheet")) {
                 window.open(getVal(property, "cost_sheet"), '_blank');
             }
