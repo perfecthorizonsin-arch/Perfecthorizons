@@ -595,10 +595,16 @@
         return `https://drive.google.com/uc?export=download&id=${idMatch[1]}`;
     }
     
-    // Cloudinary — force download by adding fl_attachment flag ONLY if it doesn't exist
-    if (link.includes('cloudinary.com') && !link.includes('fl_attachment')) {
-        return link.replace('/upload/', '/upload/fl_attachment/');
+    if (link.includes('cloudinary.com')) {
+    let fixedLink = link;
+    if (fixedLink.toLowerCase().includes('.pdf')) {
+        fixedLink = fixedLink.replace('/image/upload/', '/raw/upload/');
     }
+    if (!fixedLink.includes('fl_attachment')) {
+        fixedLink = fixedLink.replace('/upload/', '/upload/fl_attachment/');
+    }
+    return fixedLink;
+}
     
     return link;
 };
@@ -752,10 +758,17 @@
                         
                         if (idMatch && idMatch[1]) {
                             dlUrl = `https://drive.google.com/uc?export=download&id=${idMatch[1]}`;
-                        } else if (url.includes('cloudinary.com') && !url.includes('fl_attachment')) {
-                            // Check added here to prevent double fl_attachment
-                            dlUrl = url.replace('/upload/', '/upload/fl_attachment/');
-                        }
+                       } else if (url.includes('cloudinary.com')) {
+    let fixedUrl = url;
+    // PDFs must use /raw/upload/ — /image/upload/ returns 404 for fl_attachment on PDFs
+    if (fixedUrl.toLowerCase().includes('.pdf')) {
+        fixedUrl = fixedUrl.replace('/image/upload/', '/raw/upload/');
+    }
+    if (!fixedUrl.includes('fl_attachment')) {
+        fixedUrl = fixedUrl.replace('/upload/', '/upload/fl_attachment/');
+    }
+    dlUrl = fixedUrl;
+}
                         
                         const a = document.createElement('a');
                         a.href = dlUrl;
