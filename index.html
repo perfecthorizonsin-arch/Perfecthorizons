@@ -595,8 +595,8 @@
         return `https://drive.google.com/uc?export=download&id=${idMatch[1]}`;
     }
     
-    // Cloudinary — force download by adding fl_attachment flag
-    if (link.includes('cloudinary.com')) {
+    // Cloudinary — force download by adding fl_attachment flag ONLY if it doesn't exist
+    if (link.includes('cloudinary.com') && !link.includes('fl_attachment')) {
         return link.replace('/upload/', '/upload/fl_attachment/');
     }
     
@@ -739,6 +739,7 @@
     setIsSubmitting(true);
     const success = await onSubmitLead(leadData, getVal(property, "Property Name"), actionModal);
     setIsSubmitting(false);
+    
     if (success) {
         if (actionModal === 'brochure') {
             const brochureLink = getVal(property, "brochure") || getVal(property, "brochure_link") || getVal(property, "Brochure");
@@ -748,12 +749,14 @@
                     setTimeout(() => {
                         let dlUrl = url;
                         const idMatch = url.match(/\/d\/(.*?)\//) || url.match(/id=([a-zA-Z0-9_-]+)/);
+                        
                         if (idMatch && idMatch[1]) {
                             dlUrl = `https://drive.google.com/uc?export=download&id=${idMatch[1]}`;
-                        }
-                        if (url.includes('cloudinary.com')) {
+                        } else if (url.includes('cloudinary.com') && !url.includes('fl_attachment')) {
+                            // Check added here to prevent double fl_attachment
                             dlUrl = url.replace('/upload/', '/upload/fl_attachment/');
                         }
+                        
                         const a = document.createElement('a');
                         a.href = dlUrl;
                         a.download = `Brochure_${getVal(property, "Property Name") || 'Property'}_${i + 1}.pdf`;
@@ -772,7 +775,6 @@
         setActionModal(null);
     }
 };
-
     const propName    = getVal(property, "Property Name");
     const builder     = getVal(property, "Builder Name");
     const location    = getVal(property, "Location");
