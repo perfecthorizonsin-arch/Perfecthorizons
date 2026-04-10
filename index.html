@@ -752,33 +752,24 @@
             if (brochureLink && brochureLink !== '#') {
                 const urls = brochureLink.split(',').map(u => u.trim()).filter(Boolean);
                 urls.forEach((url, i) => {
-                    setTimeout(() => {
-                        let dlUrl = url;
-                        const idMatch = url.match(/\/d\/(.*?)\//) || url.match(/id=([a-zA-Z0-9_-]+)/);
-                        
-                        if (idMatch && idMatch[1]) {
-                            dlUrl = `https://drive.google.com/uc?export=download&id=${idMatch[1]}`;
-                       } else if (url.includes('cloudinary.com')) {
-    let fixedUrl = url;
-    // PDFs must use /raw/upload/ — /image/upload/ returns 404 for fl_attachment on PDFs
-    if (fixedUrl.toLowerCase().includes('.pdf')) {
-        fixedUrl = fixedUrl.replace('/image/upload/', '/raw/upload/');
-    }
-    if (!fixedUrl.includes('fl_attachment')) {
-        fixedUrl = fixedUrl.replace('/upload/', '/upload/fl_attachment/');
-    }
-    dlUrl = fixedUrl;
-}
-                        
-                        const a = document.createElement('a');
-                        a.href = dlUrl;
-                        a.download = `Brochure_${getVal(property, "Property Name") || 'Property'}_${i + 1}.pdf`;
-                        a.target = '_blank';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                    }, i * 500);
-                });
+    setTimeout(() => {
+        const idMatch = url.match(/\/d\/(.*?)\//) || url.match(/id=([a-zA-Z0-9_-]+)/);
+        if (idMatch && idMatch[1]) {
+            // Google Drive — force download
+            const dlUrl = `https://drive.google.com/uc?export=download&id=${idMatch[1]}`;
+            const a = document.createElement('a');
+            a.href = dlUrl;
+            a.download = `Brochure_${getVal(property, "Property Name") || 'Property'}_${i + 1}.pdf`;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } else {
+            // Cloudinary or any other URL — just open in new tab, browser handles save
+            window.open(url.trim(), '_blank');
+        }
+    }, i * 500);
+});
             } else {
                 alert("Brochure not available yet. Our advisor will share it with you directly.");
             }
