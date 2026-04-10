@@ -732,9 +732,14 @@
         const success = await onSubmitLead(leadData, getVal(property, "Property Name"), actionModal);
         setIsSubmitting(false);
         if (success) {
-            if (actionModal === 'brochure' && getVal(property, "brochure")) {
-                window.open(getDriveDownloadUrl(getVal(property, "brochure")), '_blank');
-            } else if (actionModal === 'cost_sheet' && getVal(property, "cost_sheet")) {
+            if (actionModal === 'brochure') {
+    const brochureLink = getVal(property, "brochure") || getVal(property, "brochure_link") || getVal(property, "Brochure");
+    if (brochureLink && brochureLink !== '#') {
+        window.open(getDriveDownloadUrl(brochureLink), '_blank');
+    } else {
+        alert("Brochure not available yet. Our advisor will share it with you directly.");
+    }
+} else if (actionModal === 'cost_sheet' && getVal(property, "cost_sheet")) {
                 window.open(getVal(property, "cost_sheet"), '_blank');
             }
             setActionModal(null);
@@ -873,9 +878,9 @@
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5 pt-5" style={{ borderTop: '1px solid var(--border)' }}>
                         {[
                             { label: 'Configurations', value: bhk || '—' },
-                            { label: 'Possession', value: possession || '—' },
-                            { label: 'Approvals', value: approval || '—' },
-                            { label: 'Property Type', value: getVal(property, "Property Type") || '—' },
+{ label: 'Possession', value: possession || '—' },
+{ label: 'Approvals', value: reraNumber ? `${approval || 'RERA'} · ${reraNumber}` : (approval || '—') },
+{ label: 'Property Type', value: getVal(property, "Property Type") || '—' },
                         ].map((s, i) => (
                             <div key={i} className="stat-item">
                                 <div className="stat-label">{s.label}</div>
