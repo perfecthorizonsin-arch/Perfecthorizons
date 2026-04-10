@@ -444,57 +444,43 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
             return;
         }
 
-        // For Drive files: build download URLs, then download + open WhatsApp
-        // Mobile: try Web Share API with fetched blobs
-        if (isMobile() && navigator.share) {
-            try {
-                const fileObjs = [];
-                for (let i = 0; i < urlsToShare.length; i++) {
-                    const dlUrl = getDownloadUrl(urlsToShare[i]);
-                    const resp  = await fetch(dlUrl, { mode: 'cors' });
-                    const blob  = await resp.blob();
-                    if (blob.type.includes('text/html')) throw new Error("Got HTML, not a file");
-                    const isPdf = blob.type.includes('pdf') || urlsToShare[i].toLowerCase().includes('.pdf');
-                    const ext   = isPdf ? 'pdf' : 'jpg';
-                    const mime  = isPdf ? 'application/pdf' : (blob.type || 'image/jpeg');
-                    const name  = `${propName.replace(/[^a-zA-Z0-9]/g, '_')}_${type.replace(/\s+/g, '')}${urlsToShare.length > 1 ? '_' + (i + 1) : ''}.${ext}`;
-                    fileObjs.push(new File([blob], name, { type: mime }));
-                }
-                await navigator.share({ files: fileObjs, title: `${propName} — ${type}`, text: waText });
-                setShareModal(null); setIsSharing(false);
-                return;
-            } catch (err) {
-                console.log("Native share failed, falling back:", err);
-            }
+        // ── Download via direct <a> tag — bypasses CORS & Drive auth redirects ──
+        // fetch() always fails on Drive URLs (returns HTML redirect, not the file blob).
+        // An anchor click lets the browser follow Drive's auth redirect chain natively.
+        const triggerDownload = (url, filename) => {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        const n = urlsToShare.length;
+        for (let i = 0; i < n; i++) {
+            const raw   = urlsToShare[i];
+            const id    = extractDriveId(raw);
+            // uc?export=download works for both images and PDFs — browser handles auth
+            const dlUrl = id ? `https://drive.google.com/uc?export=download&id=${id}` : raw;
+            // Apps Script stores /view for PDFs, thumbnail URL for images
+            const isPdf = raw.includes('/view') || raw.toLowerCase().includes('.pdf');
+            const ext   = isPdf ? 'pdf' : 'jpg';
+            const fname = `${propName.replace(/[^a-zA-Z0-9]/g, '_')}_${type.replace(/\s+/g, '_')}${n > 1 ? '_' + (i + 1) : ''}.${ext}`;
+            // Stagger downloads 400ms apart so browser doesn't block simultaneous downloads
+            setTimeout(() => triggerDownload(dlUrl, fname), i * 400);
         }
 
-        // Desktop / fallback: download files then open WhatsApp
-        let downloadedCount = 0;
-        for (let i = 0; i < urlsToShare.length; i++) {
-            try {
-                const dlUrl   = getDownloadUrl(urlsToShare[i]);
-                const resp    = await fetch(dlUrl, { mode: 'cors' });
-                const blob    = await resp.blob();
-                const isPdf   = blob.type.includes('pdf') || urlsToShare[i].toLowerCase().includes('.pdf');
-                const ext     = isPdf ? 'pdf' : 'jpg';
-                const fname   = `${propName.replace(/[^a-zA-Z0-9]/g, '_')}_${type.replace(/\s+/g,'_')}${urlsToShare.length > 1 ? '_'+(i+1) : ''}.${ext}`;
-                const blobUrl = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = blobUrl; a.download = fname;
-                document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
-                downloadedCount++;
-            } catch (err) { console.error("Download failed for", urlsToShare[i], err); }
-        }
-
-        setIsSharing(false); setShareModal(null);
-        const n = downloadedCount;
+        setIsSharing(false);
+        setShareModal(null);
 
         if (isMobile()) {
-            showToast(`✅ ${n} file${n>1?'s':''} downloaded! Opening WhatsApp — attach from Downloads 📎`, 'bg-green-600');
-            setTimeout(() => { window.location.href = `https://wa.me/?text=${encodeURIComponent(waText)}`; }, 800);
+            showToast(`⬇️ ${n} file${n>1?'s':''} downloading… Open WhatsApp & attach from Downloads 📎`, 'bg-green-600');
+            setTimeout(() => { window.location.href = `https://wa.me/?text=${encodeURIComponent(waText)}`; }, n * 400 + 700);
         } else {
-            showToast(`✅ ${n} file${n>1?'s':''} saved to Downloads! Opening WhatsApp Web — click 📎 Attach and select the file${n>1?'s':''}.`, 'bg-blue-600');
-            setTimeout(() => window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(waText)}`, '_blank'), 700);
+            showToast(`⬇️ ${n} file${n>1?'s':''} downloading… Then attach in WhatsApp Web 📎`, 'bg-blue-600');
+            setTimeout(() => window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(waText)}`, '_blank'), n * 400 + 600);
         }
     };
 
