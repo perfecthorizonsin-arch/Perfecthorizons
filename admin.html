@@ -1693,20 +1693,21 @@ function AdminApp() {
 }
 
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<AdminApp />);
-    window.__appMounted = true;
-  </script>
+const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<AdminApp />);
+  window.__appMounted = true;
+</script>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('Service Worker registered!', reg))
-          .catch(err => console.error('Service Worker registration failed: ', err));
-      });
-    }
-  </script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      // Use the lowercase 'a' in admin.html and 'icon.png' as we discussed
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('CRM PWA Active!', reg.scope))
+        .catch(err => console.error('PWA Registration failed:', err));
+    });
+  }
+</script>
 
 </body>
 </html>
