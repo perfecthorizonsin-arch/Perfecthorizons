@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horizon CRM | Command Center</title>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#0f172a">
-<link rel="apple-touch-icon" href="horizon-icon.png">
+<link rel="apple-touch-icon" href="./horizon-icon.png">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50' y='54' font-family='Arial' font-size='60' font-weight='900' font-style='italic' fill='%233b82f6' dominant-baseline='middle' text-anchor='middle'>H</text></svg>">
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -1692,19 +1692,21 @@ function AdminApp() {
     );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<AdminApp />);
-window.__appMounted = true;
-</script>
-    <script>
-  // Register the App Booster Service Worker
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('CRM App Booster Active!'))
-        .catch(err => console.error('Service Worker failure:', err));
-    });
-  }
-</script>
+<script type="text/babel">
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<AdminApp />);
+    window.__appMounted = true;
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registered!', reg))
+          .catch(err => console.error('Service Worker registration failed: ', err));
+      });
+    }
+  </script>
+
 </body>
 </html>
