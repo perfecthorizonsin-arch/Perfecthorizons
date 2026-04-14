@@ -2,7 +2,7 @@
   "name": "Horizon CRM",
   "short_name": "Horizon",
   "description": "Command Center — Real Estate Intelligence",
-  "start_url": "./",
+  "start_url": "./admin.html",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#2563eb",
