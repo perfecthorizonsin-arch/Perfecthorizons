@@ -25,7 +25,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   // Never cache Supabase database calls so your lead data is always live
-  if (event.request.url && event.request.url.includes('supabase.co/rest/v1')) return;
+  if (event.request.url && event.request.url.includes('supabase.co/rest/v3')) return;
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
@@ -40,3 +40,5 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+
