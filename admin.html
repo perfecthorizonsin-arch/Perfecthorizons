@@ -10,42 +10,16 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Horizon CRM">
     <meta name="theme-color" content="#0f172a">
-  <script>
-    // ── Inline PWA Manifest (blob URL approach) ─────────────────────────────
-    (function() {
-        try {
-            const manifest = {
-                ...
-            };
-            const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-            const url  = URL.createObjectURL(blob);
-            const link = document.createElement('link');
-            link.rel   = 'manifest';
-            link.href  = url;
-            document.currentScript.parentNode.insertBefore(link, document.currentScript.nextSibling);
-        } catch(e) { console.warn('Manifest injection failed:', e); }
-
-        // ── Minimal Service Worker via blob ──────────────────────────────────
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                try {
-                    const swCode = [
-                        "const CACHE='horizon-crm-v1';",
-                        "self.addEventListener('install',e=>{ self.skipWaiting(); });",
-                        "self.addEventListener('activate',e=>{ e.waitUntil(clients.claim()); });",
-                        "self.addEventListener('fetch',e=>{ e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))); });"
-                    ].join('\n');
-                    const swBlob = new Blob([swCode], { type: 'application/javascript' });
-                    const swUrl  = URL.createObjectURL(swBlob);
-                    navigator.serviceWorker.register(swUrl, { scope: './' })
-                        .catch(function() {
-                            // SW via blob may not be supported — fallback silently
-                        });
-                } catch(e) { /* silent */ }
-            });
-        }
-    })();
-    </script>
+<link rel="manifest" href="manifest.json">
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./sw.js')
+                .then(function(r) { console.log('SW registered', r); })
+                .catch(function(e) { console.warn('SW failed', e); });
+        });
+    }
+</script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
