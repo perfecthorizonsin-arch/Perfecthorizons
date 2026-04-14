@@ -1,8 +1,9 @@
 const CACHE_NAME = 'horizon-crm-cache-v1';
+const CACHE_NAME = 'horizon-crm-cache-v1';
 const ASSETS_TO_CACHE = [
   './admin.html',
   './manifest.json',
-  './horizon-icon.png',
+  './horizon-icon.png'
   'https://unpkg.com/react@18/umd/react.development.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.development.js',
   'https://unpkg.com/@babel/standalone/babel.min.js',
