@@ -1,4 +1,4 @@
-const CACHE_NAME = 'horizon-crm-cache-v2';
+const CACHE_NAME = 'horizon-crm-cache-v3';
 const ASSETS_TO_CACHE = [
   './admin.html',
   './manifest.json',
