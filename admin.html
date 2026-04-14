@@ -132,7 +132,7 @@
         @media(max-width:640px){ .hide-mobile{ display:none !important; } }
     </style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-900 pb-24 md:pb-0">
+<body class="bg-gray-100 font-sans text-gray-900 pb-0">
 
 <!-- ── Animated Splash Screen ── -->
 <div id="splash-screen" class="splash-screen">
@@ -1558,31 +1558,7 @@ function AdminApp() {
                 </div>
             </nav>
 
-            {/* ── Mobile Bottom Nav ── */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-slate-200 shadow-2xl"
-                style={{paddingBottom:'env(safe-area-inset-bottom,0px)'}}>
-                <div className="flex">
-                {[
-                    { id:'dashboard', emoji:'📊', label:'CRM',     cat: leadCategory },
-                    { id:'library',   emoji:'🏢', label:'Library',  cat: 'website' },
-                    { id:'add',       emoji:'➕', label:'Add',      cat: 'website' },
-                ].map(n => (
-                    <button key={n.id} onClick={() => handleNavigate(n.id, n.cat)}
-                        className={`flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-all relative ${view === n.id ? 'text-blue-600' : 'text-slate-400 active:text-blue-500'}`}>
-                        {view===n.id && <span className="absolute top-0 w-10 h-0.5 bg-blue-600 rounded-full"></span>}
-                        <span className="text-2xl leading-none">{n.emoji}</span>
-                        <span className={`text-[10px] font-black uppercase tracking-widest ${view===n.id?'text-blue-600':'text-slate-400'}`}>{n.label}</span>
-                    </button>
-                ))}
-                {deferredPrompt && (
-                    <button onClick={handleInstallClick}
-                        className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-all text-indigo-500 active:text-indigo-700">
-                        <span className="text-2xl leading-none">⬇️</span>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Install</span>
-                    </button>
-                )}
-                </div>
-            </div>
+           
 
             <main className="p-3 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
                 {view === 'dashboard' && (
