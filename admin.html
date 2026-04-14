@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horizon CRM | Command Center</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50' y='54' font-family='Arial' font-size='60' font-weight='900' font-style='italic' fill='%233b82f6' dominant-baseline='middle' text-anchor='middle'>H</text></svg>">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -117,7 +119,7 @@
         @media(max-width:640px){ .hide-mobile{ display:none !important; } }
     </style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-900 pb-20 md:pb-0">
+<body class="bg-gray-100 font-sans text-gray-900 pb-24 md:pb-0">
 
 <!-- ── Animated Splash Screen ── -->
 <div id="splash-screen" class="splash-screen">
@@ -130,14 +132,15 @@
     <span class="splash-star" style="left:90%;top:80%;width:4px;height:4px;animation-duration:3.8s;animation-delay:0.5s;"></span>
     <span class="splash-star" style="left:5%;top:55%;width:5px;height:5px;animation-duration:6.2s;animation-delay:2s;"></span>
 
-   <div class="splash-logo-wrap">
-    <span class="splash-ring"></span>
-    <span class="splash-ring"></span>
-    <span class="splash-ring"></span>
-    <img src="https://raw.githubusercontent.com/perfecthorizonsin-arch/Perfecthorizons/main/icon.png"
-        alt="Horizon CRM"
-        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-    />
+    <div class="splash-logo-wrap">
+        <span class="splash-ring"></span>
+        <span class="splash-ring"></span>
+        <span class="splash-ring"></span>
+        <img
+            src="https://raw.githubusercontent.com/YourUsername/YourRepo/main/icon.png"
+            alt="Horizon CRM"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+        />
         <!-- Fallback if icon.png not found -->
         <div style="display:none;width:80px;height:80px;background:linear-gradient(135deg,#2563eb,#6366f1);border-radius:22px;align-items:center;justify-content:center;font-size:36px;font-weight:900;font-style:italic;color:#fff;font-family:sans-serif;position:relative;z-index:2;animation:logoFloat 3s ease-in-out infinite;filter:drop-shadow(0 8px 32px rgba(99,102,241,0.6));">H</div>
     </div>
@@ -164,6 +167,12 @@
 <script>
 window.__appMounted = false;
 window.onerror = function() { if (!window.__appMounted) document.getElementById('load-error').style.display = 'flex'; };
+
+// ── Only show splash when launched from home screen (PWA) ─────────────────
+if (!window.matchMedia('(display-mode: standalone)').matches &&
+    !window.navigator.standalone) {
+    document.getElementById('splash-screen').style.display = 'none';
+}
 
 // ── Splash screen controller ──────────────────────────────────────────────
 (function() {
@@ -1513,19 +1522,22 @@ function AdminApp() {
             </nav>
 
             {/* ── Mobile Bottom Nav ── */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-2xl flex">
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-slate-200 shadow-2xl"
+                style={{paddingBottom:'env(safe-area-inset-bottom,0px)'}}>
+                <div className="flex">
                 {[
                     { id:'dashboard', emoji:'📊', label:'CRM',     cat: leadCategory },
                     { id:'library',   emoji:'🏢', label:'Library',  cat: 'website' },
                     { id:'add',       emoji:'➕', label:'Add',      cat: 'website' },
                 ].map(n => (
                     <button key={n.id} onClick={() => handleNavigate(n.id, n.cat)}
-                        className={`flex-1 flex flex-col items-center justify-center py-2 gap-1 text-[10px] font-black uppercase tracking-widest transition ${view === n.id ? 'text-blue-600' : 'text-slate-400'}`}>
-                        <span className="text-xl leading-none">{n.emoji}</span>
-                        <span>{n.label}</span>
-                        {view===n.id && <span className="w-5 h-1 bg-blue-600 rounded-full mt-0.5"></span>}
+                        className={`flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-all ${view === n.id ? 'text-blue-600' : 'text-slate-400 active:text-blue-500'}`}>
+                        {view===n.id && <span className="absolute top-0 w-10 h-0.5 bg-blue-600 rounded-full"></span>}
+                        <span className="text-2xl leading-none">{n.emoji}</span>
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${view===n.id?'text-blue-600':'text-slate-400'}`}>{n.label}</span>
                     </button>
                 ))}
+                </div>
             </div>
 
             <main className="p-3 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
