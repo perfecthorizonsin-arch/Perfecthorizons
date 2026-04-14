@@ -1368,22 +1368,21 @@ function AdminApp() {
                 <button onClick={() => supabase.auth.signOut()} className="md:hidden text-[9px] font-black uppercase text-red-400 border border-red-900/60 px-3 py-1.5 rounded-xl hover:bg-red-900/40 transition">Out</button>
             </nav>
 
-            {/* ── Mobile Bottom Nav ── */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-2xl flex">
-                {[
-                    { id:'dashboard', emoji:'📊', label:'CRM',     cat: leadCategory },
-                    { id:'library',   emoji:'🏢', label:'Library',  cat: 'website' },
-                    { id:'add',       emoji:'➕', label:'Add',      cat: 'website' },
-                ].map(n => (
-                    <button key={n.id} onClick={() => handleNavigate(n.id, n.cat)}
-                        className={`flex-1 flex flex-col items-center justify-center py-2 gap-1 text-[10px] font-black uppercase tracking-widest transition ${view === n.id ? 'text-blue-600' : 'text-slate-400'}`}>
-                        <span className="text-xl leading-none">{n.emoji}</span>
-                        <span>{n.label}</span>
-                        {view===n.id && <span className="w-5 h-1 bg-blue-600 rounded-full mt-0.5"></span>}
-                    </button>
-                ))}
-            </div>
-
+          {/* ── Mobile Bottom Nav ── */}
+<div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-2xl flex">
+    {[
+        { id:'dashboard', emoji:'📊', label:'CRM',     cat: leadCategory },
+        { id:'library',   emoji:'🏢', label:'Library',  cat: 'website' },
+        { id:'add',       emoji:'➕', label:'Add',      cat: 'website' },
+    ].map(n => (
+        <button key={n.id} onClick={() => handleNavigate(n.id, n.cat)}
+            className={`flex-1 flex flex-col items-center justify-center py-2 gap-1 text-[10px] font-black uppercase tracking-widest transition ${view === n.id ? 'text-blue-600' : 'text-slate-400'}`}>
+            <span className="text-xl leading-none">{n.emoji}</span>
+            <span>{n.label}</span>
+            {view===n.id && <span className="w-5 h-1 bg-blue-600 rounded-full mt-0.5"></span>}
+        </button>
+    ))}
+</div>
             <main className="p-3 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
                 {view === 'dashboard' && (
                     <div className="space-y-6">
