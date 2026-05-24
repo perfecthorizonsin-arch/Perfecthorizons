@@ -158,9 +158,9 @@ const ADMIN_AGENT_NAME = null; // e.g. set to 'Tharun' if admin IS Tharun
 
 const AGENT_EMAIL_MAP = {
     // ── PSA Agents ── replace left side with real Supabase login emails ───
-    'saishetty1623@gmail.com':   'Tharun',
-    'shivaji2536@gmail.com':  'Shivaji',
-    'dappertones.in@gmail.com': 'Ramswami',
+    'tharun@perfecthorizons.in':   'Tharun',
+    'shivaji@perfecthorizons.in':  'Shivaji',
+    'ramswami@perfecthorizons.in': 'Ramswami',
     'prabhu@perfecthorizons.in':   'Prabhu',
     // Admin is handled separately — do NOT add admin email here
 };
@@ -1390,6 +1390,195 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads }) {
     );
 }
 
+// ─── BULK CSV UPLOADER ────────────────────────────────────────────────────
+function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
+    const [file,        setFile]        = useState(null);
+    const [rows,        setRows]        = useState([]);       // parsed preview rows
+    const [assignTo,    setAssignTo]    = useState('');
+    const [uploading,   setUploading]   = useState(false);
+    const [error,       setError]       = useState('');
+    const [step,        setStep]        = useState('pick');   // 'pick' | 'preview' | 'done'
+
+    // Simple CSV parser — handles quoted fields
+    const parseCSV = (text) => {
+        const lines = text.trim().split(/\r?\n/);
+        if (lines.length < 2) return [];
+        const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim().toLowerCase().replace(/\s+/g,'_'));
+        return lines.slice(1).map(line => {
+            const vals = [];
+            let cur = '', inQ = false;
+            for (let ch of line) {
+                if (ch === '"') { inQ = !inQ; }
+                else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+                else cur += ch;
+            }
+            vals.push(cur.trim());
+            const obj = {};
+            headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/"/g, '').trim(); });
+            return obj;
+        }).filter(r => r.customer_name || r.name || r.phone_number || r.phone);
+    };
+
+    const handleFile = (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        setError('');
+        setFile(f);
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const parsed = parseCSV(ev.target.result);
+            if (!parsed.length) { setError('No valid rows found. Check your CSV format.'); return; }
+            setRows(parsed);
+            setStep('preview');
+        };
+        reader.readAsText(f);
+        e.target.value = '';
+    };
+
+    const handleUpload = async () => {
+        if (!assignTo) { setError('Please select an agent to assign this batch to.'); return; }
+        if (!rows.length) return;
+        setUploading(true);
+        setError('');
+        const now = new Date().toISOString();
+        const inserts = rows.map(r => ({
+            customer_name:         r.customer_name || r.name || '',
+            phone_number:          r.phone_number  || r.phone || '',
+            customer_email:        r.customer_email || r.email || null,
+            project_interested_in: r.project_interested_in || r.project || 'General Enquiry',
+            add_note:              r.add_note || r.notes || r.note || null,
+            psa_agent_name:        assignTo,
+            assigned_agent:        assignTo,
+            lead_status:           'Un called',
+            lead_source:           'Bulk Upload',
+            lead_priority:         'Warm',
+            created_at:            now,
+        }));
+
+        // Insert in batches of 100 to avoid request size limits
+        let totalInserted = 0;
+        for (let i = 0; i < inserts.length; i += 100) {
+            const batch = inserts.slice(i, i + 100);
+            const { error: err } = await supabase.from('bulk_leads').insert(batch);
+            if (err) { setError('Upload error: ' + err.message); setUploading(false); return; }
+            totalInserted += batch.length;
+        }
+
+        setUploading(false);
+        setStep('done');
+        setTimeout(() => { onSuccess(totalInserted); setStep('pick'); setRows([]); setFile(null); setAssignTo(''); }, 1800);
+    };
+
+    const reset = () => { setStep('pick'); setRows([]); setFile(null); setAssignTo(''); setError(''); };
+
+    // Column aliases shown in preview
+    const getName  = r => r.customer_name || r.name || '—';
+    const getPhone = r => r.phone_number  || r.phone || '—';
+    const getEmail = r => r.customer_email || r.email || '—';
+    const getProj  = r => r.project_interested_in || r.project || 'General Enquiry';
+
+    return (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            {/* Header */}
+            <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h3 className="text-sm font-black uppercase italic text-white tracking-tight">📤 Bulk CSV Upload</h3>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
+                        Required columns: <span className="text-blue-400">customer_name, phone_number</span> · Optional: customer_email, project_interested_in, add_note
+                    </p>
+                </div>
+                {step !== 'pick' && <button onClick={reset} className="text-[9px] font-black text-slate-400 hover:text-white bg-slate-800 px-3 py-1.5 rounded-xl uppercase tracking-widest transition">✕ Reset</button>}
+            </div>
+
+            <div className="p-6">
+                {/* Step: Pick file */}
+                {step === 'pick' && (
+                    <div className="space-y-4">
+                        <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 flex flex-col items-center justify-center hover:border-blue-400 transition-all cursor-pointer text-center"
+                            onClick={() => document.getElementById('bulk-csv-input').click()}>
+                            <div className="text-4xl mb-3">📂</div>
+                            <p className="text-sm font-black text-slate-700 uppercase tracking-wider">Click to select CSV file</p>
+                            <p className="text-[10px] text-slate-400 font-bold mt-1">or drag and drop</p>
+                            <input id="bulk-csv-input" type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile} />
+                        </div>
+                        {error && <div className="bg-red-50 border border-red-200 text-red-700 text-[10px] font-bold p-3 rounded-2xl">{error}</div>}
+                        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-blue-600 mb-2">📋 CSV Template</p>
+                            <code className="text-[10px] text-blue-800 font-bold">customer_name, phone_number, customer_email, project_interested_in, add_note</code>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step: Preview */}
+                {step === 'preview' && (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between flex-wrap gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-black text-lg">✓</div>
+                                <div>
+                                    <p className="text-sm font-black text-slate-900">{rows.length} leads ready to import</p>
+                                    <p className="text-[10px] text-slate-400 font-bold">{file?.name}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Assign to Agent:</label>
+                                <select value={assignTo} onChange={e => setAssignTo(e.target.value)}
+                                    className="p-2.5 border-2 border-slate-700 bg-slate-900 rounded-xl font-black uppercase text-[9px] outline-none text-blue-300 cursor-pointer min-w-[140px]">
+                                    <option value="" disabled>⚡ Select Agent</option>
+                                    {PSA_AGENTS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        {error && <div className="bg-red-50 border border-red-200 text-red-700 text-[10px] font-bold p-3 rounded-2xl">{error}</div>}
+
+                        {/* Preview table — first 10 rows */}
+                        <div className="rounded-2xl border border-slate-200 overflow-hidden">
+                            <div className="bg-slate-900 grid grid-cols-4 gap-0">
+                                {['Name','Phone','Email','Project'].map(h => (
+                                    <div key={h} className="px-3 py-2 text-[8px] font-black uppercase tracking-widest text-slate-400">{h}</div>
+                                ))}
+                            </div>
+                            <div className="divide-y divide-slate-100 max-h-56 overflow-y-auto history-scroll">
+                                {rows.slice(0, 10).map((r, i) => (
+                                    <div key={i} className="grid grid-cols-4 gap-0 hover:bg-slate-50">
+                                        <div className="px-3 py-2 text-[10px] font-bold text-slate-800 truncate">{getName(r)}</div>
+                                        <div className="px-3 py-2 text-[10px] font-bold text-blue-600 truncate">{getPhone(r)}</div>
+                                        <div className="px-3 py-2 text-[10px] font-medium text-slate-500 truncate">{getEmail(r)}</div>
+                                        <div className="px-3 py-2 text-[10px] font-medium text-slate-500 truncate">{getProj(r)}</div>
+                                    </div>
+                                ))}
+                            </div>
+                            {rows.length > 10 && (
+                                <div className="bg-slate-50 px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest border-t border-slate-200">
+                                    + {rows.length - 10} more rows not shown
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={reset} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-3.5 rounded-2xl text-[10px] uppercase tracking-widest transition">Cancel</button>
+                            <button onClick={handleUpload} disabled={uploading || !assignTo}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black py-3.5 rounded-2xl text-[10px] uppercase tracking-widest transition shadow-lg flex items-center justify-center gap-2">
+                                {uploading ? <><span className="animate-spin inline-block">⏳</span> Uploading {rows.length} leads...</> : `🚀 Upload ${rows.length} Leads`}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step: Done */}
+                {step === 'done' && (
+                    <div className="flex flex-col items-center py-8 gap-3">
+                        <div className="text-5xl">🎉</div>
+                        <p className="text-lg font-black uppercase text-slate-900 tracking-tight">Upload Complete!</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{rows.length} leads added to {assignTo}'s bulk queue</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 // ─── LOGIN ─────────────────────────────────────────────────────────────────
 function LoginForm({ supabase }) {
     const [email,   setEmail]   = useState("");
@@ -1513,13 +1702,30 @@ function AdminApp() {
         return () => clearInterval(interval);
     }, [session]);
     const [leadBucket,     setLeadBucket]     = useState('new');
+    const [showBulkUpload, setShowBulkUpload] = useState(false);  // CSV uploader panel
+    const [showDeleted,    setShowDeleted]    = useState(false);   // toggle show/hide deleted
     const [scheduleFilter, setScheduleFilter] = useState('ALL');
     const [priorityFilter, setPriorityFilter] = useState('ALL');
 
     // Derive current user's agent name
-    const userEmail = session?.user?.email || '';
-    const agentName = getAgentFromEmail(userEmail);
+    const userEmail   = session?.user?.email || '';
+    const agentName   = getAgentFromEmail(userEmail);
     const isAdminUser = agentName === '__ADMIN__';
+
+    // ── Default summary filter for admin/dual-role ──────────────────────────
+    // If admin IS also an agent (ADMIN_AGENT_NAME set), default the stats filter
+    // to that agent name so Tharun (admin) sees his own leads by default.
+    // Regular agents always see their own name; 'All' is only for pure admins.
+    useEffect(() => {
+        if (!session) return;
+        if (isAdminUser) {
+            // Dual-role admin → default to their agent name; pure admin → 'All'
+            setSummaryAgent(ADMIN_AGENT_NAME || 'All');
+        } else if (agentName) {
+            setSummaryAgent(agentName);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [session]);
 
     useEffect(() => {
         const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
@@ -1629,18 +1835,22 @@ function AdminApp() {
 
         if (table === 'leads') {
             if (leadCategory === 'website') {
-                // Website leads: lead_source is empty or 'website'
-                // Filter by agent for non-admin (website leads still show all to agents for website)
-                // Per requirement: website leads visible to ALL agents (PSA agent field is just assignment)
-                // But bulk/manual are agent-specific
+                // CLAIM-ON-OPEN logic:
+                //   • Unassigned leads (psa_agent_name IS NULL) → visible to ALL agents
+                //   • Assigned leads → visible ONLY to that agent + admin
+                // So a non-admin agent sees: their own assigned + all unassigned
+                if (!isAdminUser && agentName) {
+                    // .or() = psa_agent_name is null  OR  psa_agent_name = me
+                    query = query.or(`psa_agent_name.is.null,psa_agent_name.eq.${agentName}`);
+                }
             } else if (leadCategory === 'manual') {
-                // Manual leads: only show agent's own leads (or all for admin)
+                // Manual leads: scoped strictly to the agent who created them
                 if (!isAdminUser && agentName) {
                     query = query.eq('psa_agent_name', agentName);
                 }
             }
         } else {
-            // bulk_leads: only show agent's own leads
+            // bulk_leads: scoped strictly to the assigned agent
             if (!isAdminUser && agentName) {
                 query = query.eq('psa_agent_name', agentName);
             }
@@ -1659,6 +1869,19 @@ function AdminApp() {
             setLeads(raw);
         }
         setLoading(false);
+    }
+
+    // ── Soft-delete: toggle is_hidden column (true = hidden from UI, data stays) ──
+    async function toggleHideLead(lead) {
+        const table    = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
+        const newValue = !lead.is_hidden;
+        // Optimistic update
+        setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, is_hidden: newValue } : l));
+        const { error } = await supabase.from(table).update({ is_hidden: newValue }).eq('id', lead.id);
+        if (error) {
+            alert('Error: ' + error.message + '\n\nMake sure the \'is_hidden\' (boolean, default false) column exists in your ' + table + ' table.');
+            fetchLeads();
+        }
     }
 
     async function fetchAllForAdmin() {
@@ -1681,13 +1904,30 @@ function AdminApp() {
     }
 
     async function updateLead(lead, field, value) {
-        if (field === 'lead_status' && leadCategory === 'website' && (!lead.psa_agent_name || !lead.psa_agent_name.trim())) {
-            alert("ERROR: Assign a PSA Agent before changing status."); fetchLeads(); return;
+        // ── CLAIM-ON-OPEN: auto-assign unassigned website leads ─────────────
+        // When a non-admin agent interacts with an unassigned website lead,
+        // automatically claim it for them. From that point it's only visible
+        // to that agent + admin.
+        let autoClaimUpdates = {};
+        const effectiveActor = isAdminUser
+            ? (ADMIN_AGENT_NAME || 'Admin')
+            : (agentName || null);
+
+        if (leadCategory === 'website' && !lead.psa_agent_name && effectiveActor && effectiveActor !== 'Admin') {
+            // Silently claim it first
+            autoClaimUpdates.psa_agent_name = effectiveActor;
+            // Optimistic update so UI reflects immediately
+            setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, psa_agent_name: effectiveActor } : l));
+            await supabase.from('leads').update({ psa_agent_name: effectiveActor }).eq('id', lead.id);
+            // Update local lead reference so the stamp below uses the right name
+            lead = { ...lead, psa_agent_name: effectiveActor };
         }
 
         let updates = {};
         const stamp = new Date().toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-        const actorName = agentName === '__ADMIN__' ? 'Admin' : (agentName || lead.psa_agent_name || 'Unknown');
+        const actorName = isAdminUser
+            ? (ADMIN_AGENT_NAME || 'Admin')
+            : (agentName || lead.psa_agent_name || 'Unknown');
 
         if (field === 'lead_status')        { updates.lead_status   = value; updates.call_remark = `[${stamp}] [${actorName}] Status → ${value}\n\n${lead.call_remark||''}`; }
         else if (field === 'follow_up_at')  { updates.follow_up_at  = value; updates.call_remark = `[${stamp}] [${actorName}] Callback Set: ${new Date(value).toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}\n\n${lead.call_remark||''}`; }
@@ -1707,7 +1947,9 @@ function AdminApp() {
     }
 
     const displayedLeads = useMemo(() => {
+        // Filter hidden leads — show them only if admin toggles "Show Hidden"
         let f = filterLeadsByBucket(leads, leadBucket);
+        if (!showDeleted) f = f.filter(l => !l.is_hidden);
 
         const today = new Date().toISOString().split('T')[0];
         if (scheduleFilter === 'TODAY_CB')       f = f.filter(l => l.follow_up_at?.startsWith(today));
@@ -1717,20 +1959,20 @@ function AdminApp() {
 
         if (priorityFilter !== 'ALL') f = f.filter(l => (l.lead_priority||'Warm') === priorityFilter);
 
-        if (summaryAgent !== 'All' && isAdminUser) f = f.filter(l => l.psa_agent_name === summaryAgent);
+        if (summaryAgent !== 'All' && summaryAgent !== '__DEFER__' && isAdminUser) f = f.filter(l => l.psa_agent_name === summaryAgent);
 
         if (searchTerm.trim()) {
             const t = searchTerm.toLowerCase();
             f = f.filter(l => (l.customer_name||'').toLowerCase().includes(t) || (l.phone_number||'').toLowerCase().includes(t) || (l.project_interested_in||'').toLowerCase().includes(t));
         }
         return f;
-    }, [leads, leadBucket, scheduleFilter, priorityFilter, summaryAgent, searchTerm, isAdminUser]);
+    }, [leads, leadBucket, scheduleFilter, priorityFilter, summaryAgent, searchTerm, isAdminUser, showDeleted]);
 
     const visibleLeads = displayedLeads.slice(0, visibleCount);
 
     const stats = useMemo(() => {
         let t = leads.filter(l => l.lead_status !== 'Rejected');
-        if (summaryAgent !== 'All') t = t.filter(l => l.psa_agent_name === summaryAgent);
+        if (summaryAgent !== 'All' && summaryAgent !== '__DEFER__') t = t.filter(l => l.psa_agent_name === summaryAgent);
         return {
             total:     t.length,
             uncalled:  t.filter(l => !l.lead_status || l.lead_status === 'Un called').length,
@@ -1798,7 +2040,7 @@ function AdminApp() {
                             <div className="flex flex-wrap md:grid md:grid-cols-6 gap-3 items-center">
                                 {isAdminUser && (
                                     <div className="w-full md:w-auto">
-                                        <select className="bg-transparent outline-none cursor-pointer text-slate-700 text-[10px] font-black uppercase w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500" value={summaryAgent} onChange={e => setSummaryAgent(e.target.value)}>
+                                        <select className="bg-transparent outline-none cursor-pointer text-slate-700 text-[10px] font-black uppercase w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500" value={summaryAgent === '__DEFER__' ? (ADMIN_AGENT_NAME || 'All') : summaryAgent} onChange={e => setSummaryAgent(e.target.value)}>
                                             <option value="All">📊 All Agents</option>
                                             {PSA_AGENTS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
                                         </select>
@@ -1844,8 +2086,34 @@ function AdminApp() {
                                     <option value="Cold">❄️ Cold</option>
                                 </select>
                                 <button onClick={() => setShowManualModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase shadow-md shrink-0 transition border border-blue-500">+ Lead</button>
+                                {/* Bulk CSV upload — admin only, bulk tab only */}
+                                {isAdminUser && leadCategory === 'bulk' && (
+                                    <button onClick={() => setShowBulkUpload(v => !v)}
+                                        className={`px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase shadow-md shrink-0 transition border ${showBulkUpload ? 'bg-amber-500 text-white border-amber-400' : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400'}`}>
+                                        📤 {showBulkUpload ? 'Hide Uploader' : 'Upload CSV'}
+                                    </button>
+                                )}
+                                {/* Show/hide deleted — admin only */}
+                                {isAdminUser && (
+                                    <button onClick={() => setShowDeleted(v => !v)}
+                                        className={`px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase shadow-md shrink-0 transition border ${showDeleted ? 'bg-red-500 text-white border-red-400' : 'bg-white text-slate-600 border-slate-200 hover:border-red-300'}`}>
+                                        {showDeleted ? '👁 Showing Hidden' : '🗑 Show Hidden'}
+                                    </button>
+                                )}
                             </div>
                         </div>
+
+                        {/* Bulk CSV Uploader Panel */}
+                        {isAdminUser && leadCategory === 'bulk' && showBulkUpload && (
+                            <BulkCSVUploader
+                                supabase={supabase}
+                                isAdminUser={isAdminUser}
+                                onSuccess={(count) => {
+                                    setShowBulkUpload(false);
+                                    fetchLeads();
+                                }}
+                            />
+                        )}
 
                         {/* Bucket tabs */}
                         <div className="flex gap-2 overflow-x-auto hide-scroll pb-1">
@@ -1907,7 +2175,7 @@ function AdminApp() {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {visibleLeads.map(l => (
-                                            <tr key={l.id} className={`border-l-[5px] hover:brightness-[0.97] transition-all ${l.lead_priority==='Hot'?'border-l-red-500':l.lead_priority==='Cold'?'border-l-blue-400':'border-l-amber-400'} ${getCardTint(l.lead_status)}`}>
+                                            <tr key={l.id} className={`border-l-[5px] hover:brightness-[0.97] transition-all ${l.is_hidden ? 'opacity-50 bg-red-50 border-l-red-400' : `${l.lead_priority==='Hot'?'border-l-red-500':l.lead_priority==='Cold'?'border-l-blue-400':'border-l-amber-400'} ${getCardTint(l.lead_status)}`}`}>
                                                 <td className="px-5 py-4 min-w-[200px]">
                                                     <p className="font-black text-[11px] uppercase text-slate-900 leading-tight">{l.customer_name}</p>
                                                     <p className="text-blue-600 font-black text-[11px] mt-0.5">{l.phone_number}</p>
@@ -1971,9 +2239,17 @@ function AdminApp() {
                                                     </div>
                                                 </td>
                                                 <td className="px-3 py-4">
-                                                    <button onClick={() => setSelectedLead(l)} className="bg-blue-50 hover:bg-blue-100 text-blue-600 text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border border-blue-200 transition w-full">
-                                                        👁<br/>Detail
-                                                    </button>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <button onClick={() => setSelectedLead(l)} className="bg-blue-50 hover:bg-blue-100 text-blue-600 text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border border-blue-200 transition w-full">
+                                                            👁 Detail
+                                                        </button>
+                                                        {isAdminUser && (
+                                                            <button onClick={() => toggleHideLead(l)}
+                                                                className={`text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border transition w-full ${l.is_hidden ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100' : 'bg-red-50 text-red-500 border-red-200 hover:bg-red-100'}`}>
+                                                                {l.is_hidden ? '↩ Restore' : '🗑 Hide'}
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -2006,7 +2282,7 @@ function AdminApp() {
                                     <div className="text-[10px] text-slate-400 font-medium">Adjust filters or search</div>
                                 </div>
                             ) : visibleLeads.map(l => (
-                                <div key={`m-${l.id}`} className={`rounded-2xl shadow-sm border-2 overflow-hidden animate-fadeIn ${l.lead_priority==='Hot'?'border-red-200':l.lead_priority==='Cold'?'border-blue-200':'border-amber-200'} ${getCardTint(l.lead_status)}`}>
+                                <div key={`m-${l.id}`} className={`rounded-2xl shadow-sm border-2 overflow-hidden animate-fadeIn ${l.is_hidden ? 'opacity-50 border-red-300 bg-red-50' : `${l.lead_priority==='Hot'?'border-red-200':l.lead_priority==='Cold'?'border-blue-200':'border-amber-200'} ${getCardTint(l.lead_status)}`}`}>
                                     <div className={`h-1 w-full ${l.lead_priority==='Hot'?'bg-red-500':l.lead_priority==='Cold'?'bg-blue-400':'bg-amber-400'}`}></div>
                                     <div className="p-4">
                                         <div className="flex justify-between items-start mb-3">
@@ -2022,6 +2298,12 @@ function AdminApp() {
                                                 <span className={`text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${getStatusStyles(l.lead_status)}`}>{l.lead_status||'Un called'}</span>
                                                 <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${getPriorityColor(l.lead_priority||'Warm')}`}>{l.lead_priority==='Hot'?'🔥':l.lead_priority==='Cold'?'❄️':'🌤'} {l.lead_priority||'Warm'}</span>
                                                 <button onClick={() => setSelectedLead(l)} className="text-[8px] font-black text-blue-600 bg-blue-50 border border-blue-200 px-2 py-1 rounded-lg uppercase tracking-widest">👁 Detail</button>
+                                                {isAdminUser && (
+                                                    <button onClick={() => toggleHideLead(l)}
+                                                        className={`text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-widest border ${l.is_hidden ? 'text-green-600 bg-green-50 border-green-200' : 'text-red-500 bg-red-50 border-red-200'}`}>
+                                                        {l.is_hidden ? '↩' : '🗑'}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="flex gap-2 mb-3">
