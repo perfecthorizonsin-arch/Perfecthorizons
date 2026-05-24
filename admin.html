@@ -144,30 +144,37 @@ const PSA_AGENTS = [
 ];
 
 // ─── AGENT EMAIL MAP ───────────────────────────────────────────────────────
-// ⚠️  IMPORTANT: Replace the email addresses below with EACH PSA agent's
-//     actual Supabase login email (the one they use to sign in).
-//     When an agent logs in, their email is looked up here to determine
-//     which leads they can see (bulk & manual are agent-scoped).
-//     Admin email always sees everything.
+// ⚠️  Replace placeholder emails with each agent's ACTUAL Supabase login email.
+//     Go to: Supabase Dashboard → Authentication → Users → copy the email column.
 //
-//  HOW TO FIND AN AGENT'S EMAIL:
-//   Supabase Dashboard → Authentication → Users → copy the email column.
+// ✅  DUAL ROLE: If the admin is ALSO a PSA agent (e.g. Sai is also "Tharun"),
+//     set ADMIN_AGENT_NAME to that agent's name below. The admin will then:
+//       • See ALL leads (admin privilege)
+//       • Have their manual leads tagged under that agent name
+//       • Appear in agent performance stats under that name
+//     Leave as null if the admin is not an active PSA agent.
 //
+const ADMIN_AGENT_NAME = null; // e.g. set to 'Tharun' if admin IS Tharun
+
 const AGENT_EMAIL_MAP = {
-    // ── PSA Agents ── replace with real login emails ──────────────────────
-    'Saishetty1623@gmail.com':   'Tharun',     // 👤 change to Tharun's actual login email
-    'shivaji2536@gmail.com':  'Shivaji',    // 👤 change to Shivaji's actual login email
-    'dappertones.in@gmail.com': 'Ramswami',   // 👤 change to Ramswami's actual login email
-    'prabhu@perfecthorizons.in':   'Prabhu',     // 👤 change to Prabhu's actual login email
-    // ── Admin ─────────────────────────────────────────────────────────────
-    [ADMIN_EMAIL]: '__ADMIN__',
+    // ── PSA Agents ── replace left side with real Supabase login emails ───
+    'saishetty1623@gmail.com':   'Tharun',
+    'shivaji2536@gmail.com':  'Shivaji',
+    'dappertones.in@gmail.com': 'Ramswami',
+    'prabhu@perfecthorizons.in':   'Prabhu',
+    // Admin is handled separately — do NOT add admin email here
 };
 
+// Returns '__ADMIN__' for admin email, agent name for agents, null if unknown.
 const getAgentFromEmail = (email) => {
     if (!email) return null;
     if (email === ADMIN_EMAIL) return '__ADMIN__';
     return AGENT_EMAIL_MAP[email] || null;
 };
+
+// When admin creates a manual lead, stamp it with their agent persona name
+// (or 'Admin' if they are not a dual-role agent).
+const getAdminPersonaName = () => ADMIN_AGENT_NAME || 'Admin';
 
 const isAdmin = (email) => email === ADMIN_EMAIL;
 
@@ -1487,6 +1494,24 @@ function AdminApp() {
     const [visibleCount,   setVisibleCount]   = useState(50);
     const [searchTerm,     setSearchTerm]     = useState("");
     const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [sessionTimeLeft, setSessionTimeLeft] = useState(''); // e.g. "2h 47m"
+
+    // ── Live session countdown shown in nav ───────────────────────────────
+    useEffect(() => {
+        const tick = () => {
+            const stored = sessionStorage.getItem('__crm_login_time');
+            if (!stored) { setSessionTimeLeft(''); return; }
+            const elapsed  = Date.now() - parseInt(stored, 10);
+            const remaining = (3 * 60 * 60 * 1000) - elapsed;
+            if (remaining <= 0) { setSessionTimeLeft('Expiring...'); return; }
+            const h = Math.floor(remaining / 3600000);
+            const m = Math.floor((remaining % 3600000) / 60000);
+            setSessionTimeLeft(h > 0 ? `${h}h ${m}m` : `${m}m`);
+        };
+        tick();
+        const interval = setInterval(tick, 60000); // update every minute
+        return () => clearInterval(interval);
+    }, [session]);
     const [leadBucket,     setLeadBucket]     = useState('new');
     const [scheduleFilter, setScheduleFilter] = useState('ALL');
     const [priorityFilter, setPriorityFilter] = useState('ALL');
@@ -1529,15 +1554,65 @@ function AdminApp() {
 
     useEffect(() => { setVisibleCount(50); }, [leadCategory, leadBucket, scheduleFilter, summaryAgent, searchTerm, priorityFilter]);
 
+    // ── Auto-logout after 3 hours from login time ─────────────────────────
+    const AUTO_LOGOUT_MS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+    const logoutTimerRef = useRef(null);
+
+    const scheduleAutoLogout = useCallback((sess) => {
+        // Clear any existing timer
+        if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+        if (!sess) return;
+
+        // Supabase JWT has created_at in seconds; use it as login time
+        const loginEpochMs = (sess.user?.created_at
+            ? Date.now() // for existing sessions we use now as a safe fallback
+            : Date.now());
+
+        // Store login timestamp in sessionStorage so page refresh doesn't reset it
+        const stored = sessionStorage.getItem('__crm_login_time');
+        const loginTime = stored ? parseInt(stored, 10) : Date.now();
+        if (!stored) sessionStorage.setItem('__crm_login_time', String(loginTime));
+
+        const elapsed  = Date.now() - loginTime;
+        const remaining = AUTO_LOGOUT_MS - elapsed;
+
+        if (remaining <= 0) {
+            // Already past 3 hours — logout immediately
+            supabase.auth.signOut();
+            sessionStorage.removeItem('__crm_login_time');
+        } else {
+            logoutTimerRef.current = setTimeout(async () => {
+                await supabase.auth.signOut();
+                sessionStorage.removeItem('__crm_login_time');
+                alert('⏰ Session expired after 3 hours. Please log in again.');
+            }, remaining);
+        }
+    }, []);
+
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setAuthChecking(false);
             if (window.__dismissSplash) window.__dismissSplash();
+            if (session) scheduleAutoLogout(session);
         });
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
-        return () => subscription.unsubscribe();
-    }, []);
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
+            setSession(s);
+            if (s) {
+                // Fresh login — reset the timer
+                sessionStorage.setItem('__crm_login_time', String(Date.now()));
+                scheduleAutoLogout(s);
+            } else {
+                // Logged out — clear timer
+                if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+                sessionStorage.removeItem('__crm_login_time');
+            }
+        });
+        return () => {
+            subscription.unsubscribe();
+            if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+        };
+    }, [scheduleAutoLogout]);
 
     useEffect(() => {
         if (session) {
@@ -1687,7 +1762,8 @@ function AdminApp() {
             <nav className="bg-slate-900 text-white px-4 md:px-8 py-3 flex justify-between items-center sticky top-0 z-50 shadow-lg border-b border-slate-800">
                 <div className="flex items-center gap-3">
                     <h1 className="font-black tracking-tighter text-lg md:text-xl uppercase italic">Horizon <span className="text-blue-400">CRM</span></h1>
-                    {userEmail && <span className="hidden md:block text-[9px] font-bold text-slate-500 bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg uppercase tracking-widest truncate max-w-[160px]">{isAdminUser ? '🛡️ Admin' : `👤 ${agentName||userEmail.split('@')[0]}`}</span>}
+                    {userEmail && <span className="hidden md:block text-[9px] font-bold text-slate-500 bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg uppercase tracking-widest truncate max-w-[180px]">{isAdminUser ? (ADMIN_AGENT_NAME ? `🛡️ Admin · ${ADMIN_AGENT_NAME}` : '🛡️ Admin') : `👤 ${agentName||userEmail.split('@')[0]}`}</span>}
+                    {sessionTimeLeft && <span className="hidden md:flex items-center gap-1 text-[9px] font-black text-amber-400 bg-amber-900/30 border border-amber-800/50 px-2 py-1 rounded-lg uppercase tracking-widest" title="Session expires after 3 hours from login">⏱ {sessionTimeLeft}</span>}
                 </div>
                 <div className="flex gap-1 items-center">
                     {navItems.map(n => (
@@ -2036,7 +2112,7 @@ function AdminApp() {
                             </div>
                         </div>
                         <div className="px-6 py-5 max-h-[75vh] overflow-y-auto">
-                            <ManualLeadForm properties={properties} supabase={supabase} agentName={agentName === '__ADMIN__' ? null : agentName}
+                            <ManualLeadForm properties={properties} supabase={supabase} agentName={agentName === '__ADMIN__' ? getAdminPersonaName() : agentName}
                                 onSuccess={() => { setShowManualModal(false); fetchLeads(); }} />
                         </div>
                     </div>
