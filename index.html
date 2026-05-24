@@ -430,34 +430,6 @@
                 return allProperties.filter(p => p.id !== property.id && (getVal(p, "Location") === location || getVal(p, "Property Type") === getVal(property, "Property Type"))).slice(0, 3);
             }, [property, allProperties]);
 
-            const BlurredPlanSection = ({ images, isUnlocked, onUnlock, title, icon }) => (
-                <div>
-                    <div className="detail-section-title"><span style={{fontSize:16}}>{icon}</span> {title}</div>
-                    <div className="space-y-4">
-                        {images.map((img, i) => (
-                            <div key={i} className="relative overflow-hidden" style={{borderRadius:'12px',background:'var(--parchment)'}}>
-                                <img src={img} alt={`${title} ${i+1}`} className={isUnlocked ? 'plan-unlocked-img' : 'plan-locked-img'} style={{width:'100%',display:'block',borderRadius:'12px',minHeight:'200px',objectFit:'cover'}} />
-                                {!isUnlocked && (
-                                    <div className="plan-lock-overlay" onClick={onUnlock}>
-                                        <div style={{textAlign:'center',color:'white',padding:'1.5rem'}}>
-                                            <div style={{fontSize:'2.5rem',marginBottom:'10px',filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.5))'}}>🔒</div>
-                                            <p style={{fontSize:'0.75rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.18em',marginBottom:'6px',textShadow:'0 1px 4px rgba(0,0,0,0.6)'}}>Click to Unlock</p>
-                                            <p style={{fontSize:'0.65rem',color:'rgba(255,255,255,0.75)',textShadow:'0 1px 4px rgba(0,0,0,0.5)'}}>Share your details to view {title.toLowerCase()}</p>
-                                            <div className="btn-gold inline-block mt-3 px-5 py-2 rounded-lg" style={{fontSize:'0.6rem',fontWeight:800,letterSpacing:'0.14em',textTransform:'uppercase'}}>Get in Touch</div>
-                                        </div>
-                                    </div>
-                                )}
-                                {isUnlocked && (
-                                    <div style={{position:'absolute',top:10,right:10}}>
-                                        <span style={{background:'#DCFCE7',color:'#166534',fontSize:'0.55rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.12em',padding:'4px 10px',borderRadius:'999px'}}>✓ Unlocked</span>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-
             return (
                 <div className="min-h-screen overflow-x-hidden w-full" style={{backgroundColor:'var(--cream)'}}>
                     {/* Top bar */}
@@ -579,15 +551,39 @@
                                     </div>
                                 )}
 
+                                {/* FLOOR PLAN — blurred until form submitted */}
                                 {floorPlanImgs.length > 0 && (
                                     <div className="detail-section">
-                                        <BlurredPlanSection images={floorPlanImgs} isUnlocked={isFloorPlanUnlocked} onUnlock={() => openAction('unlock_floor')} title="Floor Plans" icon="📐" />
+                                        <div className="detail-section-title"><span style={{fontSize:16}}>📐</span> Floor Plans</div>
+                                        <div className="space-y-3">
+                                            {floorPlanImgs.map((img, i) => (
+                                                <div key={i} className="relative overflow-hidden" style={{borderRadius:'12px',background:'var(--parchment)',cursor:isFloorPlanUnlocked?'default':'pointer'}} onClick={!isFloorPlanUnlocked ? () => openAction('unlock_floor') : undefined}>
+                                                    <img src={img} alt={`Floor Plan ${i+1}`} style={{width:'100%',display:'block',borderRadius:'12px',objectFit:'contain',filter:isFloorPlanUnlocked?'none':'blur(14px)',transition:'filter 0.5s ease',userSelect:isFloorPlanUnlocked?'auto':'none',pointerEvents:'none'}} />
+                                                    {!isFloorPlanUnlocked && (
+                                                        <div style={{position:'absolute',inset:0,borderRadius:'12px',cursor:'pointer'}} />
+                                                    )}
+                                                    {isFloorPlanUnlocked && (
+                                                        <div style={{position:'absolute',top:10,right:10}}>
+                                                            <span style={{background:'#DCFCE7',color:'#166534',fontSize:'0.55rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.12em',padding:'4px 10px',borderRadius:'999px'}}>✓ Unlocked</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
 
+                                {/* MASTER PLAN — shown normally, no blur */}
                                 {masterPlanImgs.length > 0 && (
                                     <div className="detail-section">
-                                        <BlurredPlanSection images={masterPlanImgs} isUnlocked={isMasterPlanUnlocked} onUnlock={() => openAction('unlock_master')} title="Master Plan" icon="🗺️" />
+                                        <div className="detail-section-title"><span style={{fontSize:16}}>🗺️</span> Master Plan</div>
+                                        <div className="space-y-3">
+                                            {masterPlanImgs.map((img, i) => (
+                                                <div key={i} style={{borderRadius:'12px',overflow:'hidden',background:'var(--parchment)'}}>
+                                                    <img src={img} alt={`Master Plan ${i+1}`} style={{width:'100%',display:'block',borderRadius:'12px',objectFit:'contain'}} />
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
 
@@ -635,6 +631,48 @@
                                         Chat on WhatsApp
                                     </a>
                                     <EMICalculator propertyPriceStr={price} onApplyAction={() => openAction('apply_now')} />
+
+                                    {/* ADVISOR CARD */}
+                                    <div style={{background:'linear-gradient(135deg,#0A1628,#1E3A5F)',borderRadius:'1.25rem',padding:'1.5rem',position:'relative',overflow:'hidden'}}>
+                                        <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:'linear-gradient(90deg,var(--gold),transparent)'}}/>
+                                        <div style={{position:'absolute',bottom:-20,right:-20,width:'100px',height:'100px',borderRadius:'50%',background:'rgba(217,119,6,0.06)'}}/>
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div style={{width:'52px',height:'52px',borderRadius:'50%',overflow:'hidden',border:'2px solid rgba(217,119,6,0.4)',flexShrink:0}}>
+                                                <img src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w400" alt="Tharun" style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'top'}} onError={e => { e.target.style.display='none'; }} />
+                                            </div>
+                                            <div>
+                                                <p style={{fontWeight:800,fontSize:'0.82rem',color:'white',letterSpacing:'0.02em'}}>Tharun</p>
+                                                <p style={{fontSize:'0.58rem',color:'rgba(217,119,6,0.85)',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.18em'}}>Lead Advisor</p>
+                                            </div>
+                                        </div>
+                                        <p style={{fontSize:'0.75rem',color:'rgba(255,255,255,0.65)',lineHeight:1.65,marginBottom:'1.25rem'}}>
+                                            Have questions about this property? I'll give you an honest, unbiased opinion.
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <a href={`tel:${CALL_NUMBER}`} style={{flex:1,background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:'8px',padding:'10px',textAlign:'center',fontSize:'0.6rem',fontWeight:800,color:'white',textTransform:'uppercase',letterSpacing:'0.12em',transition:'background 0.2s'}} className="hover:bg-white/20">📞 Call</a>
+                                            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, I have a question about ${encodeURIComponent(propName)}`} target="_blank" style={{flex:1,background:'rgba(37,211,102,0.15)',border:'1px solid rgba(37,211,102,0.3)',borderRadius:'8px',padding:'10px',textAlign:'center',fontSize:'0.6rem',fontWeight:800,color:'#4ade80',textTransform:'uppercase',letterSpacing:'0.12em',transition:'background 0.2s'}} className="hover:bg-green-500/20">💬 WhatsApp</a>
+                                        </div>
+                                    </div>
+
+                                    {/* TRUST STATS */}
+                                    <div style={{background:'var(--card-bg)',borderRadius:'1.25rem',border:'1px solid var(--border)',padding:'1.25rem'}}>
+                                        <p style={{fontSize:'0.55rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.22em',color:'var(--slate-soft)',marginBottom:'1rem',textAlign:'center'}}>Why Perfect Horizons?</p>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {[{num:'100%',label:'Free Service'},{num:'50+',label:'Builders'},{num:'5★',label:'Rated'}].map((stat,i) => (
+                                                <div key={i} style={{textAlign:'center',padding:'10px 6px',background:'var(--parchment)',borderRadius:'10px',border:'1px solid var(--border)'}}>
+                                                    <div style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.35rem',fontWeight:700,color:'var(--navy)',lineHeight:1}}>{stat.num}</div>
+                                                    <div style={{fontSize:'0.5rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.14em',color:'var(--slate-soft)',marginTop:'4px'}}>{stat.label}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div style={{marginTop:'1rem',paddingTop:'1rem',borderTop:'1px solid var(--border)'}}>
+                                            {[{icon:'✓',text:'No hidden charges to buyers'},{icon:'✓',text:'Unbiased project recommendations'},{icon:'✓',text:'Support from booking to possession'}].map((item,i) => (
+                                                <div key={i} className="flex items-start gap-2" style={{fontSize:'0.72rem',color:'var(--navy)',fontWeight:500,marginBottom:i<2?'8px':0}}>
+                                                    <span style={{color:'var(--emerald)',fontWeight:800,flexShrink:0}}>{item.icon}</span>{item.text}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -675,20 +713,20 @@
                                 <button onClick={() => setActionModal(null)} style={{position:'absolute',top:'16px',right:'20px',fontSize:'1.5rem',color:'rgba(100,116,139,0.5)',fontWeight:300,lineHeight:1}} className="hover:text-slate-900 transition">×</button>
                                 <div style={{height:'3px',background:'linear-gradient(90deg,var(--gold),transparent)',borderRadius:'2px',marginBottom:'1.5rem'}}/>
                                 <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.5rem',fontWeight:700,color:'var(--navy)',marginBottom:'4px',textTransform:'uppercase'}}>
-                                    {actionModal==='brochure'?"Get Brochure":actionModal==='cost_sheet'?"Get Cost Sheet":actionModal==='apply_now'?"Apply for Loan":actionModal==='unlock_floor'?"Unlock Floor Plan":actionModal==='unlock_master'?"Unlock Master Plan":"Get in Touch"}
+                                    {actionModal==='brochure'?"Get Brochure":actionModal==='cost_sheet'?"Get Cost Sheet":actionModal==='apply_now'?"Apply for Loan":actionModal==='unlock_floor'?"Get Floor Plan":"Get in Touch"}
                                 </h2>
                                 <p style={{fontSize:'0.6rem',fontWeight:700,color:'var(--slate-soft)',textTransform:'uppercase',letterSpacing:'0.18em',marginBottom:'1.5rem'}}>{propName}</p>
-                                {(actionModal==='unlock_floor'||actionModal==='unlock_master') && (
-                                    <p style={{fontSize:'0.78rem',color:'var(--slate-soft)',marginBottom:'1.25rem',lineHeight:1.6,background:'var(--gold-light)',padding:'10px 14px',borderRadius:'8px',border:'1px solid rgba(217,119,6,0.2)'}}>
-                                        🔓 Share your details to instantly unlock the {actionModal==='unlock_floor'?'floor plans':'master plan'}.
-                                    </p>
+                                {actionModal==='unlock_floor' && (
+                                    <div style={{background:'var(--parchment)',border:'1px solid var(--border)',borderRadius:'10px',padding:'12px 14px',marginBottom:'1.25rem',fontSize:'0.78rem',color:'var(--navy)',lineHeight:1.6}}>
+                                        Fill in your details below and we'll instantly share the floor plan with you.
+                                    </div>
                                 )}
                                 <form onSubmit={handleActionSubmit} className="space-y-3">
                                     <input type="text" placeholder="Full Name" required style={{width:'100%',border:'1px solid var(--border)',background:'var(--cream)',padding:'14px 16px',borderRadius:'10px',outline:'none',fontFamily:"'DM Sans',sans-serif",fontSize:'0.875rem',fontWeight:500}} className="focus:ring-2 focus:ring-amber-300" value={leadData.name} onChange={e => setLeadData({...leadData,name:e.target.value})} />
                                     <input type="tel" placeholder="Mobile Number (10 Digits)" required style={{width:'100%',border:'1px solid var(--border)',background:'var(--cream)',padding:'14px 16px',borderRadius:'10px',outline:'none',fontFamily:"'DM Sans',sans-serif",fontSize:'0.875rem',fontWeight:500}} className="focus:ring-2 focus:ring-amber-300" value={leadData.phone} onChange={e => setLeadData({...leadData,phone:e.target.value})} />
                                     <input type="email" placeholder="Email Address (Optional)" style={{width:'100%',border:'1px solid var(--border)',background:'var(--cream)',padding:'14px 16px',borderRadius:'10px',outline:'none',fontFamily:"'DM Sans',sans-serif",fontSize:'0.875rem',fontWeight:500}} className="focus:ring-2 focus:ring-amber-300" value={leadData.email} onChange={e => setLeadData({...leadData,email:e.target.value})} />
                                     <button disabled={isSubmitting} type="submit" className="btn-gold w-full font-black py-4 rounded-xl uppercase tracking-widest mt-2 active:scale-95 text-white" style={{fontSize:'0.72rem'}}>
-                                        {isSubmitting?"Processing…":actionModal==='unlock_floor'||actionModal==='unlock_master'?"Unlock Now →":actionModal==='apply_now'?"Submit Application":"Submit"}
+                                        {isSubmitting?"Processing…":actionModal==='unlock_floor'?"Get Floor Plan →":actionModal==='apply_now'?"Submit Application":"Submit"}
                                     </button>
                                 </form>
                             </div>
@@ -934,6 +972,7 @@
                                         <select className="ph-select w-full bg-white px-3 md:px-4 py-2.5 rounded-xl text-[0.7rem] md:text-xs font-semibold outline-none border text-gray-700" style={{borderColor:'var(--border)',fontFamily:"'DM Sans',sans-serif"}} value={filters.possessionYear} onChange={e => setFilters({...filters,possessionYear:e.target.value})}>
                                             <option value="">📅 Possession</option>
                                             <option value="ready">Ready to Move</option>
+                                            <option value="2025">2025</option>
                                             <option value="2026">2026</option>
                                             <option value="2027">2027</option>
                                             <option value="2028">2028</option>
