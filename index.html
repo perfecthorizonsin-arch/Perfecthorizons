@@ -362,13 +362,12 @@
             const [actionModal, setActionModal] = useState(null);
             const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
             const [isSubmitting, setIsSubmitting] = useState(false);
-            const [activeTab, setActiveTab] = useState('overview');
             const [isFloorPlanUnlocked, setIsFloorPlanUnlocked] = useState(false);
             const [isMasterPlanUnlocked, setIsMasterPlanUnlocked] = useState(false);
-            const [lightboxImg, setLightboxImg] = useState(null);
             const [legalModal, setLegalModal] = useState(null);
+            const [heroImg, setHeroImg] = useState(null);
 
-            useEffect(() => { window.scrollTo(0, 0); }, [property]);
+            useEffect(() => { window.scrollTo(0, 0); setHeroImg(null); }, [property]);
 
             const openAction = (type) => { setActionModal(type); setLeadData({ name: "", phone: "", email: "" }); };
 
@@ -424,14 +423,7 @@
             const floorPlanImgs = floorPlanRaw ? String(floorPlanRaw).split(',').map(l => convertDriveLink(l.trim())).filter(Boolean) : [];
             const masterPlanImgs= masterPlanRaw ? String(masterPlanRaw).split(',').map(l => convertDriveLink(l.trim())).filter(Boolean) : [];
 
-            const TABS = [
-                { key: 'overview',    label: 'Overview' },
-                ...(projectUsps          ? [{ key: 'highlights',   label: 'Highlights'   }] : []),
-                ...(amenities            ? [{ key: 'amenities',    label: 'Amenities'    }] : []),
-                ...(floorPlanImgs.length ? [{ key: 'floor_plan',   label: 'Floor Plan'   }] : []),
-                ...(masterPlanImgs.length? [{ key: 'master_plan',  label: 'Master Plan'  }] : []),
-                { key: 'location',    label: 'Location' },
-            ];
+            const TABS = null; // removed — sections are now sequential
 
             const similarProperties = useMemo(() => {
                 if (!allProperties || !allProperties.length) return [];
@@ -477,20 +469,28 @@
                             </button>
                             <div className="flex items-center gap-3">
                                 <span className="hidden md:block" style={{fontSize:'0.6rem',fontWeight:600,color:'var(--slate-soft)',textTransform:'uppercase',letterSpacing:'0.12em'}}>📍 {location} · {builder}</span>
-                                <a href={`tel:${CALL_NUMBER}`} style={{border:'1px solid var(--border)',borderRadius:'8px',fontSize:'0.6rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',color:'var(--navy)',padding:'9px 16px',display:'flex',alignItems:'center',gap:'6px',transition:'all 0.2s'}} className="hover:border-yellow-400 hover:text-yellow-600">📞 Call Us</a>
+                                {/* Desktop: show number directly */}
+                                <a href={`tel:${CALL_NUMBER}`} className="hidden md:flex items-center gap-2 hover:text-yellow-600 transition" style={{fontSize:'0.78rem',fontWeight:700,color:'var(--navy)',letterSpacing:'0.02em'}}>📞 {CALL_NUMBER}</a>
+                                {/* Mobile: show "Call Us" button */}
+                                <a href={`tel:${CALL_NUMBER}`} className="md:hidden flex items-center gap-2 hover:border-yellow-400 hover:text-yellow-600 transition" style={{border:'1px solid var(--border)',borderRadius:'8px',fontSize:'0.6rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',color:'var(--navy)',padding:'9px 16px'}}>📞 Call Us</a>
                             </div>
                         </div>
                     </div>
 
                     <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 animate-fadeIn">
 
-                        {/* COVER IMAGE (standalone hero) */}
+                        {/* COVER IMAGE (clickable hero — updates when gallery thumbnail clicked) */}
                         <div className="mb-4" style={{borderRadius:'1.25rem',overflow:'hidden',border:'1px solid var(--border)',background:'var(--parchment)'}}>
                             <div style={{height:'clamp(220px,45vw,520px)',position:'relative',background:'#0F172A'}}>
-                                {cover ? (
+                                {(heroImg || cover) ? (
                                     <>
-                                        <img src={cover} className="absolute inset-0 w-full h-full opacity-20 blur-2xl scale-110 object-cover" alt="" />
-                                        <img src={cover} className="relative z-10 w-full h-full object-contain" alt={propName} />
+                                        <img src={heroImg || cover} className="absolute inset-0 w-full h-full opacity-20 blur-2xl scale-110 object-cover" alt="" />
+                                        <img src={heroImg || cover} className="relative z-10 w-full h-full object-contain" alt={propName} style={{transition:'opacity 0.25s ease'}} />
+                                        {heroImg && heroImg !== cover && (
+                                            <button onClick={() => setHeroImg(null)} style={{position:'absolute',bottom:12,left:14,zIndex:20,background:'rgba(15,23,42,0.75)',color:'white',fontSize:'0.55rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',padding:'5px 12px',borderRadius:'6px',border:'none',cursor:'pointer',backdropFilter:'blur(8px)'}}>
+                                                ← Cover Image
+                                            </button>
+                                        )}
                                     </>
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center" style={{background:'var(--parchment)'}}>
@@ -501,22 +501,29 @@
                             </div>
                         </div>
 
-                        {/* GALLERY GRID (separate from cover) */}
+                        {/* GALLERY GRID (separate from cover — click to preview in hero above) */}
                         {galImgs.length > 0 && (
                             <div className="mb-6">
                                 <div className="flex items-center gap-2 mb-3">
                                     <span style={{fontSize:'0.6rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.22em',color:'var(--slate-soft)'}}>Gallery</span>
                                     <span style={{background:'var(--parchment)',border:'1px solid var(--border)',padding:'2px 8px',borderRadius:'999px',fontSize:'0.55rem',fontWeight:700,color:'var(--slate-soft)'}}>{galImgs.length} Photos</span>
+                                    <span style={{fontSize:'0.55rem',color:'var(--slate-soft)',fontStyle:'italic',marginLeft:'4px'}}>Click to preview</span>
                                 </div>
                                 <div className="gallery-grid">
-                                    {galImgs.map((img, i) => (
-                                        <div key={i} onClick={() => setLightboxImg(img)} className="relative overflow-hidden cursor-pointer group" style={{aspectRatio:'16/10',borderRadius:'10px',background:'var(--parchment)',border:'1px solid var(--border)'}}>
-                                            <img src={img} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-108" style={{transition:'transform 0.5s ease'}} alt={`Gallery ${i+1}`} />
-                                            <div style={{position:'absolute',inset:0,background:'rgba(15,23,42,0)',transition:'background 0.2s'}} className="group-hover:bg-slate-900/20 flex items-center justify-center">
-                                                <span style={{fontSize:'1.5rem',opacity:0,transition:'opacity 0.2s'}} className="group-hover:opacity-100">🔍</span>
+                                    {galImgs.map((img, i) => {
+                                        const isActive = (heroImg === img);
+                                        return (
+                                            <div key={i} onClick={() => setHeroImg(img)} className="relative overflow-hidden cursor-pointer group" style={{aspectRatio:'16/10',borderRadius:'10px',background:'var(--parchment)',border:`2px solid ${isActive?'var(--gold)':'var(--border)'}`,transition:'border-color 0.2s,transform 0.2s',transform:isActive?'scale(0.97)':'scale(1)'}}>
+                                                <img src={img} loading="lazy" decoding="async" className="w-full h-full object-cover" style={{transition:'transform 0.4s ease'}} alt={`Gallery ${i+1}`} />
+                                                <div style={{position:'absolute',inset:0,background:isActive?'rgba(217,119,6,0.12)':'rgba(15,23,42,0)',transition:'background 0.2s'}} className="group-hover:bg-slate-900/15 flex items-center justify-center">
+                                                    {isActive
+                                                        ? <span style={{fontSize:'0.55rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.12em',color:'white',background:'rgba(217,119,6,0.85)',padding:'3px 8px',borderRadius:'4px'}}>Viewing</span>
+                                                        : <span style={{fontSize:'1.2rem',opacity:0,transition:'opacity 0.2s'}} className="group-hover:opacity-100">🔍</span>
+                                                    }
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -549,64 +556,63 @@
 
                         {/* TWO-COLUMN LAYOUT */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* LEFT — tabbed content */}
-                            <div className="lg:col-span-2 space-y-0">
-                                {TABS.length > 1 && (
-                                    <div className="flex overflow-x-auto hide-scroll" style={{background:'var(--card-bg)',border:'1px solid var(--border)',borderRadius:'1rem 1rem 0 0',borderBottom:'none',padding:'0 1rem'}}>
-                                        {TABS.map(t => (<button key={t.key} onClick={() => setActiveTab(t.key)} className={`tab-btn ${activeTab===t.key?'active':''}`}>{t.label}</button>))}
+                            {/* LEFT — sequential sections */}
+                            <div className="lg:col-span-2 space-y-4">
+
+                                {/* OVERVIEW */}
+                                <div className="detail-section">
+                                    <div className="detail-section-title"><span style={{fontSize:16}}>🏗️</span> About the Project</div>
+                                    {description ? <p style={{color:'var(--slate-soft)',fontSize:'0.875rem',lineHeight:1.85,whiteSpace:'pre-wrap'}}>{description}</p> : <p style={{color:'var(--slate-soft)',fontSize:'0.875rem'}}>Details coming soon. Contact us for more information.</p>}
+                                </div>
+
+                                {projectUsps && (
+                                    <div className="detail-section">
+                                        <div className="detail-section-title"><span style={{fontSize:16}}>✦</span> Key Highlights</div>
+                                        <div>{String(projectUsps).split('\n').filter(u=>u.trim()).map((u,i) => (<div key={i} className="highlight-row"><span style={{color:'var(--gold)',fontSize:'0.7rem',marginTop:'2px',flexShrink:0}}>✦</span><span style={{fontSize:'0.85rem',lineHeight:1.7}}>{u.trim()}</span></div>))}</div>
                                     </div>
                                 )}
-                                <div className="detail-section animate-fadeIn" style={{borderRadius:TABS.length>1?'0 0 1.25rem 1.25rem':'1.25rem',minHeight:200}}>
-                                    {activeTab==='overview' && (
-                                        <div>
-                                            <div className="detail-section-title"><span style={{fontSize:16}}>🏗️</span> About the Project</div>
-                                            {description ? <p style={{color:'var(--slate-soft)',fontSize:'0.875rem',lineHeight:1.85,whiteSpace:'pre-wrap'}}>{description}</p> : <p style={{color:'var(--slate-soft)',fontSize:'0.875rem'}}>Details coming soon. Contact us for more information.</p>}
-                                        </div>
-                                    )}
-                                    {activeTab==='highlights' && projectUsps && (
-                                        <div>
-                                            <div className="detail-section-title"><span style={{fontSize:16}}>✦</span> Key Highlights</div>
-                                            <div>{String(projectUsps).split('\n').filter(u=>u.trim()).map((u,i) => (<div key={i} className="highlight-row"><span style={{color:'var(--gold)',fontSize:'0.7rem',marginTop:'2px',flexShrink:0}}>✦</span><span style={{fontSize:'0.85rem',lineHeight:1.7}}>{u.trim()}</span></div>))}</div>
-                                        </div>
-                                    )}
-                                    {activeTab==='amenities' && amenities && (
-                                        <div>
-                                            <div className="detail-section-title"><span style={{fontSize:16}}>✓</span> Amenities</div>
-                                            <div className="flex flex-wrap gap-2">{String(amenities).split(',').filter(a=>a.trim()).map((a,i) => (<span key={i} className="amenity-pill"><span style={{color:'var(--emerald)',fontSize:'0.75rem'}}>✓</span> {a.trim()}</span>))}</div>
-                                        </div>
-                                    )}
-                                    {activeTab==='floor_plan' && floorPlanImgs.length > 0 && (
+
+                                {amenities && (
+                                    <div className="detail-section">
+                                        <div className="detail-section-title"><span style={{fontSize:16}}>✓</span> Amenities</div>
+                                        <div className="flex flex-wrap gap-2">{String(amenities).split(',').filter(a=>a.trim()).map((a,i) => (<span key={i} className="amenity-pill"><span style={{color:'var(--emerald)',fontSize:'0.75rem'}}>✓</span> {a.trim()}</span>))}</div>
+                                    </div>
+                                )}
+
+                                {floorPlanImgs.length > 0 && (
+                                    <div className="detail-section">
                                         <BlurredPlanSection images={floorPlanImgs} isUnlocked={isFloorPlanUnlocked} onUnlock={() => openAction('unlock_floor')} title="Floor Plans" icon="📐" />
-                                    )}
-                                    {activeTab==='master_plan' && masterPlanImgs.length > 0 && (
+                                    </div>
+                                )}
+
+                                {masterPlanImgs.length > 0 && (
+                                    <div className="detail-section">
                                         <BlurredPlanSection images={masterPlanImgs} isUnlocked={isMasterPlanUnlocked} onUnlock={() => openAction('unlock_master')} title="Master Plan" icon="🗺️" />
-                                    )}
-                                    {activeTab==='location' && (
+                                    </div>
+                                )}
+
+                                {/* LOCATION — always shown */}
+                                <div className="detail-section">
+                                    <div className="detail-section-title"><span style={{fontSize:16}}>📍</span> Location</div>
+                                    <div className="stat-item mb-4" style={{display:'flex',alignItems:'center',gap:'12px'}}>
+                                        <span style={{fontSize:'1.5rem'}}>📍</span>
+                                        <div><div className="stat-label">Project Location</div><div className="stat-value">{location || '—'}</div></div>
+                                    </div>
+                                    {mapEmbedSrc ? (
                                         <div>
-                                            <div className="detail-section-title"><span style={{fontSize:16}}>📍</span> Location</div>
-                                            <div className="stat-item mb-4" style={{display:'flex',alignItems:'center',gap:'12px'}}>
-                                                <span style={{fontSize:'1.5rem'}}>📍</span>
-                                                <div>
-                                                    <div className="stat-label">Project Location</div>
-                                                    <div className="stat-value">{location || '—'}</div>
-                                                </div>
+                                            <div className="map-embed" style={{borderRadius:'1rem',overflow:'hidden',marginBottom:'1rem'}}>
+                                                <iframe src={mapEmbedSrc} width="100%" height="320" style={{border:0,display:'block'}} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" sandbox="allow-scripts allow-same-origin allow-popups" title="Property Location" />
                                             </div>
-                                            {mapEmbedSrc ? (
-                                                <div>
-                                                    <div className="map-embed" style={{borderRadius:'1rem',overflow:'hidden',marginBottom:'1rem'}}>
-                                                        <iframe src={mapEmbedSrc} width="100%" height="320" style={{border:0,display:'block'}} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" sandbox="allow-scripts allow-same-origin allow-popups" title="Property Location" />
-                                                    </div>
-                                                    {mapLink && mapLink!=='#' && (<a href={mapLink} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:'6px',fontSize:'0.65rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',color:'var(--teal)'}} className="hover:text-yellow-600 transition">Open in Google Maps →</a>)}
-                                                </div>
-                                            ) : (
-                                                <div style={{background:'var(--parchment)',borderRadius:'1rem',padding:'2rem',textAlign:'center',border:'1px solid var(--border)'}}>
-                                                    <p style={{fontSize:'0.8rem',color:'var(--slate-soft)',fontStyle:'italic'}}>Map coming soon. Contact us for exact location details.</p>
-                                                    <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, I need location details for ${encodeURIComponent(propName)}`} target="_blank" style={{display:'inline-flex',alignItems:'center',gap:'8px',marginTop:'1rem',background:'rgba(37,211,102,0.1)',border:'1px solid rgba(37,211,102,0.25)',borderRadius:'999px',padding:'8px 16px',fontSize:'0.65rem',fontWeight:800,color:'#166534',textTransform:'uppercase',letterSpacing:'0.12em'}}>WhatsApp for Location</a>
-                                                </div>
-                                            )}
+                                            {mapLink && mapLink!=='#' && (<a href={mapLink} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:'6px',fontSize:'0.65rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',color:'var(--teal)'}} className="hover:text-yellow-600 transition">Open in Google Maps →</a>)}
+                                        </div>
+                                    ) : (
+                                        <div style={{background:'var(--parchment)',borderRadius:'1rem',padding:'2rem',textAlign:'center',border:'1px solid var(--border)'}}>
+                                            <p style={{fontSize:'0.8rem',color:'var(--slate-soft)',fontStyle:'italic'}}>Map coming soon. Contact us for exact location details.</p>
+                                            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, I need location details for ${encodeURIComponent(propName)}`} target="_blank" style={{display:'inline-flex',alignItems:'center',gap:'8px',marginTop:'1rem',background:'rgba(37,211,102,0.1)',border:'1px solid rgba(37,211,102,0.25)',borderRadius:'999px',padding:'8px 16px',fontSize:'0.65rem',fontWeight:800,color:'#166534',textTransform:'uppercase',letterSpacing:'0.12em'}}>WhatsApp for Location</a>
                                         </div>
                                     )}
                                 </div>
+
                             </div>
 
                             {/* RIGHT — sticky sidebar */}
@@ -661,14 +667,6 @@
 
                     {/* FOOTER */}
                     <PhFooter onNavTo={onNavTo || onBack} setLegalModal={setLegalModal} />
-
-                    {/* Lightbox */}
-                    {lightboxImg && (
-                        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/95 backdrop-blur-sm" onClick={() => setLightboxImg(null)}>
-                            <button onClick={() => setLightboxImg(null)} style={{position:'absolute',top:20,right:24,color:'rgba(255,255,255,0.6)',fontSize:'2rem',fontWeight:300,lineHeight:1,zIndex:10}} className="hover:text-white">×</button>
-                            <img src={lightboxImg} className="max-w-[90vw] max-h-[85vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
-                        </div>
-                    )}
 
                     {/* Action Modal */}
                     {actionModal && (
@@ -726,7 +724,7 @@
             const [search, setSearch] = useState("");
             const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
             const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-            const [filters, setFilters] = useState({ bhk: "", status: "", type: "", priceBracket: "" });
+            const [filters, setFilters] = useState({ bhk: "", status: "", type: "", priceBracket: "", possessionYear: "" });
             const [showLeadForm, setShowLeadForm] = useState(false);
             const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
             const [isSubmitting, setIsSubmitting] = useState(false);
@@ -796,7 +794,12 @@
                     else if (filters.priceBracket==="4-5") matchPrice = priceInCr>=4 && priceInCr<5;
                     else if (filters.priceBracket==="5plus") matchPrice = priceInCr>=5;
                 } else if (filters.priceBracket) matchPrice = false;
-                return matchSearch && matchBHK && matchStatus && matchType && matchPrice;
+                const matchPossession = !filters.possessionYear || (() => {
+                    const pd = String(getVal(p,"possession_date")||getVal(p,"Possession Date")||"").toLowerCase();
+                    if (filters.possessionYear === "ready") return pd.includes("ready");
+                    return pd.includes(filters.possessionYear);
+                })();
+                return matchSearch && matchBHK && matchStatus && matchType && matchPrice && matchPossession;
             });
 
             const navTo = (page) => {
@@ -811,7 +814,6 @@
                     <>
                         <PropertyDetailsPage property={selectedProperty} allProperties={safeProperties} onBack={() => setSelectedProperty(null)} onNavTo={navTo} onSubmitLead={handleLeadSubmit} isAdmin={isAdmin} onSelectProperty={setSelectedProperty} onOpenEnquiry={openEnquiry} />
                         <button onClick={openEnquiry} className="sticky-git-btn" title="Get in Touch">Get in Touch</button>
-                        <StickyEnquiryBar onSubmitLead={handleLeadSubmit} />
                         {showLeadForm && (
                             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setShowLeadForm(false)}>
                                 <div style={{background:'var(--card-bg)',borderRadius:'28px',maxWidth:'380px',width:'100%',padding:'2.5rem',boxShadow:'0 32px 80px rgba(15,23,42,0.5)',position:'relative'}} onClick={e => e.stopPropagation()}>
@@ -910,7 +912,7 @@
                                             Filters {isMobileFilterOpen?'▲':'▼'}
                                         </button>
                                     </div>
-                                    <div className={`${isMobileFilterOpen?'grid':'hidden'} md:grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3 mt-3 md:mt-0 animate-fadeIn w-full`}>
+                                    <div className={`${isMobileFilterOpen?'grid':'hidden'} md:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-3 mt-3 md:mt-0 animate-fadeIn w-full`}>
                                         <select className="ph-select w-full bg-white px-3 md:px-4 py-2.5 rounded-xl text-[0.7rem] md:text-xs font-semibold outline-none border text-gray-700" style={{borderColor:'var(--border)',fontFamily:"'DM Sans',sans-serif"}} value={filters.bhk} onChange={e => setFilters({...filters,bhk:e.target.value})}>
                                             <option value="">🏠 Configuration</option>
                                             <option value="1">1 BHK</option><option value="2">2 BHK</option><option value="3">3 BHK</option><option value="4">4 BHK</option><option value="5">5 BHK</option>
@@ -929,7 +931,15 @@
                                             <option value="">💰 Budget</option>
                                             <option value="under1">Under ₹1 Cr</option><option value="1-2">₹1 – 2 Cr</option><option value="2-3">₹2 – 3 Cr</option><option value="3-4">₹3 – 4 Cr</option><option value="4-5">₹4 – 5 Cr</option><option value="5plus">₹5 Cr & Above</option>
                                         </select>
-                                        <button onClick={() => {setSearch("");setFilters({bhk:"",status:"",type:"",priceBracket:""});setIsMobileSearchOpen(false);setIsMobileFilterOpen(false);}} style={{border:'1px solid var(--border)',color:'var(--slate-soft)',fontSize:'0.65rem',fontFamily:"'DM Sans',sans-serif",minHeight:'44px'}} className="w-full col-span-2 md:col-span-1 font-black uppercase tracking-widest bg-white rounded-xl shadow-sm py-2.5 hover:border-red-300 hover:text-red-500 transition-colors active:scale-95">✕ Reset</button>
+                                        <select className="ph-select w-full bg-white px-3 md:px-4 py-2.5 rounded-xl text-[0.7rem] md:text-xs font-semibold outline-none border text-gray-700" style={{borderColor:'var(--border)',fontFamily:"'DM Sans',sans-serif"}} value={filters.possessionYear} onChange={e => setFilters({...filters,possessionYear:e.target.value})}>
+                                            <option value="">📅 Possession</option>
+                                            <option value="ready">Ready to Move</option>
+                                            <option value="2026">2026</option>
+                                            <option value="2027">2027</option>
+                                            <option value="2028">2028</option>
+                                            <option value="2029">2029 & Beyond</option>
+                                        </select>
+                                        <button onClick={() => {setSearch("");setFilters({bhk:"",status:"",type:"",priceBracket:"",possessionYear:""});setIsMobileSearchOpen(false);setIsMobileFilterOpen(false);}} style={{border:'1px solid var(--border)',color:'var(--slate-soft)',fontSize:'0.65rem',fontFamily:"'DM Sans',sans-serif",minHeight:'44px'}} className="w-full col-span-2 md:col-span-1 font-black uppercase tracking-widest bg-white rounded-xl shadow-sm py-2.5 hover:border-red-300 hover:text-red-500 transition-colors active:scale-95">✕ Reset</button>
                                     </div>
                                 </div>
                             </div>
@@ -1297,8 +1307,8 @@
                         </a>
                     </div>
 
-                    {/* STICKY BOTTOM ENQUIRY BAR */}
-                    <StickyEnquiryBar onSubmitLead={handleLeadSubmit} />
+                    {/* STICKY BOTTOM ENQUIRY BAR — only on properties listing page */}
+                    {activePage === 'home' && <StickyEnquiryBar onSubmitLead={handleLeadSubmit} />}
 
                     {/* Legal Modals */}
                     {legalModal && (
