@@ -38,6 +38,7 @@
         @keyframes splashBg { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
         @keyframes shimmerText { 0%,100%{opacity:0.5} 50%{opacity:1} }
         @keyframes starsFloat { 0%{transform:translateY(0) rotate(0deg);opacity:0} 10%{opacity:1} 90%{opacity:0.5} 100%{transform:translateY(-80px) rotate(360deg);opacity:0} }
+        @keyframes timerPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
         .splash-screen { position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 40%,#0f172a 100%);background-size:400% 400%;animation:splashBg 8s ease infinite;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.6s ease,visibility 0.6s ease; }
         .splash-screen.hidden { opacity:0;visibility:hidden;pointer-events:none; }
         .splash-logo-wrap { position:relative;display:flex;align-items:center;justify-content:center;width:120px;height:120px;margin-bottom:32px; }
@@ -73,6 +74,12 @@
         .lead-row:hover { filter:brightness(0.97); }
         input,select,textarea { font-family:inherit; }
         select option { font-size:12px; }
+        /* FIX 3: Timer with second countdown */
+        .session-timer { 
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.05em;
+        }
+        .session-timer.warning { animation: timerPulse 1s ease-in-out infinite; }
         @media(max-width:640px){ .hide-mobile{ display:none !important; } }
     </style>
 </head>
@@ -144,36 +151,22 @@ const PSA_AGENTS = [
 ];
 
 // ─── AGENT EMAIL MAP ───────────────────────────────────────────────────────
-// ⚠️  Replace placeholder emails with each agent's ACTUAL Supabase login email.
-//     Go to: Supabase Dashboard → Authentication → Users → copy the email column.
-//
-// ✅  DUAL ROLE: If the admin is ALSO a PSA agent (e.g. Sai is also "Tharun"),
-//     set ADMIN_AGENT_NAME to that agent's name below. The admin will then:
-//       • See ALL leads (admin privilege)
-//       • Have their manual leads tagged under that agent name
-//       • Appear in agent performance stats under that name
-//     Leave as null if the admin is not an active PSA agent.
-//
-const ADMIN_AGENT_NAME = null; // e.g. set to 'Tharun' if admin IS Tharun
+// FIX 4: Admin (saishetty1623@gmail.com) defaults to 'Tharun' agent filter
+const ADMIN_AGENT_NAME = 'Tharun'; // Admin is also Tharun — default filter + persona
 
 const AGENT_EMAIL_MAP = {
-    // ── PSA Agents ── replace left side with real Supabase login emails ───
     'tharun@perfecthorizons.in':   'Tharun',
     'shivaji@perfecthorizons.in':  'Shivaji',
     'ramswami@perfecthorizons.in': 'Ramswami',
     'prabhu@perfecthorizons.in':   'Prabhu',
-    // Admin is handled separately — do NOT add admin email here
 };
 
-// Returns '__ADMIN__' for admin email, agent name for agents, null if unknown.
 const getAgentFromEmail = (email) => {
     if (!email) return null;
     if (email === ADMIN_EMAIL) return '__ADMIN__';
     return AGENT_EMAIL_MAP[email] || null;
 };
 
-// When admin creates a manual lead, stamp it with their agent persona name
-// (or 'Admin' if they are not a dual-role agent).
 const getAdminPersonaName = () => ADMIN_AGENT_NAME || 'Admin';
 
 const isAdmin = (email) => email === ADMIN_EMAIL;
@@ -281,6 +274,15 @@ const formatDateTime = (dt) => {
     } catch { return dt; }
 };
 
+// FIX 3: Format seconds into HH:MM:SS
+const formatCountdown = (totalSeconds) => {
+    if (totalSeconds <= 0) return '00:00:00';
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+};
+
 const getStatusStyles = (status) => {
     switch(status) {
         case 'Called':         return 'bg-blue-100 text-blue-800 border-blue-300';
@@ -315,6 +317,27 @@ const getCardTint = (status) => {
 };
 
 const isMobile = () => /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+// ─── FIX 3: SESSION TIMER HOOK (second-level countdown) ───────────────────
+function useSessionCountdown() {
+    const [secondsLeft, setSecondsLeft] = useState(null);
+    const AUTO_LOGOUT_MS = 3 * 60 * 60 * 1000;
+
+    useEffect(() => {
+        const tick = () => {
+            const stored = sessionStorage.getItem('__crm_login_time');
+            if (!stored) { setSecondsLeft(null); return; }
+            const elapsed = Date.now() - parseInt(stored, 10);
+            const remaining = Math.max(0, Math.floor((AUTO_LOGOUT_MS - elapsed) / 1000));
+            setSecondsLeft(remaining);
+        };
+        tick();
+        const interval = setInterval(tick, 1000); // Update every second
+        return () => clearInterval(interval);
+    }, []);
+
+    return secondsLeft;
+}
 
 // ─── EMI CALCULATOR ────────────────────────────────────────────────────────
 const EMICalculator = ({ propertyPriceStr }) => {
@@ -464,7 +487,6 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                     <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-black text-sm">✕</button>
                 </div>
                 <div className="overflow-y-auto p-6 space-y-5 flex-1">
-                    {/* Key Info Grid */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200">
                             <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Status</div>
@@ -482,7 +504,6 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                             <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Lead Source</div>
                             <div className="text-xs font-black text-slate-800">{lead.lead_source || 'Website'}</div>
                         </div>
-                        {/* Project — hidden from agents on bulk leads */}
                         {(isAdminUser || lead.lead_source !== 'Bulk Upload') ? (
                         <div className="bg-blue-50 rounded-2xl p-3 border border-blue-200 col-span-2">
                             <div className="text-[8px] font-black uppercase tracking-widest text-blue-400 mb-1">🏠 Project Interested In</div>
@@ -495,8 +516,6 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                             </div>
                         )}
                     </div>
-
-                    {/* Dates */}
                     <div className="bg-slate-900 rounded-2xl p-4 space-y-2">
                         <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">📅 Timeline</div>
                         <div className="flex justify-between text-[10px]">
@@ -516,25 +535,18 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                             </div>
                         )}
                     </div>
-
-                    {/* Notes */}
-                    {/* Notes — hidden from agents on bulk leads */}
                     {lead.add_note && (
                         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
                             <div className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-2">📝 Notes / Requirements</div>
                             <p className="text-xs font-semibold text-amber-900 whitespace-pre-wrap leading-relaxed">{lead.add_note}</p>
                         </div>
                     )}
-
-                    {/* Reject Reason */}
                     {lead.reject_reason && (
                         <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
                             <div className="text-[9px] font-black uppercase tracking-widest text-red-600 mb-1">❌ Rejection Reason</div>
                             <p className="text-xs font-black text-red-800">{lead.reject_reason}</p>
                         </div>
                     )}
-
-                    {/* Activity Log */}
                     <div>
                         <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">📋 CRM Activity Log</div>
                         <div className="bg-slate-900/5 border border-slate-200 rounded-2xl p-4 max-h-48 overflow-y-auto history-scroll">
@@ -544,8 +556,6 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                             }
                         </div>
                     </div>
-
-                    {/* Actions */}
                     <div className="flex gap-2 pt-2">
                         <a href={`tel:${lead.phone_number}`} className="flex-1 flex items-center justify-center gap-1 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest py-3 rounded-2xl hover:bg-blue-600 transition">📞 Call</a>
                         <a href={`https://wa.me/91${lead.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="flex-1 flex items-center justify-center gap-1 bg-green-500 text-white text-[9px] font-black uppercase tracking-widest py-3 rounded-2xl hover:bg-green-600 transition shadow-sm">💬 WhatsApp</a>
@@ -1066,7 +1076,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
             </div>
 
             <div className="p-5 md:p-10 space-y-8">
-                {/* Section 1 */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">1</div>
@@ -1089,7 +1098,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                {/* Section 2 */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">2</div>
@@ -1116,7 +1124,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                {/* Section 3 */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">3</div>
@@ -1141,7 +1148,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                {/* Section 4 - Admin */}
                 <div className="bg-slate-900 rounded-3xl p-5 md:p-8">
                     <div className="flex items-center gap-3 mb-5">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">4</div>
@@ -1157,7 +1163,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                {/* Section 5 - Files */}
                 <div>
                     <div className="flex items-center gap-3 mb-2">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">5</div>
@@ -1203,7 +1208,7 @@ function ManualLeadForm({ supabase, properties, onSuccess, agentName }) {
             project_interested_in:form.project, add_note:form.note,
             call_remark:form.note ? `[${stamp}] Requirement: ${form.note}\n\n` : '',
             lead_source:'Manual Entry', lead_status:'Un called',
-            psa_agent_name: agentName || null,           // Pre-assign to the agent who added
+            psa_agent_name: agentName || null,
             assigned_agent: agentName || null,
         }]);
         if (!error) {
@@ -1260,9 +1265,13 @@ function ManualLeadForm({ supabase, properties, onSuccess, agentName }) {
     );
 }
 
-// ─── ADMIN OVERVIEW PANEL ──────────────────────────────────────────────────
-function AdminOverview({ allLeads, allBulkLeads, allManualLeads }) {
-    const [activeAgent, setActiveAgent] = useState('All');
+// ─── FIX 5: ADMIN OVERVIEW PANEL (clickable leads drill-down) ─────────────
+function AdminOverview({ allLeads, allBulkLeads, allManualLeads, onNavigateToDashboard }) {
+    const [drillAgent,  setDrillAgent]  = useState(null);   // which agent card is expanded
+    const [drillMetric, setDrillMetric] = useState(null);   // which stat was clicked
+    const [drillLeads,  setDrillLeads]  = useState([]);     // leads for drill-down
+    const [drillSearch, setDrillSearch] = useState('');
+    const [selectedDrillLead, setSelectedDrillLead] = useState(null);
 
     const agentStats = useMemo(() => {
         return PSA_AGENTS.map(agent => {
@@ -1283,6 +1292,7 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads }) {
                 svSched:   allAgentLeads.filter(l => l.lead_status === 'SV Scheduled').length,
                 converted: allAgentLeads.filter(l => l.lead_status === 'Converted').length,
                 rejected:  allAgentLeads.filter(l => l.lead_status === 'Rejected').length,
+                allLeads:  allAgentLeads,
             };
         });
     }, [allLeads, allBulkLeads, allManualLeads]);
@@ -1298,8 +1308,97 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads }) {
 
     const totalAll = allLeads.length + allBulkLeads.length + allManualLeads.length;
 
+    // Open drill-down for a specific agent + metric
+    const openDrill = (agentName, metric, leads) => {
+        setDrillAgent(agentName);
+        setDrillMetric(metric);
+        setDrillLeads(leads);
+        setDrillSearch('');
+    };
+
+    const closeDrill = () => { setDrillAgent(null); setDrillMetric(null); setDrillLeads([]); };
+
+    const filteredDrill = useMemo(() => {
+        if (!drillSearch.trim()) return drillLeads;
+        const t = drillSearch.toLowerCase();
+        return drillLeads.filter(l =>
+            (l.customer_name||'').toLowerCase().includes(t) ||
+            (l.phone_number||'').toLowerCase().includes(t) ||
+            (l.project_interested_in||'').toLowerCase().includes(t)
+        );
+    }, [drillLeads, drillSearch]);
+
     return (
         <div className="space-y-8 animate-fadeIn">
+            {/* Lead Detail Modal from drill-down */}
+            {selectedDrillLead && (
+                <LeadDetailModal lead={selectedDrillLead} onClose={() => setSelectedDrillLead(null)} leadCategory="website" userEmail={ADMIN_EMAIL} />
+            )}
+
+            {/* Drill-down Modal */}
+            {drillAgent && (
+                <div className="fixed inset-0 z-[150] bg-slate-900/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-fadeIn">
+                    <div className="bg-white rounded-t-[32px] md:rounded-[28px] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+                        <div className="p-5 border-b border-slate-100">
+                            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4 md:hidden"></div>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-base font-black uppercase text-slate-900 tracking-tight">
+                                        {drillAgent} · {drillMetric}
+                                    </h2>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-blue-500 mt-0.5">{drillLeads.length} leads</p>
+                                </div>
+                                <button onClick={closeDrill} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-black text-sm">✕</button>
+                            </div>
+                            <div className="relative mt-3">
+                                <input value={drillSearch} onChange={e => setDrillSearch(e.target.value)}
+                                    placeholder="Search name, phone, project..."
+                                    className="w-full p-3 pl-9 bg-slate-50 border-2 border-slate-200 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500" />
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">🔍</span>
+                            </div>
+                        </div>
+                        <div className="overflow-y-auto flex-1 divide-y divide-slate-100">
+                            {filteredDrill.length === 0 ? (
+                                <div className="py-12 text-center text-slate-400 font-bold text-sm">No leads found</div>
+                            ) : filteredDrill.map((lead, i) => (
+                                <div key={`${lead.id}-${i}`} className={`p-4 hover:bg-slate-50 transition cursor-pointer ${getCardTint(lead.lead_status)}`}
+                                    onClick={() => setSelectedDrillLead(lead)}>
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-black shrink-0 text-sm">
+                                            {(lead.customer_name||'?')[0].toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-[11px] font-black text-slate-900 uppercase">{lead.customer_name}</span>
+                                                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${getStatusStyles(lead.lead_status)}`}>{lead.lead_status||'Un called'}</span>
+                                                <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border ${getPriorityColor(lead.lead_priority||'Warm')}`}>{lead.lead_priority||'Warm'}</span>
+                                            </div>
+                                            <p className="text-[10px] text-blue-600 font-black mt-0.5">{lead.phone_number}</p>
+                                            {lead.project_interested_in && <p className="text-[9px] text-slate-500 font-bold mt-0.5">🏠 {lead.project_interested_in}</p>}
+                                            {lead.add_note && <p className="text-[9px] text-amber-700 font-medium mt-0.5 truncate">📝 {lead.add_note}</p>}
+                                        </div>
+                                        <div className="flex flex-col items-end gap-2 shrink-0">
+                                            <p className="text-[8px] text-slate-400 font-bold">{formatDateTime(lead.created_at)}</p>
+                                            <div className="flex gap-1.5">
+                                                <a href={`tel:${lead.phone_number}`} onClick={e => e.stopPropagation()}
+                                                    className="bg-slate-100 text-slate-600 text-[8px] font-black px-2 py-1.5 rounded-lg uppercase tracking-widest hover:bg-slate-200 transition border border-slate-200">📞</a>
+                                                <a href={`https://wa.me/91${lead.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" onClick={e => e.stopPropagation()}
+                                                    className="bg-green-500 text-white text-[8px] font-black px-2 py-1.5 rounded-lg uppercase tracking-widest hover:bg-green-600 transition">💬</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-4 border-t border-slate-100 bg-slate-50">
+                            <p className="text-[9px] text-center text-slate-400 font-bold uppercase tracking-widest">
+                                Tap any lead to view full details · Call or WhatsApp directly
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="bg-slate-900 rounded-3xl p-6 md:p-8 text-white">
                 <div className="flex items-center justify-between mb-6">
@@ -1328,53 +1427,79 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads }) {
                 </div>
             </div>
 
-            {/* Agent Cards */}
+            {/* Agent Cards — FIX 5: every stat row is now clickable */}
             <div>
-                <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">👥 PSA Agent Performance</h3>
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">👥 PSA Agent Performance · <span className="text-blue-500">Click any stat to view leads</span></h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {agentStats.map(agent => (
-                        <div key={agent.name} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md transition">
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <h4 className="text-base font-black uppercase text-slate-900">{agent.name}</h4>
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{agent.total} total leads</p>
-                                </div>
-                                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-black text-lg">{agent.name[0]}</div>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-[10px]"><span className="text-slate-500 font-bold">Website</span><span className="font-black text-blue-600">{agent.website}</span></div>
-                                <div className="flex justify-between text-[10px]"><span className="text-slate-500 font-bold">Bulk</span><span className="font-black text-purple-600">{agent.bulk}</span></div>
-                                <div className="flex justify-between text-[10px]"><span className="text-slate-500 font-bold">Manual</span><span className="font-black text-green-600">{agent.manual}</span></div>
-                                <div className="border-t border-slate-100 pt-2 mt-2 space-y-1">
-                                    <div className="flex justify-between text-[9px]"><span className="text-amber-600 font-bold">Uncalled</span><span className="font-black text-amber-700">{agent.uncalled}</span></div>
-                                    <div className="flex justify-between text-[9px]"><span className="text-teal-600 font-bold">SV Sched.</span><span className="font-black text-teal-700">{agent.svSched}</span></div>
-                                    <div className="flex justify-between text-[9px]"><span className="text-green-600 font-bold">Converted</span><span className="font-black text-green-700">{agent.converted}</span></div>
-                                    <div className="flex justify-between text-[9px]"><span className="text-red-500 font-bold">Rejected</span><span className="font-black text-red-600">{agent.rejected}</span></div>
-                                </div>
-                                {agent.total > 0 && (
-                                    <div className="pt-2">
-                                        <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Conversion Rate</div>
-                                        <div className="w-full bg-slate-100 rounded-full h-2">
-                                            <div className="bg-green-500 h-2 rounded-full transition-all" style={{width:`${Math.round((agent.converted/agent.total)*100)}%`}}></div>
-                                        </div>
-                                        <div className="text-[8px] font-black text-green-600 mt-1">{Math.round((agent.converted/agent.total)*100)}%</div>
+                    {agentStats.map(agent => {
+                        const allAgentLeads = agent.allLeads;
+                        const uncalledLeads = allAgentLeads.filter(l => !l.lead_status || l.lead_status === 'Un called');
+                        const svSchedLeads  = allAgentLeads.filter(l => l.lead_status === 'SV Scheduled');
+                        const convertedLeads= allAgentLeads.filter(l => l.lead_status === 'Converted');
+                        const rejectedLeads = allAgentLeads.filter(l => l.lead_status === 'Rejected');
+                        const websiteLeads  = allLeads.filter(l => l.psa_agent_name === agent.name);
+                        const bulkLeads     = allBulkLeads.filter(l => l.psa_agent_name === agent.name);
+                        const manualLeads   = allManualLeads.filter(l => l.psa_agent_name === agent.name);
+
+                        const Clickable = ({ label, count, color, leads, metric }) => (
+                            <button
+                                disabled={count === 0}
+                                onClick={() => count > 0 && openDrill(agent.name, metric, leads)}
+                                className={`w-full flex justify-between items-center text-[10px] py-1 px-1 rounded-lg transition-all ${count > 0 ? 'hover:bg-slate-50 cursor-pointer group' : 'cursor-default opacity-60'}`}>
+                                <span className={`font-bold ${color || 'text-slate-500'}`}>{label}</span>
+                                <span className={`font-black ${color || 'text-slate-600'} ${count > 0 ? 'group-hover:underline' : ''}`}>{count}</span>
+                            </button>
+                        );
+
+                        return (
+                            <div key={agent.name} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md transition">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h4 className="text-base font-black uppercase text-slate-900">{agent.name}</h4>
+                                        <button disabled={agent.total === 0} onClick={() => agent.total > 0 && openDrill(agent.name, 'All Leads', allAgentLeads)}
+                                            className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${agent.total > 0 ? 'text-blue-500 hover:underline cursor-pointer' : 'text-slate-400'}`}>
+                                            {agent.total} total leads {agent.total > 0 ? '→' : ''}
+                                        </button>
                                     </div>
-                                )}
+                                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-black text-lg">{agent.name[0]}</div>
+                                </div>
+                                <div className="space-y-1">
+                                    <Clickable label="🌐 Website" count={agent.website} color="text-blue-600"   leads={websiteLeads} metric="Website Leads" />
+                                    <Clickable label="📦 Bulk"    count={agent.bulk}    color="text-purple-600" leads={bulkLeads}    metric="Bulk Leads" />
+                                    <Clickable label="✍️ Manual"  count={agent.manual}  color="text-green-600"  leads={manualLeads}  metric="Manual Leads" />
+                                    <div className="border-t border-slate-100 pt-1 mt-1 space-y-0.5">
+                                        <Clickable label="🔵 Uncalled"   count={agent.uncalled}  color="text-amber-600"  leads={uncalledLeads}  metric="Uncalled" />
+                                        <Clickable label="📅 SV Sched."  count={agent.svSched}   color="text-teal-600"   leads={svSchedLeads}   metric="SV Scheduled" />
+                                        <Clickable label="🏆 Converted"  count={agent.converted} color="text-green-600"  leads={convertedLeads} metric="Converted" />
+                                        <Clickable label="❌ Rejected"   count={agent.rejected}  color="text-red-500"    leads={rejectedLeads}  metric="Rejected" />
+                                    </div>
+                                    {agent.total > 0 && (
+                                        <div className="pt-2">
+                                            <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Conversion Rate</div>
+                                            <div className="w-full bg-slate-100 rounded-full h-2">
+                                                <div className="bg-green-500 h-2 rounded-full transition-all" style={{width:`${Math.round((agent.converted/agent.total)*100)}%`}}></div>
+                                            </div>
+                                            <div className="text-[8px] font-black text-green-600 mt-1">{Math.round((agent.converted/agent.total)*100)}%</div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 
-            {/* Recent Activity */}
+            {/* Recent Activity — also clickable */}
             <div>
-                <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">⚡ Recent CRM Activity (All Agents)</h3>
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">⚡ Recent CRM Activity <span className="text-blue-500">· Tap to view lead</span></h3>
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="divide-y divide-slate-100">
                         {recentActivity.length === 0 ? (
                             <div className="p-8 text-center text-slate-400 font-bold text-sm">No activity yet</div>
                         ) : recentActivity.map((lead, i) => (
-                            <div key={`${lead.id}-${i}`} className="p-4 hover:bg-slate-50 transition flex items-start gap-4">
+                            <div key={`${lead.id}-${i}`}
+                                className="p-4 hover:bg-blue-50 transition flex items-start gap-4 cursor-pointer group"
+                                onClick={() => setSelectedDrillLead(lead)}>
                                 <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-black shrink-0 text-sm">
                                     {(lead.psa_agent_name||'?')[0]}
                                 </div>
@@ -1387,8 +1512,9 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads }) {
                                     <p className="text-[10px] font-black text-slate-700 mt-0.5">{lead.customer_name} · {lead.phone_number}</p>
                                     <p className="text-[9px] text-slate-500 font-medium mt-0.5 truncate">{(lead.call_remark||'').split('\n')[0]}</p>
                                 </div>
-                                <div className="text-[8px] text-slate-400 font-bold shrink-0 text-right">
-                                    {formatDateTime(lead.created_at)}
+                                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                    <p className="text-[8px] text-slate-400 font-bold">{formatDateTime(lead.created_at)}</p>
+                                    <span className="text-[8px] text-blue-500 font-black uppercase tracking-widest group-hover:underline">View →</span>
                                 </div>
                             </div>
                         ))}
@@ -1402,13 +1528,12 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads }) {
 // ─── BULK CSV UPLOADER ────────────────────────────────────────────────────
 function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
     const [file,        setFile]        = useState(null);
-    const [rows,        setRows]        = useState([]);       // parsed preview rows
+    const [rows,        setRows]        = useState([]);
     const [assignTo,    setAssignTo]    = useState('');
     const [uploading,   setUploading]   = useState(false);
     const [error,       setError]       = useState('');
-    const [step,        setStep]        = useState('pick');   // 'pick' | 'preview' | 'done'
+    const [step,        setStep]        = useState('pick');
 
-    // Simple CSV parser — handles quoted fields
     const parseCSV = (text) => {
         const lines = text.trim().split(/\r?\n/);
         if (lines.length < 2) return [];
@@ -1464,7 +1589,6 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
             created_at:            now,
         }));
 
-        // Insert in batches of 100 to avoid request size limits
         let totalInserted = 0;
         for (let i = 0; i < inserts.length; i += 100) {
             const batch = inserts.slice(i, i + 100);
@@ -1480,7 +1604,6 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
 
     const reset = () => { setStep('pick'); setRows([]); setFile(null); setAssignTo(''); setError(''); };
 
-    // Column aliases shown in preview
     const getName  = r => r.customer_name || r.name || '—';
     const getPhone = r => r.phone_number  || r.phone || '—';
     const getEmail = r => r.customer_email || r.email || '—';
@@ -1488,7 +1611,6 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
 
     return (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            {/* Header */}
             <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
                 <div>
                     <h3 className="text-sm font-black uppercase italic text-white tracking-tight">📤 Bulk CSV Upload</h3>
@@ -1500,7 +1622,6 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
             </div>
 
             <div className="p-6">
-                {/* Step: Pick file */}
                 {step === 'pick' && (
                     <div className="space-y-4">
                         <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 flex flex-col items-center justify-center hover:border-blue-400 transition-all cursor-pointer text-center"
@@ -1518,7 +1639,6 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
                     </div>
                 )}
 
-                {/* Step: Preview */}
                 {step === 'preview' && (
                     <div className="space-y-4">
                         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -1541,7 +1661,6 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
 
                         {error && <div className="bg-red-50 border border-red-200 text-red-700 text-[10px] font-bold p-3 rounded-2xl">{error}</div>}
 
-                        {/* Preview table — first 10 rows */}
                         <div className="rounded-2xl border border-slate-200 overflow-hidden">
                             <div className="bg-slate-900 grid grid-cols-4 gap-0">
                                 {['Name','Phone','Email','Project'].map(h => (
@@ -1575,7 +1694,6 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
                     </div>
                 )}
 
-                {/* Step: Done */}
                 {step === 'done' && (
                     <div className="flex flex-col items-center py-8 gap-3">
                         <div className="text-5xl">🎉</div>
@@ -1629,7 +1747,6 @@ function LoginForm({ supabase }) {
 }
 
 // ─── LEAD BUCKET TABS ──────────────────────────────────────────────────────
-// Buckets: New → Open → SV Scheduled → SV Done → Converted → Rejected
 const LEAD_BUCKETS = [
     { id:'new',         label:'🆕 New',              emoji:'🆕', color:'bg-yellow-500',   desc:'Untouched / Uncalled leads' },
     { id:'open',        label:'📂 Open',             emoji:'📂', color:'bg-blue-500',     desc:'Called, RNR, Callback scheduled' },
@@ -1644,12 +1761,10 @@ function filterLeadsByBucket(leads, bucket) {
         case 'new':
             return leads.filter(l => !l.lead_status || l.lead_status === 'Un called');
         case 'open':
-            // Called + RNR + Details Shared + has a callback set
             return leads.filter(l => ['Called','RNR','Details Shared'].includes(l.lead_status));
         case 'sv_scheduled':
             return leads.filter(l => l.lead_status === 'SV Scheduled');
         case 'sv_done':
-            // SV Done = site_visit_at is set and in the past, but not yet converted/rejected
             return leads.filter(l => l.site_visit_at && l.site_visit_at < new Date().toISOString().split('T')[0] && !['Converted','Rejected'].includes(l.lead_status));
         case 'converted':
             return leads.filter(l => l.lead_status === 'Converted');
@@ -1686,54 +1801,40 @@ function AdminApp() {
     const [leadCategory,   setLeadCategory]   = useState(initRoute.c);
     const [loading,        setLoading]        = useState(true);
     const [showManualModal,setShowManualModal] = useState(false);
-    const [summaryAgent,   setSummaryAgent]   = useState('All');
+    // FIX 4: Admin defaults to 'Tharun'; set initial state to '__DEFER__' 
+    // which will be resolved to ADMIN_AGENT_NAME once session loads
+    const [summaryAgent,   setSummaryAgent]   = useState('__DEFER__');
     const [selectedProp,   setSelectedProp]   = useState(null);
     const [selectedLead,   setSelectedLead]   = useState(null);
     const [visibleCount,   setVisibleCount]   = useState(50);
     const [searchTerm,     setSearchTerm]     = useState("");
     const [deferredPrompt, setDeferredPrompt] = useState(null);
-    const [sessionTimeLeft, setSessionTimeLeft] = useState(''); // e.g. "2h 47m"
-
-    // ── Live session countdown shown in nav ───────────────────────────────
-    useEffect(() => {
-        const tick = () => {
-            const stored = sessionStorage.getItem('__crm_login_time');
-            if (!stored) { setSessionTimeLeft(''); return; }
-            const elapsed  = Date.now() - parseInt(stored, 10);
-            const remaining = (3 * 60 * 60 * 1000) - elapsed;
-            if (remaining <= 0) { setSessionTimeLeft('Expiring...'); return; }
-            const h = Math.floor(remaining / 3600000);
-            const m = Math.floor((remaining % 3600000) / 60000);
-            setSessionTimeLeft(h > 0 ? `${h}h ${m}m` : `${m}m`);
-        };
-        tick();
-        const interval = setInterval(tick, 60000); // update every minute
-        return () => clearInterval(interval);
-    }, [session]);
     const [leadBucket,     setLeadBucket]     = useState('new');
-    const [showBulkUpload, setShowBulkUpload] = useState(false);  // CSV uploader panel
+    const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [scheduleFilter, setScheduleFilter] = useState('ALL');
     const [priorityFilter, setPriorityFilter] = useState('ALL');
 
-    // Derive current user's agent name
+    // FIX 3: Second-level session countdown
+    const secondsLeft = useSessionCountdown();
+    const isTimerWarning = secondsLeft !== null && secondsLeft < 600; // warn in last 10 min
+
     const userEmail   = session?.user?.email || '';
     const agentName   = getAgentFromEmail(userEmail);
     const isAdminUser = agentName === '__ADMIN__';
 
-    // ── Default summary filter — runs once when session first loads ───────────
+    // FIX 4: Admin filter defaults to ADMIN_AGENT_NAME ('Tharun') on login
     useEffect(() => {
         if (!session) return;
         const email  = session.user?.email || '';
         const agent  = getAgentFromEmail(email);
         const admin  = agent === '__ADMIN__';
         if (admin) {
-            // Admin with dual role → default to their agent name (e.g. Tharun)
-            // Pure admin (no ADMIN_AGENT_NAME set) → show All
+            // Admin with ADMIN_AGENT_NAME set → default to that agent's view
             setSummaryAgent(ADMIN_AGENT_NAME || 'All');
         } else if (agent) {
             setSummaryAgent(agent);
         }
-    }, [session?.user?.email]); // re-runs if the logged-in user changes
+    }, [session?.user?.email]);
 
     useEffect(() => {
         const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
@@ -1768,19 +1869,16 @@ function AdminApp() {
 
     useEffect(() => { setVisibleCount(50); }, [leadCategory, leadBucket, scheduleFilter, summaryAgent, searchTerm, priorityFilter]);
 
-    // ── Auto-logout after 3 hours from login time ─────────────────────────
-    const AUTO_LOGOUT_MS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+    const AUTO_LOGOUT_MS = 3 * 60 * 60 * 1000;
     const logoutTimerRef = useRef(null);
 
-    // ── Reschedule timer from stored login time (called on page load + refresh) ──
     const rescheduleFromStored = useCallback(() => {
         if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
         const stored = sessionStorage.getItem('__crm_login_time');
-        if (!stored) return; // no active session timer
+        if (!stored) return;
         const loginTime = parseInt(stored, 10);
         const remaining = AUTO_LOGOUT_MS - (Date.now() - loginTime);
         if (remaining <= 0) {
-            // Already past 3 hours — logout immediately
             supabase.auth.signOut();
             sessionStorage.removeItem('__crm_login_time');
         } else {
@@ -1797,20 +1895,17 @@ function AdminApp() {
             setSession(session);
             setAuthChecking(false);
             if (window.__dismissSplash) window.__dismissSplash();
-            // Page load / refresh — resume existing timer if one exists
             if (session) rescheduleFromStored();
         });
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
             setSession(s);
             if (event === 'SIGNED_IN') {
-                // Brand-new login — stamp NOW as login time and start fresh 3h timer
                 sessionStorage.setItem('__crm_login_time', String(Date.now()));
                 rescheduleFromStored();
             } else if (event === 'SIGNED_OUT') {
                 if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
                 sessionStorage.removeItem('__crm_login_time');
             }
-            // TOKEN_REFRESHED, USER_UPDATED etc. — do NOT reset the timer
         });
         return () => {
             subscription.unsubscribe();
@@ -1831,32 +1926,10 @@ function AdminApp() {
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
         let query = supabase.from(table).select('*').order('created_at', { ascending:false });
 
-        if (table === 'leads') {
-            if (leadCategory === 'website') {
-                // CLAIM-ON-OPEN logic:
-                //   • Unassigned leads (psa_agent_name IS NULL) → visible to ALL agents
-                //   • Assigned leads → visible ONLY to that agent + admin
-                // So a non-admin agent sees: their own assigned + all unassigned
-                if (!isAdminUser && agentName) {
-                    // .or() = psa_agent_name is null  OR  psa_agent_name = me
-                    query = query.or(`psa_agent_name.is.null,psa_agent_name.eq.${agentName}`);
-                }
-            } else if (leadCategory === 'manual') {
-                // Manual leads: scoped strictly to the agent who created them
-                if (!isAdminUser && agentName) {
-                    query = query.eq('psa_agent_name', agentName);
-                }
-            }
-        } else {
-            // bulk_leads: scoped strictly to the assigned agent
-            if (!isAdminUser && agentName) {
-                query = query.eq('psa_agent_name', agentName);
-            }
-        }
-
         const { data, error } = await query;
         if (!error) {
             let raw = data || [];
+
             if (table === 'leads') {
                 if (leadCategory === 'website') {
                     raw = raw.filter(l => !l.lead_source || l.lead_source.trim() === '' || l.lead_source.toLowerCase().includes('website'));
@@ -1864,19 +1937,35 @@ function AdminApp() {
                     raw = raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && !l.lead_source.toLowerCase().includes('website'));
                 }
             }
+
+            // ── FIX 1 & 2: Visibility rules ─────────────────────────────────
+            // Website leads: unassigned = visible to ALL agents. Once assigned → only that agent + admin.
+            // Bulk leads: strictly mine only (FIX 2: reassigned bulk → removed from old agent).
+            // Manual leads: strictly mine only.
+            if (!isAdminUser && agentName) {
+                if (leadCategory === 'website') {
+                    raw = raw.filter(l =>
+                        !l.psa_agent_name ||                    // unassigned → visible to all
+                        l.psa_agent_name === agentName          // assigned to me → visible
+                    );
+                } else {
+                    // bulk and manual: ONLY my leads (handles reassignment: if psa_agent_name changed, it won't match)
+                    raw = raw.filter(l => l.psa_agent_name === agentName);
+                }
+            }
+
             setLeads(raw);
         }
         setLoading(false);
     }
 
-    // ── Soft-delete: sets is_hidden=true — data stays in DB, removed from UI ──
     async function deleteLead(lead) {
         const confirmed = window.confirm(
             'Delete this lead?\n\nName: ' + lead.customer_name + '\nPhone: ' + lead.phone_number + '\n\nThis lead will be removed from the CRM view but data is kept in the database.'
         );
         if (!confirmed) return;
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-        setLeads(prev => prev.filter(l => l.id !== lead.id)); // remove from UI instantly
+        setLeads(prev => prev.filter(l => l.id !== lead.id));
         const { error } = await supabase.from(table).update({ is_hidden: true }).eq('id', lead.id);
         if (error) {
             alert('Error: ' + error.message + '\n\nMake sure the \'is_hidden\' (boolean, default false) column exists in your ' + table + ' table.');
@@ -1885,7 +1974,6 @@ function AdminApp() {
     }
 
     async function fetchAllForAdmin() {
-        // Admin sees everything
         const [{ data: websiteData }, { data: bulkData }, { data: manualData }] = await Promise.all([
             supabase.from('leads').select('*').order('created_at', { ascending:false }),
             supabase.from('bulk_leads').select('*').order('created_at', { ascending:false }),
@@ -1904,20 +1992,15 @@ function AdminApp() {
     }
 
     async function updateLead(lead, field, value) {
-        // ── CLAIM-ON-INTERACTION: auto-assign unassigned website leads ────────
-        // When a non-admin agent interacts with an unassigned website lead,
-        // silently claim it. After that it's only visible to that agent + admin.
-        // NOTE: Admin interactions do NOT claim leads — admin is neutral.
+        // ── CLAIM-ON-INTERACTION (website only, non-admin) ─────────────────
         const effectiveActor = isAdminUser
-            ? (ADMIN_AGENT_NAME || null)   // admin's dual-role persona, or null
+            ? (ADMIN_AGENT_NAME || null)
             : (agentName || null);
 
-        // Only claim if: website channel, lead is unassigned, actor is a real agent
-        // AND actor is NOT admin (admin viewing should never auto-claim)
         const shouldClaim = leadCategory === 'website'
             && !lead.psa_agent_name
             && effectiveActor
-            && !isAdminUser;  // ← admin never claims on interaction
+            && !isAdminUser;
 
         if (shouldClaim) {
             setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, psa_agent_name: effectiveActor } : l));
@@ -1936,20 +2019,41 @@ function AdminApp() {
         else if (field === 'site_visit_at') { updates.site_visit_at = value; updates.call_remark = `[${stamp}] [${actorName}] SV Booked: ${value}\n\n${lead.call_remark||''}`; }
         else if (field === 'add_note')      { if (!value.trim()) return; updates.add_note = value; updates.call_remark = `[${stamp}] [${actorName}] Note: ${value}\n\n${lead.call_remark||''}`; }
         else if (field === 'reject_reason') { updates.reject_reason = value; updates.call_remark = `[${stamp}] [${actorName}] Rejected: ${value}\n\n${lead.call_remark||''}`; }
-        else if (field === 'psa_agent_name') { updates.psa_agent_name = value; updates.call_remark = `[${stamp}] [Admin] ${lead.psa_agent_name ? `Reassigned: ${lead.psa_agent_name} → ${value}` : `Assigned to ${value}`}\n\n${lead.call_remark||''}`; }
-        else                                { updates[field] = value; }
+        else if (field === 'psa_agent_name') {
+            updates.psa_agent_name = value;
+            updates.assigned_agent = value; // FIX 2: also update assigned_agent
+            updates.call_remark = `[${stamp}] [Admin] ${lead.psa_agent_name ? 'Reassigned: ' + lead.psa_agent_name + ' to ' + value : 'Assigned to ' + value}\n\n${lead.call_remark||''}`;
+        }
+        else { updates[field] = value; }
 
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-        setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...updates } : l));
+
+        // FIX 2: Reassignment removes lead from original agent's view
+        if (field === 'psa_agent_name') {
+            if (isAdminUser) {
+                setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...updates } : l));
+            } else {
+                setLeads(prev => prev.filter(l => l.id !== lead.id));
+            }
+        } else {
+            setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...updates } : l));
+        }
+
         const { error } = await supabase.from(table).update(updates).eq('id', lead.id);
         if (error) {
             alert("Save error: " + error.message);
             fetchLeads();
+        } else if (field === 'psa_agent_name') {
+            setTimeout(() => fetchLeads(), 500);
         }
     }
 
+    // FIX 4: Resolve '__DEFER__' to actual value for filtering
+    const activeSummaryAgent = summaryAgent === '__DEFER__'
+        ? (isAdminUser ? (ADMIN_AGENT_NAME || 'All') : (agentName || 'All'))
+        : summaryAgent;
+
     const displayedLeads = useMemo(() => {
-        // Always filter out soft-deleted leads
         let f = filterLeadsByBucket(leads.filter(l => !l.is_hidden), leadBucket);
 
         const today = new Date().toISOString().split('T')[0];
@@ -1960,21 +2064,20 @@ function AdminApp() {
 
         if (priorityFilter !== 'ALL') f = f.filter(l => (l.lead_priority||'Warm') === priorityFilter);
 
-        if (summaryAgent !== 'All' && summaryAgent !== '__DEFER__' && isAdminUser) f = f.filter(l => l.psa_agent_name === summaryAgent);
+        if (activeSummaryAgent !== 'All' && isAdminUser) f = f.filter(l => l.psa_agent_name === activeSummaryAgent);
 
         if (searchTerm.trim()) {
             const t = searchTerm.toLowerCase();
             f = f.filter(l => (l.customer_name||'').toLowerCase().includes(t) || (l.phone_number||'').toLowerCase().includes(t) || (l.project_interested_in||'').toLowerCase().includes(t));
         }
         return f;
-    }, [leads, leadBucket, scheduleFilter, priorityFilter, summaryAgent, searchTerm, isAdminUser]);
+    }, [leads, leadBucket, scheduleFilter, priorityFilter, activeSummaryAgent, searchTerm, isAdminUser]);
 
     const visibleLeads = displayedLeads.slice(0, visibleCount);
 
     const stats = useMemo(() => {
-        // Always exclude soft-deleted leads from all counts
         let t = leads.filter(l => !l.is_hidden && l.lead_status !== 'Rejected');
-        if (summaryAgent !== 'All' && summaryAgent !== '__DEFER__') t = t.filter(l => l.psa_agent_name === summaryAgent);
+        if (activeSummaryAgent !== 'All') t = t.filter(l => l.psa_agent_name === activeSummaryAgent);
         return {
             total:     t.length,
             uncalled:  t.filter(l => !l.lead_status || l.lead_status === 'Un called').length,
@@ -1982,7 +2085,7 @@ function AdminApp() {
             converted: t.filter(l => l.lead_status === 'Converted').length,
             rejected:  leads.filter(l => !l.is_hidden && l.lead_status === 'Rejected').length,
         };
-    }, [leads, summaryAgent]);
+    }, [leads, activeSummaryAgent]);
 
     if (authChecking) return <div className="min-h-screen bg-slate-950"></div>;
     if (!session) return <LoginForm supabase={supabase} />;
@@ -1997,7 +2100,6 @@ function AdminApp() {
 
     return (
         <div className="min-h-screen flex flex-col animate-fadeIn">
-            {/* Lead Detail Modal */}
             {selectedLead && (
                 <LeadDetailModal lead={selectedLead} onClose={() => setSelectedLead(null)} leadCategory={leadCategory} userEmail={userEmail} />
             )}
@@ -2007,7 +2109,21 @@ function AdminApp() {
                 <div className="flex items-center gap-3">
                     <h1 className="font-black tracking-tighter text-lg md:text-xl uppercase italic">Horizon <span className="text-blue-400">CRM</span></h1>
                     {userEmail && <span className="hidden md:block text-[9px] font-bold text-slate-500 bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg uppercase tracking-widest truncate max-w-[180px]">{isAdminUser ? (ADMIN_AGENT_NAME ? `🛡️ Admin · ${ADMIN_AGENT_NAME}` : '🛡️ Admin') : `👤 ${agentName||userEmail.split('@')[0]}`}</span>}
-                    {sessionTimeLeft && <span className="hidden md:flex items-center gap-1 text-[9px] font-black text-amber-400 bg-amber-900/30 border border-amber-800/50 px-2 py-1 rounded-lg uppercase tracking-widest" title="Session expires after 3 hours from login">⏱ {sessionTimeLeft}</span>}
+
+                    {/* FIX 3: Second-level countdown timer */}
+                    {secondsLeft !== null && (
+                        <span
+                            className={`hidden md:flex items-center gap-1.5 text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest border session-timer ${
+                                isTimerWarning
+                                    ? 'text-red-300 bg-red-900/40 border-red-700/60 warning'
+                                    : 'text-amber-400 bg-amber-900/30 border-amber-800/50'
+                            }`}
+                            title="Session auto-expires 3 hours after login"
+                        >
+                            <span>{isTimerWarning ? '🔴' : '⏱'}</span>
+                            <span>{formatCountdown(secondsLeft)}</span>
+                        </span>
+                    )}
                 </div>
                 <div className="flex gap-1 items-center">
                     {navItems.map(n => (
@@ -2030,7 +2146,12 @@ function AdminApp() {
 
                 {/* ── ADMIN OVERVIEW ── */}
                 {view === 'admin' && isAdminUser && (
-                    <AdminOverview allLeads={allLeadsAdmin} allBulkLeads={allBulkAdmin} allManualLeads={allManualAdmin} />
+                    <AdminOverview
+                        allLeads={allLeadsAdmin}
+                        allBulkLeads={allBulkAdmin}
+                        allManualLeads={allManualAdmin}
+                        onNavigateToDashboard={handleNavigate}
+                    />
                 )}
 
                 {/* ── DASHBOARD ── */}
@@ -2042,7 +2163,9 @@ function AdminApp() {
                             <div className="flex flex-wrap md:grid md:grid-cols-6 gap-3 items-center">
                                 {isAdminUser && (
                                     <div className="w-full md:w-auto">
-                                        <select className="bg-transparent outline-none cursor-pointer text-slate-700 text-[10px] font-black uppercase w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500" value={summaryAgent === '__DEFER__' ? (ADMIN_AGENT_NAME || 'All') : summaryAgent} onChange={e => setSummaryAgent(e.target.value)}>
+                                        <select className="bg-transparent outline-none cursor-pointer text-slate-700 text-[10px] font-black uppercase w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                                            value={activeSummaryAgent}
+                                            onChange={e => setSummaryAgent(e.target.value)}>
                                             <option value="All">📊 All Agents</option>
                                             {PSA_AGENTS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
                                         </select>
@@ -2088,14 +2211,12 @@ function AdminApp() {
                                     <option value="Cold">❄️ Cold</option>
                                 </select>
                                 <button onClick={() => setShowManualModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase shadow-md shrink-0 transition border border-blue-500">+ Lead</button>
-                                {/* Bulk CSV upload — admin only, bulk tab only */}
                                 {isAdminUser && leadCategory === 'bulk' && (
                                     <button onClick={() => setShowBulkUpload(v => !v)}
                                         className={`px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase shadow-md shrink-0 transition border ${showBulkUpload ? 'bg-amber-500 text-white border-amber-400' : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400'}`}>
                                         📤 {showBulkUpload ? 'Hide Uploader' : 'Upload CSV'}
                                     </button>
                                 )}
-
                             </div>
                         </div>
 
@@ -2191,7 +2312,6 @@ function AdminApp() {
                                                     </div>
                                                 </td>
                                                 <td className="p-4 min-w-[160px]">
-                                                    {/* Agent assignment — admin can reassign on ANY channel */}
                                                     {isAdminUser && (
                                                         <div className="mb-2">
                                                             <label className="text-[7px] font-black uppercase tracking-widest text-slate-500 mb-0.5 block">
@@ -2204,7 +2324,6 @@ function AdminApp() {
                                                             </select>
                                                         </div>
                                                     )}
-                                                    {/* Non-admin: just show who's assigned (read-only) */}
                                                     {!isAdminUser && l.psa_agent_name && (
                                                         <div className="text-[8px] font-black text-blue-400 bg-slate-900 border border-slate-700 px-2 py-1.5 rounded-xl mb-2 uppercase tracking-widest">
                                                             👤 {l.psa_agent_name}
@@ -2322,7 +2441,6 @@ function AdminApp() {
                                             <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="flex-1 flex items-center justify-center gap-1 bg-green-500 text-white text-[9px] font-black uppercase tracking-widest py-2.5 rounded-xl hover:bg-green-600 transition shadow-sm">💬 WhatsApp</a>
                                         </div>
                                         <div className="border-t border-slate-200/80 pt-3 space-y-2">
-                                            {/* Admin: reassign on any channel */}
                                             {isAdminUser && (
                                                 <div className="flex flex-col gap-1">
                                                     <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
