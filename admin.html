@@ -1787,7 +1787,7 @@ function AdminApp() {
             logoutTimerRef.current = setTimeout(async () => {
                 await supabase.auth.signOut();
                 sessionStorage.removeItem('__crm_login_time');
-                alert('\u23F0 Session expired after 3 hours. Please log in again.');
+                alert('Session expired after 3 hours. Please log in again.');
             }, remaining);
         }
     }, []);
@@ -1872,7 +1872,7 @@ function AdminApp() {
     // ── Soft-delete: sets is_hidden=true — data stays in DB, removed from UI ──
     async function deleteLead(lead) {
         const confirmed = window.confirm(
-            \`⚠️ Delete this lead?\n\nName: \${lead.customer_name}\nPhone: \${lead.phone_number}\n\nThis lead will be removed from the CRM view but data is kept in the database. This cannot be undone from the app.\`
+            'Delete this lead?\n\nName: ' + lead.customer_name + '\nPhone: ' + lead.phone_number + '\n\nThis lead will be removed from the CRM view but data is kept in the database.'
         );
         if (!confirmed) return;
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
