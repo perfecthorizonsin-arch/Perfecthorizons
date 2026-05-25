@@ -74,7 +74,6 @@
         .lead-row:hover { filter:brightness(0.97); }
         input,select,textarea { font-family:inherit; }
         select option { font-size:12px; }
-        /* FIX 3: Timer with second countdown */
         .session-timer { 
             font-variant-numeric: tabular-nums;
             letter-spacing: 0.05em;
@@ -97,7 +96,7 @@
         <div style="display:none;width:80px;height:80px;background:linear-gradient(135deg,#2563eb,#6366f1);border-radius:22px;align-items:center;justify-content:center;font-size:36px;font-weight:900;font-style:italic;color:#fff;font-family:sans-serif;position:relative;z-index:2;animation:logoFloat 3s ease-in-out infinite;">H</div>
     </div>
     <div class="splash-title">Horizon CRM</div>
-    <div class="splash-subtitle">Command Center &nbsp;·&nbsp; Real Estate Intelligence</div>
+    <div class="splash-subtitle">Command Center  ·  Real Estate Intelligence</div>
     <div class="splash-bar-track"><div class="splash-bar-fill"></div></div>
     <div class="splash-dots"><span></span><span></span><span></span></div>
     <div class="splash-status" id="splash-status">Initializing...</div>
@@ -150,9 +149,7 @@ const PSA_AGENTS = [
     { value: 'Prabhu',   label: '👤 Prabhu' },
 ];
 
-// ─── AGENT EMAIL MAP ───────────────────────────────────────────────────────
-// FIX 4: Admin (saishetty1623@gmail.com) defaults to 'Tharun' agent filter
-const ADMIN_AGENT_NAME = 'Tharun'; // Admin is also Tharun — default filter + persona
+const ADMIN_AGENT_NAME = 'Tharun';
 
 const AGENT_EMAIL_MAP = {
     'tharun@perfecthorizons.in':   'Tharun',
@@ -191,14 +188,6 @@ const getDisplayUrl = (rawUrl) => {
     if (!url) return 'https://placehold.co/600x300/f1f5f9/94a3b8?text=No+Image';
     const id = extractDriveId(url);
     if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
-    return url;
-};
-
-const getDownloadUrl = (rawUrl) => {
-    if (!rawUrl || typeof rawUrl !== 'string') return rawUrl;
-    const url = rawUrl.trim();
-    const id = extractDriveId(url);
-    if (id) return `https://drive.google.com/uc?export=download&id=${id}`;
     return url;
 };
 
@@ -274,7 +263,6 @@ const formatDateTime = (dt) => {
     } catch { return dt; }
 };
 
-// FIX 3: Format seconds into HH:MM:SS
 const formatCountdown = (totalSeconds) => {
     if (totalSeconds <= 0) return '00:00:00';
     const h = Math.floor(totalSeconds / 3600);
@@ -318,7 +306,6 @@ const getCardTint = (status) => {
 
 const isMobile = () => /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-// ─── FIX 3: SESSION TIMER HOOK (second-level countdown) ───────────────────
 function useSessionCountdown() {
     const [secondsLeft, setSecondsLeft] = useState(null);
     const AUTO_LOGOUT_MS = 3 * 60 * 60 * 1000;
@@ -332,7 +319,7 @@ function useSessionCountdown() {
             setSecondsLeft(remaining);
         };
         tick();
-        const interval = setInterval(tick, 1000); // Update every second
+        const interval = setInterval(tick, 1000); 
         return () => clearInterval(interval);
     }, []);
 
@@ -687,7 +674,7 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                             </div>
                             <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-2xl px-3 py-2 mt-3 mb-4">
                                 <span className="text-base shrink-0">💡</span>
-                                <p className="text-[9px] text-blue-700 font-bold leading-relaxed">File(s) will download from Google Drive &amp; WhatsApp will open — manually attach the downloaded file.</p>
+                                <p className="text-[9px] text-blue-700 font-bold leading-relaxed">File(s) will download from Google Drive & WhatsApp will open — manually attach the downloaded file.</p>
                             </div>
                             <div className="border-b border-slate-100 -mx-6 mb-3"></div>
                         </div>
@@ -972,8 +959,8 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
         lead_registration_link:'', map_link:'', cover_image:'', gallery_images:'',
         floor_plan:'', brochure:'', cost_sheet:'', miscellaneous:'', master_plan:''
     };
-    const [form,           setForm]          = useState(blank);
-    const [loading,        setLoading]       = useState(false);
+    const [form,           setForm]           = useState(blank);
+    const [loading,        setLoading]        = useState(false);
     const [uploadingField, setUploadingField] = useState(null);
     const [uploadProgress, setUploadProgress] = useState({});
 
@@ -1176,11 +1163,11 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <UploadSection field="cover_image"    label="Main Cover Image *"                multi={false} />
                         <UploadSection field="gallery_images" label="Gallery Images (select multiple)"  multi={true}  />
-                        <UploadSection field="brochure"       label="Brochure (PDF)"                   multi={false} />
-                        <UploadSection field="cost_sheet"     label="Cost Sheet (PDF / Images)"        multi={true}  />
-                        <UploadSection field="floor_plan"     label="Floor Plan (PDF / Image)"         multi={false} />
-                        <UploadSection field="master_plan"    label="Master Plan (PDF / Image)"        multi={false} />
-                        <UploadSection field="miscellaneous"  label="Miscellaneous Docs"               multi={true}  />
+                        <UploadSection field="brochure"       label="Brochure (PDF)"                    multi={false} />
+                        <UploadSection field="cost_sheet"     label="Cost Sheet (PDF / Images)"         multi={true}  />
+                        <UploadSection field="floor_plan"     label="Floor Plan (PDF / Image)"          multi={false} />
+                        <UploadSection field="master_plan"    label="Master Plan (PDF / Image)"         multi={false} />
+                        <UploadSection field="miscellaneous"  label="Miscellaneous Docs"                multi={true}  />
                     </div>
                 </div>
 
@@ -1265,11 +1252,11 @@ function ManualLeadForm({ supabase, properties, onSuccess, agentName }) {
     );
 }
 
-// ─── FIX 5: ADMIN OVERVIEW PANEL (clickable leads drill-down) ─────────────
+// ─── ADMIN OVERVIEW PANEL ──────────────────────────────────────────────────
 function AdminOverview({ allLeads, allBulkLeads, allManualLeads, onNavigateToDashboard }) {
-    const [drillAgent,  setDrillAgent]  = useState(null);   // which agent card is expanded
-    const [drillMetric, setDrillMetric] = useState(null);   // which stat was clicked
-    const [drillLeads,  setDrillLeads]  = useState([]);     // leads for drill-down
+    const [drillAgent,  setDrillAgent]  = useState(null);
+    const [drillMetric, setDrillMetric] = useState(null);
+    const [drillLeads,  setDrillLeads]  = useState([]);
     const [drillSearch, setDrillSearch] = useState('');
     const [selectedDrillLead, setSelectedDrillLead] = useState(null);
 
@@ -1280,11 +1267,11 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, onNavigateToDas
             const manualLeads   = allManualLeads.filter(l => l.psa_agent_name === agent.value);
             const allAgentLeads = [...websiteLeads, ...bulkLeads, ...manualLeads];
             return {
-                name:    agent.value,
-                total:   allAgentLeads.length,
-                website: websiteLeads.length,
-                bulk:    bulkLeads.length,
-                manual:  manualLeads.length,
+                name:      agent.value,
+                total:     allAgentLeads.length,
+                website:   websiteLeads.length,
+                bulk:      bulkLeads.length,
+                manual:    manualLeads.length,
                 uncalled:  allAgentLeads.filter(l => !l.lead_status || l.lead_status === 'Un called').length,
                 called:    allAgentLeads.filter(l => l.lead_status === 'Called').length,
                 rnr:       allAgentLeads.filter(l => l.lead_status === 'RNR').length,
@@ -1308,7 +1295,6 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, onNavigateToDas
 
     const totalAll = allLeads.length + allBulkLeads.length + allManualLeads.length;
 
-    // Open drill-down for a specific agent + metric
     const openDrill = (agentName, metric, leads) => {
         setDrillAgent(agentName);
         setDrillMetric(metric);
@@ -1330,12 +1316,10 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, onNavigateToDas
 
     return (
         <div className="space-y-8 animate-fadeIn">
-            {/* Lead Detail Modal from drill-down */}
             {selectedDrillLead && (
                 <LeadDetailModal lead={selectedDrillLead} onClose={() => setSelectedDrillLead(null)} leadCategory="website" userEmail={ADMIN_EMAIL} />
             )}
 
-            {/* Drill-down Modal */}
             {drillAgent && (
                 <div className="fixed inset-0 z-[150] bg-slate-900/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-fadeIn">
                     <div className="bg-white rounded-t-[32px] md:rounded-[28px] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
@@ -1399,7 +1383,6 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, onNavigateToDas
                 </div>
             )}
 
-            {/* Header */}
             <div className="bg-slate-900 rounded-3xl p-6 md:p-8 text-white">
                 <div className="flex items-center justify-between mb-6">
                     <div>
@@ -1427,7 +1410,6 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, onNavigateToDas
                 </div>
             </div>
 
-            {/* Agent Cards — FIX 5: every stat row is now clickable */}
             <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">👥 PSA Agent Performance · <span className="text-blue-500">Click any stat to view leads</span></h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1464,7 +1446,7 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, onNavigateToDas
                                     <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-black text-lg">{agent.name[0]}</div>
                                 </div>
                                 <div className="space-y-1">
-                                    <Clickable label="🌐 Website" count={agent.website} color="text-blue-600"   leads={websiteLeads} metric="Website Leads" />
+                                    <Clickable label="🌐 Website" count={agent.website} color="text-blue-600"  leads={websiteLeads} metric="Website Leads" />
                                     <Clickable label="📦 Bulk"    count={agent.bulk}    color="text-purple-600" leads={bulkLeads}    metric="Bulk Leads" />
                                     <Clickable label="✍️ Manual"  count={agent.manual}  color="text-green-600"  leads={manualLeads}  metric="Manual Leads" />
                                     <div className="border-t border-slate-100 pt-1 mt-1 space-y-0.5">
@@ -1489,7 +1471,6 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, onNavigateToDas
                 </div>
             </div>
 
-            {/* Recent Activity — also clickable */}
             <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">⚡ Recent CRM Activity <span className="text-blue-500">· Tap to view lead</span></h3>
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -1748,7 +1729,7 @@ function LoginForm({ supabase }) {
 
 // ─── LEAD BUCKET TABS ──────────────────────────────────────────────────────
 const LEAD_BUCKETS = [
-    { id:'new',         label:'🆕 New',              emoji:'🆕', color:'bg-yellow-500',   desc:'Untouched / Uncalled leads' },
+    { id:'new',         label:'🆕 New',             emoji:'🆕', color:'bg-yellow-500',   desc:'Untouched / Uncalled leads' },
     { id:'open',        label:'📂 Open',             emoji:'📂', color:'bg-blue-500',     desc:'Called, RNR, Callback scheduled' },
     { id:'sv_scheduled',label:'📅 SV Scheduled',     emoji:'📅', color:'bg-teal-500',     desc:'Site visit booked' },
     { id:'sv_done',     label:'✅ SV Done',           emoji:'✅', color:'bg-indigo-500',   desc:'Site visit completed' },
@@ -1789,48 +1770,46 @@ const getInitialRoute = () => {
 // ─── ADMIN APP ─────────────────────────────────────────────────────────────
 function AdminApp() {
     const initRoute = getInitialRoute();
-    const [session,        setSession]        = useState(null);
-    const [authChecking,   setAuthChecking]   = useState(true);
-    const [leads,          setLeads]          = useState([]);
-    const [allLeadsAdmin,  setAllLeadsAdmin]  = useState([]);
-    const [allBulkAdmin,   setAllBulkAdmin]   = useState([]);
-    const [allManualAdmin, setAllManualAdmin] = useState([]);
-    const [properties,     setProperties]     = useState([]);
-    const [editingProp,    setEditingProp]    = useState(null);
-    const [view,           setView]           = useState(initRoute.v);
-    const [leadCategory,   setLeadCategory]   = useState(initRoute.c);
-    const [loading,        setLoading]        = useState(true);
-    const [showManualModal,setShowManualModal] = useState(false);
-    // FIX 4: Admin defaults to 'Tharun'; set initial state to '__DEFER__' 
-    // which will be resolved to ADMIN_AGENT_NAME once session loads
-    const [summaryAgent,   setSummaryAgent]   = useState('__DEFER__');
-    const [selectedProp,   setSelectedProp]   = useState(null);
-    const [selectedLead,   setSelectedLead]   = useState(null);
-    const [visibleCount,   setVisibleCount]   = useState(50);
-    const [searchTerm,     setSearchTerm]     = useState("");
-    const [deferredPrompt, setDeferredPrompt] = useState(null);
-    const [leadBucket,     setLeadBucket]     = useState('new');
-    const [showBulkUpload, setShowBulkUpload] = useState(false);
-    const [scheduleFilter, setScheduleFilter] = useState('ALL');
-    const [priorityFilter, setPriorityFilter] = useState('ALL');
+    const [session,         setSession]        = useState(null);
+    const [authChecking,    setAuthChecking]   = useState(true);
+    const [leads,           setLeads]          = useState([]);
+    const [allLeadsAdmin,   setAllLeadsAdmin]  = useState([]);
+    const [allBulkAdmin,    setAllBulkAdmin]   = useState([]);
+    const [allManualAdmin,  setAllManualAdmin] = useState([]);
+    const [properties,      setProperties]     = useState([]);
+    const [editingProp,     setEditingProp]    = useState(null);
+    const [view,            setView]           = useState(initRoute.v);
+    const [leadCategory,    setLeadCategory]   = useState(initRoute.c);
+    const [loading,         setLoading]        = useState(true);
+    const [showManualModal, setShowManualModal] = useState(false);
+    
+    // Default admin filter state to "__DEFER__" to prevent flashing, then correctly sets to Admin default
+    const [summaryAgent,    setSummaryAgent]   = useState('__DEFER__');
+    const [selectedProp,    setSelectedProp]   = useState(null);
+    const [selectedLead,    setSelectedLead]   = useState(null);
+    const [visibleCount,    setVisibleCount]   = useState(50);
+    const [searchTerm,      setSearchTerm]     = useState("");
+    const [deferredPrompt,  setDeferredPrompt] = useState(null);
+    const [leadBucket,      setLeadBucket]     = useState('new');
+    const [showBulkUpload,  setShowBulkUpload] = useState(false);
+    const [scheduleFilter,  setScheduleFilter] = useState('ALL');
+    const [priorityFilter,  setPriorityFilter] = useState('ALL');
 
-    // FIX 3: Second-level session countdown
     const secondsLeft = useSessionCountdown();
-    const isTimerWarning = secondsLeft !== null && secondsLeft < 600; // warn in last 10 min
+    const isTimerWarning = secondsLeft !== null && secondsLeft < 600; 
 
     const userEmail   = session?.user?.email || '';
     const agentName   = getAgentFromEmail(userEmail);
     const isAdminUser = agentName === '__ADMIN__';
 
-    // FIX 4: Admin filter defaults to ADMIN_AGENT_NAME ('Tharun') on login
+    // FIX 4: Admin filter defaults to 'Tharun' on login
     useEffect(() => {
         if (!session) return;
         const email  = session.user?.email || '';
         const agent  = getAgentFromEmail(email);
         const admin  = agent === '__ADMIN__';
         if (admin) {
-            // Admin with ADMIN_AGENT_NAME set → default to that agent's view
-            setSummaryAgent(ADMIN_AGENT_NAME || 'All');
+            setSummaryAgent(ADMIN_AGENT_NAME || 'All'); 
         } else if (agent) {
             setSummaryAgent(agent);
         }
@@ -1938,18 +1917,13 @@ function AdminApp() {
                 }
             }
 
-            // ── FIX 1 & 2: Visibility rules ─────────────────────────────────
-            // Website leads: unassigned = visible to ALL agents. Once assigned → only that agent + admin.
-            // Bulk leads: strictly mine only (FIX 2: reassigned bulk → removed from old agent).
-            // Manual leads: strictly mine only.
+            // FIX 1 & 2: Visibility Logic Fix 
             if (!isAdminUser && agentName) {
                 if (leadCategory === 'website') {
-                    raw = raw.filter(l =>
-                        !l.psa_agent_name ||                    // unassigned → visible to all
-                        l.psa_agent_name === agentName          // assigned to me → visible
-                    );
+                    // Website Leads: Visible if unassigned OR assigned specifically to the logged-in agent
+                    raw = raw.filter(l => !l.psa_agent_name || l.psa_agent_name === agentName);
                 } else {
-                    // bulk and manual: ONLY my leads (handles reassignment: if psa_agent_name changed, it won't match)
+                    // Bulk / Manual Leads: Strictly visible only if assigned to logged-in agent
                     raw = raw.filter(l => l.psa_agent_name === agentName);
                 }
             }
@@ -1992,7 +1966,6 @@ function AdminApp() {
     }
 
     async function updateLead(lead, field, value) {
-        // ── CLAIM-ON-INTERACTION (website only, non-admin) ─────────────────
         const effectiveActor = isAdminUser
             ? (ADMIN_AGENT_NAME || null)
             : (agentName || null);
@@ -2021,18 +1994,20 @@ function AdminApp() {
         else if (field === 'reject_reason') { updates.reject_reason = value; updates.call_remark = `[${stamp}] [${actorName}] Rejected: ${value}\n\n${lead.call_remark||''}`; }
         else if (field === 'psa_agent_name') {
             updates.psa_agent_name = value;
-            updates.assigned_agent = value; // FIX 2: also update assigned_agent
+            updates.assigned_agent = value; 
             updates.call_remark = `[${stamp}] [Admin] ${lead.psa_agent_name ? 'Reassigned: ' + lead.psa_agent_name + ' to ' + value : 'Assigned to ' + value}\n\n${lead.call_remark||''}`;
         }
         else { updates[field] = value; }
 
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
 
-        // FIX 2: Reassignment removes lead from original agent's view
+        // FIX 1 & 2: Correct state updates on reassignment
         if (field === 'psa_agent_name') {
-            if (isAdminUser) {
+            if (isAdminUser || value === agentName) {
+                // Keep the lead in view if I am the admin or if I am the one claiming/receiving it
                 setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...updates } : l));
             } else {
+                // Assigned to someone else, immediately remove from my current view
                 setLeads(prev => prev.filter(l => l.id !== lead.id));
             }
         } else {
@@ -2044,11 +2019,11 @@ function AdminApp() {
             alert("Save error: " + error.message);
             fetchLeads();
         } else if (field === 'psa_agent_name') {
+            // Re-fetch lightly in background to ensure sync if needed
             setTimeout(() => fetchLeads(), 500);
         }
     }
 
-    // FIX 4: Resolve '__DEFER__' to actual value for filtering
     const activeSummaryAgent = summaryAgent === '__DEFER__'
         ? (isAdminUser ? (ADMIN_AGENT_NAME || 'All') : (agentName || 'All'))
         : summaryAgent;
@@ -2104,13 +2079,11 @@ function AdminApp() {
                 <LeadDetailModal lead={selectedLead} onClose={() => setSelectedLead(null)} leadCategory={leadCategory} userEmail={userEmail} />
             )}
 
-            {/* Nav */}
             <nav className="bg-slate-900 text-white px-4 md:px-8 py-3 flex justify-between items-center sticky top-0 z-50 shadow-lg border-b border-slate-800">
                 <div className="flex items-center gap-3">
                     <h1 className="font-black tracking-tighter text-lg md:text-xl uppercase italic">Horizon <span className="text-blue-400">CRM</span></h1>
                     {userEmail && <span className="hidden md:block text-[9px] font-bold text-slate-500 bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg uppercase tracking-widest truncate max-w-[180px]">{isAdminUser ? (ADMIN_AGENT_NAME ? `🛡️ Admin · ${ADMIN_AGENT_NAME}` : '🛡️ Admin') : `👤 ${agentName||userEmail.split('@')[0]}`}</span>}
 
-                    {/* FIX 3: Second-level countdown timer */}
                     {secondsLeft !== null && (
                         <span
                             className={`hidden md:flex items-center gap-1.5 text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest border session-timer ${
@@ -2143,8 +2116,6 @@ function AdminApp() {
             </nav>
 
             <main className="p-3 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
-
-                {/* ── ADMIN OVERVIEW ── */}
                 {view === 'admin' && isAdminUser && (
                     <AdminOverview
                         allLeads={allLeadsAdmin}
@@ -2154,11 +2125,8 @@ function AdminApp() {
                     />
                 )}
 
-                {/* ── DASHBOARD ── */}
                 {view === 'dashboard' && (
                     <div className="space-y-5">
-
-                        {/* Stats bar */}
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
                             <div className="flex flex-wrap md:grid md:grid-cols-6 gap-3 items-center">
                                 {isAdminUser && (
@@ -2186,7 +2154,6 @@ function AdminApp() {
                             </div>
                         </div>
 
-                        {/* Channel tabs + filters */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                             <div className="flex gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm">
                                 {[{id:'website',label:'🌐 Website'},{id:'bulk',label:'📦 Bulk'},{id:'manual',label:'✍️ Manual'}].map(c => (
@@ -2220,7 +2187,6 @@ function AdminApp() {
                             </div>
                         </div>
 
-                        {/* Bulk CSV Uploader Panel */}
                         {isAdminUser && leadCategory === 'bulk' && showBulkUpload && (
                             <BulkCSVUploader
                                 supabase={supabase}
@@ -2232,7 +2198,6 @@ function AdminApp() {
                             />
                         )}
 
-                        {/* Bucket tabs */}
                         <div className="flex gap-2 overflow-x-auto hide-scroll pb-1">
                             {LEAD_BUCKETS.map(b => {
                                 const count = filterLeadsByBucket(leads.filter(l => !l.is_hidden), b.id).length;
@@ -2248,7 +2213,6 @@ function AdminApp() {
                             })}
                         </div>
 
-                        {/* Search */}
                         <div className="relative">
                             <input type="text" placeholder="Search name, phone or project..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full p-4 pl-12 pr-28 bg-white border-2 border-slate-200 rounded-2xl text-xs font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all" />
@@ -2259,7 +2223,6 @@ function AdminApp() {
                             </div>
                         </div>
 
-                        {/* ── Desktop Table ── */}
                         <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                             {loading ? (
                                 <div className="p-6 space-y-3">
@@ -2393,7 +2356,6 @@ function AdminApp() {
                             )}
                         </div>
 
-                        {/* ── Mobile Cards ── */}
                         <div className="lg:hidden space-y-3">
                             {loading ? (
                                 [...Array(4)].map((_,i) => (
@@ -2512,7 +2474,6 @@ function AdminApp() {
                 {view === 'add' && <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} editingProp={editingProp} setView={handleNavigate} />}
             </main>
 
-            {/* Manual Lead Modal */}
             {showManualModal && (
                 <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[100] flex items-end md:items-center justify-center p-0 md:p-4" onClick={e => e.target === e.currentTarget && setShowManualModal(false)}>
                     <div className="bg-white rounded-t-[32px] md:rounded-[28px] w-full max-w-md shadow-2xl animate-slideUp overflow-hidden">
