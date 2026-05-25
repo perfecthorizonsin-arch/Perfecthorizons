@@ -482,10 +482,18 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                             <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Lead Source</div>
                             <div className="text-xs font-black text-slate-800">{lead.lead_source || 'Website'}</div>
                         </div>
+                        {/* Project — hidden from agents on bulk leads */}
+                        {(isAdminUser || lead.lead_source !== 'Bulk Upload') ? (
                         <div className="bg-blue-50 rounded-2xl p-3 border border-blue-200 col-span-2">
                             <div className="text-[8px] font-black uppercase tracking-widest text-blue-400 mb-1">🏠 Project Interested In</div>
                             <div className="text-xs font-black text-blue-900">{lead.project_interested_in || 'General Enquiry'}</div>
                         </div>
+                        ) : (
+                            <div className="bg-slate-100 rounded-2xl p-3 border border-slate-200 col-span-2 flex items-center gap-2">
+                                <span className="text-base">🔒</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Project details visible to admin only</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Dates */}
@@ -510,6 +518,7 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                     </div>
 
                     {/* Notes */}
+                    {/* Notes — hidden from agents on bulk leads */}
                     {lead.add_note && (
                         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
                             <div className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-2">📝 Notes / Requirements</div>
@@ -1703,7 +1712,6 @@ function AdminApp() {
     }, [session]);
     const [leadBucket,     setLeadBucket]     = useState('new');
     const [showBulkUpload, setShowBulkUpload] = useState(false);  // CSV uploader panel
-    const [showDeleted,    setShowDeleted]    = useState(false);   // toggle show/hide deleted
     const [scheduleFilter, setScheduleFilter] = useState('ALL');
     const [priorityFilter, setPriorityFilter] = useState('ALL');
 
@@ -1712,20 +1720,20 @@ function AdminApp() {
     const agentName   = getAgentFromEmail(userEmail);
     const isAdminUser = agentName === '__ADMIN__';
 
-    // ── Default summary filter for admin/dual-role ──────────────────────────
-    // If admin IS also an agent (ADMIN_AGENT_NAME set), default the stats filter
-    // to that agent name so Tharun (admin) sees his own leads by default.
-    // Regular agents always see their own name; 'All' is only for pure admins.
+    // ── Default summary filter — runs once when session first loads ───────────
     useEffect(() => {
         if (!session) return;
-        if (isAdminUser) {
-            // Dual-role admin → default to their agent name; pure admin → 'All'
+        const email  = session.user?.email || '';
+        const agent  = getAgentFromEmail(email);
+        const admin  = agent === '__ADMIN__';
+        if (admin) {
+            // Admin with dual role → default to their agent name (e.g. Tharun)
+            // Pure admin (no ADMIN_AGENT_NAME set) → show All
             setSummaryAgent(ADMIN_AGENT_NAME || 'All');
-        } else if (agentName) {
-            setSummaryAgent(agentName);
+        } else if (agent) {
+            setSummaryAgent(agent);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [session]);
+    }, [session?.user?.email]); // re-runs if the logged-in user changes
 
     useEffect(() => {
         const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
@@ -1764,24 +1772,13 @@ function AdminApp() {
     const AUTO_LOGOUT_MS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
     const logoutTimerRef = useRef(null);
 
-    const scheduleAutoLogout = useCallback((sess) => {
-        // Clear any existing timer
+    // ── Reschedule timer from stored login time (called on page load + refresh) ──
+    const rescheduleFromStored = useCallback(() => {
         if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
-        if (!sess) return;
-
-        // Supabase JWT has created_at in seconds; use it as login time
-        const loginEpochMs = (sess.user?.created_at
-            ? Date.now() // for existing sessions we use now as a safe fallback
-            : Date.now());
-
-        // Store login timestamp in sessionStorage so page refresh doesn't reset it
         const stored = sessionStorage.getItem('__crm_login_time');
-        const loginTime = stored ? parseInt(stored, 10) : Date.now();
-        if (!stored) sessionStorage.setItem('__crm_login_time', String(loginTime));
-
-        const elapsed  = Date.now() - loginTime;
-        const remaining = AUTO_LOGOUT_MS - elapsed;
-
+        if (!stored) return; // no active session timer
+        const loginTime = parseInt(stored, 10);
+        const remaining = AUTO_LOGOUT_MS - (Date.now() - loginTime);
         if (remaining <= 0) {
             // Already past 3 hours — logout immediately
             supabase.auth.signOut();
@@ -1790,7 +1787,7 @@ function AdminApp() {
             logoutTimerRef.current = setTimeout(async () => {
                 await supabase.auth.signOut();
                 sessionStorage.removeItem('__crm_login_time');
-                alert('⏰ Session expired after 3 hours. Please log in again.');
+                alert('\u23F0 Session expired after 3 hours. Please log in again.');
             }, remaining);
         }
     }, []);
@@ -1800,25 +1797,26 @@ function AdminApp() {
             setSession(session);
             setAuthChecking(false);
             if (window.__dismissSplash) window.__dismissSplash();
-            if (session) scheduleAutoLogout(session);
+            // Page load / refresh — resume existing timer if one exists
+            if (session) rescheduleFromStored();
         });
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
             setSession(s);
-            if (s) {
-                // Fresh login — reset the timer
+            if (event === 'SIGNED_IN') {
+                // Brand-new login — stamp NOW as login time and start fresh 3h timer
                 sessionStorage.setItem('__crm_login_time', String(Date.now()));
-                scheduleAutoLogout(s);
-            } else {
-                // Logged out — clear timer
+                rescheduleFromStored();
+            } else if (event === 'SIGNED_OUT') {
                 if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
                 sessionStorage.removeItem('__crm_login_time');
             }
+            // TOKEN_REFRESHED, USER_UPDATED etc. — do NOT reset the timer
         });
         return () => {
             subscription.unsubscribe();
             if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
         };
-    }, [scheduleAutoLogout]);
+    }, [rescheduleFromStored]);
 
     useEffect(() => {
         if (session) {
@@ -1871,13 +1869,15 @@ function AdminApp() {
         setLoading(false);
     }
 
-    // ── Soft-delete: toggle is_hidden column (true = hidden from UI, data stays) ──
-    async function toggleHideLead(lead) {
-        const table    = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-        const newValue = !lead.is_hidden;
-        // Optimistic update
-        setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, is_hidden: newValue } : l));
-        const { error } = await supabase.from(table).update({ is_hidden: newValue }).eq('id', lead.id);
+    // ── Soft-delete: sets is_hidden=true — data stays in DB, removed from UI ──
+    async function deleteLead(lead) {
+        const confirmed = window.confirm(
+            \`⚠️ Delete this lead?\n\nName: \${lead.customer_name}\nPhone: \${lead.phone_number}\n\nThis lead will be removed from the CRM view but data is kept in the database. This cannot be undone from the app.\`
+        );
+        if (!confirmed) return;
+        const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
+        setLeads(prev => prev.filter(l => l.id !== lead.id)); // remove from UI instantly
+        const { error } = await supabase.from(table).update({ is_hidden: true }).eq('id', lead.id);
         if (error) {
             alert('Error: ' + error.message + '\n\nMake sure the \'is_hidden\' (boolean, default false) column exists in your ' + table + ' table.');
             fetchLeads();
@@ -1904,22 +1904,24 @@ function AdminApp() {
     }
 
     async function updateLead(lead, field, value) {
-        // ── CLAIM-ON-OPEN: auto-assign unassigned website leads ─────────────
+        // ── CLAIM-ON-INTERACTION: auto-assign unassigned website leads ────────
         // When a non-admin agent interacts with an unassigned website lead,
-        // automatically claim it for them. From that point it's only visible
-        // to that agent + admin.
-        let autoClaimUpdates = {};
+        // silently claim it. After that it's only visible to that agent + admin.
+        // NOTE: Admin interactions do NOT claim leads — admin is neutral.
         const effectiveActor = isAdminUser
-            ? (ADMIN_AGENT_NAME || 'Admin')
+            ? (ADMIN_AGENT_NAME || null)   // admin's dual-role persona, or null
             : (agentName || null);
 
-        if (leadCategory === 'website' && !lead.psa_agent_name && effectiveActor && effectiveActor !== 'Admin') {
-            // Silently claim it first
-            autoClaimUpdates.psa_agent_name = effectiveActor;
-            // Optimistic update so UI reflects immediately
+        // Only claim if: website channel, lead is unassigned, actor is a real agent
+        // AND actor is NOT admin (admin viewing should never auto-claim)
+        const shouldClaim = leadCategory === 'website'
+            && !lead.psa_agent_name
+            && effectiveActor
+            && !isAdminUser;  // ← admin never claims on interaction
+
+        if (shouldClaim) {
             setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, psa_agent_name: effectiveActor } : l));
             await supabase.from('leads').update({ psa_agent_name: effectiveActor }).eq('id', lead.id);
-            // Update local lead reference so the stamp below uses the right name
             lead = { ...lead, psa_agent_name: effectiveActor };
         }
 
@@ -1934,7 +1936,7 @@ function AdminApp() {
         else if (field === 'site_visit_at') { updates.site_visit_at = value; updates.call_remark = `[${stamp}] [${actorName}] SV Booked: ${value}\n\n${lead.call_remark||''}`; }
         else if (field === 'add_note')      { if (!value.trim()) return; updates.add_note = value; updates.call_remark = `[${stamp}] [${actorName}] Note: ${value}\n\n${lead.call_remark||''}`; }
         else if (field === 'reject_reason') { updates.reject_reason = value; updates.call_remark = `[${stamp}] [${actorName}] Rejected: ${value}\n\n${lead.call_remark||''}`; }
-        else if (field === 'psa_agent_name') { updates.psa_agent_name = value; updates.call_remark = `[${stamp}] [Admin] Assigned to ${value}\n\n${lead.call_remark||''}`; }
+        else if (field === 'psa_agent_name') { updates.psa_agent_name = value; updates.call_remark = `[${stamp}] [Admin] ${lead.psa_agent_name ? `Reassigned: ${lead.psa_agent_name} → ${value}` : `Assigned to ${value}`}\n\n${lead.call_remark||''}`; }
         else                                { updates[field] = value; }
 
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
@@ -1947,9 +1949,8 @@ function AdminApp() {
     }
 
     const displayedLeads = useMemo(() => {
-        // Filter hidden leads — show them only if admin toggles "Show Hidden"
-        let f = filterLeadsByBucket(leads, leadBucket);
-        if (!showDeleted) f = f.filter(l => !l.is_hidden);
+        // Always filter out soft-deleted leads
+        let f = filterLeadsByBucket(leads.filter(l => !l.is_hidden), leadBucket);
 
         const today = new Date().toISOString().split('T')[0];
         if (scheduleFilter === 'TODAY_CB')       f = f.filter(l => l.follow_up_at?.startsWith(today));
@@ -1966,19 +1967,20 @@ function AdminApp() {
             f = f.filter(l => (l.customer_name||'').toLowerCase().includes(t) || (l.phone_number||'').toLowerCase().includes(t) || (l.project_interested_in||'').toLowerCase().includes(t));
         }
         return f;
-    }, [leads, leadBucket, scheduleFilter, priorityFilter, summaryAgent, searchTerm, isAdminUser, showDeleted]);
+    }, [leads, leadBucket, scheduleFilter, priorityFilter, summaryAgent, searchTerm, isAdminUser]);
 
     const visibleLeads = displayedLeads.slice(0, visibleCount);
 
     const stats = useMemo(() => {
-        let t = leads.filter(l => l.lead_status !== 'Rejected');
+        // Always exclude soft-deleted leads from all counts
+        let t = leads.filter(l => !l.is_hidden && l.lead_status !== 'Rejected');
         if (summaryAgent !== 'All' && summaryAgent !== '__DEFER__') t = t.filter(l => l.psa_agent_name === summaryAgent);
         return {
             total:     t.length,
             uncalled:  t.filter(l => !l.lead_status || l.lead_status === 'Un called').length,
             called:    t.filter(l => l.lead_status && l.lead_status !== 'Un called').length,
             converted: t.filter(l => l.lead_status === 'Converted').length,
-            rejected:  leads.filter(l => l.lead_status === 'Rejected').length,
+            rejected:  leads.filter(l => !l.is_hidden && l.lead_status === 'Rejected').length,
         };
     }, [leads, summaryAgent]);
 
@@ -2093,13 +2095,7 @@ function AdminApp() {
                                         📤 {showBulkUpload ? 'Hide Uploader' : 'Upload CSV'}
                                     </button>
                                 )}
-                                {/* Show/hide deleted — admin only */}
-                                {isAdminUser && (
-                                    <button onClick={() => setShowDeleted(v => !v)}
-                                        className={`px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase shadow-md shrink-0 transition border ${showDeleted ? 'bg-red-500 text-white border-red-400' : 'bg-white text-slate-600 border-slate-200 hover:border-red-300'}`}>
-                                        {showDeleted ? '👁 Showing Hidden' : '🗑 Show Hidden'}
-                                    </button>
-                                )}
+
                             </div>
                         </div>
 
@@ -2118,7 +2114,7 @@ function AdminApp() {
                         {/* Bucket tabs */}
                         <div className="flex gap-2 overflow-x-auto hide-scroll pb-1">
                             {LEAD_BUCKETS.map(b => {
-                                const count = filterLeadsByBucket(leads, b.id).length;
+                                const count = filterLeadsByBucket(leads.filter(l => !l.is_hidden), b.id).length;
                                 const isActive = leadBucket === b.id;
                                 return (
                                     <button key={b.id} onClick={() => setLeadBucket(b.id)}
@@ -2175,14 +2171,16 @@ function AdminApp() {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {visibleLeads.map(l => (
-                                            <tr key={l.id} className={`border-l-[5px] hover:brightness-[0.97] transition-all ${l.is_hidden ? 'opacity-50 bg-red-50 border-l-red-400' : `${l.lead_priority==='Hot'?'border-l-red-500':l.lead_priority==='Cold'?'border-l-blue-400':'border-l-amber-400'} ${getCardTint(l.lead_status)}`}`}>
+                                            <tr key={l.id} className={`border-l-[5px] hover:brightness-[0.97] transition-all ${l.lead_priority==='Hot'?'border-l-red-500':l.lead_priority==='Cold'?'border-l-blue-400':'border-l-amber-400'} ${getCardTint(l.lead_status)}`}>
                                                 <td className="px-5 py-4 min-w-[200px]">
                                                     <p className="font-black text-[11px] uppercase text-slate-900 leading-tight">{l.customer_name}</p>
                                                     <p className="text-blue-600 font-black text-[11px] mt-0.5">{l.phone_number}</p>
                                                     {l.customer_email && <p className="text-slate-400 text-[9px] mt-0.5 lowercase truncate font-medium max-w-[160px]">{l.customer_email}</p>}
-                                                    <p className="text-[8px] text-slate-500 font-bold mt-1.5 tracking-widest uppercase truncate max-w-[160px]">
-                                                        🏠 {l.project_interested_in||'General'}
-                                                    </p>
+                                                    {(isAdminUser || l.lead_source !== 'Bulk Upload') && (
+                                                        <p className="text-[8px] text-slate-500 font-bold mt-1.5 tracking-widest uppercase truncate max-w-[160px]">
+                                                            🏠 {l.project_interested_in||'General'}
+                                                        </p>
+                                                    )}
                                                     <p className="text-[8px] text-slate-400 font-bold mt-1 tracking-widest uppercase">
                                                         🕐 {formatDateTime(l.created_at)}
                                                     </p>
@@ -2193,13 +2191,24 @@ function AdminApp() {
                                                     </div>
                                                 </td>
                                                 <td className="p-4 min-w-[160px]">
-                                                    {/* Agent assignment — only for website leads AND only admin can reassign */}
-                                                    {leadCategory === 'website' && (
-                                                        <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''} disabled={!isAdminUser}
-                                                            className={`w-full p-2 mb-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none ${isAdminUser ? 'bg-slate-900 border-slate-700 text-blue-300 cursor-pointer' : 'bg-slate-800 border-slate-700 text-slate-400 cursor-not-allowed'}`}>
-                                                            <option value="" disabled>⚡ Assign Agent</option>
-                                                            {PSA_AGENTS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
-                                                        </select>
+                                                    {/* Agent assignment — admin can reassign on ANY channel */}
+                                                    {isAdminUser && (
+                                                        <div className="mb-2">
+                                                            <label className="text-[7px] font-black uppercase tracking-widest text-slate-500 mb-0.5 block">
+                                                                {l.psa_agent_name ? '🔄 Reassign Agent' : '⚡ Assign Agent'}
+                                                            </label>
+                                                            <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''}
+                                                                className="w-full p-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none bg-slate-900 border-slate-700 text-blue-300 cursor-pointer">
+                                                                <option value="" disabled>Select Agent</option>
+                                                                {PSA_AGENTS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
+                                                            </select>
+                                                        </div>
+                                                    )}
+                                                    {/* Non-admin: just show who's assigned (read-only) */}
+                                                    {!isAdminUser && l.psa_agent_name && (
+                                                        <div className="text-[8px] font-black text-blue-400 bg-slate-900 border border-slate-700 px-2 py-1.5 rounded-xl mb-2 uppercase tracking-widest">
+                                                            👤 {l.psa_agent_name}
+                                                        </div>
                                                     )}
                                                     <select onChange={e => updateLead(l,'lead_status',e.target.value)} value={l.lead_status||''} className={`w-full p-2 mb-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`}>
                                                         {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">🔵 Un called</option>}
@@ -2244,9 +2253,9 @@ function AdminApp() {
                                                             👁 Detail
                                                         </button>
                                                         {isAdminUser && (
-                                                            <button onClick={() => toggleHideLead(l)}
-                                                                className={`text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border transition w-full ${l.is_hidden ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100' : 'bg-red-50 text-red-500 border-red-200 hover:bg-red-100'}`}>
-                                                                {l.is_hidden ? '↩ Restore' : '🗑 Hide'}
+                                                            <button onClick={() => deleteLead(l)}
+                                                                className="text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border transition w-full bg-red-50 text-red-500 border-red-200 hover:bg-red-100">
+                                                                🗑 Delete
                                                             </button>
                                                         )}
                                                     </div>
@@ -2282,7 +2291,7 @@ function AdminApp() {
                                     <div className="text-[10px] text-slate-400 font-medium">Adjust filters or search</div>
                                 </div>
                             ) : visibleLeads.map(l => (
-                                <div key={`m-${l.id}`} className={`rounded-2xl shadow-sm border-2 overflow-hidden animate-fadeIn ${l.is_hidden ? 'opacity-50 border-red-300 bg-red-50' : `${l.lead_priority==='Hot'?'border-red-200':l.lead_priority==='Cold'?'border-blue-200':'border-amber-200'} ${getCardTint(l.lead_status)}`}`}>
+                                <div key={`m-${l.id}`} className={`rounded-2xl shadow-sm border-2 overflow-hidden animate-fadeIn ${l.lead_priority==='Hot'?'border-red-200':l.lead_priority==='Cold'?'border-blue-200':'border-amber-200'} ${getCardTint(l.lead_status)}`}>
                                     <div className={`h-1 w-full ${l.lead_priority==='Hot'?'bg-red-500':l.lead_priority==='Cold'?'bg-blue-400':'bg-amber-400'}`}></div>
                                     <div className="p-4">
                                         <div className="flex justify-between items-start mb-3">
@@ -2290,7 +2299,9 @@ function AdminApp() {
                                                 <h3 className="font-black text-[13px] uppercase text-slate-900 leading-tight truncate">{l.customer_name}</h3>
                                                 <p className="font-black text-blue-600 text-[12px] mt-0.5">{l.phone_number}</p>
                                                 {l.customer_email && <p className="font-medium text-slate-400 text-[9px] truncate mt-0.5">{l.customer_email}</p>}
-                                                <p className="text-[9px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate">🏠 {l.project_interested_in||'General'}</p>
+                                                {(isAdminUser || l.lead_source !== 'Bulk Upload') && (
+                                                    <p className="text-[9px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate">🏠 {l.project_interested_in||'General'}</p>
+                                                )}
                                                 <p className="text-[8px] text-slate-400 font-bold mt-0.5 tracking-widest uppercase">🕐 {formatDateTime(l.created_at)}</p>
                                                 {l.psa_agent_name && <p className="text-[8px] text-blue-500 font-bold mt-0.5 tracking-widest uppercase">👤 {l.psa_agent_name}</p>}
                                             </div>
@@ -2299,9 +2310,9 @@ function AdminApp() {
                                                 <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${getPriorityColor(l.lead_priority||'Warm')}`}>{l.lead_priority==='Hot'?'🔥':l.lead_priority==='Cold'?'❄️':'🌤'} {l.lead_priority||'Warm'}</span>
                                                 <button onClick={() => setSelectedLead(l)} className="text-[8px] font-black text-blue-600 bg-blue-50 border border-blue-200 px-2 py-1 rounded-lg uppercase tracking-widest">👁 Detail</button>
                                                 {isAdminUser && (
-                                                    <button onClick={() => toggleHideLead(l)}
-                                                        className={`text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-widest border ${l.is_hidden ? 'text-green-600 bg-green-50 border-green-200' : 'text-red-500 bg-red-50 border-red-200'}`}>
-                                                        {l.is_hidden ? '↩' : '🗑'}
+                                                    <button onClick={() => deleteLead(l)}
+                                                        className="text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-widest border text-red-500 bg-red-50 border-red-200 hover:bg-red-100">
+                                                        🗑
                                                     </button>
                                                 )}
                                             </div>
@@ -2311,11 +2322,15 @@ function AdminApp() {
                                             <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="flex-1 flex items-center justify-center gap-1 bg-green-500 text-white text-[9px] font-black uppercase tracking-widest py-2.5 rounded-xl hover:bg-green-600 transition shadow-sm">💬 WhatsApp</a>
                                         </div>
                                         <div className="border-t border-slate-200/80 pt-3 space-y-2">
-                                            {leadCategory === 'website' && isAdminUser && (
+                                            {/* Admin: reassign on any channel */}
+                                            {isAdminUser && (
                                                 <div className="flex flex-col gap-1">
-                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">PSA Agent</label>
-                                                    <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''} className="p-2.5 border-2 border-slate-700 bg-slate-900 rounded-xl font-black uppercase text-[9px] outline-none text-blue-300 cursor-pointer">
-                                                        <option value="" disabled>⚡ Assign Agent</option>
+                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                                                        {l.psa_agent_name ? '🔄 Reassign Agent' : '⚡ Assign Agent'}
+                                                    </label>
+                                                    <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''}
+                                                        className="p-2.5 border-2 border-slate-700 bg-slate-900 rounded-xl font-black uppercase text-[9px] outline-none text-blue-300 cursor-pointer">
+                                                        <option value="" disabled>Select Agent</option>
                                                         {PSA_AGENTS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
                                                     </select>
                                                 </div>
