@@ -130,7 +130,7 @@ const { useState, useEffect, useMemo, useRef, useCallback } = React;
 // ─── CONFIG ────────────────────────────────────────────────────────────────
 const supabaseUrl = 'https://uiiovtsktllvtecfokik.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, { auth: { storage: window.sessionStorage } });
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, { auth: { storage: window.localStorage, persistSession: true, autoRefreshToken: true } });
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwaOLlqAQZMZczkAWuyK2F2DEHZ2ILgxlJnlDDZrrDNBSdszBZpX3M0f_p9mVtUePobDQ/exec";
 const WHATSAPP_NUMBER = "9113261205";
 const ADMIN_EMAIL = "saishetty1623@gmail.com";
@@ -1865,7 +1865,7 @@ function AdminApp() {
     const [leadCategory,   setLeadCategory]   = useState(initRoute.c);
     const [loading,        setLoading]        = useState(true);
     const [showManualModal,setShowManualModal] = useState(false);
-    const [summaryAgent,   setSummaryAgent]   = useState('All');
+    const [summaryAgent,   setSummaryAgent]   = useState(ADMIN_AGENT_NAME || 'All'); // default to Tharun immediately
     const [selectedProp,   setSelectedProp]   = useState(null);
     const [selectedLead,   setSelectedLead]   = useState(null);
     const [visibleCount,   setVisibleCount]   = useState(50);
@@ -1873,24 +1873,25 @@ function AdminApp() {
     const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [sessionTimeLeft, setSessionTimeLeft] = useState(''); // e.g. "2h 47m"
 
-    // ── Live session countdown — ticks every second, shows h:mm:ss ─────────
+    // ── Live session countdown — ticks every second, h:mm:ss ───────────────
+    // dep=[] so interval is created once and never reset mid-session
     useEffect(() => {
         const tick = () => {
             const stored = localStorage.getItem('__crm_login_time');
             if (!stored) { setSessionTimeLeft(''); return; }
             const remaining = (3 * 60 * 60 * 1000) - (Date.now() - parseInt(stored, 10));
-            if (remaining <= 0) { setSessionTimeLeft('Logging out...'); return; }
-            const h = Math.floor(remaining / 3600000);
-            const m = Math.floor((remaining % 3600000) / 60000);
-            const s = Math.floor((remaining % 60000) / 1000);
+            if (remaining <= 0) { setSessionTimeLeft('Expired'); return; }
+            const h  = Math.floor(remaining / 3600000);
+            const m  = Math.floor((remaining % 3600000) / 60000);
+            const s  = Math.floor((remaining % 60000) / 1000);
             const mm = String(m).padStart(2, '0');
             const ss = String(s).padStart(2, '0');
             setSessionTimeLeft(h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`);
         };
-        tick();
-        const interval = setInterval(tick, 1000); // every second
+        tick(); // run immediately
+        const interval = setInterval(tick, 1000);
         return () => clearInterval(interval);
-    }, [session]);
+    }, []); // [] = start once, never reset
     const [leadBucket,     setLeadBucket]     = useState('new');
     const [showBulkUpload, setShowBulkUpload] = useState(false);  // CSV uploader panel
     const [scheduleFilter, setScheduleFilter] = useState('ALL');
@@ -1902,19 +1903,15 @@ function AdminApp() {
     const isAdminUser = agentName === '__ADMIN__';
     const isKnownAgent = agentName && agentName !== '__ADMIN__' && agentName !== '__UNKNOWN__';
 
-    // ── Default summary filter — set once when we know who the user is ─────────
+    // ── Set summary filter once session & agent identity is known ───────────
     useEffect(() => {
-        if (!session) return;
-        if (isAdminUser) {
-            // Admin: default to their dual-role agent name if set (e.g. Tharun),
-            // otherwise show All agents
+        if (!session || !agentName) return;
+        if (agentName === '__ADMIN__') {
             setSummaryAgent(ADMIN_AGENT_NAME || 'All');
-        } else if (isKnownAgent) {
-            // PSA agent: always default to their own name
+        } else if (agentName !== '__UNKNOWN__') {
             setSummaryAgent(agentName);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [!!session, agentName]); // re-run when session appears or agent identity changes
+    }, [agentName]); // fires whenever agentName resolves
 
     useEffect(() => {
         const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
@@ -1984,14 +1981,21 @@ function AdminApp() {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
             setSession(s);
             if (event === 'SIGNED_IN') {
-                // Brand-new login — stamp NOW as login time and start fresh 3h timer
-                localStorage.setItem('__crm_login_time', String(Date.now()));
+                // Fresh login — stamp login time and start timer
+                // Only stamp if no existing stamp (don't override a valid session)
+                if (!localStorage.getItem('__crm_login_time')) {
+                    localStorage.setItem('__crm_login_time', String(Date.now()));
+                }
                 rescheduleFromStored();
+            } else if (event === 'INITIAL_SESSION') {
+                // Page reload with existing session — resume timer from stored stamp
+                if (s && localStorage.getItem('__crm_login_time')) {
+                    rescheduleFromStored();
+                }
             } else if (event === 'SIGNED_OUT') {
                 if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
                 localStorage.removeItem('__crm_login_time');
             }
-            // TOKEN_REFRESHED, USER_UPDATED etc. — do NOT reset the timer
         });
         return () => {
             subscription.unsubscribe();
@@ -2000,12 +2004,17 @@ function AdminApp() {
     }, [rescheduleFromStored]);
 
     useEffect(() => {
-        if (session) {
-            fetchProperties();
-            if (view === 'dashboard') fetchLeads();
-            if (view === 'admin' && isAdminUser) fetchAllForAdmin();
-        }
+        if (!session) return;
+        fetchProperties();
+        if (view === 'dashboard') fetchLeads();
     }, [session, view, leadCategory, agentName]);
+
+    // Admin overview fetch — separate effect so it fires whenever admin opens the tab
+    useEffect(() => {
+        if (session && view === 'admin' && isAdminUser) {
+            fetchAllForAdmin();
+        }
+    }, [session, view, isAdminUser]);
 
     async function fetchLeads() {
         setLoading(true);
@@ -2155,7 +2164,7 @@ function AdminApp() {
 
         if (priorityFilter !== 'ALL') f = f.filter(l => (l.lead_priority||'Warm') === priorityFilter);
 
-        if (summaryAgent !== 'All' && summaryAgent !== '__DEFER__' && isAdminUser) f = f.filter(l => l.psa_agent_name === summaryAgent);
+        if (isAdminUser && summaryAgent !== 'All') f = f.filter(l => l.psa_agent_name === summaryAgent);
 
         if (searchTerm.trim()) {
             const t = searchTerm.toLowerCase();
@@ -2169,7 +2178,7 @@ function AdminApp() {
     const stats = useMemo(() => {
         // Always exclude soft-deleted leads from all counts
         let t = leads.filter(l => !l.is_hidden && l.lead_status !== 'Rejected');
-        if (summaryAgent !== 'All' && summaryAgent !== '__DEFER__') t = t.filter(l => l.psa_agent_name === summaryAgent);
+        if (summaryAgent !== 'All') t = t.filter(l => l.psa_agent_name === summaryAgent);
         return {
             total:     t.length,
             uncalled:  t.filter(l => !l.lead_status || l.lead_status === 'Un called').length,
@@ -2237,7 +2246,7 @@ function AdminApp() {
                             <div className="flex flex-wrap md:grid md:grid-cols-6 gap-3 items-center">
                                 {isAdminUser && (
                                     <div className="w-full md:w-auto">
-                                        <select className="bg-transparent outline-none cursor-pointer text-slate-700 text-[10px] font-black uppercase w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500" value={summaryAgent === '__DEFER__' ? (ADMIN_AGENT_NAME || 'All') : summaryAgent} onChange={e => setSummaryAgent(e.target.value)}>
+                                        <select className="bg-transparent outline-none cursor-pointer text-slate-700 text-[10px] font-black uppercase w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500" value={summaryAgent} onChange={e => setSummaryAgent(e.target.value)}>
                                             <option value="All">📊 All Agents</option>
                                             {PSA_AGENTS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
                                         </select>
@@ -2314,15 +2323,14 @@ function AdminApp() {
                         {/* Bucket tabs */}
                         <div className="flex gap-2 overflow-x-auto hide-scroll pb-1">
                             {LEAD_BUCKETS.map(b => {
-                                // Count respects the current agent filter
-                const agentFilteredLeads = leads.filter(l => {
-                    if (l.is_hidden) return false;
-                    if (isAdminUser && summaryAgent !== 'All' && summaryAgent !== '__DEFER__') {
-                        return l.psa_agent_name === summaryAgent;
-                    }
-                    return true;
-                });
-                const count = filterLeadsByBucket(agentFilteredLeads, b.id).length;
+                                const agentFilteredLeads = leads.filter(l => {
+                                    if (l.is_hidden) return false;
+                                    if (isAdminUser && summaryAgent !== 'All') {
+                                        return l.psa_agent_name === summaryAgent;
+                                    }
+                                    return true;
+                                });
+                                const count = filterLeadsByBucket(agentFilteredLeads, b.id).length;
                                 const isActive = leadBucket === b.id;
                                 return (
                                     <button key={b.id} onClick={() => setLeadBucket(b.id)}
