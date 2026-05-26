@@ -805,7 +805,7 @@
                 if (!/^[6-9]\d{9}$/.test(data.phone)) { alert("Enter valid 10-digit number"); return false; }
                 if (!dataToSubmit) setIsSubmitting(true);
                 try {
-                    const { error } = await supabase.from('leads').insert([{ customer_name:data.name, phone_number:data.phone, customer_email:data.email||null, project_interested_in:project, lead_status:"Un called", lead_source:sourceContext, psa_agent_name:"null" }]);
+                    const { error } = await supabase.from('leads').insert([{ customer_name:data.name, phone_number:data.phone, customer_email:data.email||null, project_interested_in:project, lead_status:"Un called", lead_source:sourceContext, psa_agent_name: null }]);
                     if (error) throw error;
                     fetch(GOOGLE_SCRIPT_URL, { method:"POST", body:JSON.stringify({ action:"sendLead", Name:data.name, Phone:data.phone, Email:data.email||'N/A', Project:project, Source:sourceContext, Requirements:'None' }) }).catch(err=>console.log("Email Error:",err));
                     if (!dataToSubmit) { alert("Interest Registered! Our advisor will contact you shortly."); setShowLeadForm(false); setLeadData({name:"",phone:"",email:""}); }
