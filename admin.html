@@ -175,7 +175,7 @@ const AGENT_EMAIL_MAP = {
 
 const getAgentFromEmail = (email) => {
     if (!email) return '__UNKNOWN__';
-    if (email === ADMIN_EMAIL) return '__ADMIN__';
+    if (email === ADMIN_EMAIL) return ADMIN_AGENT_NAME || 'Admin';
     return AGENT_EMAIL_MAP[email] || '__UNKNOWN__';
 };
 const getAdminPersonaName = () => ADMIN_AGENT_NAME || 'Admin';
@@ -1897,21 +1897,22 @@ function AdminApp() {
     const [scheduleFilter, setScheduleFilter] = useState('ALL');
     const [priorityFilter, setPriorityFilter] = useState('ALL');
 
-    // Derive current user's agent name
-    const userEmail   = session?.user?.email || '';
-    const agentName   = getAgentFromEmail(userEmail);
-    const isAdminUser = agentName === '__ADMIN__';
-    const isKnownAgent = agentName && agentName !== '__ADMIN__' && agentName !== '__UNKNOWN__';
+    // ── Derive current user's roles (Dual-Role Support) ──
+    const userEmail    = session?.user?.email || '';
+    const isAdminUser  = userEmail === ADMIN_EMAIL;
+    // If admin, use the admin persona name. Otherwise, look them up in the map.
+    const agentName    = isAdminUser ? ADMIN_AGENT_NAME : (AGENT_EMAIL_MAP[userEmail] || '__UNKNOWN__');
+    const isKnownAgent = agentName && agentName !== '__UNKNOWN__';
 
     // ── Set summary filter once session & agent identity is known ───────────
     useEffect(() => {
         if (!session || !agentName) return;
-        if (agentName === '__ADMIN__') {
+        if (isAdminUser) {
             setSummaryAgent(ADMIN_AGENT_NAME || 'All');
-        } else if (agentName !== '__UNKNOWN__') {
+        } else if (isKnownAgent) {
             setSummaryAgent(agentName);
         }
-    }, [agentName]); // fires whenever agentName resolves
+    }, [agentName, isAdminUser, session]);
 
     useEffect(() => {
         const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
@@ -1968,40 +1969,49 @@ function AdminApp() {
                 alert('Session expired after 3 hours. Please log in again.');
             }, remaining);
         }
-    }, []);
+    }, [supabase.auth]);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setAuthChecking(false);
             if (window.__dismissSplash) window.__dismissSplash();
-            // Page load / refresh — resume existing timer if one exists
-            if (session) rescheduleFromStored();
+            
+            // 👇 FIX: Start or resume timer on page load if a session already exists
+            if (session) {
+                if (!localStorage.getItem('__crm_login_time')) {
+                    localStorage.setItem('__crm_login_time', String(Date.now()));
+                }
+                rescheduleFromStored();
+            }
         });
+
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
             setSession(s);
             if (event === 'SIGNED_IN') {
-                // Fresh login — stamp login time and start timer
-                // Only stamp if no existing stamp (don't override a valid session)
+                // 👇 FIX: Fresh login — stamp the exact time
                 if (!localStorage.getItem('__crm_login_time')) {
                     localStorage.setItem('__crm_login_time', String(Date.now()));
                 }
                 rescheduleFromStored();
             } else if (event === 'INITIAL_SESSION') {
-                // Page reload with existing session — resume timer from stored stamp
-                if (s && localStorage.getItem('__crm_login_time')) {
-                    rescheduleFromStored();
+                // 👇 FIX: Catch existing sessions on reload
+                if (s && !localStorage.getItem('__crm_login_time')) {
+                    localStorage.setItem('__crm_login_time', String(Date.now()));
                 }
+                if (s) rescheduleFromStored();
             } else if (event === 'SIGNED_OUT') {
+                // Clear everything when logging out
                 if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
                 localStorage.removeItem('__crm_login_time');
             }
         });
+        
         return () => {
             subscription.unsubscribe();
             if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
         };
-    }, [rescheduleFromStored]);
+    }, [rescheduleFromStored, supabase.auth]);
 
     useEffect(() => {
         if (!session) return;
