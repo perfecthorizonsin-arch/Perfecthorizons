@@ -38,6 +38,8 @@
         @keyframes splashBg { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
         @keyframes shimmerText { 0%,100%{opacity:0.5} 50%{opacity:1} }
         @keyframes starsFloat { 0%{transform:translateY(0) rotate(0deg);opacity:0} 10%{opacity:1} 90%{opacity:0.5} 100%{transform:translateY(-80px) rotate(360deg);opacity:0} }
+        @keyframes warningPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.85;transform:scale(1.01)} }
+        @keyframes welcomeSlide { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
         .splash-screen { position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 40%,#0f172a 100%);background-size:400% 400%;animation:splashBg 8s ease infinite;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.6s ease,visibility 0.6s ease; }
         .splash-screen.hidden { opacity:0;visibility:hidden;pointer-events:none; }
         .splash-logo-wrap { position:relative;display:flex;align-items:center;justify-content:center;width:120px;height:120px;margin-bottom:32px; }
@@ -57,6 +59,7 @@
         .splash-star { position:absolute;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.7);animation:starsFloat linear infinite; }
         .animate-fadeIn { animation:fadeIn 0.18s ease-out forwards; }
         .animate-slideUp { animation:slideUp 0.22s cubic-bezier(.16,1,.3,1) forwards; }
+        .animate-welcome { animation:welcomeSlide 0.4s cubic-bezier(.16,1,.3,1) forwards; }
         .skeleton { background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);background-size:400px 100%;animation:shimmer 1.4s ease-in-out infinite;border-radius:10px; }
         .hide-scroll::-webkit-scrollbar { display:none; }
         .hide-scroll { -ms-overflow-style:none;scrollbar-width:none; }
@@ -73,7 +76,11 @@
         .lead-row:hover { filter:brightness(0.97); }
         input,select,textarea { font-family:inherit; }
         select option { font-size:12px; }
+        .warning-pulse { animation:warningPulse 1.5s ease-in-out infinite; }
         @media(max-width:640px){ .hide-mobile{ display:none !important; } }
+        /* Mobile card improvements */
+        .mobile-card { border-radius:20px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06); }
+        .mobile-action-btn { display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 0;border-radius:14px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;transition:all 0.15s; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-900 pb-0">
@@ -135,43 +142,21 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwaOLlqAQZMZc
 const WHATSAPP_NUMBER = "9113261205";
 const ADMIN_EMAIL = "saishetty1623@gmail.com";
 
-// PSA Agents list
-// ══════════════════════════════════════════════════════════════════════════
-// ██  AGENT CONFIGURATION — ONLY EDIT THIS BLOCK TO ADD/REMOVE AGENTS  ██
-// ══════════════════════════════════════════════════════════════════════════
-//
-// TO ADD A NEW PSA AGENT:
-//   1. Add one line to PSA_AGENTS: { value: 'NewName', label: '👤 NewName' }
-//   2. Add one line to AGENT_EMAIL_MAP: 'theirlogin@email.com': 'NewName'
-//   That's it. All CRM rules, visibility, buckets, notes apply automatically.
-//
-// ADMIN DUAL ROLE: If admin (saishetty1623@gmail.com) is ALSO an agent,
-//   set ADMIN_AGENT_NAME to their agent name (e.g. 'Tharun').
-//   Admin will then appear in stats + their leads default to that filter.
-//   Set to null if admin is a pure admin with no agent persona.
-//
-const ADMIN_AGENT_NAME = 'Tharun'; // ← admin's agent name (null if pure admin)
+const ADMIN_AGENT_NAME = 'Tharun';
 
 const PSA_AGENTS = [
-    // ── Add new agents here — one line each ─────────────────────────────
     { value: 'Tharun',   label: '👤 Tharun' },
     { value: 'Shivaji',  label: '👤 Shivaji' },
     { value: 'Ramswami', label: '👤 Ramswami' },
     { value: 'Prabhu',   label: '👤 Prabhu' },
-    // { value: 'NewAgent', label: '👤 NewAgent' },  ← example for next agent
 ];
 
 const AGENT_EMAIL_MAP = {
-    // ── Add login email → agent name mapping here ────────────────────────
-    // Get emails from: Supabase → Authentication → Users → copy exact email
-    'saishetty1623@gmail.com':  'Tharun',    // ← replace with Tharun's real login email
-    'shivaji2536@gmail.com': 'Shivaji',   // ← replace with Shivaji's real login email
-    'dappertones.in@gmail.com':      'Ramswami',  // ← Ramswami's actual login email
-    'prabhu@perfecthorizons.in':  'Prabhu',    // ← replace with Prabhu's real login email
-    // 'newagent@email.com': 'NewAgent',        ← example for next agent
-    // ⚠️  Do NOT add the admin email here — it's handled via ADMIN_EMAIL above
+    'saishetty1623@gmail.com':  'Tharun',
+    'shivaji2536@gmail.com': 'Shivaji',
+    'dappertones.in@gmail.com':      'Ramswami',
+    'prabhu@perfecthorizons.in':  'Prabhu',
 };
-// ══════════════════════════════════════════════════════════════════════════
 
 const getAgentFromEmail = (email) => {
     if (!email) return '__UNKNOWN__';
@@ -180,6 +165,15 @@ const getAgentFromEmail = (email) => {
 };
 const getAdminPersonaName = () => ADMIN_AGENT_NAME || 'Admin';
 const isAdmin = (email) => email === ADMIN_EMAIL;
+
+// ─── GREETING HELPER ──────────────────────────────────────────────────────
+const getGreeting = () => {
+    const h = new Date().getHours();
+    if (h >= 5  && h < 12) return { text: 'Good Morning',   emoji: '🌅' };
+    if (h >= 12 && h < 17) return { text: 'Good Afternoon', emoji: '☀️' };
+    if (h >= 17 && h < 21) return { text: 'Good Evening',   emoji: '🌆' };
+    return { text: 'Welcome back',  emoji: '🌙' };
+};
 
 // ─── IMAGE HELPERS ─────────────────────────────────────────────────────────
 const extractDriveId = (url) => {
@@ -429,7 +423,7 @@ const EditableField = ({ field, label, value, multiline, type='text', onSave, da
 };
 
 // ─── NOTE CELL ─────────────────────────────────────────────────────────────
-const NoteCell = ({ lead, onSave, isMobileView=false }) => {
+const NoteCell = ({ lead, onSave }) => {
     const [note, setNote] = useState(lead.add_note || '');
     useEffect(() => { setNote(lead.add_note || ''); }, [lead.add_note]);
     return (
@@ -467,7 +461,6 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                     <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-black text-sm">✕</button>
                 </div>
                 <div className="overflow-y-auto p-6 space-y-5 flex-1">
-                    {/* Key Info Grid */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200">
                             <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Status</div>
@@ -485,7 +478,6 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                             <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Lead Source</div>
                             <div className="text-xs font-black text-slate-800">{lead.lead_source || 'Website'}</div>
                         </div>
-                        {/* Project — hidden from agents on bulk leads */}
                         {(isAdminUser || lead.lead_source !== 'Bulk Upload') ? (
                         <div className="bg-blue-50 rounded-2xl p-3 border border-blue-200 col-span-2">
                             <div className="text-[8px] font-black uppercase tracking-widest text-blue-400 mb-1">🏠 Project Interested In</div>
@@ -498,8 +490,6 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                             </div>
                         )}
                     </div>
-
-                    {/* Dates */}
                     <div className="bg-slate-900 rounded-2xl p-4 space-y-2">
                         <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">📅 Timeline</div>
                         <div className="flex justify-between text-[10px]">
@@ -519,25 +509,18 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                             </div>
                         )}
                     </div>
-
-                    {/* Notes */}
-                    {/* Notes — hidden from agents on bulk leads */}
                     {lead.add_note && (
                         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
                             <div className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-2">📝 Notes / Requirements</div>
                             <p className="text-xs font-semibold text-amber-900 whitespace-pre-wrap leading-relaxed">{lead.add_note}</p>
                         </div>
                     )}
-
-                    {/* Reject Reason */}
                     {lead.reject_reason && (
                         <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
                             <div className="text-[9px] font-black uppercase tracking-widest text-red-600 mb-1">❌ Rejection Reason</div>
                             <p className="text-xs font-black text-red-800">{lead.reject_reason}</p>
                         </div>
                     )}
-
-                    {/* Activity Log */}
                     <div>
                         <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">📋 CRM Activity Log</div>
                         <div className="bg-slate-900/5 border border-slate-200 rounded-2xl p-4 max-h-48 overflow-y-auto history-scroll">
@@ -547,8 +530,6 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                             }
                         </div>
                     </div>
-
-                    {/* Actions */}
                     <div className="flex gap-2 pt-2">
                         <a href={`tel:${lead.phone_number}`} className="flex-1 flex items-center justify-center gap-1 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest py-3 rounded-2xl hover:bg-blue-600 transition">📞 Call</a>
                         <a href={`https://wa.me/91${lead.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="flex-1 flex items-center justify-center gap-1 bg-green-500 text-white text-[9px] font-black uppercase tracking-widest py-3 rounded-2xl hover:bg-green-600 transition shadow-sm">💬 WhatsApp</a>
@@ -1069,7 +1050,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
             </div>
 
             <div className="p-5 md:p-10 space-y-8">
-                {/* Section 1 */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">1</div>
@@ -1092,7 +1072,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                {/* Section 2 */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">2</div>
@@ -1119,7 +1098,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                {/* Section 3 */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">3</div>
@@ -1144,7 +1122,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                {/* Section 4 - Admin */}
                 <div className="bg-slate-900 rounded-3xl p-5 md:p-8">
                     <div className="flex items-center gap-3 mb-5">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">4</div>
@@ -1160,7 +1137,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                {/* Section 5 - Files */}
                 <div>
                     <div className="flex items-center gap-3 mb-2">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">5</div>
@@ -1206,7 +1182,7 @@ function ManualLeadForm({ supabase, properties, onSuccess, agentName }) {
             project_interested_in:form.project, add_note:form.note,
             call_remark:form.note ? `[${stamp}] Requirement: ${form.note}\n\n` : '',
             lead_source:'Manual Entry', lead_status:'Un called',
-            psa_agent_name: agentName || null,           // Pre-assign to the agent who added
+            psa_agent_name: agentName || null,
             assigned_agent: agentName || null,
         }]);
         if (!error) {
@@ -1265,7 +1241,7 @@ function ManualLeadForm({ supabase, properties, onSuccess, agentName }) {
 
 // ─── ADMIN OVERVIEW PANEL ──────────────────────────────────────────────────
 function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
-    const [drillAgent,  setDrillAgent]  = useState(null); // agent being drilled into
+    const [drillAgent, setDrillAgent] = useState(null);
 
     const allCombined = useMemo(() => [
         ...allLeads.map(l => ({ ...l, _type:'Website' })),
@@ -1289,7 +1265,6 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
                 svDone:    mine.filter(l => l.site_visit_at && l.site_visit_at < today && !['Converted','Rejected'].includes(l.lead_status)).length,
                 converted: mine.filter(l => l.lead_status === 'Converted').length,
                 rejected:  mine.filter(l => l.lead_status === 'Rejected').length,
-                unassigned: allLeads.filter(l => !l.psa_agent_name && !l.is_hidden).length,
                 leads:     mine,
             };
         });
@@ -1305,7 +1280,6 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
     const totalAll   = allCombined.filter(l => !l.is_hidden).length;
     const unassigned = allLeads.filter(l => !l.psa_agent_name && !l.is_hidden).length;
 
-    // Drill-down: show one agent's leads
     if (drillAgent) {
         const agent = agentStats.find(a => a.name === drillAgent);
         const leads = agent?.leads || [];
@@ -1314,7 +1288,7 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
                 <button onClick={() => setDrillAgent(null)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 transition">
                     ← Back to Overview
                 </button>
-                <div className="bg-slate-900 rounded-3xl p-6 text-white flex items-center justify-between">
+                <div className="bg-slate-900 rounded-3xl p-6 text-white flex items-center justify-between flex-wrap gap-4">
                     <div>
                         <div className="text-3xl font-black text-blue-400">{drillAgent}</div>
                         <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-1">{leads.length} active leads</div>
@@ -1328,7 +1302,10 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
                         ))}
                     </div>
                 </div>
+
+                {/* FIX 4: Admin note editor always visible in drill-down — fully functional */}
                 <AdminNoteEditor agentName={drillAgent} />
+
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     {leads.length === 0 ? (
                         <div className="p-8 text-center text-slate-400 font-bold text-sm">No leads assigned</div>
@@ -1357,7 +1334,6 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
 
     return (
         <div className="space-y-8 animate-fadeIn">
-            {/* Header */}
             <div className="bg-slate-900 rounded-3xl p-6 md:p-8 text-white">
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
                     <div>
@@ -1385,20 +1361,19 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
                 </div>
             </div>
 
-            {/* Agent Cards — clickable to drill down */}
+            {/* FIX 4: Agent cards now show note editor inline so admin can see+edit notes without drilling in */}
             <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">👥 PSA Agent Performance — Click to View Leads</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {agentStats.map(agent => (
-                        <div key={agent.name} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-lg hover:-translate-y-1 transition cursor-pointer group" onClick={() => setDrillAgent(agent.name)}>
-                            <div className="flex items-center justify-between mb-4">
+                        <div key={agent.name} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-lg transition group flex flex-col">
+                            <div className="flex items-center justify-between mb-4 cursor-pointer" onClick={() => setDrillAgent(agent.name)}>
                                 <div>
                                     <h4 className="text-base font-black uppercase text-slate-900 group-hover:text-blue-600 transition">{agent.name}</h4>
                                     <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{agent.total} leads · click to view</p>
                                 </div>
                                 <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-black text-lg shadow-md">{agent.name[0]}</div>
                             </div>
-                            {/* Bucket breakdown */}
                             <div className="grid grid-cols-3 gap-1 mb-3">
                                 {[{l:'New',v:agent.new,c:'bg-yellow-50 text-yellow-700'},{l:'Open',v:agent.open,c:'bg-blue-50 text-blue-700'},{l:'SV',v:agent.svSched,c:'bg-teal-50 text-teal-700'},{l:'Done',v:agent.svDone,c:'bg-indigo-50 text-indigo-700'},{l:'Won',v:agent.converted,c:'bg-green-50 text-green-700'},{l:'Lost',v:agent.rejected,c:'bg-red-50 text-red-500'}].map((s,i) => (
                                     <div key={i} className={`${s.c} rounded-lg p-1.5 text-center`}>
@@ -1407,23 +1382,26 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
                                     </div>
                                 ))}
                             </div>
-                            <div className="flex justify-between text-[9px] text-slate-400 font-bold border-t border-slate-100 pt-2">
+                            <div className="flex justify-between text-[9px] text-slate-400 font-bold border-t border-slate-100 pt-2 mb-3">
                                 <span>W:{agent.website}</span><span>B:{agent.bulk}</span><span>M:{agent.manual}</span>
                             </div>
                             {agent.total > 0 && (
-                                <div className="mt-2">
+                                <div className="mb-3">
                                     <div className="w-full bg-slate-100 rounded-full h-1.5">
                                         <div className="bg-green-500 h-1.5 rounded-full" style={{width:`${Math.min(100,Math.round((agent.converted/agent.total)*100))}%`}}></div>
                                     </div>
                                     <div className="text-[8px] font-black text-green-600 mt-0.5">{Math.round((agent.converted/agent.total)*100)}% conversion</div>
                                 </div>
                             )}
+                            {/* FIX 4: Inline compact note editor on every agent card */}
+                            <div className="mt-auto">
+                                <AdminNoteEditorCompact agentName={agent.name} />
+                            </div>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Recent Activity */}
             <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">⚡ Recent CRM Activity</h3>
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -1457,13 +1435,12 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
 // ─── BULK CSV UPLOADER ────────────────────────────────────────────────────
 function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
     const [file,        setFile]        = useState(null);
-    const [rows,        setRows]        = useState([]);       // parsed preview rows
+    const [rows,        setRows]        = useState([]);
     const [assignTo,    setAssignTo]    = useState('');
     const [uploading,   setUploading]   = useState(false);
     const [error,       setError]       = useState('');
-    const [step,        setStep]        = useState('pick');   // 'pick' | 'preview' | 'done'
+    const [step,        setStep]        = useState('pick');
 
-    // Simple CSV parser — handles quoted fields
     const parseCSV = (text) => {
         const lines = text.trim().split(/\r?\n/);
         if (lines.length < 2) return [];
@@ -1519,7 +1496,6 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
             created_at:            now,
         }));
 
-        // Insert in batches of 100 to avoid request size limits
         let totalInserted = 0;
         for (let i = 0; i < inserts.length; i += 100) {
             const batch = inserts.slice(i, i + 100);
@@ -1535,7 +1511,6 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
 
     const reset = () => { setStep('pick'); setRows([]); setFile(null); setAssignTo(''); setError(''); };
 
-    // Column aliases shown in preview
     const getName  = r => r.customer_name || r.name || '—';
     const getPhone = r => r.phone_number  || r.phone || '—';
     const getEmail = r => r.customer_email || r.email || '—';
@@ -1543,19 +1518,16 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
 
     return (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            {/* Header */}
             <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
                 <div>
                     <h3 className="text-sm font-black uppercase italic text-white tracking-tight">📤 Bulk CSV Upload</h3>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
-                        Required columns: <span className="text-blue-400">customer_name, phone_number</span> · Optional: customer_email, project_interested_in, add_note
+                        Required: <span className="text-blue-400">customer_name, phone_number</span>
                     </p>
                 </div>
                 {step !== 'pick' && <button onClick={reset} className="text-[9px] font-black text-slate-400 hover:text-white bg-slate-800 px-3 py-1.5 rounded-xl uppercase tracking-widest transition">✕ Reset</button>}
             </div>
-
             <div className="p-6">
-                {/* Step: Pick file */}
                 {step === 'pick' && (
                     <div className="space-y-4">
                         <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 flex flex-col items-center justify-center hover:border-blue-400 transition-all cursor-pointer text-center"
@@ -1566,26 +1538,20 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
                             <input id="bulk-csv-input" type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile} />
                         </div>
                         {error && <div className="bg-red-50 border border-red-200 text-red-700 text-[10px] font-bold p-3 rounded-2xl">{error}</div>}
-                        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-blue-600 mb-2">📋 CSV Template</p>
-                            <code className="text-[10px] text-blue-800 font-bold">customer_name, phone_number, customer_email, project_interested_in, add_note</code>
-                        </div>
                     </div>
                 )}
-
-                {/* Step: Preview */}
                 {step === 'preview' && (
                     <div className="space-y-4">
                         <div className="flex items-center justify-between flex-wrap gap-3">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-black text-lg">✓</div>
                                 <div>
-                                    <p className="text-sm font-black text-slate-900">{rows.length} leads ready to import</p>
+                                    <p className="text-sm font-black text-slate-900">{rows.length} leads ready</p>
                                     <p className="text-[10px] text-slate-400 font-bold">{file?.name}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Assign to Agent:</label>
+                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Agent:</label>
                                 <select value={assignTo} onChange={e => setAssignTo(e.target.value)}
                                     className="p-2.5 border-2 border-slate-700 bg-slate-900 rounded-xl font-black uppercase text-[9px] outline-none text-blue-300 cursor-pointer min-w-[140px]">
                                     <option value="" disabled>⚡ Select Agent</option>
@@ -1593,12 +1559,9 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
                                 </select>
                             </div>
                         </div>
-
                         {error && <div className="bg-red-50 border border-red-200 text-red-700 text-[10px] font-bold p-3 rounded-2xl">{error}</div>}
-
-                        {/* Preview table — first 10 rows */}
                         <div className="rounded-2xl border border-slate-200 overflow-hidden">
-                            <div className="bg-slate-900 grid grid-cols-4 gap-0">
+                            <div className="bg-slate-900 grid grid-cols-4">
                                 {['Name','Phone','Email','Project'].map(h => (
                                     <div key={h} className="px-3 py-2 text-[8px] font-black uppercase tracking-widest text-slate-400">{h}</div>
                                 ))}
@@ -1615,27 +1578,24 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
                             </div>
                             {rows.length > 10 && (
                                 <div className="bg-slate-50 px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest border-t border-slate-200">
-                                    + {rows.length - 10} more rows not shown
+                                    + {rows.length - 10} more rows
                                 </div>
                             )}
                         </div>
-
                         <div className="flex gap-3">
                             <button onClick={reset} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-3.5 rounded-2xl text-[10px] uppercase tracking-widest transition">Cancel</button>
                             <button onClick={handleUpload} disabled={uploading || !assignTo}
                                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black py-3.5 rounded-2xl text-[10px] uppercase tracking-widest transition shadow-lg flex items-center justify-center gap-2">
-                                {uploading ? <><span className="animate-spin inline-block">⏳</span> Uploading {rows.length} leads...</> : `🚀 Upload ${rows.length} Leads`}
+                                {uploading ? <><span className="animate-spin inline-block">⏳</span> Uploading...</> : `🚀 Upload ${rows.length} Leads`}
                             </button>
                         </div>
                     </div>
                 )}
-
-                {/* Step: Done */}
                 {step === 'done' && (
                     <div className="flex flex-col items-center py-8 gap-3">
                         <div className="text-5xl">🎉</div>
                         <p className="text-lg font-black uppercase text-slate-900 tracking-tight">Upload Complete!</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{rows.length} leads added to {assignTo}'s bulk queue</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{rows.length} leads added to {assignTo}</p>
                     </div>
                 )}
             </div>
@@ -1643,58 +1603,72 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
     );
 }
 
-// ─── ADMIN NOTES — Supabase-backed (not localStorage) ─────────────────────
-// Requires this table in Supabase:
-//   CREATE TABLE IF NOT EXISTS admin_notes (
-//     id SERIAL PRIMARY KEY,
-//     agent_name TEXT UNIQUE NOT NULL,
-//     note TEXT DEFAULT '',
-//     updated_at TIMESTAMPTZ DEFAULT now()
-//   );
-// Enable RLS but allow anon read/write, or use service role.
-// Simplest: in Supabase → Table Editor → admin_notes → RLS → Disable RLS for now.
-
+// ─── ADMIN NOTES — Supabase-backed ────────────────────────────────────────
 async function fetchAdminNote(agentName) {
-    const { data } = await supabase
-        .from('admin_notes')
-        .select('note')
-        .eq('agent_name', agentName)
-        .single();
-    return data?.note || '';
+    try {
+        const { data, error } = await supabase
+            .from('admin_notes')
+            .select('note')
+            .eq('agent_name', agentName)
+            .single();
+        if (error) return '';
+        return data?.note || '';
+    } catch { return ''; }
 }
 
 async function saveAdminNote(agentName, note) {
-    await supabase
-        .from('admin_notes')
-        .upsert({ agent_name: agentName, note, updated_at: new Date().toISOString() },
-                 { onConflict: 'agent_name' });
+    try {
+        await supabase
+            .from('admin_notes')
+            .upsert({ agent_name: agentName, note, updated_at: new Date().toISOString() },
+                     { onConflict: 'agent_name' });
+    } catch(e) { console.warn('Note save failed:', e); }
 }
 
-// Banner shown to PSA agents — reads from Supabase
+// FIX 3: AdminNotesBanner — improved with better error handling, always shows something
 function AdminNotesBanner({ agentName }) {
-    const [note,    setNote]    = useState('');
+    const [note,    setNote]    = useState(null); // null = loading, '' = no note, string = note
     const [visible, setVisible] = useState(true);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setLoading(true);
-        fetchAdminNote(agentName).then(n => { setNote(n); setLoading(false); });
-        // Refresh every 60s so agent sees updates without reload
+        fetchAdminNote(agentName).then(n => setNote(n));
         const poll = setInterval(() => {
             fetchAdminNote(agentName).then(n => setNote(n));
         }, 60000);
         return () => clearInterval(poll);
     }, [agentName]);
 
-    if (loading || !note || !note.trim() || !visible) return null;
+    // Still loading
+    if (note === null) return (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 flex items-center gap-3 animate-pulse">
+            <span className="text-xl">📋</span>
+            <div className="text-[9px] font-black uppercase tracking-widest text-amber-500">Loading admin notes...</div>
+        </div>
+    );
+
+    // No note set
+    if (!note || !note.trim()) return (
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-center gap-3">
+            <span className="text-lg opacity-50">📋</span>
+            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">No notes from admin today</div>
+        </div>
+    );
+
+    // Note exists but dismissed
+    if (!visible) return (
+        <button onClick={() => setVisible(true)} className="w-full bg-amber-50 border border-amber-200 rounded-2xl p-2 flex items-center gap-2 hover:bg-amber-100 transition text-left">
+            <span className="text-base">📋</span>
+            <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Show admin note</span>
+        </button>
+    );
 
     return (
-        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 relative animate-fadeIn">
-            <button onClick={() => setVisible(false)} className="absolute top-3 right-3 text-amber-400 hover:text-amber-700 font-black text-sm leading-none">✕</button>
-            <div className="flex items-start gap-3">
-                <span className="text-2xl shrink-0">📋</span>
-                <div className="flex-1 min-w-0 pr-4">
-                    <div className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-1">📣 Notes from Admin</div>
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-4 relative animate-welcome shadow-sm">
+            <button onClick={() => setVisible(false)} className="absolute top-3 right-3 text-amber-400 hover:text-amber-700 font-black text-sm leading-none w-6 h-6 flex items-center justify-center rounded-full bg-white/60 hover:bg-white transition">✕</button>
+            <div className="flex items-start gap-3 pr-6">
+                <div className="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center text-white font-black text-base shrink-0 shadow-sm">📋</div>
+                <div className="flex-1 min-w-0">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-1.5">📣 Message from Admin</div>
                     <p className="text-sm font-semibold text-amber-900 whitespace-pre-wrap leading-relaxed">{note}</p>
                 </div>
             </div>
@@ -1702,7 +1676,7 @@ function AdminNotesBanner({ agentName }) {
     );
 }
 
-// Editor shown to admin in the agent drill-down — saves to Supabase
+// FIX 4: Full note editor (drill-down view)
 function AdminNoteEditor({ agentName }) {
     const [note,    setNote]    = useState('');
     const [editing, setEditing] = useState(false);
@@ -1735,15 +1709,19 @@ function AdminNoteEditor({ agentName }) {
     if (editing) {
         return (
             <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-2">
-                <div className="text-[9px] font-black uppercase tracking-widest text-amber-700">📋 Note for {agentName} — visible to them on their CRM</div>
+                <div className="text-[9px] font-black uppercase tracking-widest text-amber-700">📋 Note for {agentName} — visible to them in their CRM</div>
                 <textarea rows={4} value={draft} onChange={e => setDraft(e.target.value)}
-                    placeholder={"e.g. Focus on Prestige leads this week. Call back pending leads from last week."}
+                    placeholder="e.g. Focus on Prestige leads this week. Call back pending leads from last week."
                     className="w-full p-3 border-2 border-amber-300 rounded-xl text-sm font-semibold outline-none resize-none bg-white focus:ring-2 focus:ring-amber-400" />
                 <div className="flex gap-2">
                     <button onClick={save} disabled={saving}
                         className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-[9px] font-black px-4 py-2 rounded-lg uppercase tracking-widest transition flex items-center gap-1">
-                        {saving ? '⏳ Saving...' : '✅ Save to Supabase'}
+                        {saving ? '⏳ Saving...' : '✅ Save'}
                     </button>
+                    {note && (
+                        <button onClick={async () => { await saveAdminNote(agentName, ''); setNote(''); setEditing(false); }}
+                            className="bg-red-50 text-red-500 border border-red-200 text-[9px] font-black px-3 py-2 rounded-lg uppercase tracking-widest hover:bg-red-100 transition">🗑 Clear</button>
+                    )}
                     <button onClick={() => setEditing(false)}
                         className="bg-slate-100 text-slate-600 text-[9px] font-black px-3 py-2 rounded-lg uppercase tracking-widest hover:bg-slate-200 transition">Cancel</button>
                 </div>
@@ -1759,14 +1737,103 @@ function AdminNoteEditor({ agentName }) {
                 <div className="min-w-0">
                     <div className="text-[8px] font-black uppercase tracking-widest text-amber-600 mb-0.5 flex items-center gap-2">
                         Admin Note for {agentName}
-                        {saved && <span className="text-green-600">· Saved to Supabase ✓</span>}
+                        {saved && <span className="text-green-600">· Saved ✓</span>}
                     </div>
                     <p className="text-[10px] font-semibold text-amber-800 line-clamp-2">
-                        {note || 'Click to write instructions for ' + agentName + '...'}
+                        {note || `Click to write instructions for ${agentName}...`}
                     </p>
                 </div>
             </div>
-            <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest shrink-0 bg-white border border-amber-200 px-2 py-1 rounded-lg">✏️ Edit</span>
+            <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest shrink-0 bg-white border border-amber-200 px-2 py-1 rounded-lg">✏️ {note ? 'Edit' : 'Add'}</span>
+        </div>
+    );
+}
+
+// FIX 4: Compact note editor for the agent card grid (admin overview)
+function AdminNoteEditorCompact({ agentName }) {
+    const [note,    setNote]    = useState('');
+    const [editing, setEditing] = useState(false);
+    const [draft,   setDraft]   = useState('');
+    const [saving,  setSaving]  = useState(false);
+    const [loaded,  setLoaded]  = useState(false);
+
+    useEffect(() => {
+        fetchAdminNote(agentName).then(n => { setNote(n); setLoaded(true); });
+    }, [agentName]);
+
+    const save = async () => {
+        setSaving(true);
+        await saveAdminNote(agentName, draft);
+        setNote(draft);
+        setSaving(false);
+        setEditing(false);
+    };
+
+    if (!loaded) return <div className="h-6 skeleton rounded-lg"></div>;
+
+    if (editing) {
+        return (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 space-y-2" onClick={e => e.stopPropagation()}>
+                <textarea rows={3} value={draft} onChange={e => setDraft(e.target.value)}
+                    placeholder="Write instructions..."
+                    className="w-full p-2 border border-amber-300 rounded-lg text-[10px] font-semibold outline-none resize-none bg-white focus:ring-1 focus:ring-amber-400" />
+                <div className="flex gap-1.5">
+                    <button onClick={save} disabled={saving}
+                        className="flex-1 bg-amber-500 text-white text-[8px] font-black py-1.5 rounded-lg uppercase tracking-widest disabled:opacity-50 transition">
+                        {saving ? '...' : '✅ Save'}
+                    </button>
+                    {note && <button onClick={async (e) => { e.stopPropagation(); await saveAdminNote(agentName,''); setNote(''); setEditing(false); }}
+                        className="bg-red-50 text-red-500 text-[8px] font-black px-2 py-1.5 rounded-lg border border-red-200">🗑</button>}
+                    <button onClick={() => setEditing(false)} className="bg-slate-100 text-slate-600 text-[8px] font-black px-2 py-1.5 rounded-lg">✕</button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="border border-dashed border-amber-200 rounded-xl p-2 flex items-center justify-between gap-1 cursor-pointer hover:bg-amber-50 transition"
+            onClick={e => { e.stopPropagation(); setDraft(note); setEditing(true); }}>
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <span className="text-sm shrink-0">📋</span>
+                <p className="text-[8px] font-semibold text-amber-700 truncate">
+                    {note ? note.substring(0, 35) + (note.length > 35 ? '...' : '') : 'Add note for agent...'}
+                </p>
+            </div>
+            <span className="text-[7px] font-black text-amber-500 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shrink-0">{note ? 'EDIT' : 'ADD'}</span>
+        </div>
+    );
+}
+
+// ─── FIX 6: WELCOME BANNER for PSA agents ─────────────────────────────────
+function WelcomeBanner({ agentName }) {
+    const [visible, setVisible] = useState(true);
+    if (!visible) return null;
+    const { text: greeting, emoji } = getGreeting();
+    const motivational = [
+        'Let\'s close some deals today! 🔥',
+        'Every call is an opportunity. 💪',
+        'Your pipeline is waiting. Let\'s go! 🚀',
+        'Make today count. Crush your targets! 🎯',
+        'Great agents make great days. 🌟',
+    ];
+    const quote = motivational[agentName.charCodeAt(0) % motivational.length];
+
+    return (
+        <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-2xl p-4 relative overflow-hidden animate-welcome border border-slate-700 shadow-lg">
+            {/* decorative dots */}
+            <div className="absolute right-4 top-4 opacity-10 text-6xl font-black select-none pointer-events-none">H</div>
+            <button onClick={() => setVisible(false)}
+                className="absolute top-3 right-3 text-slate-500 hover:text-white font-black text-sm leading-none w-5 h-5 flex items-center justify-center">✕</button>
+            <div className="flex items-center gap-4 pr-5">
+                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shrink-0 shadow-md">
+                    {agentName[0].toUpperCase()}
+                </div>
+                <div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-0.5">{emoji} {greeting}</div>
+                    <div className="text-base font-black text-white tracking-tight leading-tight">{agentName}!</div>
+                    <div className="text-[10px] font-semibold text-slate-400 mt-0.5">{quote}</div>
+                </div>
+            </div>
         </div>
     );
 }
@@ -1812,73 +1879,97 @@ function LoginForm({ supabase }) {
 }
 
 // ─── LEAD BUCKET TABS ──────────────────────────────────────────────────────
-// Buckets: New → Open → SV Scheduled → SV Done → Converted → Rejected
 const LEAD_BUCKETS = [
-    { id:'new',         label:'🆕 New',              emoji:'🆕', color:'bg-yellow-500',   desc:'Untouched / Uncalled leads' },
-    { id:'open',        label:'📂 Open',             emoji:'📂', color:'bg-blue-500',     desc:'Called, RNR, Callback scheduled' },
-    { id:'sv_scheduled',label:'📅 SV Scheduled',     emoji:'📅', color:'bg-teal-500',     desc:'Site visit booked' },
-    { id:'sv_done',     label:'✅ SV Done',           emoji:'✅', color:'bg-indigo-500',   desc:'Site visit completed' },
-    { id:'converted',   label:'🏆 Converted',        emoji:'🏆', color:'bg-green-500',    desc:'Successful closures' },
-    { id:'rejected',    label:'🗑️ Rejected',         emoji:'🗑️', color:'bg-red-500',      desc:'Rejected / Junk leads' },
+    { id:'new',          label:'🆕 New',          emoji:'🆕', color:'bg-yellow-500',  desc:'Untouched / Uncalled leads' },
+    { id:'open',         label:'📂 Open',         emoji:'📂', color:'bg-blue-500',    desc:'Called, RNR, Callback scheduled' },
+    { id:'sv_scheduled', label:'📅 SV Sched',     emoji:'📅', color:'bg-teal-500',    desc:'Site visit booked' },
+    { id:'sv_done',      label:'✅ SV Done',      emoji:'✅', color:'bg-indigo-500',  desc:'Site visit completed' },
+    { id:'converted',    label:'🏆 Converted',    emoji:'🏆', color:'bg-green-500',   desc:'Successful closures' },
+    { id:'rejected',     label:'🗑️ Rejected',    emoji:'🗑️', color:'bg-red-500',     desc:'Rejected / Junk leads' },
 ];
 
 function filterLeadsByBucket(leads, bucket) {
     switch(bucket) {
-        case 'new':
-            return leads.filter(l => !l.lead_status || l.lead_status === 'Un called');
-        case 'open':
-            // Called + RNR + Details Shared + has a callback set
-            return leads.filter(l => ['Called','RNR','Details Shared'].includes(l.lead_status));
-        case 'sv_scheduled':
-            return leads.filter(l => l.lead_status === 'SV Scheduled');
-        case 'sv_done':
-            // SV Done = site_visit_at is set and in the past, but not yet converted/rejected
-            return leads.filter(l => l.site_visit_at && l.site_visit_at < new Date().toISOString().split('T')[0] && !['Converted','Rejected'].includes(l.lead_status));
-        case 'converted':
-            return leads.filter(l => l.lead_status === 'Converted');
-        case 'rejected':
-            return leads.filter(l => l.lead_status === 'Rejected');
-        default:
-            return leads;
+        case 'new':          return leads.filter(l => !l.lead_status || l.lead_status === 'Un called');
+        case 'open':         return leads.filter(l => ['Called','RNR','Details Shared'].includes(l.lead_status));
+        case 'sv_scheduled': return leads.filter(l => l.lead_status === 'SV Scheduled');
+        case 'sv_done':      return leads.filter(l => l.site_visit_at && l.site_visit_at < new Date().toISOString().split('T')[0] && !['Converted','Rejected'].includes(l.lead_status));
+        case 'converted':    return leads.filter(l => l.lead_status === 'Converted');
+        case 'rejected':     return leads.filter(l => l.lead_status === 'Rejected');
+        default:             return leads;
     }
 }
 
 // ─── ROUTER ────────────────────────────────────────────────────────────────
 const getInitialRoute = () => {
     const hash = window.location.hash.replace('#', '');
-    if (hash.startsWith('/library'))   return { v:'library',   c:'website' };
-    if (hash.startsWith('/add'))       return { v:'add',       c:'website' };
-    if (hash.startsWith('/admin'))     return { v:'admin',     c:'website' };
-    if (hash.startsWith('/crm/bulk'))  return { v:'dashboard', c:'bulk' };
-    if (hash.startsWith('/crm/manual'))return { v:'dashboard', c:'manual' };
+    if (hash.startsWith('/library'))    return { v:'library',   c:'website' };
+    if (hash.startsWith('/add'))        return { v:'add',       c:'website' };
+    if (hash.startsWith('/admin'))      return { v:'admin',     c:'website' };
+    if (hash.startsWith('/crm/bulk'))   return { v:'dashboard', c:'bulk' };
+    if (hash.startsWith('/crm/manual')) return { v:'dashboard', c:'manual' };
     return { v:'dashboard', c:'website' };
 };
+
+// ─── FIX 5: 10-MINUTE WARNING MODAL ────────────────────────────────────────
+function SessionWarningModal({ timeLeft, onExtend, onLogout }) {
+    return (
+        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fadeIn">
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border-4 border-red-500 warning-pulse">
+                <div className="text-5xl mb-4">⚠️</div>
+                <h2 className="text-xl font-black uppercase text-slate-900 tracking-tight mb-2">Session Expiring Soon!</h2>
+                <p className="text-slate-500 font-bold text-sm mb-4">Your session will expire in <span className="text-red-600 font-black">{timeLeft}</span>. Unsaved work will be lost.</p>
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-3 mb-6">
+                    <p className="text-[10px] font-black text-red-700 uppercase tracking-widest">Please save any open work before logging out.</p>
+                </div>
+                <div className="flex gap-3">
+                    <button onClick={onExtend} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black py-3.5 rounded-2xl uppercase tracking-widest text-sm transition shadow-lg">
+                        ✅ Stay Logged In
+                    </button>
+                    <button onClick={onLogout} className="flex-1 bg-slate-100 hover:bg-red-50 text-red-600 font-black py-3.5 rounded-2xl uppercase tracking-widest text-sm transition border border-red-200">
+                        🚪 Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 // ─── ADMIN APP ─────────────────────────────────────────────────────────────
 function AdminApp() {
     const initRoute = getInitialRoute();
-    const [session,        setSession]        = useState(null);
-    const [authChecking,   setAuthChecking]   = useState(true);
-    const [leads,          setLeads]          = useState([]);
-    const [allLeadsAdmin,  setAllLeadsAdmin]  = useState([]);
-    const [allBulkAdmin,   setAllBulkAdmin]   = useState([]);
-    const [allManualAdmin, setAllManualAdmin] = useState([]);
-    const [properties,     setProperties]     = useState([]);
-    const [editingProp,    setEditingProp]    = useState(null);
-    const [view,           setView]           = useState(initRoute.v);
-    const [leadCategory,   setLeadCategory]   = useState(initRoute.c);
-    const [loading,        setLoading]        = useState(true);
-    const [showManualModal,setShowManualModal] = useState(false);
-    const [summaryAgent,   setSummaryAgent]   = useState(ADMIN_AGENT_NAME || 'All'); // default to Tharun immediately
-    const [selectedProp,   setSelectedProp]   = useState(null);
-    const [selectedLead,   setSelectedLead]   = useState(null);
-    const [visibleCount,   setVisibleCount]   = useState(50);
-    const [searchTerm,     setSearchTerm]     = useState("");
-    const [deferredPrompt, setDeferredPrompt] = useState(null);
-    const [sessionTimeLeft, setSessionTimeLeft] = useState(''); // e.g. "2h 47m"
+    const [session,          setSession]          = useState(null);
+    const [authChecking,     setAuthChecking]     = useState(true);
+    const [leads,            setLeads]            = useState([]);
+    const [allLeadsAdmin,    setAllLeadsAdmin]    = useState([]);
+    const [allBulkAdmin,     setAllBulkAdmin]     = useState([]);
+    const [allManualAdmin,   setAllManualAdmin]   = useState([]);
+    const [properties,       setProperties]       = useState([]);
+    const [editingProp,      setEditingProp]      = useState(null);
+    const [view,             setView]             = useState(initRoute.v);
+    const [leadCategory,     setLeadCategory]     = useState(initRoute.c);
+    const [loading,          setLoading]          = useState(true);
+    const [showManualModal,  setShowManualModal]  = useState(false);
+    const [summaryAgent,     setSummaryAgent]     = useState(ADMIN_AGENT_NAME || 'All');
+    const [selectedProp,     setSelectedProp]     = useState(null);
+    const [selectedLead,     setSelectedLead]     = useState(null);
+    const [visibleCount,     setVisibleCount]     = useState(50);
+    const [searchTerm,       setSearchTerm]       = useState("");
+    const [deferredPrompt,   setDeferredPrompt]   = useState(null);
+    const [sessionTimeLeft,  setSessionTimeLeft]  = useState('');
+    const [showWarning,      setShowWarning]      = useState(false);
+    const [warningShown,     setWarningShown]     = useState(false);
+    const [leadBucket,       setLeadBucket]       = useState('new');
+    const [showBulkUpload,   setShowBulkUpload]   = useState(false);
+    const [scheduleFilter,   setScheduleFilter]   = useState('ALL');
+    const [priorityFilter,   setPriorityFilter]   = useState('ALL');
 
-    // ── Live session countdown — ticks every second, h:mm:ss ───────────────
-    // dep=[] so interval is created once and never reset mid-session
+    const userEmail    = session?.user?.email || '';
+    const agentName    = getAgentFromEmail(userEmail);
+    const isAdminUser  = agentName === '__ADMIN__';
+    const isKnownAgent = agentName && agentName !== '__ADMIN__' && agentName !== '__UNKNOWN__';
+
+    // FIX 2: Timer — shows h:mm:ss for ALL users, with 10-min warning
     useEffect(() => {
         const tick = () => {
             const stored = localStorage.getItem('__crm_login_time');
@@ -1890,36 +1981,28 @@ function AdminApp() {
             const s  = Math.floor((remaining % 60000) / 1000);
             const mm = String(m).padStart(2, '0');
             const ss = String(s).padStart(2, '0');
+            // FIX 2: ALL users get h:mm:ss format
             setSessionTimeLeft(h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`);
+            // FIX 5: 10-minute warning
+            if (remaining <= 10 * 60 * 1000 && !warningShown) {
+                setShowWarning(true);
+                setWarningShown(true);
+            }
         };
-        tick(); // run immediately
+        tick();
         const interval = setInterval(tick, 1000);
         return () => clearInterval(interval);
-    }, []); // [] = start once, never reset
-    const [leadBucket,     setLeadBucket]     = useState('new');
-    const [showBulkUpload, setShowBulkUpload] = useState(false);  // CSV uploader panel
-    const [scheduleFilter, setScheduleFilter] = useState('ALL');
-    const [priorityFilter, setPriorityFilter] = useState('ALL');
+    }, [warningShown]);
 
-    // Derive current user's agent name
-    const userEmail   = session?.user?.email || '';
-    const agentName   = getAgentFromEmail(userEmail);
-    const isAdminUser = agentName === '__ADMIN__';
-    const isKnownAgent = agentName && agentName !== '__ADMIN__' && agentName !== '__UNKNOWN__';
-
-    // ── Set summary filter as soon as we know who is logged in ─────────────
-    useEffect(() => {
-        if (!session) return;
-        const email = session.user?.email || '';
-        if (email === ADMIN_EMAIL) {
-            // Admin: default to their dual-role agent name (Tharun) or All
-            setSummaryAgent(ADMIN_AGENT_NAME || 'All');
-        } else {
-            // PSA agent: default to their own name
-            const name = AGENT_EMAIL_MAP[email];
-            if (name) setSummaryAgent(name);
-        }
-    }, [session]); // re-runs when session changes
+    // Timer color: red if < 10 min, amber if < 30 min, normal otherwise
+    const timerColor = useMemo(() => {
+        const stored = localStorage.getItem('__crm_login_time');
+        if (!stored) return 'text-slate-400';
+        const remaining = (3 * 60 * 60 * 1000) - (Date.now() - parseInt(stored, 10));
+        if (remaining <= 10 * 60 * 1000) return 'text-red-400 animate-pulse';
+        if (remaining <= 30 * 60 * 1000) return 'text-amber-400';
+        return 'text-emerald-400';
+    }, [sessionTimeLeft]);
 
     useEffect(() => {
         const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
@@ -1954,19 +2037,16 @@ function AdminApp() {
 
     useEffect(() => { setVisibleCount(50); }, [leadCategory, leadBucket, scheduleFilter, summaryAgent, searchTerm, priorityFilter]);
 
-    // ── Auto-logout after 3 hours from login time ─────────────────────────
-    const AUTO_LOGOUT_MS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+    const AUTO_LOGOUT_MS = 3 * 60 * 60 * 1000;
     const logoutTimerRef = useRef(null);
 
-    // ── Reschedule timer from stored login time (called on page load + refresh) ──
     const rescheduleFromStored = useCallback(() => {
         if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
         const stored = localStorage.getItem('__crm_login_time');
-        if (!stored) return; // no active session timer
+        if (!stored) return;
         const loginTime = parseInt(stored, 10);
         const remaining = AUTO_LOGOUT_MS - (Date.now() - loginTime);
         if (remaining <= 0) {
-            // Already past 3 hours — logout immediately
             supabase.auth.signOut();
             localStorage.removeItem('__crm_login_time');
         } else {
@@ -1984,8 +2064,6 @@ function AdminApp() {
             setAuthChecking(false);
             if (window.__dismissSplash) window.__dismissSplash();
             if (session) {
-                // Already logged in on page load — stamp now if no existing stamp
-                // This handles: user opens new version of app while already logged in
                 if (!localStorage.getItem('__crm_login_time')) {
                     localStorage.setItem('__crm_login_time', String(Date.now()));
                 }
@@ -1995,7 +2073,6 @@ function AdminApp() {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
             setSession(s);
             if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-                // Both fresh login and page reload — stamp if not already stamped
                 if (s && !localStorage.getItem('__crm_login_time')) {
                     localStorage.setItem('__crm_login_time', String(Date.now()));
                 }
@@ -2013,11 +2090,21 @@ function AdminApp() {
 
     useEffect(() => {
         if (!session) return;
+        const email = session.user?.email || '';
+        if (email === ADMIN_EMAIL) {
+            setSummaryAgent(ADMIN_AGENT_NAME || 'All');
+        } else {
+            const name = AGENT_EMAIL_MAP[email];
+            if (name) setSummaryAgent(name);
+        }
+    }, [session]);
+
+    useEffect(() => {
+        if (!session) return;
         fetchProperties();
         if (view === 'dashboard') fetchLeads();
     }, [session, view, leadCategory, agentName]);
 
-    // Admin overview fetch — separate effect so it fires whenever admin opens the tab
     useEffect(() => {
         if (session && view === 'admin' && isAdminUser) {
             fetchAllForAdmin();
@@ -2028,12 +2115,9 @@ function AdminApp() {
         setLoading(true);
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
         let query = supabase.from(table).select('*').order('created_at', { ascending:false });
-
         const { data, error } = await query;
         if (!error) {
             let raw = data || [];
-
-            // ── Source filter (website vs manual) ──────────────────────────
             if (table === 'leads') {
                 if (leadCategory === 'website') {
                     raw = raw.filter(l => !l.lead_source || l.lead_source.trim() === '' || l.lead_source.toLowerCase().includes('website'));
@@ -2041,51 +2125,47 @@ function AdminApp() {
                     raw = raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && !l.lead_source.toLowerCase().includes('website'));
                 }
             }
-
-            // ── Visibility filter (client-side) ────────────────────────────────
+            // FIX 1: Visibility filter — ensure PSA agents see their leads correctly
             if (!isAdminUser) {
                 if (agentName === '__UNKNOWN__') {
-                    // Unrecognised email — show nothing as safety net
                     raw = [];
-                } else if (agentName) {
+                } else if (agentName && agentName !== '__ADMIN__') {
                     if (leadCategory === 'website') {
                         // Website: see unassigned leads + leads assigned to me
                         raw = raw.filter(l =>
-                            !l.psa_agent_name ||               // unassigned → all agents see it
-                            l.psa_agent_name === agentName     // assigned to me → I see it
+                            !l.psa_agent_name ||
+                            l.psa_agent_name === agentName
                         );
                     } else {
                         // Bulk & Manual: strictly my own leads only
                         raw = raw.filter(l => l.psa_agent_name === agentName);
                     }
                 } else {
-                    // agentName is null (shouldn't happen) — show nothing
                     raw = [];
                 }
             }
-
+            // Always filter hidden
+            raw = raw.filter(l => !l.is_hidden);
             setLeads(raw);
         }
         setLoading(false);
     }
 
-    // ── Soft-delete: sets is_hidden=true — data stays in DB, removed from UI ──
     async function deleteLead(lead) {
         const confirmed = window.confirm(
-            'Delete this lead?\n\nName: ' + lead.customer_name + '\nPhone: ' + lead.phone_number + '\n\nThis lead will be removed from the CRM view but data is kept in the database.'
+            `Delete this lead?\n\nName: ${lead.customer_name}\nPhone: ${lead.phone_number}\n\nData is kept in the database.`
         );
         if (!confirmed) return;
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-        setLeads(prev => prev.filter(l => l.id !== lead.id)); // remove from UI instantly
+        setLeads(prev => prev.filter(l => l.id !== lead.id));
         const { error } = await supabase.from(table).update({ is_hidden: true }).eq('id', lead.id);
         if (error) {
-            alert('Error: ' + error.message + '\n\nMake sure the \'is_hidden\' (boolean, default false) column exists in your ' + table + ' table.');
+            alert('Error: ' + error.message);
             fetchLeads();
         }
     }
 
     async function fetchAllForAdmin() {
-        // Admin sees everything
         const [{ data: websiteData }, { data: bulkData }, { data: manualData }] = await Promise.all([
             supabase.from('leads').select('*').order('created_at', { ascending:false }),
             supabase.from('bulk_leads').select('*').order('created_at', { ascending:false }),
@@ -2104,14 +2184,11 @@ function AdminApp() {
     }
 
     async function updateLead(lead, field, value) {
-        // ── CLAIM-ON-INTERACTION: non-admin agents claim unassigned website leads ──
-        // Admin is ALWAYS neutral — never auto-claims anything regardless of ADMIN_AGENT_NAME.
-        // Only a real non-admin PSA agent can claim by interacting with a lead.
-        const shouldClaim = !isAdminUser                        // admin = never claims
-            && leadCategory === 'website'                       // only website leads
-            && !lead.psa_agent_name                            // must be unassigned
-            && agentName                                        // must be a known agent
-            && agentName !== '__UNKNOWN__';                     // must be recognised
+        const shouldClaim = !isAdminUser
+            && leadCategory === 'website'
+            && !lead.psa_agent_name
+            && agentName
+            && agentName !== '__UNKNOWN__';
 
         if (shouldClaim) {
             setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, psa_agent_name: agentName } : l));
@@ -2135,15 +2212,10 @@ function AdminApp() {
 
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
 
-        // If admin is reassigning to a different agent, remove the lead from
-        // the current local state for non-admin users immediately.
-        // Also update optimistically for admin's view.
         if (field === 'psa_agent_name') {
             if (isAdminUser) {
-                // Admin sees all — just update the agent label in UI
                 setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...updates } : l));
             } else {
-                // Non-admin: if reassigned away from me, remove from my view
                 setLeads(prev => prev.filter(l => l.id !== lead.id));
             }
         } else {
@@ -2155,25 +2227,19 @@ function AdminApp() {
             alert("Save error: " + error.message);
             fetchLeads();
         } else if (field === 'psa_agent_name') {
-            // Refetch after reassignment to ensure server state is synced
             setTimeout(() => fetchLeads(), 500);
         }
     }
 
     const displayedLeads = useMemo(() => {
-        // Always filter out soft-deleted leads
-        let f = filterLeadsByBucket(leads.filter(l => !l.is_hidden), leadBucket);
-
+        let f = filterLeadsByBucket(leads, leadBucket);
         const today = new Date().toISOString().split('T')[0];
         if (scheduleFilter === 'TODAY_CB')       f = f.filter(l => l.follow_up_at?.startsWith(today));
         else if (scheduleFilter === 'TODAY_SV')  f = f.filter(l => l.site_visit_at === today);
         else if (scheduleFilter === 'MISSED_CB') f = f.filter(l => l.follow_up_at && l.follow_up_at < today && !['Rejected','Converted'].includes(l.lead_status));
         else if (scheduleFilter === 'MISSED_SV') f = f.filter(l => l.site_visit_at && l.site_visit_at < today && !['Rejected','Converted'].includes(l.lead_status));
-
         if (priorityFilter !== 'ALL') f = f.filter(l => (l.lead_priority||'Warm') === priorityFilter);
-
         if (isAdminUser && summaryAgent !== 'All') f = f.filter(l => l.psa_agent_name === summaryAgent);
-
         if (searchTerm.trim()) {
             const t = searchTerm.toLowerCase();
             f = f.filter(l => (l.customer_name||'').toLowerCase().includes(t) || (l.phone_number||'').toLowerCase().includes(t) || (l.project_interested_in||'').toLowerCase().includes(t));
@@ -2184,74 +2250,102 @@ function AdminApp() {
     const visibleLeads = displayedLeads.slice(0, visibleCount);
 
     const stats = useMemo(() => {
-        // Always exclude soft-deleted leads from all counts
-        let t = leads.filter(l => !l.is_hidden && l.lead_status !== 'Rejected');
-        if (summaryAgent !== 'All') t = t.filter(l => l.psa_agent_name === summaryAgent);
+        let t = leads.filter(l => l.lead_status !== 'Rejected');
+        if (isAdminUser && summaryAgent !== 'All') t = t.filter(l => l.psa_agent_name === summaryAgent);
         return {
             total:     t.length,
             uncalled:  t.filter(l => !l.lead_status || l.lead_status === 'Un called').length,
             called:    t.filter(l => l.lead_status && l.lead_status !== 'Un called').length,
             converted: t.filter(l => l.lead_status === 'Converted').length,
-            rejected:  leads.filter(l => !l.is_hidden && l.lead_status === 'Rejected').length,
+            rejected:  leads.filter(l => l.lead_status === 'Rejected').length,
         };
-    }, [leads, summaryAgent]);
+    }, [leads, summaryAgent, isAdminUser]);
 
     if (authChecking) return <div className="min-h-screen bg-slate-950"></div>;
     if (!session) return <LoginForm supabase={supabase} />;
     if (selectedProp) return <PropertyDetailsPage property={selectedProp} onBack={() => setSelectedProp(null)} />;
 
     const navItems = [
-        { id:'dashboard', label:'📊 CRM',      mobileLabel:'CRM' },
-        { id:'library',   label:'🏢 Library',   mobileLabel:'Library' },
-        { id:'add',       label:'➕ Property',  mobileLabel:'Add' },
+        { id:'dashboard', label:'📊 CRM',     mobileLabel:'CRM' },
+        { id:'library',   label:'🏢 Library', mobileLabel:'Library' },
+        { id:'add',       label:'➕ Add',     mobileLabel:'Add' },
         ...(isAdminUser ? [{ id:'admin', label:'🛡️ Admin', mobileLabel:'Admin' }] : []),
     ];
 
+    const handleExtendSession = () => {
+        // Reset the login time to now (extend by 3 more hours)
+        localStorage.setItem('__crm_login_time', String(Date.now()));
+        setWarningShown(false);
+        setShowWarning(false);
+        rescheduleFromStored();
+    };
+
     return (
         <div className="min-h-screen flex flex-col animate-fadeIn">
-            {/* Lead Detail Modal */}
+            {/* FIX 5: Session warning modal */}
+            {showWarning && (
+                <SessionWarningModal
+                    timeLeft={sessionTimeLeft}
+                    onExtend={handleExtendSession}
+                    onLogout={() => supabase.auth.signOut()}
+                />
+            )}
+
             {selectedLead && (
                 <LeadDetailModal lead={selectedLead} onClose={() => setSelectedLead(null)} leadCategory={leadCategory} userEmail={userEmail} />
             )}
 
-            {/* Nav */}
-            <nav className="bg-slate-900 text-white px-4 md:px-8 py-3 flex justify-between items-center sticky top-0 z-50 shadow-lg border-b border-slate-800">
-                <div className="flex items-center gap-3">
-                    <h1 className="font-black tracking-tighter text-lg md:text-xl uppercase italic">Horizon <span className="text-blue-400">CRM</span></h1>
-                    {userEmail && <span className="hidden md:block text-[9px] font-bold text-slate-500 bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg uppercase tracking-widest truncate max-w-[180px]">{isAdminUser ? (ADMIN_AGENT_NAME ? `🛡️ Admin · ${ADMIN_AGENT_NAME}` : '🛡️ Admin') : `👤 ${agentName||userEmail.split('@')[0]}`}</span>}
-                    {sessionTimeLeft && <span className="hidden md:flex items-center gap-1 text-[9px] font-black text-amber-400 bg-amber-900/30 border border-amber-800/50 px-2 py-1 rounded-lg uppercase tracking-widest" title="Session expires after 3 hours from login">⏱ {sessionTimeLeft}</span>}
+            {/* FIX 2 + 5: Improved nav — timer visible on mobile too */}
+            <nav className="bg-slate-900 text-white px-3 md:px-8 py-2.5 flex justify-between items-center sticky top-0 z-50 shadow-lg border-b border-slate-800">
+                <div className="flex items-center gap-2 min-w-0">
+                    <h1 className="font-black tracking-tighter text-base md:text-xl uppercase italic shrink-0">Horizon <span className="text-blue-400">CRM</span></h1>
+                    {/* FIX 2: Timer visible on ALL screen sizes */}
+                    {sessionTimeLeft && (
+                        <span className={`flex items-center gap-1 text-[8px] md:text-[9px] font-black px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg uppercase tracking-widest border ${
+                            sessionTimeLeft.startsWith('0:') || (!sessionTimeLeft.includes(':') && parseInt(sessionTimeLeft) < 10)
+                                ? 'text-red-400 bg-red-900/30 border-red-800/50 animate-pulse'
+                                : 'text-emerald-400 bg-emerald-900/20 border-emerald-800/30'
+                        }`} title="Session expires 3 hours from login">
+                            ⏱ {sessionTimeLeft}
+                        </span>
+                    )}
+                    {/* Agent name — hidden on very small mobile */}
+                    {userEmail && <span className="hidden sm:block text-[9px] font-bold text-slate-500 bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg uppercase tracking-widest truncate max-w-[120px] md:max-w-[180px]">{isAdminUser ? (ADMIN_AGENT_NAME ? `🛡️ ${ADMIN_AGENT_NAME}` : '🛡️ Admin') : `👤 ${agentName||userEmail.split('@')[0]}`}</span>}
                 </div>
-                <div className="flex gap-1 items-center">
+                <div className="flex gap-1 items-center shrink-0">
                     {navItems.map(n => (
                         <button key={n.id} onClick={() => handleNavigate(n.id, n.id === 'dashboard' ? leadCategory : 'website')}
-                            className={`px-2.5 md:px-4 py-1.5 md:py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition ${view === n.id ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+                            className={`px-2 md:px-4 py-1.5 md:py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition ${view === n.id ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
                             <span className="hidden md:inline">{n.label}</span>
                             <span className="md:hidden">{n.mobileLabel}</span>
                         </button>
                     ))}
                     {deferredPrompt && (
-                        <button onClick={handleInstallClick} className="hidden md:flex items-center gap-1 ml-1 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-md">⬇ Install</button>
+                        <button onClick={handleInstallClick} className="hidden md:flex items-center gap-1 ml-1 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-md">⬇ App</button>
                     )}
-                    <button onClick={() => supabase.auth.signOut()} className="ml-1 md:ml-3 text-[9px] font-black uppercase tracking-widest text-red-400 border border-red-900/60 px-2 md:px-3 py-1.5 md:py-2 rounded-xl hover:bg-red-900/40 transition">
-                        <span className="hidden md:inline">Logout</span><span className="md:hidden">Out</span>
+                    <button onClick={() => supabase.auth.signOut()} className="ml-1 text-[9px] font-black uppercase tracking-widest text-red-400 border border-red-900/60 px-2 md:px-3 py-1.5 md:py-2 rounded-xl hover:bg-red-900/40 transition">
+                        Out
                     </button>
                 </div>
             </nav>
 
-            <main className="p-3 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
+            <main className="p-3 md:p-8 max-w-7xl mx-auto w-full pb-28 md:pb-8">
 
-                {/* ── ADMIN OVERVIEW ── */}
                 {view === 'admin' && isAdminUser && (
                     <AdminOverview allLeads={allLeadsAdmin} allBulkLeads={allBulkAdmin} allManualLeads={allManualAdmin} />
                 )}
 
-                {/* ── DASHBOARD ── */}
                 {view === 'dashboard' && (
-                    <div className="space-y-5">
+                    <div className="space-y-4">
+
+                        {/* FIX 6: Welcome banner for PSA agents */}
+                        {!isAdminUser && isKnownAgent && (
+                            <WelcomeBanner agentName={agentName} />
+                        )}
 
                         {/* Stats bar */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-                            <div className="flex flex-wrap md:grid md:grid-cols-6 gap-3 items-center">
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 md:p-4">
+                            <div className="flex flex-wrap md:grid md:grid-cols-6 gap-2 md:gap-3 items-center">
                                 {isAdminUser && (
                                     <div className="w-full md:w-auto">
                                         <select className="bg-transparent outline-none cursor-pointer text-slate-700 text-[10px] font-black uppercase w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500" value={summaryAgent} onChange={e => setSummaryAgent(e.target.value)}>
@@ -2267,85 +2361,72 @@ function AdminApp() {
                                     { label:'Converted', val:stats.converted, bg:'bg-green-50',   tc:'text-green-600',  bc:'border-green-100' },
                                     { label:'Rejected',  val:stats.rejected,  bg:'bg-red-50',     tc:'text-red-600',    bc:'border-red-100' },
                                 ].map(s => (
-                                    <div key={s.label} className={`flex flex-col items-center flex-1 p-3 rounded-2xl ${s.bg} border ${s.bc}`}>
-                                        <span className="text-[9px] uppercase font-black text-slate-400 mb-1">{s.label}</span>
-                                        <span className={`font-black ${s.tc} text-2xl leading-none`}>{s.val}</span>
+                                    <div key={s.label} className={`flex flex-col items-center flex-1 p-2.5 md:p-3 rounded-2xl ${s.bg} border ${s.bc} min-w-[56px]`}>
+                                        <span className="text-[8px] uppercase font-black text-slate-400 mb-0.5">{s.label}</span>
+                                        <span className={`font-black ${s.tc} text-xl md:text-2xl leading-none`}>{s.val}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
                         {/* Channel tabs + filters */}
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                            <div className="flex gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm">
+                        <div className="flex flex-col gap-3">
+                            <div className="flex gap-1.5 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm w-full md:w-auto">
                                 {[{id:'website',label:'🌐 Website'},{id:'bulk',label:'📦 Bulk'},{id:'manual',label:'✍️ Manual'}].map(c => (
                                     <button key={c.id} onClick={() => { handleNavigate('dashboard', c.id); setVisibleCount(50); setLeadBucket('new'); }}
-                                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${leadCategory===c.id?'bg-blue-600 text-white shadow-md':'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}>{c.label}</button>
+                                        className={`flex-1 md:flex-none px-3 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${leadCategory===c.id?'bg-blue-600 text-white shadow-md':'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}>{c.label}</button>
                                 ))}
                             </div>
                             <div className="flex gap-2 items-center flex-wrap">
                                 <select value={scheduleFilter} onChange={e => setScheduleFilter(e.target.value)}
-                                    className="px-3 py-2.5 rounded-2xl text-[9px] font-black uppercase border-2 bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 border-slate-200 cursor-pointer">
+                                    className="flex-1 md:flex-none px-3 py-2.5 rounded-2xl text-[9px] font-black uppercase border-2 bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 border-slate-200 cursor-pointer">
                                     <option value="ALL">📋 All Schedule</option>
                                     <option value="TODAY_CB">📅 Today Callbacks</option>
-                                    <option value="TODAY_SV">📅 Today Site Visits</option>
+                                    <option value="TODAY_SV">📅 Today SV</option>
                                     <option value="MISSED_CB">⚠️ Missed Callbacks</option>
-                                    <option value="MISSED_SV">⚠️ Missed Site Visits</option>
+                                    <option value="MISSED_SV">⚠️ Missed SV</option>
                                 </select>
                                 <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}
-                                    className="px-3 py-2.5 rounded-2xl text-[9px] font-black uppercase border-2 bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 border-slate-200 cursor-pointer">
+                                    className="flex-1 md:flex-none px-3 py-2.5 rounded-2xl text-[9px] font-black uppercase border-2 bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 border-slate-200 cursor-pointer">
                                     <option value="ALL">🌡️ All Priority</option>
                                     <option value="Hot">🔥 Hot</option>
                                     <option value="Warm">🌤 Warm</option>
                                     <option value="Cold">❄️ Cold</option>
                                 </select>
                                 <button onClick={() => setShowManualModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase shadow-md shrink-0 transition border border-blue-500">+ Lead</button>
-                                {/* Bulk CSV upload — admin only, bulk tab only */}
                                 {isAdminUser && leadCategory === 'bulk' && (
                                     <button onClick={() => setShowBulkUpload(v => !v)}
                                         className={`px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase shadow-md shrink-0 transition border ${showBulkUpload ? 'bg-amber-500 text-white border-amber-400' : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400'}`}>
-                                        📤 {showBulkUpload ? 'Hide Uploader' : 'Upload CSV'}
+                                        📤 CSV
                                     </button>
                                 )}
-
                             </div>
                         </div>
 
-                        {/* Bulk CSV Uploader Panel */}
                         {isAdminUser && leadCategory === 'bulk' && showBulkUpload && (
-                            <BulkCSVUploader
-                                supabase={supabase}
-                                isAdminUser={isAdminUser}
-                                onSuccess={(count) => {
-                                    setShowBulkUpload(false);
-                                    fetchLeads();
-                                }}
-                            />
+                            <BulkCSVUploader supabase={supabase} isAdminUser={isAdminUser} onSuccess={(count) => { setShowBulkUpload(false); fetchLeads(); }} />
                         )}
 
-                        {/* Admin Notes Banner — shown to agents, not admin */}
+                        {/* FIX 3: Admin Notes Banner — always renders for known agents, with improved state handling */}
                         {!isAdminUser && isKnownAgent && (
                             <AdminNotesBanner agentName={agentName} />
                         )}
 
                         {/* Bucket tabs */}
-                        <div className="flex gap-2 overflow-x-auto hide-scroll pb-1">
+                        <div className="flex gap-1.5 overflow-x-auto hide-scroll pb-1">
                             {LEAD_BUCKETS.map(b => {
                                 const agentFilteredLeads = leads.filter(l => {
-                                    if (l.is_hidden) return false;
-                                    if (isAdminUser && summaryAgent !== 'All') {
-                                        return l.psa_agent_name === summaryAgent;
-                                    }
+                                    if (isAdminUser && summaryAgent !== 'All') return l.psa_agent_name === summaryAgent;
                                     return true;
                                 });
                                 const count = filterLeadsByBucket(agentFilteredLeads, b.id).length;
                                 const isActive = leadBucket === b.id;
                                 return (
                                     <button key={b.id} onClick={() => setLeadBucket(b.id)}
-                                        className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all shrink-0 border ${isActive ? `${b.color} text-white border-transparent shadow-lg scale-[1.02]` : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700'}`}>
+                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all shrink-0 border ${isActive ? `${b.color} text-white border-transparent shadow-lg` : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700'}`}>
                                         <span>{b.emoji}</span>
-                                        <span>{b.label.replace(/^[^\s]+\s/,'')}</span>
-                                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'}`}>{count}</span>
+                                        <span className="hidden sm:inline">{b.label.replace(/^[^\s]+\s/,'')}</span>
+                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'}`}>{count}</span>
                                     </button>
                                 );
                             })}
@@ -2354,9 +2435,9 @@ function AdminApp() {
                         {/* Search */}
                         <div className="relative">
                             <input type="text" placeholder="Search name, phone or project..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full p-4 pl-12 pr-28 bg-white border-2 border-slate-200 rounded-2xl text-xs font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all" />
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg opacity-40 pointer-events-none">🔍</span>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                className="w-full p-3.5 pl-10 pr-24 bg-white border-2 border-slate-200 rounded-2xl text-xs font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all" />
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base opacity-40 pointer-events-none">🔍</span>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                                 {!loading && <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-lg tracking-widest">{displayedLeads.length}</span>}
                                 {searchTerm && <button onClick={() => setSearchTerm("")} className="text-[9px] font-black text-red-400 hover:text-red-600 bg-red-50 border border-red-200 px-2 py-1 rounded-lg uppercase tracking-widest">✕</button>}
                             </div>
@@ -2386,8 +2467,7 @@ function AdminApp() {
                                     <thead className="bg-slate-900 text-slate-400 font-black uppercase text-[9px] tracking-widest">
                                         <tr>
                                             <th className="px-5 py-3.5">Customer</th>
-                                            {leadCategory === 'website' && <th className="px-5 py-3.5">Agent & Status</th>}
-                                            {leadCategory !== 'website' && <th className="px-5 py-3.5">Status & Priority</th>}
+                                            <th className="px-5 py-3.5">Agent & Status</th>
                                             <th className="px-5 py-3.5">Scheduling</th>
                                             <th className="px-5 py-3.5 min-w-[260px]">Activity & Notes</th>
                                             <th className="px-5 py-3.5 w-16">Detail</th>
@@ -2401,13 +2481,9 @@ function AdminApp() {
                                                     <p className="text-blue-600 font-black text-[11px] mt-0.5">{l.phone_number}</p>
                                                     {l.customer_email && <p className="text-slate-400 text-[9px] mt-0.5 lowercase truncate font-medium max-w-[160px]">{l.customer_email}</p>}
                                                     {(isAdminUser || l.lead_source !== 'Bulk Upload') && (
-                                                        <p className="text-[8px] text-slate-500 font-bold mt-1.5 tracking-widest uppercase truncate max-w-[160px]">
-                                                            🏠 {l.project_interested_in||'General'}
-                                                        </p>
+                                                        <p className="text-[8px] text-slate-500 font-bold mt-1.5 tracking-widest uppercase truncate max-w-[160px]">🏠 {l.project_interested_in||'General'}</p>
                                                     )}
-                                                    <p className="text-[8px] text-slate-400 font-bold mt-1 tracking-widest uppercase">
-                                                        🕐 {formatDateTime(l.created_at)}
-                                                    </p>
+                                                    <p className="text-[8px] text-slate-400 font-bold mt-1 tracking-widest uppercase">🕐 {formatDateTime(l.created_at)}</p>
                                                     {l.psa_agent_name && <p className="text-[8px] text-blue-500 font-bold mt-0.5 tracking-widest uppercase">👤 {l.psa_agent_name}</p>}
                                                     <div className="mt-2.5 flex gap-1.5">
                                                         <a href={`tel:${l.phone_number}`} className="bg-slate-100 text-slate-600 text-[8px] font-black px-2.5 py-1.5 rounded-lg uppercase tracking-widest hover:bg-slate-200 transition border border-slate-200">📞 Call</a>
@@ -2415,12 +2491,9 @@ function AdminApp() {
                                                     </div>
                                                 </td>
                                                 <td className="p-4 min-w-[160px]">
-                                                    {/* Agent assignment — admin can reassign on ANY channel */}
                                                     {isAdminUser && (
                                                         <div className="mb-2">
-                                                            <label className="text-[7px] font-black uppercase tracking-widest text-slate-500 mb-0.5 block">
-                                                                {l.psa_agent_name ? '🔄 Reassign Agent' : '⚡ Assign Agent'}
-                                                            </label>
+                                                            <label className="text-[7px] font-black uppercase tracking-widest text-slate-500 mb-0.5 block">{l.psa_agent_name ? '🔄 Reassign' : '⚡ Assign'}</label>
                                                             <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''}
                                                                 className="w-full p-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none bg-slate-900 border-slate-700 text-blue-300 cursor-pointer">
                                                                 <option value="" disabled>Select Agent</option>
@@ -2428,11 +2501,8 @@ function AdminApp() {
                                                             </select>
                                                         </div>
                                                     )}
-                                                    {/* Non-admin: just show who's assigned (read-only) */}
                                                     {!isAdminUser && l.psa_agent_name && (
-                                                        <div className="text-[8px] font-black text-blue-400 bg-slate-900 border border-slate-700 px-2 py-1.5 rounded-xl mb-2 uppercase tracking-widest">
-                                                            👤 {l.psa_agent_name}
-                                                        </div>
+                                                        <div className="text-[8px] font-black text-blue-400 bg-slate-900 border border-slate-700 px-2 py-1.5 rounded-xl mb-2 uppercase tracking-widest">👤 {l.psa_agent_name}</div>
                                                     )}
                                                     <select onChange={e => updateLead(l,'lead_status',e.target.value)} value={l.lead_status||''} className={`w-full p-2 mb-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`}>
                                                         {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">🔵 Un called</option>}
@@ -2473,14 +2543,9 @@ function AdminApp() {
                                                 </td>
                                                 <td className="px-3 py-4">
                                                     <div className="flex flex-col gap-1.5">
-                                                        <button onClick={() => setSelectedLead(l)} className="bg-blue-50 hover:bg-blue-100 text-blue-600 text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border border-blue-200 transition w-full">
-                                                            👁 Detail
-                                                        </button>
+                                                        <button onClick={() => setSelectedLead(l)} className="bg-blue-50 hover:bg-blue-100 text-blue-600 text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border border-blue-200 transition w-full">👁 Detail</button>
                                                         {isAdminUser && (
-                                                            <button onClick={() => deleteLead(l)}
-                                                                className="text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border transition w-full bg-red-50 text-red-500 border-red-200 hover:bg-red-100">
-                                                                🗑 Delete
-                                                            </button>
+                                                            <button onClick={() => deleteLead(l)} className="text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border transition w-full bg-red-50 text-red-500 border-red-200 hover:bg-red-100">🗑 Delete</button>
                                                         )}
                                                     </div>
                                                 </td>
@@ -2498,12 +2563,15 @@ function AdminApp() {
                             )}
                         </div>
 
-                        {/* ── Mobile Cards ── */}
+                        {/* ── FIX 1 + 5: Mobile Cards — improved UI ── */}
                         <div className="lg:hidden space-y-3">
                             {loading ? (
                                 [...Array(4)].map((_,i) => (
                                     <div key={i} className="bg-white rounded-2xl p-4 border border-slate-200 space-y-3">
-                                        <div className="flex justify-between"><div className="space-y-2 flex-1"><div className="skeleton h-4 w-32 rounded"></div><div className="skeleton h-3 w-24 rounded"></div></div><div className="skeleton h-12 w-24 rounded-xl"></div></div>
+                                        <div className="flex justify-between">
+                                            <div className="space-y-2 flex-1"><div className="skeleton h-4 w-32 rounded"></div><div className="skeleton h-3 w-24 rounded"></div></div>
+                                            <div className="skeleton h-12 w-24 rounded-xl"></div>
+                                        </div>
                                         <div className="flex gap-2"><div className="skeleton h-10 flex-1 rounded-xl"></div><div className="skeleton h-10 flex-1 rounded-xl"></div></div>
                                         <div className="skeleton h-9 w-full rounded-xl"></div>
                                     </div>
@@ -2514,90 +2582,122 @@ function AdminApp() {
                                     <div className="text-sm font-black uppercase tracking-widest text-slate-400 mb-1">No leads found</div>
                                     <div className="text-[10px] text-slate-400 font-medium">Adjust filters or search</div>
                                 </div>
-                            ) : visibleLeads.map(l => (
-                                <div key={`m-${l.id}`} className={`rounded-2xl shadow-sm border-2 overflow-hidden animate-fadeIn ${l.lead_priority==='Hot'?'border-red-200':l.lead_priority==='Cold'?'border-blue-200':'border-amber-200'} ${getCardTint(l.lead_status)}`}>
-                                    <div className={`h-1 w-full ${l.lead_priority==='Hot'?'bg-red-500':l.lead_priority==='Cold'?'bg-blue-400':'bg-amber-400'}`}></div>
-                                    <div className="p-4">
-                                        <div className="flex justify-between items-start mb-3">
+                            ) : visibleLeads.map((l, idx) => (
+                                /* FIX 1 + 5: Completely reworked mobile card for better UX */
+                                <div key={l.id} className={`mobile-card border-2 overflow-hidden animate-fadeIn ${l.lead_priority==='Hot'?'border-red-200':l.lead_priority==='Cold'?'border-blue-200':'border-amber-200'}`}
+                                     style={{animationDelay: `${Math.min(idx, 8) * 30}ms`}}>
+                                    {/* Priority bar at top */}
+                                    <div className={`h-1.5 w-full ${l.lead_priority==='Hot'?'bg-gradient-to-r from-red-400 to-orange-400':l.lead_priority==='Cold'?'bg-gradient-to-r from-blue-400 to-cyan-400':'bg-gradient-to-r from-amber-400 to-yellow-400'}`}></div>
+
+                                    <div className={`p-4 ${getCardTint(l.lead_status)}`}>
+                                        {/* Row 1: Customer info + status badges */}
+                                        <div className="flex items-start justify-between mb-3">
                                             <div className="flex-1 min-w-0 pr-2">
-                                                <h3 className="font-black text-[13px] uppercase text-slate-900 leading-tight truncate">{l.customer_name}</h3>
-                                                <p className="font-black text-blue-600 text-[12px] mt-0.5">{l.phone_number}</p>
-                                                {l.customer_email && <p className="font-medium text-slate-400 text-[9px] truncate mt-0.5">{l.customer_email}</p>}
-                                                {(isAdminUser || l.lead_source !== 'Bulk Upload') && (
-                                                    <p className="text-[9px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate">🏠 {l.project_interested_in||'General'}</p>
+                                                <h3 className="font-black text-[14px] uppercase text-slate-900 leading-tight truncate">{l.customer_name}</h3>
+                                                <a href={`tel:${l.phone_number}`} className="font-black text-blue-600 text-[13px] mt-0.5 block">{l.phone_number}</a>
+                                                {(isAdminUser || l.lead_source !== 'Bulk Upload') && l.project_interested_in && (
+                                                    <p className="text-[9px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate">🏠 {l.project_interested_in}</p>
                                                 )}
-                                                <p className="text-[8px] text-slate-400 font-bold mt-0.5 tracking-widest uppercase">🕐 {formatDateTime(l.created_at)}</p>
+                                                <p className="text-[8px] text-slate-400 font-bold mt-0.5 tracking-widest">🕐 {formatDateTime(l.created_at)}</p>
                                                 {l.psa_agent_name && <p className="text-[8px] text-blue-500 font-bold mt-0.5 tracking-widest uppercase">👤 {l.psa_agent_name}</p>}
                                             </div>
                                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                                 <span className={`text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${getStatusStyles(l.lead_status)}`}>{l.lead_status||'Un called'}</span>
-                                                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${getPriorityColor(l.lead_priority||'Warm')}`}>{l.lead_priority==='Hot'?'🔥':l.lead_priority==='Cold'?'❄️':'🌤'} {l.lead_priority||'Warm'}</span>
-                                                <button onClick={() => setSelectedLead(l)} className="text-[8px] font-black text-blue-600 bg-blue-50 border border-blue-200 px-2 py-1 rounded-lg uppercase tracking-widest">👁 Detail</button>
-                                                {isAdminUser && (
-                                                    <button onClick={() => deleteLead(l)}
-                                                        className="text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-widest border text-red-500 bg-red-50 border-red-200 hover:bg-red-100">
-                                                        🗑
-                                                    </button>
-                                                )}
+                                                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${getPriorityColor(l.lead_priority||'Warm')}`}>
+                                                    {l.lead_priority==='Hot'?'🔥':l.lead_priority==='Cold'?'❄️':'🌤'} {l.lead_priority||'Warm'}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div className="flex gap-2 mb-3">
-                                            <a href={`tel:${l.phone_number}`} className="flex-1 flex items-center justify-center gap-1 bg-white border-2 border-slate-200 text-slate-700 text-[9px] font-black uppercase tracking-widest py-2.5 rounded-xl hover:border-blue-400 transition">📞 Call</a>
-                                            <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="flex-1 flex items-center justify-center gap-1 bg-green-500 text-white text-[9px] font-black uppercase tracking-widest py-2.5 rounded-xl hover:bg-green-600 transition shadow-sm">💬 WhatsApp</a>
+
+                                        {/* Row 2: Quick action buttons */}
+                                        <div className="grid grid-cols-3 gap-2 mb-3">
+                                            <a href={`tel:${l.phone_number}`} className="mobile-action-btn bg-slate-900 text-white hover:bg-blue-700">
+                                                <span>📞</span><span>Call</span>
+                                            </a>
+                                            <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="mobile-action-btn bg-green-500 text-white hover:bg-green-600">
+                                                <span>💬</span><span>WhatsApp</span>
+                                            </a>
+                                            <button onClick={() => setSelectedLead(l)} className="mobile-action-btn bg-blue-50 text-blue-700 border-2 border-blue-200 hover:bg-blue-100">
+                                                <span>👁</span><span>Detail</span>
+                                            </button>
                                         </div>
-                                        <div className="border-t border-slate-200/80 pt-3 space-y-2">
-                                            {/* Admin: reassign on any channel */}
+
+                                        {/* Row 3: Controls */}
+                                        <div className="space-y-2.5 border-t border-slate-200/80 pt-3">
+                                            {/* Admin: agent assignment */}
                                             {isAdminUser && (
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                                                        {l.psa_agent_name ? '🔄 Reassign Agent' : '⚡ Assign Agent'}
-                                                    </label>
+                                                <div>
+                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">{l.psa_agent_name ? '🔄 Reassign Agent' : '⚡ Assign Agent'}</label>
                                                     <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''}
-                                                        className="p-2.5 border-2 border-slate-700 bg-slate-900 rounded-xl font-black uppercase text-[9px] outline-none text-blue-300 cursor-pointer">
+                                                        className="w-full p-2.5 border-2 border-slate-700 bg-slate-900 rounded-xl font-black uppercase text-[9px] outline-none text-blue-300 cursor-pointer">
                                                         <option value="" disabled>Select Agent</option>
                                                         {PSA_AGENTS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
                                                     </select>
                                                 </div>
                                             )}
+
+                                            {/* Status + Priority */}
                                             <div className="grid grid-cols-2 gap-2">
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</label>
-                                                    <select onChange={e => updateLead(l,'lead_status',e.target.value)} value={l.lead_status||''} className={`p-2.5 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`}>
+                                                <div>
+                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Status</label>
+                                                    <select onChange={e => updateLead(l,'lead_status',e.target.value)} value={l.lead_status||''} className={`w-full p-2.5 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`}>
                                                         {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">🔵 Un called</option>}
-                                                        <option value="Called">✅ Called</option><option value="RNR">🔔 RNR</option><option value="Details Shared">📤 Details</option><option value="SV Scheduled">📅 SV Sched.</option><option value="Converted">🏆 Converted</option><option value="Rejected">❌ Rejected</option>
+                                                        <option value="Called">✅ Called</option>
+                                                        <option value="RNR">🔔 RNR</option>
+                                                        <option value="Details Shared">📤 Details</option>
+                                                        <option value="SV Scheduled">📅 SV Sched.</option>
+                                                        <option value="Converted">🏆 Converted</option>
+                                                        <option value="Rejected">❌ Rejected</option>
                                                     </select>
                                                 </div>
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Priority</label>
-                                                    <select onChange={e => updateLead(l,'lead_priority',e.target.value)} value={l.lead_priority||'Warm'} className={`p-2.5 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getPriorityColor(l.lead_priority)}`}>
-                                                        <option value="Hot">🔥 Hot</option><option value="Warm">🌤 Warm</option><option value="Cold">❄️ Cold</option>
+                                                <div>
+                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Priority</label>
+                                                    <select onChange={e => updateLead(l,'lead_priority',e.target.value)} value={l.lead_priority||'Warm'} className={`w-full p-2.5 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getPriorityColor(l.lead_priority)}`}>
+                                                        <option value="Hot">🔥 Hot</option>
+                                                        <option value="Warm">🌤 Warm</option>
+                                                        <option value="Cold">❄️ Cold</option>
                                                     </select>
                                                 </div>
                                             </div>
+
+                                            {/* Reject reason */}
                                             {l.lead_status==='Rejected' && (
                                                 <select onChange={e => updateLead(l,'reject_reason',e.target.value)} value={l.reject_reason||''} className="w-full p-2.5 border-2 border-red-300 bg-red-50 text-red-800 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer">
                                                     <option value="" disabled>Select Reject Reason</option>
                                                     <option>Not Interested</option><option>No Response</option><option>Wrong Number</option><option>No Incoming Call</option>
                                                 </select>
                                             )}
+
+                                            {/* Scheduling */}
                                             {['Called','RNR','Details Shared'].includes(l.lead_status) && (
-                                                <div className="flex flex-col gap-1 mt-2">
-                                                    <label className="text-[8px] font-black text-blue-600 uppercase tracking-widest">📅 Callback Date</label>
-                                                    <input type="datetime-local" className="p-2.5 border-2 border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold outline-none focus:border-blue-400" value={l.follow_up_at?.slice(0,16)||''} onChange={e => updateLead(l,'follow_up_at',e.target.value)} />
+                                                <div>
+                                                    <label className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">📅 Callback Date/Time</label>
+                                                    <input type="datetime-local" className="w-full p-2.5 border-2 border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold outline-none focus:border-blue-400" value={l.follow_up_at?.slice(0,16)||''} onChange={e => updateLead(l,'follow_up_at',e.target.value)} />
                                                 </div>
                                             )}
                                             {l.lead_status==='SV Scheduled' && (
-                                                <div className="flex flex-col gap-1 mt-2">
-                                                    <label className="text-[8px] font-black text-teal-600 uppercase tracking-widest">📍 Site Visit Date</label>
-                                                    <input type="date" className="p-2.5 border-2 border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold outline-none focus:border-teal-400" value={l.site_visit_at||''} onChange={e => updateLead(l,'site_visit_at',e.target.value)} />
+                                                <div>
+                                                    <label className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">📍 Site Visit Date</label>
+                                                    <input type="date" className="w-full p-2.5 border-2 border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold outline-none focus:border-teal-400" value={l.site_visit_at||''} onChange={e => updateLead(l,'site_visit_at',e.target.value)} />
                                                 </div>
                                             )}
-                                            <div className="mt-3 pt-3 border-t border-slate-100">
-                                                <div className="bg-slate-900/5 p-2.5 rounded-xl h-14 overflow-y-auto text-[9px] font-medium whitespace-pre-wrap history-scroll border border-slate-200 leading-relaxed text-slate-500 mb-2">
-                                                    {l.call_remark || <span className="italic text-slate-400">System logs...</span>}
-                                                </div>
+
+                                            {/* Activity log + notes */}
+                                            <div>
+                                                {l.call_remark && (
+                                                    <div className="bg-slate-900/5 p-2.5 rounded-xl max-h-12 overflow-y-auto text-[9px] font-medium whitespace-pre-wrap history-scroll border border-slate-200 leading-relaxed text-slate-500 mb-2">
+                                                        {l.call_remark}
+                                                    </div>
+                                                )}
                                                 <NoteCell lead={l} onSave={updateLead} />
                                             </div>
+
+                                            {/* Admin delete */}
+                                            {isAdminUser && (
+                                                <button onClick={() => deleteLead(l)} className="w-full text-[8px] font-black py-2 rounded-xl uppercase tracking-widest border text-red-500 bg-red-50 border-red-200 hover:bg-red-100 transition">
+                                                    🗑 Remove Lead
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
