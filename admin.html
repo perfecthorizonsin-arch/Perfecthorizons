@@ -175,7 +175,7 @@ const AGENT_EMAIL_MAP = {
 
 const getAgentFromEmail = (email) => {
     if (!email) return '__UNKNOWN__';
-    if (email === ADMIN_EMAIL) return ADMIN_AGENT_NAME || 'Admin';
+    if (email === ADMIN_EMAIL) return '__ADMIN__';
     return AGENT_EMAIL_MAP[email] || '__UNKNOWN__';
 };
 const getAdminPersonaName = () => ADMIN_AGENT_NAME || 'Admin';
@@ -1266,28 +1266,6 @@ function ManualLeadForm({ supabase, properties, onSuccess, agentName }) {
 // ─── ADMIN OVERVIEW PANEL ──────────────────────────────────────────────────
 function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
     const [drillAgent,  setDrillAgent]  = useState(null); // agent being drilled into
-    const [adminNotes,  setAdminNotes]  = useState({});   // { agentName: noteText }
-    const [editingNote, setEditingNote] = useState(null); // which agent note is being edited
-    const [noteDraft,   setNoteDraft]   = useState('');
-    const [savingNote,  setSavingNote]  = useState(false);
-
-    // Load admin notes from Supabase (stored in a simple key-value table or leads meta)
-    // We use localStorage as a simple store for admin notes (no extra table needed)
-    useEffect(() => {
-        try {
-            const stored = localStorage.getItem('__crm_admin_notes');
-            if (stored) setAdminNotes(JSON.parse(stored));
-        } catch(e) {}
-    }, []);
-
-    const saveNote = (agentName, text) => {
-        setSavingNote(true);
-        const updated = { ...adminNotes, [agentName]: text };
-        setAdminNotes(updated);
-        localStorage.setItem('__crm_admin_notes', JSON.stringify(updated));
-        setSavingNote(false);
-        setEditingNote(null);
-    };
 
     const allCombined = useMemo(() => [
         ...allLeads.map(l => ({ ...l, _type:'Website' })),
@@ -1665,35 +1643,50 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
     );
 }
 
-// ─── ADMIN NOTES PANEL (shown to agents, written by admin) ────────────────
-// Admin writes notes per-agent in the Admin Overview page.
-// Agents see them as a read-only banner above their leads.
+// ─── ADMIN NOTES — Supabase-backed (not localStorage) ─────────────────────
+// Requires this table in Supabase:
+//   CREATE TABLE IF NOT EXISTS admin_notes (
+//     id SERIAL PRIMARY KEY,
+//     agent_name TEXT UNIQUE NOT NULL,
+//     note TEXT DEFAULT '',
+//     updated_at TIMESTAMPTZ DEFAULT now()
+//   );
+// Enable RLS but allow anon read/write, or use service role.
+// Simplest: in Supabase → Table Editor → admin_notes → RLS → Disable RLS for now.
+
+async function fetchAdminNote(agentName) {
+    const { data } = await supabase
+        .from('admin_notes')
+        .select('note')
+        .eq('agent_name', agentName)
+        .single();
+    return data?.note || '';
+}
+
+async function saveAdminNote(agentName, note) {
+    await supabase
+        .from('admin_notes')
+        .upsert({ agent_name: agentName, note, updated_at: new Date().toISOString() },
+                 { onConflict: 'agent_name' });
+}
+
+// Banner shown to PSA agents — reads from Supabase
 function AdminNotesBanner({ agentName }) {
-    const [note, setNote] = useState('');
+    const [note,    setNote]    = useState('');
     const [visible, setVisible] = useState(true);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem('__crm_admin_notes');
-            if (stored) {
-                const notes = JSON.parse(stored);
-                setNote(notes[agentName] || '');
-            }
-        } catch(e) {}
-        // Poll every 30s in case admin updates while agent is logged in
+        setLoading(true);
+        fetchAdminNote(agentName).then(n => { setNote(n); setLoading(false); });
+        // Refresh every 60s so agent sees updates without reload
         const poll = setInterval(() => {
-            try {
-                const stored = localStorage.getItem('__crm_admin_notes');
-                if (stored) {
-                    const notes = JSON.parse(stored);
-                    setNote(notes[agentName] || '');
-                }
-            } catch(e) {}
-        }, 30000);
+            fetchAdminNote(agentName).then(n => setNote(n));
+        }, 60000);
         return () => clearInterval(poll);
     }, [agentName]);
 
-    if (!note || !note.trim() || !visible) return null;
+    if (loading || !note || !note.trim() || !visible) return null;
 
     return (
         <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 relative animate-fadeIn">
@@ -1701,7 +1694,7 @@ function AdminNotesBanner({ agentName }) {
             <div className="flex items-start gap-3">
                 <span className="text-2xl shrink-0">📋</span>
                 <div className="flex-1 min-w-0 pr-4">
-                    <div className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-1">Notes from Admin</div>
+                    <div className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-1">📣 Notes from Admin</div>
                     <p className="text-sm font-semibold text-amber-900 whitespace-pre-wrap leading-relaxed">{note}</p>
                 </div>
             </div>
@@ -1709,57 +1702,68 @@ function AdminNotesBanner({ agentName }) {
     );
 }
 
-// ─── ADMIN NOTE EDITOR (shown in Admin Overview per agent) ─────────────────
+// Editor shown to admin in the agent drill-down — saves to Supabase
 function AdminNoteEditor({ agentName }) {
     const [note,    setNote]    = useState('');
     const [editing, setEditing] = useState(false);
     const [draft,   setDraft]   = useState('');
+    const [saving,  setSaving]  = useState(false);
     const [saved,   setSaved]   = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem('__crm_admin_notes');
-            if (stored) {
-                const notes = JSON.parse(stored);
-                setNote(notes[agentName] || '');
-            }
-        } catch(e) {}
+        setLoading(true);
+        fetchAdminNote(agentName).then(n => { setNote(n); setLoading(false); });
     }, [agentName]);
 
-    const save = () => {
-        try {
-            const stored = localStorage.getItem('__crm_admin_notes');
-            const notes = stored ? JSON.parse(stored) : {};
-            notes[agentName] = draft;
-            localStorage.setItem('__crm_admin_notes', JSON.stringify(notes));
-            setNote(draft);
-            setEditing(false);
-            setSaved(true);
-            setTimeout(() => setSaved(false), 2500);
-        } catch(e) {}
+    const save = async () => {
+        setSaving(true);
+        await saveAdminNote(agentName, draft);
+        setNote(draft);
+        setSaving(false);
+        setEditing(false);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
     };
+
+    if (loading) return (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-[9px] text-amber-600 font-bold animate-pulse">
+            Loading note...
+        </div>
+    );
 
     if (editing) {
         return (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-2">
-                <div className="text-[9px] font-black uppercase tracking-widest text-amber-600">📋 Note for {agentName}</div>
-                <textarea rows={3} value={draft} onChange={e => setDraft(e.target.value)} placeholder={`Write instructions for ${agentName}...`}
+            <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 space-y-2">
+                <div className="text-[9px] font-black uppercase tracking-widest text-amber-700">📋 Note for {agentName} — visible to them on their CRM</div>
+                <textarea rows={4} value={draft} onChange={e => setDraft(e.target.value)}
+                    placeholder={"e.g. Focus on Prestige leads this week. Call back pending leads from last week."}
                     className="w-full p-3 border-2 border-amber-300 rounded-xl text-sm font-semibold outline-none resize-none bg-white focus:ring-2 focus:ring-amber-400" />
                 <div className="flex gap-2">
-                    <button onClick={save} className="bg-amber-500 hover:bg-amber-600 text-white text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest transition">Save Note</button>
-                    <button onClick={() => setEditing(false)} className="bg-slate-100 text-slate-600 text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest hover:bg-slate-200 transition">Cancel</button>
+                    <button onClick={save} disabled={saving}
+                        className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-[9px] font-black px-4 py-2 rounded-lg uppercase tracking-widest transition flex items-center gap-1">
+                        {saving ? '⏳ Saving...' : '✅ Save to Supabase'}
+                    </button>
+                    <button onClick={() => setEditing(false)}
+                        className="bg-slate-100 text-slate-600 text-[9px] font-black px-3 py-2 rounded-lg uppercase tracking-widest hover:bg-slate-200 transition">Cancel</button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 flex items-start justify-between gap-2 cursor-pointer hover:bg-amber-100 transition" onClick={() => { setDraft(note); setEditing(true); }}>
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 flex items-start justify-between gap-2 cursor-pointer hover:bg-amber-100 transition"
+            onClick={() => { setDraft(note); setEditing(true); }}>
             <div className="flex items-start gap-2 flex-1 min-w-0">
-                <span className="text-lg shrink-0">📋</span>
-                <div>
-                    <div className="text-[8px] font-black uppercase tracking-widest text-amber-600 mb-0.5">Admin Note for {agentName} {saved && <span className="text-green-600">· Saved ✓</span>}</div>
-                    <p className="text-[10px] font-semibold text-amber-800 truncate">{note || `Click to write instructions for ${agentName}...`}</p>
+                <span className="text-xl shrink-0">📋</span>
+                <div className="min-w-0">
+                    <div className="text-[8px] font-black uppercase tracking-widest text-amber-600 mb-0.5 flex items-center gap-2">
+                        Admin Note for {agentName}
+                        {saved && <span className="text-green-600">· Saved to Supabase ✓</span>}
+                    </div>
+                    <p className="text-[10px] font-semibold text-amber-800 line-clamp-2">
+                        {note || 'Click to write instructions for ' + agentName + '...'}
+                    </p>
                 </div>
             </div>
             <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest shrink-0 bg-white border border-amber-200 px-2 py-1 rounded-lg">✏️ Edit</span>
@@ -1897,22 +1901,25 @@ function AdminApp() {
     const [scheduleFilter, setScheduleFilter] = useState('ALL');
     const [priorityFilter, setPriorityFilter] = useState('ALL');
 
-    // ── Derive current user's roles (Dual-Role Support) ──
-    const userEmail    = session?.user?.email || '';
-    const isAdminUser  = userEmail === ADMIN_EMAIL;
-    // If admin, use the admin persona name. Otherwise, look them up in the map.
-    const agentName    = isAdminUser ? ADMIN_AGENT_NAME : (AGENT_EMAIL_MAP[userEmail] || '__UNKNOWN__');
-    const isKnownAgent = agentName && agentName !== '__UNKNOWN__';
+    // Derive current user's agent name
+    const userEmail   = session?.user?.email || '';
+    const agentName   = getAgentFromEmail(userEmail);
+    const isAdminUser = agentName === '__ADMIN__';
+    const isKnownAgent = agentName && agentName !== '__ADMIN__' && agentName !== '__UNKNOWN__';
 
-    // ── Set summary filter once session & agent identity is known ───────────
+    // ── Set summary filter as soon as we know who is logged in ─────────────
     useEffect(() => {
-        if (!session || !agentName) return;
-        if (isAdminUser) {
+        if (!session) return;
+        const email = session.user?.email || '';
+        if (email === ADMIN_EMAIL) {
+            // Admin: default to their dual-role agent name (Tharun) or All
             setSummaryAgent(ADMIN_AGENT_NAME || 'All');
-        } else if (isKnownAgent) {
-            setSummaryAgent(agentName);
+        } else {
+            // PSA agent: default to their own name
+            const name = AGENT_EMAIL_MAP[email];
+            if (name) setSummaryAgent(name);
         }
-    }, [agentName, isAdminUser, session]);
+    }, [session]); // re-runs when session changes
 
     useEffect(() => {
         const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
@@ -1969,49 +1976,40 @@ function AdminApp() {
                 alert('Session expired after 3 hours. Please log in again.');
             }, remaining);
         }
-    }, [supabase.auth]);
+    }, []);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setAuthChecking(false);
             if (window.__dismissSplash) window.__dismissSplash();
-            
-            // 👇 FIX: Start or resume timer on page load if a session already exists
             if (session) {
+                // Already logged in on page load — stamp now if no existing stamp
+                // This handles: user opens new version of app while already logged in
                 if (!localStorage.getItem('__crm_login_time')) {
                     localStorage.setItem('__crm_login_time', String(Date.now()));
                 }
                 rescheduleFromStored();
             }
         });
-
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
             setSession(s);
-            if (event === 'SIGNED_IN') {
-                // 👇 FIX: Fresh login — stamp the exact time
-                if (!localStorage.getItem('__crm_login_time')) {
-                    localStorage.setItem('__crm_login_time', String(Date.now()));
-                }
-                rescheduleFromStored();
-            } else if (event === 'INITIAL_SESSION') {
-                // 👇 FIX: Catch existing sessions on reload
+            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                // Both fresh login and page reload — stamp if not already stamped
                 if (s && !localStorage.getItem('__crm_login_time')) {
                     localStorage.setItem('__crm_login_time', String(Date.now()));
                 }
                 if (s) rescheduleFromStored();
             } else if (event === 'SIGNED_OUT') {
-                // Clear everything when logging out
                 if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
                 localStorage.removeItem('__crm_login_time');
             }
         });
-        
         return () => {
             subscription.unsubscribe();
             if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
         };
-    }, [rescheduleFromStored, supabase.auth]);
+    }, [rescheduleFromStored]);
 
     useEffect(() => {
         if (!session) return;
@@ -2652,4 +2650,3 @@ setTimeout(function(){ if (window.__dismissSplash) window.__dismissSplash(); }, 
 </script>
 </body>
 </html>
- 
