@@ -1050,14 +1050,13 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                 disabled={isUploading}
                 style={{display:'none'}}
             />
-            <button
-                type="button"
-                disabled={isUploading}
-                onClick={() => document.getElementById(`file-input-${field}`).click()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl cursor-pointer transition"
-            >
-                {isUploading ? `⬆️ Uploading ${progress||''}...` : `📁 Choose ${multi ? 'Files' : 'File'}`}
-            </button>
+            <div
+    onClick={() => !isUploading && document.getElementById(`file-input-${field}`).click()}
+    className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl cursor-pointer transition inline-block"
+    style={{opacity: isUploading ? 0.5 : 1}}
+>
+    {isUploading ? `⬆️ Uploading ${progress||''}...` : `📁 Choose ${multi ? 'Files' : 'File'}`}
+</div>
             {urls.length > 0 && (
                 <div className="mt-2 space-y-1">
                     {multi
