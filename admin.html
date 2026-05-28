@@ -889,24 +889,7 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
 
 // ─── PROJECT LIBRARY ───────────────────────────────────────────────────────
 function ProjectLibrary({ properties, setProp, supabase, setProperties, onEdit }) {
-    const [search,    setSearch]    = useState('');
-    const [ordered,   setOrdered]   = useState([]);
-    const [reordering,setReordering]= useState(false);
-    const [dragIdx,   setDragIdx]   = useState(null);
-    const [saving,    setSaving]    = useState(false);
-    const [saveMsg,   setSaveMsg]   = useState('');
-
-    // Build ordered list from properties, sorted by display_order then created_at
-    useEffect(() => {
-        if (!properties || properties.length === 0) { setOrdered([]); return; }
-        const sorted = [...properties].sort((a, b) => {
-            const aOrder = a.display_order ?? 9999;
-            const bOrder = b.display_order ?? 9999;
-            if (aOrder !== bOrder) return aOrder - bOrder;
-            return new Date(a.created_at) - new Date(b.created_at);
-        });
-        setOrdered(sorted);
-    }, [properties]);
+    const [search, setSearch] = useState('');
 
     const toggleLive = async (e, p) => {
         e.stopPropagation();
@@ -915,196 +898,54 @@ function ProjectLibrary({ properties, setProp, supabase, setProperties, onEdit }
         if (setProperties) setProperties(prev => prev.map(item => item.id === p.id ? { ...item, is_live:next } : item));
         const { error } = await supabase.from('properties').update({ is_live:next }).eq('id', p.id);
         if (error) {
-            alert('DB Error: ' + error.message);
+            alert(`DB Error: ${error.message}`);
             if (setProperties) setProperties(prev => prev.map(item => item.id === p.id ? { ...item, is_live:current } : item));
         }
-    };
-
-    // Move a card up or down in the order list
-    const moveCard = (idx, dir) => {
-        const newOrder = [...ordered];
-        const swapIdx  = idx + dir;
-        if (swapIdx < 0 || swapIdx >= newOrder.length) return;
-        [newOrder[idx], newOrder[swapIdx]] = [newOrder[swapIdx], newOrder[idx]];
-        setOrdered(newOrder);
-    };
-
-    // Drag handlers
-    const onDragStart = (e, idx) => {
-        setDragIdx(idx);
-        e.dataTransfer.effectAllowed = 'move';
-    };
-    const onDragOver = (e, idx) => {
-        e.preventDefault();
-        if (dragIdx === null || dragIdx === idx) return;
-        const newOrder = [...ordered];
-        const dragged  = newOrder.splice(dragIdx, 1)[0];
-        newOrder.splice(idx, 0, dragged);
-        setOrdered(newOrder);
-        setDragIdx(idx);
-    };
-    const onDragEnd = () => setDragIdx(null);
-
-    // Save the order to Supabase
-    const saveOrder = async () => {
-        setSaving(true);
-        setSaveMsg('');
-        const updates = ordered.map((p, i) =>
-            supabase.from('properties').update({ display_order: i + 1 }).eq('id', p.id)
-        );
-        await Promise.all(updates);
-        // Update local state
-        if (setProperties) {
-            setProperties(prev => {
-                const orderMap = {};
-                ordered.forEach((p, i) => { orderMap[p.id] = i + 1; });
-                return prev.map(p => ({ ...p, display_order: orderMap[p.id] ?? p.display_order }));
-            });
-        }
-        setSaving(false);
-        setSaveMsg('✅ Order saved! Website will reflect this order.');
-        setTimeout(() => setSaveMsg(''), 4000);
     };
 
     if (!properties || properties.length === 0) return (
         <div className="text-center py-20 font-black text-slate-400 tracking-widest uppercase animate-pulse">Library Empty...</div>
     );
 
-    const filtered = reordering
-        ? ordered
-        : ordered.filter(p => {
-            if (!search) return true;
-            const t = search.toLowerCase();
-            return (getVal(p,'property_name')||'').toLowerCase().includes(t) ||
-                   (getVal(p,'location')||'').toLowerCase().includes(t);
-        });
+    const filtered = properties.filter(p => {
+        if (!search) return true;
+        const t = search.toLowerCase();
+        return (getVal(p,'property_name')||'').toLowerCase().includes(t) || (getVal(p,'location')||'').toLowerCase().includes(t);
+    });
 
     return (
         <div className="space-y-4 animate-fadeIn">
-            {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-                {!reordering && (
-                    <div className="relative flex-1 w-full">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">🔍</span>
-                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search property or location…"
-                            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" />
-                    </div>
-                )}
-                <div className="flex gap-2 shrink-0">
-                    {reordering ? (
-                        <>
-                            <button onClick={saveOrder} disabled={saving}
-                                className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-black px-5 py-2.5 rounded-2xl text-[10px] uppercase tracking-widest transition shadow-md flex items-center gap-2">
-                                {saving ? '⏳ Saving...' : '✅ Save Order'}
-                            </button>
-                            <button onClick={() => { setReordering(false); setSaveMsg(''); }}
-                                className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-black px-5 py-2.5 rounded-2xl text-[10px] uppercase tracking-widest transition">
-                                Cancel
-                            </button>
-                        </>
-                    ) : (
-                        <button onClick={() => setReordering(true)}
-                            className="bg-slate-900 hover:bg-blue-600 text-white font-black px-5 py-2.5 rounded-2xl text-[10px] uppercase tracking-widest transition shadow-md flex items-center gap-2">
-                            ↕ Reorder
-                        </button>
-                    )}
-                </div>
+            <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">🔍</span>
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search property or location…"
+                    className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" />
             </div>
-
-            {/* Status messages */}
-            {reordering && (
-                <div className="bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 flex items-center gap-3">
-                    <span className="text-lg">↕️</span>
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">Reorder Mode Active</p>
-                        <p className="text-[9px] text-blue-600 font-semibold mt-0.5">Drag cards · or use ▲ ▼ buttons · then click Save Order</p>
-                    </div>
-                </div>
-            )}
-            {saveMsg && (
-                <div className="bg-green-50 border border-green-300 rounded-2xl px-4 py-3 text-[10px] font-black text-green-700 uppercase tracking-widest">
-                    {saveMsg}
-                </div>
-            )}
-
-            {/* Cards grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filtered.map((p, idx) => (
-                    <div key={p.id}
-                        draggable={reordering}
-                        onDragStart={reordering ? e => onDragStart(e, idx) : undefined}
-                        onDragOver={reordering  ? e => onDragOver(e, idx)  : undefined}
-                        onDragEnd={reordering   ? onDragEnd                : undefined}
-                        onClick={() => !reordering && setProp(p)}
-                        className={`bg-white rounded-2xl shadow-sm border-2 overflow-hidden flex flex-col relative transition-all
-                            ${reordering
-                                ? 'cursor-grab border-blue-300 shadow-md hover:shadow-lg hover:border-blue-500 active:cursor-grabbing'
-                                : 'border-slate-200 cursor-pointer hover:shadow-lg hover:-translate-y-1'
-                            }
-                            ${dragIdx === idx ? 'opacity-50 scale-95' : ''}
-                        `}
-                    >
-                        {/* Order badge */}
-                        <div className={`absolute top-0 left-0 z-20 text-[9px] font-black px-2.5 py-1.5 rounded-br-xl
-                            ${reordering ? 'bg-blue-600 text-white' : 'bg-slate-900/80 text-white'}`}>
-                            #{idx + 1}
-                        </div>
-
-                        {/* Reorder controls */}
-                        {reordering && (
-                            <div className="absolute top-2 right-2 z-20 flex flex-col gap-1">
-                                <button onClick={e => { e.stopPropagation(); moveCard(idx, -1); }} disabled={idx === 0}
-                                    className="w-7 h-7 bg-white border-2 border-blue-300 rounded-lg flex items-center justify-center text-blue-600 font-black text-sm hover:bg-blue-50 disabled:opacity-30 disabled:cursor-not-allowed transition shadow-sm">
-                                    ▲
-                                </button>
-                                <button onClick={e => { e.stopPropagation(); moveCard(idx, 1); }} disabled={idx === filtered.length - 1}
-                                    className="w-7 h-7 bg-white border-2 border-blue-300 rounded-lg flex items-center justify-center text-blue-600 font-black text-sm hover:bg-blue-50 disabled:opacity-30 disabled:cursor-not-allowed transition shadow-sm">
-                                    ▼
-                                </button>
-                            </div>
-                        )}
-
-                        <div className="relative h-48 bg-slate-100 overflow-hidden group">
-                            <img src={getDisplayUrl(getVal(p,'cover_image') || getVal(p,'cover-image'))}
-                                className={`w-full h-full object-cover transition duration-500 ${!reordering ? 'group-hover:scale-105' : ''}`} alt="" />
-                            <div className="absolute bottom-3 left-3 bg-slate-900/90 text-white text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-md">
+                {filtered.map(p => (
+                    <div key={p.id} onClick={() => setProp(p)} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition group flex flex-col relative">
+                        <div className="relative h-48 bg-slate-100 overflow-hidden">
+                            <img src={getDisplayUrl(getVal(p,'cover_image') || getVal(p,'cover-image'))} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="" />
+                            <div className="absolute top-3 left-0 bg-slate-900/90 text-white text-[10px] font-black px-3 py-1.5 rounded-r-lg uppercase tracking-widest shadow-md">
                                 {getVal(p,'property_type') || 'Property'}
                             </div>
-                            {!reordering && (
-                                <>
-                                    <button onClick={e => toggleLive(e, p)}
-                                        className={`absolute top-3 right-0 text-[10px] font-black px-3 py-1.5 rounded-l-lg uppercase tracking-widest shadow-md transition z-10
-                                            ${p.is_live !== false ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-red-500 text-white hover:bg-red-600'}`}>
-                                        {p.is_live !== false ? '🟢 Live' : '🔴 Off'}
-                                    </button>
-                                    <button onClick={e => { e.stopPropagation(); onEdit(p); }}
-                                        className="absolute top-10 right-0 text-[10px] font-black px-3 py-1.5 rounded-l-lg uppercase tracking-widest shadow-md transition z-10 bg-blue-500 text-white hover:bg-blue-600 mt-1">
-                                        ✏️ Edit
-                                    </button>
-                                </>
-                            )}
+                            <button onClick={e => toggleLive(e, p)}
+                                className={`absolute top-3 right-0 text-[10px] font-black px-3 py-1.5 rounded-l-lg uppercase tracking-widest shadow-md transition z-10 ${p.is_live !== false ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-red-500 text-white hover:bg-red-600'}`}>
+                                {p.is_live !== false ? '🟢 Live' : '🔴 Hidden'}
+                            </button>
+                            <button onClick={e => { e.stopPropagation(); onEdit(p); }}
+                                className="absolute top-10 right-0 text-[10px] font-black px-3 py-1.5 rounded-l-lg uppercase tracking-widest shadow-md transition z-10 bg-blue-500 text-white hover:bg-blue-600 mt-1">
+                                ✏️ Edit
+                            </button>
                         </div>
-
                         <div className="p-5 flex-grow flex flex-col">
-                            <h3 className="text-lg font-black uppercase tracking-tighter text-slate-900 leading-tight truncate">
-                                {getVal(p,'property_name')}
-                            </h3>
+                            <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 leading-tight truncate">{getVal(p,'property_name')}</h3>
                             <p className="text-slate-500 text-xs font-bold mt-1 truncate">📍 {getVal(p,'location')}</p>
                             <div className="mt-4 flex justify-between items-end pt-4 border-t border-slate-100">
                                 <div>
                                     <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Starting Price</div>
-                                    <div className="text-base font-black text-blue-900">{getVal(p,'price')}</div>
+                                    <div className="text-lg font-black text-blue-900">{getVal(p,'price')}</div>
                                 </div>
-                                {!reordering && (
-                                    <button className="bg-slate-900 text-white text-[10px] font-bold px-4 py-2 rounded-lg hover:bg-blue-600 transition">
-                                        Preview
-                                    </button>
-                                )}
-                                {reordering && (
-                                    <div className="text-[8px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 px-2 py-1 rounded-lg">
-                                        Drag to reorder
-                                    </div>
-                                )}
+                                <button className="bg-slate-900 text-white text-[10px] font-bold px-4 py-2 rounded-lg hover:bg-blue-600 transition">Preview</button>
                             </div>
                         </div>
                     </div>
@@ -2014,206 +1855,6 @@ function AdminNoteEditor({ agentName }) {
     );
 }
 
-// ─── AGENT MESSAGE BOX (agents send messages to admin) ────────────────────
-function AgentMessageBox({ agentName }) {
-    const [msg,       setMsg]       = useState('');
-    const [sending,   setSending]   = useState(false);
-    const [sent,      setSent]      = useState(false);
-    const [history,   setHistory]   = useState([]);
-    const [loadingH,  setLoadingH]  = useState(true);
-
-    // Load this agent's sent messages
-    useEffect(() => {
-        setLoadingH(true);
-        supabase
-            .from('agent_messages')
-            .select('*')
-            .eq('agent_name', agentName)
-            .order('created_at', { ascending: false })
-            .limit(10)
-            .then(({ data }) => {
-                setHistory(data || []);
-                setLoadingH(false);
-            });
-    }, [agentName, sent]);
-
-    const send = async () => {
-        if (!msg.trim()) return;
-        setSending(true);
-        const { error } = await supabase
-            .from('agent_messages')
-            .insert({ agent_name: agentName, message: msg.trim() });
-        setSending(false);
-        if (!error) {
-            setMsg('');
-            setSent(v => !v); // toggle to trigger history reload
-        } else {
-            alert('Failed to send: ' + error.message);
-        }
-    };
-
-    const handleKey = (e) => {
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) send();
-    };
-
-    return (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="bg-slate-900 px-4 py-3 flex items-center justify-between">
-                <div>
-                    <h3 className="text-sm font-black uppercase tracking-tight text-white">💬 Message Admin</h3>
-                    <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Send a note to Tharun</p>
-                </div>
-            </div>
-            <div className="p-4 space-y-3">
-                <textarea
-                    rows={3}
-                    value={msg}
-                    onChange={e => setMsg(e.target.value)}
-                    onKeyDown={handleKey}
-                    placeholder={"Type your message to admin...
-(Ctrl+Enter to send)"}
-                    className="w-full p-3 border-2 border-slate-200 rounded-xl text-sm font-semibold outline-none resize-none focus:ring-2 focus:ring-blue-400 focus:border-blue-300 transition"
-                />
-                <button
-                    onClick={send}
-                    disabled={sending || !msg.trim()}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-black py-3 rounded-xl text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2"
-                >
-                    {sending ? <><span className="animate-spin">⏳</span> Sending...</> : '📤 Send to Admin'}
-                </button>
-
-                {/* Sent history */}
-                {history.length > 0 && (
-                    <div className="pt-3 border-t border-slate-100">
-                        <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-2">Your Recent Messages</div>
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
-                            {history.map((m, i) => (
-                                <div key={i} className={`p-2.5 rounded-xl text-[10px] font-medium border ${m.is_read ? 'bg-green-50 border-green-200 text-green-800' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
-                                    <div className="flex justify-between items-start gap-2">
-                                        <p className="flex-1">{m.message}</p>
-                                        <span className={`text-[7px] font-black uppercase tracking-widest shrink-0 px-1.5 py-0.5 rounded ${m.is_read ? 'bg-green-200 text-green-700' : 'bg-blue-200 text-blue-700'}`}>
-                                            {m.is_read ? '✓ Read' : 'Sent'}
-                                        </span>
-                                    </div>
-                                    <p className="text-[8px] text-slate-400 mt-1">{formatDateTime(m.created_at)}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
-
-// ─── ADMIN INBOX (admin reads messages from all agents) ────────────────────
-function AdminInbox() {
-    const [messages,  setMessages]  = useState([]);
-    const [loading,   setLoading]   = useState(true);
-    const [unread,    setUnread]    = useState(0);
-
-    const load = async () => {
-        setLoading(true);
-        const { data } = await supabase
-            .from('agent_messages')
-            .select('*')
-            .order('created_at', { ascending: false });
-        const msgs = data || [];
-        setMessages(msgs);
-        setUnread(msgs.filter(m => !m.is_read).length);
-        setLoading(false);
-    };
-
-    useEffect(() => {
-        load();
-        // Real-time subscription for new messages
-        const channel = supabase
-            .channel('agent_messages_changes')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'agent_messages' },
-                () => load())
-            .subscribe();
-        return () => supabase.removeChannel(channel);
-    }, []);
-
-    const markRead = async (id) => {
-        await supabase.from('agent_messages').update({ is_read: true }).eq('id', id);
-        setMessages(prev => prev.map(m => m.id === id ? { ...m, is_read: true } : m));
-        setUnread(prev => Math.max(0, prev - 1));
-    };
-
-    const markAllRead = async () => {
-        await supabase.from('agent_messages').update({ is_read: true }).eq('is_read', false);
-        setMessages(prev => prev.map(m => ({ ...m, is_read: true })));
-        setUnread(0);
-    };
-
-    const deleteMsg = async (id) => {
-        await supabase.from('agent_messages').delete().eq('id', id);
-        setMessages(prev => prev.filter(m => m.id !== id));
-    };
-
-    return (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="bg-slate-900 px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <h3 className="text-sm font-black uppercase tracking-tight text-white">📬 Agent Inbox</h3>
-                    {unread > 0 && (
-                        <span className="bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full">
-                            {unread} new
-                        </span>
-                    )}
-                </div>
-                <div className="flex items-center gap-2">
-                    <button onClick={load} className="text-[8px] font-black text-slate-400 hover:text-white uppercase tracking-widest transition">↺ Refresh</button>
-                    {unread > 0 && (
-                        <button onClick={markAllRead} className="text-[8px] font-black text-green-400 hover:text-green-300 uppercase tracking-widest transition">✓ Mark All Read</button>
-                    )}
-                </div>
-            </div>
-            <div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
-                {loading ? (
-                    <div className="p-6 text-center text-slate-400 text-sm animate-pulse font-bold">Loading messages...</div>
-                ) : messages.length === 0 ? (
-                    <div className="p-8 text-center">
-                        <div className="text-3xl mb-2">📭</div>
-                        <p className="text-slate-400 text-sm font-bold">No messages yet</p>
-                    </div>
-                ) : messages.map((m, i) => (
-                    <div key={i} className={`p-4 hover:bg-slate-50 transition ${!m.is_read ? 'bg-blue-50/50' : ''}`}>
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3 flex-1 min-w-0">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-sm shrink-0 ${!m.is_read ? 'bg-blue-600' : 'bg-slate-400'}`}>
-                                    {(m.agent_name || '?')[0]}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                                        <span className="text-[10px] font-black text-slate-900 uppercase">{m.agent_name}</span>
-                                        {!m.is_read && <span className="text-[7px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded uppercase tracking-widest">New</span>}
-                                        <span className="text-[8px] text-slate-400 font-bold">{formatDateTime(m.created_at)}</span>
-                                    </div>
-                                    <p className="text-sm text-slate-700 font-medium leading-relaxed whitespace-pre-wrap">{m.message}</p>
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-1 shrink-0">
-                                {!m.is_read && (
-                                    <button onClick={() => markRead(m.id)}
-                                        className="text-[7px] font-black text-green-600 bg-green-50 border border-green-200 px-2 py-1 rounded-lg uppercase tracking-widest hover:bg-green-100 transition">
-                                        ✓ Read
-                                    </button>
-                                )}
-                                <button onClick={() => deleteMsg(m.id)}
-                                    className="text-[7px] font-black text-red-500 bg-red-50 border border-red-200 px-2 py-1 rounded-lg uppercase tracking-widest hover:bg-red-100 transition">
-                                    🗑 Del
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
 // ─── LOGIN ─────────────────────────────────────────────────────────────────
 function LoginForm({ supabase }) {
     const [email,   setEmail]   = useState("");
@@ -2341,7 +1982,6 @@ function AdminApp() {
     }, []); // [] = start once, never reset
     const [leadBucket,     setLeadBucket]     = useState('new');
     const [showBulkUpload, setShowBulkUpload] = useState(false);  // CSV uploader panel
-    const [showMsgModal,   setShowMsgModal]   = useState(false);  // agent message modal
     const [scheduleFilter, setScheduleFilter] = useState('ALL');
     const [priorityFilter, setPriorityFilter] = useState('ALL');
 
@@ -2681,14 +2321,6 @@ function AdminApp() {
                     ))}
                     {deferredPrompt && (
                         <button onClick={handleInstallClick} className="hidden md:flex items-center gap-1 ml-1 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-md">⬇ Install</button>
-                    )}
-                    {/* Message Admin button — PSA agents only */}
-                    {!isAdminUser && agentName && agentName !== '__UNKNOWN__' && agentName !== '__ADMIN__' && (
-                        <button onClick={() => setShowMsgModal(true)}
-                            className="relative ml-1 text-[9px] font-black uppercase tracking-widest text-green-400 border border-green-900/60 px-2 md:px-3 py-1.5 md:py-2 rounded-xl hover:bg-green-900/40 transition flex items-center gap-1">
-                            💬
-                            <span className="hidden md:inline">Message</span>
-                        </button>
                     )}
                     <button onClick={() => supabase.auth.signOut()} className="ml-1 md:ml-3 text-[9px] font-black uppercase tracking-widest text-red-400 border border-red-900/60 px-2 md:px-3 py-1.5 md:py-2 rounded-xl hover:bg-red-900/40 transition">
                         <span className="hidden md:inline">Logout</span><span className="md:hidden">Out</span>
@@ -3069,42 +2701,12 @@ function AdminApp() {
                     </div>
                 )}
 
-                {/* AdminInbox — shown in Admin Overview tab */}
-                {view === 'admin' && isAdminUser && (
-                    <div className="mt-6">
-                        <AdminInbox />
-                    </div>
-                )}
-
                 {view === 'library' && (
                     <ProjectLibrary supabase={supabase} setProp={setSelectedProp} properties={properties} setProperties={setProperties} onEdit={p => { setEditingProp(p); handleNavigate('add'); }} />
                 )}
 
                 {view === 'add' && <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} editingProp={editingProp} setView={handleNavigate} />}
             </main>
-
-            {/* Agent Message Modal — floating sheet for PSA agents */}
-            {showMsgModal && !isAdminUser && agentName && agentName !== '__UNKNOWN__' && (
-                <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[150] flex items-end md:items-center justify-center p-0 md:p-4 animate-fadeIn"
-                    onClick={e => e.target === e.currentTarget && setShowMsgModal(false)}>
-                    <div className="bg-white rounded-t-[32px] md:rounded-[28px] w-full max-w-md shadow-2xl animate-slideUp overflow-hidden">
-                        <div className="px-6 pt-5 pb-4 border-b border-slate-100">
-                            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4 md:hidden"></div>
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">💬 Message Admin</h2>
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Send a note to Tharun</p>
-                                </div>
-                                <button onClick={() => setShowMsgModal(false)}
-                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-black text-sm">✕</button>
-                            </div>
-                        </div>
-                        <div className="px-6 py-5 max-h-[75vh] overflow-y-auto">
-                            <AgentMessageBox agentName={agentName} />
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Manual Lead Modal */}
             {showManualModal && (
