@@ -2332,8 +2332,11 @@ function AdminApp() {
 
                 {/* ── ADMIN OVERVIEW ── */}
                 {view === 'admin' && isAdminUser && (
-                    <AdminOverview allLeads={allLeadsAdmin} allBulkLeads={allBulkAdmin} allManualLeads={allManualAdmin} />
-                )}
+    <>
+        <AdminOverview allLeads={allLeadsAdmin} allBulkLeads={allBulkAdmin} allManualLeads={allManualAdmin} />
+        <AdminInbox />
+    </>
+)}
 
                 {/* ── DASHBOARD ── */}
                 {view === 'dashboard' && (
@@ -2417,6 +2420,10 @@ function AdminApp() {
                         {!isAdminUser && agentName && agentName !== '__UNKNOWN__' && agentName !== '__ADMIN__' && (
                             <AdminNotesBanner agentName={agentName} />
                         )}
+                        {/* Agent Message Box — agents send notes to admin */}
+{!isAdminUser && agentName && agentName !== '__UNKNOWN__' && agentName !== '__ADMIN__' && (
+    <AgentMessageBox agentName={agentName} />
+)}
 
                         {/* Bucket tabs */}
                         <div className="flex gap-2 overflow-x-auto hide-scroll pb-1">
