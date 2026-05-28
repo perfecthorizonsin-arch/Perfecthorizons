@@ -699,18 +699,7 @@
                         {/* ── FULL-WIDTH: LOCATION ── */}
                         <div className="detail-section mt-6">
                             <div className="detail-section-title"><span style={{fontSize:16}}>📍</span> Location</div>
-                            <div className="flex items-center gap-3 mb-5 p-4" style={{background:'var(--parchment)',borderRadius:'12px',border:'1px solid var(--border)'}}>
-                                <span style={{fontSize:'1.5rem'}}>📍</span>
-                                <div>
-                                    <div style={{fontSize:'0.55rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.2em',color:'var(--slate-soft)',marginBottom:'3px'}}>Project Location</div>
-                                    <div style={{fontSize:'0.95rem',fontWeight:700,color:'var(--navy)'}}>{location || '—'}</div>
-                                </div>
-                                {mapLink && mapLink !== '#' && (
-                                    <a href={mapLink} target="_blank" rel="noopener noreferrer" style={{marginLeft:'auto',display:'inline-flex',alignItems:'center',gap:'6px',background:'var(--navy)',color:'white',fontSize:'0.6rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',padding:'8px 16px',borderRadius:'8px',whiteSpace:'nowrap',flexShrink:0}} className="hover:opacity-80 transition">
-                                        Open in Maps →
-                                    </a>
-                                )}
-                            </div>
+                            
                             {mapEmbedSrc ? (
                                 <div style={{borderRadius:'14px',overflow:'hidden',border:'1px solid var(--border)',boxShadow:'var(--shadow-sm)'}}>
                                     {/* sandbox removed — fixes "must be used in iframe" directions error */}
