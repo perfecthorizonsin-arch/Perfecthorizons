@@ -702,13 +702,12 @@
         <span style={{display:'flex',alignItems:'center',gap:'8px'}}><span style={{fontSize:16}}>📍</span> Location</span>
         {mapLink && mapLink !== '#' && (
             <a 
-                href={(() => {
-    const coordMatch = mapLink.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (coordMatch) return `https://www.google.com/maps?q=${coordMatch[1]},${coordMatch[2]}`;
-    const coordMatch2 = mapEmbedSrc && mapEmbedSrc.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (coordMatch2) return `https://www.google.com/maps?q=${coordMatch2[1]},${coordMatch2[2]}`;
+               href={(() => {
+    const lngMatch = mapLink.match(/!2d(-?\d+\.\d+)/);
+    const latMatch = mapLink.match(/!3d(-?\d+\.\d+)/);
+    if (lngMatch && latMatch) return `https://www.google.com/maps?q=${latMatch[1]},${lngMatch[1]}`;
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
-})()} 
+})()}
                 target="_blank" 
                 rel="noopener noreferrer" 
                 style={{fontSize:'0.6rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',color:'var(--teal)',display:'flex',alignItems:'center',gap:'6px'}}
