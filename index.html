@@ -865,19 +865,8 @@
                     if (error) throw error;
                     fetch(GOOGLE_SCRIPT_URL, {
   method: "POST",
-  headers: {
-    "Content-Type": "application/json"   // ← this is what's missing
-  },
-  body: JSON.stringify({
-    action: "sendLead",
-    Name: data.name,
-    Phone: data.phone,
-    Email: data.email || 'N/A',
-    Project: project,
-    Source: sourceContext,
-    Requirements: 'None'
-  })
-}).catch(err => console.log("Email Error:", err));
+  body: JSON.stringify({ action:"sendLead", Name:data.name, Phone:data.phone, Email:data.email||'N/A', Project:project, Source:sourceContext, Requirements:'None' })
+}).catch(err=>console.log("Email Error:",err));
                     if (!dataToSubmit) { alert("Interest Registered! Our advisor will contact you shortly."); setShowLeadForm(false); setLeadData({name:"",phone:"",email:""}); }
                     return true;
                 } catch(error) { alert("Error saving details. Please try again."); return false; }
