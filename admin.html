@@ -1032,29 +1032,43 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
         setLoading(false);
     };
 
-    const UploadSection = ({ field, label, multi }) => {
-        const isUploading = uploadingField === field;
-        const progress = uploadProgress[field];
-        const urls = form[field] ? form[field].split(',').filter(Boolean) : [];
-        return (
-            <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-4 hover:border-blue-400 transition-all">
-                <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-widest">
-                    {label}
-                    {isUploading && <span className="ml-2 text-blue-600 animate-pulse font-black">⬆️ Uploading to Drive {progress ? `(${progress})` : '...'}</span>}
-                </label>
-                <input type="file" {...(multi ? {multiple: true} : {})} onChange={e => upload(e, field, multi)} disabled={isUploading}
-                    className="w-full text-xs font-bold text-slate-600 cursor-pointer file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:tracking-widest file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer disabled:opacity-50" />
-                {urls.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                        {multi
-                            ? urls.map((url, idx) => <FileTag key={idx} field={field} name={`Drive File ${idx+1}`} isArray idx={idx} onRemove={removeFile} />)
-                            : <FileTag field={field} name="Drive File" onRemove={removeFile} />
-                        }
-                    </div>
-                )}
-            </div>
-        );
-    };
+  const UploadSection = ({ field, label, multi }) => {
+    const isUploading = uploadingField === field;
+    const progress = uploadProgress[field];
+    const urls = form[field] ? form[field].split(',').filter(Boolean) : [];
+    return (
+        <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-4 hover:border-blue-400 transition-all">
+            <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-widest">
+                {label}
+                {isUploading && <span className="ml-2 text-blue-600 animate-pulse font-black">⬆️ Uploading to Drive {progress ? `(${progress})` : '...'}</span>}
+            </label>
+            <input
+                id={`file-input-${field}`}
+                type="file"
+                {...(multi ? {multiple: true} : {})}
+                onChange={e => upload(e, field, multi)}
+                disabled={isUploading}
+                style={{display:'none'}}
+            />
+            <button
+                type="button"
+                disabled={isUploading}
+                onClick={() => document.getElementById(`file-input-${field}`).click()}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl cursor-pointer transition"
+            >
+                {isUploading ? `⬆️ Uploading ${progress||''}...` : `📁 Choose ${multi ? 'Files' : 'File'}`}
+            </button>
+            {urls.length > 0 && (
+                <div className="mt-2 space-y-1">
+                    {multi
+                        ? urls.map((url, idx) => <FileTag key={idx} field={field} name={`Drive File ${idx+1}`} isArray idx={idx} onRemove={removeFile} />)
+                        : <FileTag field={field} name="Drive File" onRemove={removeFile} />
+                    }
+                </div>
+            )}
+        </div>
+    );
+};
 
     const inputCls = "w-full p-4 bg-white border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition placeholder:text-slate-400";
     const inputDarkCls = "w-full p-4 bg-slate-800 border-2 border-slate-700 rounded-2xl font-bold text-sm text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder:text-slate-500";
