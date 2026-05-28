@@ -135,43 +135,21 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzV-nr4UWVqFa
 const WHATSAPP_NUMBER = "9113261205";
 const ADMIN_EMAIL = "saishetty1623@gmail.com";
 
-// PSA Agents list
-// ══════════════════════════════════════════════════════════════════════════
-// ██  AGENT CONFIGURATION — ONLY EDIT THIS BLOCK TO ADD/REMOVE AGENTS  ██
-// ══════════════════════════════════════════════════════════════════════════
-//
-// TO ADD A NEW PSA AGENT:
-//   1. Add one line to PSA_AGENTS: { value: 'NewName', label: '👤 NewName' }
-//   2. Add one line to AGENT_EMAIL_MAP: 'theirlogin@email.com': 'NewName'
-//   That's it. All CRM rules, visibility, buckets, notes apply automatically.
-//
-// ADMIN DUAL ROLE: If admin (saishetty1623@gmail.com) is ALSO an agent,
-//   set ADMIN_AGENT_NAME to their agent name (e.g. 'Tharun').
-//   Admin will then appear in stats + their leads default to that filter.
-//   Set to null if admin is a pure admin with no agent persona.
-//
-const ADMIN_AGENT_NAME = 'Tharun'; // ← admin's agent name (null if pure admin)
+const ADMIN_AGENT_NAME = 'Tharun';
 
 const PSA_AGENTS = [
-    // ── Add new agents here — one line each ─────────────────────────────
     { value: 'Tharun',   label: '👤 Tharun' },
     { value: 'Shivaji',  label: '👤 Shivaji' },
     { value: 'Ramswami', label: '👤 Ramswami' },
     { value: 'Prabhu',   label: '👤 Prabhu' },
-    // { value: 'NewAgent', label: '👤 NewAgent' },  ← example for next agent
 ];
 
 const AGENT_EMAIL_MAP = {
-    // ── Add login email → agent name mapping here ────────────────────────
-    // Get emails from: Supabase → Authentication → Users → copy exact email
-    'tharun@perfecthorizons.in':  'Tharun',    // ← replace with Tharun's real login email
-    'shivaji@perfecthorizons.in': 'Shivaji',   // ← replace with Shivaji's real login email
-    'dappertones@gmail.com':      'Ramswami',  // ← Ramswami's actual login email
-    'prabhu@perfecthorizons.in':  'Prabhu',    // ← replace with Prabhu's real login email
-    // 'newagent@email.com': 'NewAgent',        ← example for next agent
-    // ⚠️  Do NOT add the admin email here — it's handled via ADMIN_EMAIL above
+    'tharun@perfecthorizons.in':  'Tharun',
+    'shivaji@perfecthorizons.in': 'Shivaji',
+    'dappertones@gmail.com':      'Ramswami',
+    'prabhu@perfecthorizons.in':  'Prabhu',
 };
-// ══════════════════════════════════════════════════════════════════════════
 
 const getAgentFromEmail = (email) => {
     if (!email) return '__UNKNOWN__';
@@ -226,32 +204,25 @@ const uploadToDrive = async (file, propertyName, category) => {
                     propertyName: propertyName || 'Uploads',
                     category: category || 'General'
                 });
-
                 const res = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     redirect: 'follow',
                     body: payload,
-                    // ⚠️ No Content-Type header — avoids CORS preflight blocking
                 });
-
                 const text = await res.text();
-
                 let data;
                 try {
                     data = JSON.parse(text);
                 } catch {
                     const match = text.match(/\{[\s\S]*\}/);
                     if (match) data = JSON.parse(match[0]);
-                    else throw new Error('Bad response from Apps Script: ' + text.slice(0, 300));
+                    else throw new Error('Bad response: ' + text.slice(0, 200));
                 }
-
                 if (data.fileUrl) resolve(data.fileUrl);
                 else if (data.url) resolve(data.url);
                 else if (data.fileId) resolve(`https://drive.google.com/file/d/${data.fileId}/view`);
                 else reject(new Error(data.message || data.error || 'No URL returned from Drive'));
-            } catch (err) {
-                reject(err);
-            }
+            } catch (err) { reject(err); }
         };
         reader.onerror = () => reject(new Error('FileReader failed'));
         reader.readAsDataURL(file);
@@ -474,6 +445,38 @@ const FileTag = ({ field, name, isArray=false, idx=null, onRemove }) => (
     </div>
 );
 
+// ─── UPLOAD SECTION — STANDALONE COMPONENT (outside PropertyForm) ──────────
+// KEY FIX: This must NOT be defined inside PropertyForm.
+// When defined inside, React remounts it on every state change, killing uploads.
+const UploadSection = ({ field, label, multi, form, uploadingField, uploadProgress, onUpload, onRemove }) => {
+    const isUploading = uploadingField === field;
+    const progress = uploadProgress[field];
+    const urls = form[field] ? form[field].split(',').filter(Boolean) : [];
+    return (
+        <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-4 hover:border-blue-400 transition-all">
+            <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-widest">
+                {label}
+                {isUploading && <span className="ml-2 text-blue-600 animate-pulse font-black">⬆️ Uploading to Drive {progress ? `(${progress})` : '...'}</span>}
+            </label>
+            <input
+                type="file"
+                multiple={multi}
+                onChange={e => onUpload(e, field, multi)}
+                disabled={isUploading}
+                className="w-full text-xs font-bold text-slate-600 cursor-pointer file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:tracking-widest file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer disabled:opacity-50"
+            />
+            {urls.length > 0 && (
+                <div className="mt-2 space-y-1">
+                    {multi
+                        ? urls.map((url, idx) => <FileTag key={idx} field={field} name={`Drive File ${idx+1}`} isArray idx={idx} onRemove={onRemove} />)
+                        : <FileTag field={field} name="Drive File" onRemove={onRemove} />
+                    }
+                </div>
+            )}
+        </div>
+    );
+};
+
 // ─── LEAD DETAIL MODAL ─────────────────────────────────────────────────────
 const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
     if (!lead) return null;
@@ -491,7 +494,6 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                     <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-black text-sm">✕</button>
                 </div>
                 <div className="overflow-y-auto p-6 space-y-5 flex-1">
-                    {/* Key Info Grid */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200">
                             <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Status</div>
@@ -509,7 +511,6 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                             <div className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">Lead Source</div>
                             <div className="text-xs font-black text-slate-800">{lead.lead_source || 'Website'}</div>
                         </div>
-                        {/* Project — hidden from agents on bulk leads */}
                         {(isAdminUser || lead.lead_source !== 'Bulk Upload') ? (
                         <div className="bg-blue-50 rounded-2xl p-3 border border-blue-200 col-span-2">
                             <div className="text-[8px] font-black uppercase tracking-widest text-blue-400 mb-1">🏠 Project Interested In</div>
@@ -522,8 +523,6 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                             </div>
                         )}
                     </div>
-
-                    {/* Dates */}
                     <div className="bg-slate-900 rounded-2xl p-4 space-y-2">
                         <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">📅 Timeline</div>
                         <div className="flex justify-between text-[10px]">
@@ -543,25 +542,18 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                             </div>
                         )}
                     </div>
-
-                    {/* Notes */}
-                    {/* Notes — hidden from agents on bulk leads */}
                     {lead.add_note && (
                         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
                             <div className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-2">📝 Notes / Requirements</div>
                             <p className="text-xs font-semibold text-amber-900 whitespace-pre-wrap leading-relaxed">{lead.add_note}</p>
                         </div>
                     )}
-
-                    {/* Reject Reason */}
                     {lead.reject_reason && (
                         <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
                             <div className="text-[9px] font-black uppercase tracking-widest text-red-600 mb-1">❌ Rejection Reason</div>
                             <p className="text-xs font-black text-red-800">{lead.reject_reason}</p>
                         </div>
                     )}
-
-                    {/* Activity Log */}
                     <div>
                         <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">📋 CRM Activity Log</div>
                         <div className="bg-slate-900/5 border border-slate-200 rounded-2xl p-4 max-h-48 overflow-y-auto history-scroll">
@@ -571,8 +563,6 @@ const LeadDetailModal = ({ lead, onClose, leadCategory, userEmail }) => {
                             }
                         </div>
                     </div>
-
-                    {/* Actions */}
                     <div className="flex gap-2 pt-2">
                         <a href={`tel:${lead.phone_number}`} className="flex-1 flex items-center justify-center gap-1 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest py-3 rounded-2xl hover:bg-blue-600 transition">📞 Call</a>
                         <a href={`https://wa.me/91${lead.phone_number?.replace(/\D/g,'').slice(-10)}`} target="_blank" className="flex-1 flex items-center justify-center gap-1 bg-green-500 text-white text-[9px] font-black uppercase tracking-widest py-3 rounded-2xl hover:bg-green-600 transition shadow-sm">💬 WhatsApp</a>
@@ -689,7 +679,6 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
             {toast && (
                 <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[500] ${toast.color} text-white text-xs font-black uppercase tracking-widest px-6 py-3.5 rounded-2xl shadow-2xl animate-fadeIn max-w-sm text-center`}>{toast.msg}</div>
             )}
-
             {shareModal && (
                 <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/80 backdrop-blur-sm animate-fadeIn">
                     <div className="bg-white rounded-t-[32px] md:rounded-[28px] w-full max-w-md shadow-2xl relative flex flex-col max-h-[88vh]">
@@ -762,7 +751,6 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                     </div>
                 </div>
             )}
-
             <div className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm">
                 <button onClick={onBack} className="text-slate-600 hover:text-blue-600 text-xs font-black uppercase tracking-widest flex items-center transition group">
                     <span className="mr-2 text-lg leading-none group-hover:-translate-x-1 transition-transform">←</span> Back
@@ -772,7 +760,6 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                     <a href={`tel:${pocNumber}`} className="hidden md:block bg-slate-100 text-slate-700 px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-slate-200">📞 Call Agent</a>
                 </div>
             </div>
-
             <div className="max-w-7xl mx-auto w-full p-4 md:p-8">
                 <div className="relative mb-8">
                     <div ref={galleryRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scroll h-[40vh] md:h-[60vh] rounded-3xl">
@@ -794,7 +781,6 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                         )}
                     </div>
                 </div>
-
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                     <div className="lg:col-span-2 space-y-8">
                         <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -834,7 +820,6 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                             </div>
                         </div>
                     </div>
-
                     <div className="lg:col-span-1">
                         <div className="sticky top-24 space-y-6">
                             <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
@@ -1001,6 +986,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
     const upload = async (e, field, append=false) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
+        // NOTE: No setLoading(true) here — that caused remounting which killed uploads
         setUploadingField(field);
         const categoryMap = { cover_image:'Cover Image', gallery_images:'Gallery', brochure:'Brochures', cost_sheet:'Cost Sheets', floor_plan:'Floor Plans', miscellaneous:'Miscellaneous', master_plan:'Master Plan' };
         const category = categoryMap[field] || 'General';
@@ -1025,7 +1011,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
 
         setUploadingField(null);
         setUploadProgress(p => { const n={...p}; delete n[field]; return n; });
-        e.target.value = '';
     };
 
     const removeFile = (field, isArray=false, idx=null) => {
@@ -1055,33 +1040,21 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
         setLoading(false);
     };
 
-    const UploadSection = ({ field, label, multi }) => {
-        const isUploading = uploadingField === field;
-        const progress = uploadProgress[field];
-        const urls = form[field] ? form[field].split(',').filter(Boolean) : [];
-        return (
-            <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-4 hover:border-blue-400 transition-all">
-                <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-widest">
-                    {label}
-                    {isUploading && <span className="ml-2 text-blue-600 animate-pulse font-black">⬆️ Uploading to Drive {progress ? `(${progress})` : '...'}</span>}
-                </label>
-                <input type="file" multiple={multi} onChange={e => upload(e, field, multi)} disabled={isUploading}
-                    className="w-full text-xs font-bold text-slate-600 cursor-pointer file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:tracking-widest file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer disabled:opacity-50" />
-                {urls.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                        {multi
-                            ? urls.map((url, idx) => <FileTag key={idx} field={field} name={`Drive File ${idx+1}`} isArray idx={idx} onRemove={removeFile} />)
-                            : <FileTag field={field} name="Drive File" onRemove={removeFile} />
-                        }
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     const inputCls = "w-full p-4 bg-white border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition placeholder:text-slate-400";
     const inputDarkCls = "w-full p-4 bg-slate-800 border-2 border-slate-700 rounded-2xl font-bold text-sm text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder:text-slate-500";
     const selectCls = "w-full p-4 bg-white border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition text-slate-600 cursor-pointer";
+
+    // Wrapper so UploadSection (now standalone) gets the props it needs
+    const US = ({ field, label, multi }) => (
+        <UploadSection
+            field={field} label={label} multi={multi}
+            form={form}
+            uploadingField={uploadingField}
+            uploadProgress={uploadProgress}
+            onUpload={upload}
+            onRemove={removeFile}
+        />
+    );
 
     return (
         <div className="bg-white rounded-3xl shadow-sm max-w-4xl mx-auto animate-fadeIn border border-slate-200 overflow-hidden">
@@ -1093,7 +1066,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
             </div>
 
             <div className="p-5 md:p-10 space-y-8">
-                {/* Section 1 */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">1</div>
@@ -1116,7 +1088,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                {/* Section 2 */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">2</div>
@@ -1125,7 +1096,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="sm:col-span-2">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">BHK / Configurations (hold Ctrl/Cmd for multiple)</label>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">BHK / Configurations</label>
                             <select multiple className={`${selectCls} h-28`} value={form.bhk ? form.bhk.split(',').map(s => s.trim()).filter(Boolean) : []} onChange={e => set('bhk', [...e.target.selectedOptions].map(o => o.value).join(', '))}>
                                 {['1 BHK','2 BHK','3 BHK','4 BHK','5 BHK','Studio','Duplex','Penthouse'].map(b => <option key={b}>{b}</option>)}
                             </select>
@@ -1143,7 +1114,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                {/* Section 3 */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">3</div>
@@ -1168,23 +1138,21 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                {/* Section 4 - Admin */}
                 <div className="bg-slate-900 rounded-3xl p-5 md:p-8">
                     <div className="flex items-center gap-3 mb-5">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">4</div>
                         <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Internal Data & Links</h3>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Internal POC (Name / Phone)</label><input className={inputDarkCls} placeholder="e.g. Ramesh — 98xx" value={form.point_of_contact} onChange={e => set('point_of_contact', e.target.value)} /></div>
+                        <div><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Internal POC</label><input className={inputDarkCls} placeholder="e.g. Ramesh — 98xx" value={form.point_of_contact} onChange={e => set('point_of_contact', e.target.value)} /></div>
                         <div><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Commission Details</label><input className={inputDarkCls} placeholder="e.g. 2% on Agreement" value={form.commission_details} onChange={e => set('commission_details', e.target.value)} /></div>
-                        <div className="sm:col-span-2"><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Video Link (YouTube / Drive URL)</label><input className={inputDarkCls} placeholder="https://youtube.com/..." value={form.video_link} onChange={e => set('video_link', e.target.value)} /></div>
+                        <div className="sm:col-span-2"><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Video Link</label><input className={inputDarkCls} placeholder="https://youtube.com/..." value={form.video_link} onChange={e => set('video_link', e.target.value)} /></div>
                         <div><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Builder Website</label><input className={inputDarkCls} placeholder="https://..." value={form.website_link} onChange={e => set('website_link', e.target.value)} /></div>
                         <div><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Lead Register Link / Email</label><input className={inputDarkCls} placeholder="URL or email@builder.com" value={form.lead_registration_link} onChange={e => set('lead_registration_link', e.target.value)} /></div>
-                        <div className="sm:col-span-2"><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Map Link (Google Maps URL)</label><input className={inputDarkCls} placeholder="https://maps.google.com/..." value={form.map_link} onChange={e => set('map_link', e.target.value)} /></div>
+                        <div className="sm:col-span-2"><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Map Link</label><input className={inputDarkCls} placeholder="https://maps.google.com/..." value={form.map_link} onChange={e => set('map_link', e.target.value)} /></div>
                     </div>
                 </div>
 
-                {/* Section 5 - Files */}
                 <div>
                     <div className="flex items-center gap-3 mb-2">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">5</div>
@@ -1193,22 +1161,22 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                     <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2.5 mb-4">
                         <span className="text-base shrink-0">☁️</span>
-                        <p className="text-[10px] text-amber-800 font-bold leading-relaxed">All files upload to <strong>Google Drive</strong> via your Apps Script. The returned Drive URL is saved to Supabase.</p>
+                        <p className="text-[10px] text-amber-800 font-bold leading-relaxed">All files upload to <strong>Google Drive</strong> via your Apps Script.</p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <UploadSection field="cover_image"    label="Main Cover Image *"                multi={false} />
-                        <UploadSection field="gallery_images" label="Gallery Images (select multiple)"  multi={true}  />
-                        <UploadSection field="brochure"       label="Brochure (PDF)"                   multi={false} />
-                        <UploadSection field="cost_sheet"     label="Cost Sheet (PDF / Images)"        multi={true}  />
-                        <UploadSection field="floor_plan"     label="Floor Plan (PDF / Image)"         multi={false} />
-                        <UploadSection field="master_plan"    label="Master Plan (PDF / Image)"        multi={false} />
-                        <UploadSection field="miscellaneous"  label="Miscellaneous Docs"               multi={true}  />
+                        <US field="cover_image"    label="Main Cover Image *"                multi={false} />
+                        <US field="gallery_images" label="Gallery Images (select multiple)"  multi={true}  />
+                        <US field="brochure"       label="Brochure (PDF)"                   multi={false} />
+                        <US field="cost_sheet"     label="Cost Sheet (PDF / Images)"        multi={true}  />
+                        <US field="floor_plan"     label="Floor Plan (PDF / Image)"         multi={false} />
+                        <US field="master_plan"    label="Master Plan (PDF / Image)"        multi={false} />
+                        <US field="miscellaneous"  label="Miscellaneous Docs"               multi={true}  />
                     </div>
                 </div>
 
                 <button onClick={save} disabled={loading || !!uploadingField}
                     className="w-full bg-blue-600 text-white p-5 rounded-3xl font-black uppercase tracking-widest hover:bg-slate-900 transition shadow-xl disabled:opacity-50 text-sm flex items-center justify-center gap-3">
-                    {loading ? <><span className="animate-spin inline-block text-lg">⏳</span> Processing...</> : <><span className="text-lg">{editingProp ? '✅' : '🚀'}</span> {editingProp ? 'Update Listing' : 'Publish Listing'}</>}
+                    {loading ? <><span className="animate-spin inline-block text-lg">⏳</span> Processing...</> : uploadingField ? <><span className="animate-spin inline-block text-lg">⬆️</span> Uploading...</> : <><span className="text-lg">{editingProp ? '✅' : '🚀'}</span> {editingProp ? 'Update Listing' : 'Publish Listing'}</>}
                 </button>
             </div>
         </div>
@@ -1230,7 +1198,7 @@ function ManualLeadForm({ supabase, properties, onSuccess, agentName }) {
             project_interested_in:form.project, add_note:form.note,
             call_remark:form.note ? `[${stamp}] Requirement: ${form.note}\n\n` : '',
             lead_source:'Manual Entry', lead_status:'Un called',
-            psa_agent_name: agentName || null,           // Pre-assign to the agent who added
+            psa_agent_name: agentName || null,
             assigned_agent: agentName || null,
         }]);
         if (!error) {
@@ -1289,7 +1257,7 @@ function ManualLeadForm({ supabase, properties, onSuccess, agentName }) {
 
 // ─── ADMIN OVERVIEW PANEL ──────────────────────────────────────────────────
 function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
-    const [drillAgent,  setDrillAgent]  = useState(null); // agent being drilled into
+    const [drillAgent, setDrillAgent] = useState(null);
 
     const allCombined = useMemo(() => [
         ...allLeads.map(l => ({ ...l, _type:'Website' })),
@@ -1313,11 +1281,10 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
                 svDone:    mine.filter(l => l.site_visit_at && l.site_visit_at < today && !['Converted','Rejected'].includes(l.lead_status)).length,
                 converted: mine.filter(l => l.lead_status === 'Converted').length,
                 rejected:  mine.filter(l => l.lead_status === 'Rejected').length,
-                unassigned: allLeads.filter(l => !l.psa_agent_name && !l.is_hidden).length,
                 leads:     mine,
             };
         });
-    }, [allCombined, allLeads]);
+    }, [allCombined]);
 
     const recentActivity = useMemo(() => {
         return [...allCombined]
@@ -1329,15 +1296,12 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
     const totalAll   = allCombined.filter(l => !l.is_hidden).length;
     const unassigned = allLeads.filter(l => !l.psa_agent_name && !l.is_hidden).length;
 
-    // Drill-down: show one agent's leads
     if (drillAgent) {
         const agent = agentStats.find(a => a.name === drillAgent);
         const leads = agent?.leads || [];
         return (
             <div className="space-y-5 animate-fadeIn">
-                <button onClick={() => setDrillAgent(null)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 transition">
-                    ← Back to Overview
-                </button>
+                <button onClick={() => setDrillAgent(null)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 transition">← Back to Overview</button>
                 <div className="bg-slate-900 rounded-3xl p-6 text-white flex items-center justify-between">
                     <div>
                         <div className="text-3xl font-black text-blue-400">{drillAgent}</div>
@@ -1381,7 +1345,6 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
 
     return (
         <div className="space-y-8 animate-fadeIn">
-            {/* Header */}
             <div className="bg-slate-900 rounded-3xl p-6 md:p-8 text-white">
                 <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
                     <div>
@@ -1408,8 +1371,6 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
                     ))}
                 </div>
             </div>
-
-            {/* Agent Cards — clickable to drill down */}
             <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">👥 PSA Agent Performance — Click to View Leads</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1422,7 +1383,6 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
                                 </div>
                                 <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-black text-lg shadow-md">{agent.name[0]}</div>
                             </div>
-                            {/* Bucket breakdown */}
                             <div className="grid grid-cols-3 gap-1 mb-3">
                                 {[{l:'New',v:agent.new,c:'bg-yellow-50 text-yellow-700'},{l:'Open',v:agent.open,c:'bg-blue-50 text-blue-700'},{l:'SV',v:agent.svSched,c:'bg-teal-50 text-teal-700'},{l:'Done',v:agent.svDone,c:'bg-indigo-50 text-indigo-700'},{l:'Won',v:agent.converted,c:'bg-green-50 text-green-700'},{l:'Lost',v:agent.rejected,c:'bg-red-50 text-red-500'}].map((s,i) => (
                                     <div key={i} className={`${s.c} rounded-lg p-1.5 text-center`}>
@@ -1446,8 +1406,6 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
                     ))}
                 </div>
             </div>
-
-            {/* Recent Activity */}
             <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">⚡ Recent CRM Activity</h3>
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -1456,9 +1414,7 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
                             <div className="p-8 text-center text-slate-400 font-bold text-sm">No activity yet</div>
                         ) : recentActivity.map((lead, i) => (
                             <div key={`${lead.id}-${i}`} className="p-3 hover:bg-slate-50 transition flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black shrink-0 text-xs">
-                                    {(lead.psa_agent_name||'?')[0]}
-                                </div>
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black shrink-0 text-xs">{(lead.psa_agent_name||'?')[0]}</div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <span className="text-[10px] font-black text-slate-900 uppercase">{lead.psa_agent_name || 'Unassigned'}</span>
@@ -1480,14 +1436,13 @@ function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
 
 // ─── BULK CSV UPLOADER ────────────────────────────────────────────────────
 function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
-    const [file,        setFile]        = useState(null);
-    const [rows,        setRows]        = useState([]);       // parsed preview rows
-    const [assignTo,    setAssignTo]    = useState('');
-    const [uploading,   setUploading]   = useState(false);
-    const [error,       setError]       = useState('');
-    const [step,        setStep]        = useState('pick');   // 'pick' | 'preview' | 'done'
+    const [file,      setFile]      = useState(null);
+    const [rows,      setRows]      = useState([]);
+    const [assignTo,  setAssignTo]  = useState('');
+    const [uploading, setUploading] = useState(false);
+    const [error,     setError]     = useState('');
+    const [step,      setStep]      = useState('pick');
 
-    // Simple CSV parser — handles quoted fields
     const parseCSV = (text) => {
         const lines = text.trim().split(/\r?\n/);
         if (lines.length < 2) return [];
@@ -1510,14 +1465,12 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
     const handleFile = (e) => {
         const f = e.target.files[0];
         if (!f) return;
-        setError('');
-        setFile(f);
+        setError(''); setFile(f);
         const reader = new FileReader();
         reader.onload = (ev) => {
             const parsed = parseCSV(ev.target.result);
             if (!parsed.length) { setError('No valid rows found. Check your CSV format.'); return; }
-            setRows(parsed);
-            setStep('preview');
+            setRows(parsed); setStep('preview');
         };
         reader.readAsText(f);
         e.target.value = '';
@@ -1526,24 +1479,17 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
     const handleUpload = async () => {
         if (!assignTo) { setError('Please select an agent to assign this batch to.'); return; }
         if (!rows.length) return;
-        setUploading(true);
-        setError('');
+        setUploading(true); setError('');
         const now = new Date().toISOString();
         const inserts = rows.map(r => ({
-            customer_name:         r.customer_name || r.name || '',
-            phone_number:          r.phone_number  || r.phone || '',
-            customer_email:        r.customer_email || r.email || null,
+            customer_name: r.customer_name || r.name || '',
+            phone_number:  r.phone_number  || r.phone || '',
+            customer_email: r.customer_email || r.email || null,
             project_interested_in: r.project_interested_in || r.project || 'General Enquiry',
-            add_note:              r.add_note || r.notes || r.note || null,
-            psa_agent_name:        assignTo,
-            assigned_agent:        assignTo,
-            lead_status:           'Un called',
-            lead_source:           'Bulk Upload',
-            lead_priority:         'Warm',
-            created_at:            now,
+            add_note: r.add_note || r.notes || r.note || null,
+            psa_agent_name: assignTo, assigned_agent: assignTo,
+            lead_status: 'Un called', lead_source: 'Bulk Upload', lead_priority: 'Warm', created_at: now,
         }));
-
-        // Insert in batches of 100 to avoid request size limits
         let totalInserted = 0;
         for (let i = 0; i < inserts.length; i += 100) {
             const batch = inserts.slice(i, i + 100);
@@ -1551,15 +1497,11 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
             if (err) { setError('Upload error: ' + err.message); setUploading(false); return; }
             totalInserted += batch.length;
         }
-
-        setUploading(false);
-        setStep('done');
+        setUploading(false); setStep('done');
         setTimeout(() => { onSuccess(totalInserted); setStep('pick'); setRows([]); setFile(null); setAssignTo(''); }, 1800);
     };
 
     const reset = () => { setStep('pick'); setRows([]); setFile(null); setAssignTo(''); setError(''); };
-
-    // Column aliases shown in preview
     const getName  = r => r.customer_name || r.name || '—';
     const getPhone = r => r.phone_number  || r.phone || '—';
     const getEmail = r => r.customer_email || r.email || '—';
@@ -1567,69 +1509,44 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
 
     return (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            {/* Header */}
             <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
                 <div>
                     <h3 className="text-sm font-black uppercase italic text-white tracking-tight">📤 Bulk CSV Upload</h3>
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
-                        Required columns: <span className="text-blue-400">customer_name, phone_number</span> · Optional: customer_email, project_interested_in, add_note
-                    </p>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Required: <span className="text-blue-400">customer_name, phone_number</span></p>
                 </div>
                 {step !== 'pick' && <button onClick={reset} className="text-[9px] font-black text-slate-400 hover:text-white bg-slate-800 px-3 py-1.5 rounded-xl uppercase tracking-widest transition">✕ Reset</button>}
             </div>
-
             <div className="p-6">
-                {/* Step: Pick file */}
                 {step === 'pick' && (
                     <div className="space-y-4">
-                        <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 flex flex-col items-center justify-center hover:border-blue-400 transition-all cursor-pointer text-center"
-                            onClick={() => document.getElementById('bulk-csv-input').click()}>
+                        <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 flex flex-col items-center justify-center hover:border-blue-400 transition-all cursor-pointer text-center" onClick={() => document.getElementById('bulk-csv-input').click()}>
                             <div className="text-4xl mb-3">📂</div>
                             <p className="text-sm font-black text-slate-700 uppercase tracking-wider">Click to select CSV file</p>
-                            <p className="text-[10px] text-slate-400 font-bold mt-1">or drag and drop</p>
                             <input id="bulk-csv-input" type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile} />
                         </div>
                         {error && <div className="bg-red-50 border border-red-200 text-red-700 text-[10px] font-bold p-3 rounded-2xl">{error}</div>}
-                        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-blue-600 mb-2">📋 CSV Template</p>
-                            <code className="text-[10px] text-blue-800 font-bold">customer_name, phone_number, customer_email, project_interested_in, add_note</code>
-                        </div>
                     </div>
                 )}
-
-                {/* Step: Preview */}
                 {step === 'preview' && (
                     <div className="space-y-4">
                         <div className="flex items-center justify-between flex-wrap gap-3">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-black text-lg">✓</div>
-                                <div>
-                                    <p className="text-sm font-black text-slate-900">{rows.length} leads ready to import</p>
-                                    <p className="text-[10px] text-slate-400 font-bold">{file?.name}</p>
-                                </div>
+                                <div><p className="text-sm font-black text-slate-900">{rows.length} leads ready</p><p className="text-[10px] text-slate-400 font-bold">{file?.name}</p></div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Assign to Agent:</label>
-                                <select value={assignTo} onChange={e => setAssignTo(e.target.value)}
-                                    className="p-2.5 border-2 border-slate-700 bg-slate-900 rounded-xl font-black uppercase text-[9px] outline-none text-blue-300 cursor-pointer min-w-[140px]">
-                                    <option value="" disabled>⚡ Select Agent</option>
-                                    {PSA_AGENTS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
-                                </select>
-                            </div>
+                            <select value={assignTo} onChange={e => setAssignTo(e.target.value)} className="p-2.5 border-2 border-slate-700 bg-slate-900 rounded-xl font-black uppercase text-[9px] outline-none text-blue-300 cursor-pointer min-w-[140px]">
+                                <option value="" disabled>⚡ Select Agent</option>
+                                {PSA_AGENTS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
+                            </select>
                         </div>
-
                         {error && <div className="bg-red-50 border border-red-200 text-red-700 text-[10px] font-bold p-3 rounded-2xl">{error}</div>}
-
-                        {/* Preview table — first 10 rows */}
                         <div className="rounded-2xl border border-slate-200 overflow-hidden">
-                            <div className="bg-slate-900 grid grid-cols-4 gap-0">
-                                {['Name','Phone','Email','Project'].map(h => (
-                                    <div key={h} className="px-3 py-2 text-[8px] font-black uppercase tracking-widest text-slate-400">{h}</div>
-                                ))}
+                            <div className="bg-slate-900 grid grid-cols-4">
+                                {['Name','Phone','Email','Project'].map(h => <div key={h} className="px-3 py-2 text-[8px] font-black uppercase tracking-widest text-slate-400">{h}</div>)}
                             </div>
                             <div className="divide-y divide-slate-100 max-h-56 overflow-y-auto history-scroll">
-                                {rows.slice(0, 10).map((r, i) => (
-                                    <div key={i} className="grid grid-cols-4 gap-0 hover:bg-slate-50">
+                                {rows.slice(0,10).map((r,i) => (
+                                    <div key={i} className="grid grid-cols-4 hover:bg-slate-50">
                                         <div className="px-3 py-2 text-[10px] font-bold text-slate-800 truncate">{getName(r)}</div>
                                         <div className="px-3 py-2 text-[10px] font-bold text-blue-600 truncate">{getPhone(r)}</div>
                                         <div className="px-3 py-2 text-[10px] font-medium text-slate-500 truncate">{getEmail(r)}</div>
@@ -1637,29 +1554,21 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
                                     </div>
                                 ))}
                             </div>
-                            {rows.length > 10 && (
-                                <div className="bg-slate-50 px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest border-t border-slate-200">
-                                    + {rows.length - 10} more rows not shown
-                                </div>
-                            )}
+                            {rows.length > 10 && <div className="bg-slate-50 px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest border-t border-slate-200">+ {rows.length-10} more rows</div>}
                         </div>
-
                         <div className="flex gap-3">
                             <button onClick={reset} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black py-3.5 rounded-2xl text-[10px] uppercase tracking-widest transition">Cancel</button>
-                            <button onClick={handleUpload} disabled={uploading || !assignTo}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black py-3.5 rounded-2xl text-[10px] uppercase tracking-widest transition shadow-lg flex items-center justify-center gap-2">
-                                {uploading ? <><span className="animate-spin inline-block">⏳</span> Uploading {rows.length} leads...</> : `🚀 Upload ${rows.length} Leads`}
+                            <button onClick={handleUpload} disabled={uploading || !assignTo} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black py-3.5 rounded-2xl text-[10px] uppercase tracking-widest transition shadow-lg flex items-center justify-center gap-2">
+                                {uploading ? <><span className="animate-spin inline-block">⏳</span> Uploading...</> : `🚀 Upload ${rows.length} Leads`}
                             </button>
                         </div>
                     </div>
                 )}
-
-                {/* Step: Done */}
                 {step === 'done' && (
                     <div className="flex flex-col items-center py-8 gap-3">
                         <div className="text-5xl">🎉</div>
                         <p className="text-lg font-black uppercase text-slate-900 tracking-tight">Upload Complete!</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{rows.length} leads added to {assignTo}'s bulk queue</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{rows.length} leads added to {assignTo}</p>
                     </div>
                 )}
             </div>
@@ -1667,83 +1576,36 @@ function BulkCSVUploader({ supabase, onSuccess, isAdminUser }) {
     );
 }
 
-// ─── ADMIN NOTES — Supabase-backed (not localStorage) ─────────────────────
-// Requires this table in Supabase:
-//   CREATE TABLE IF NOT EXISTS admin_notes (
-//     id SERIAL PRIMARY KEY,
-//     agent_name TEXT UNIQUE NOT NULL,
-//     note TEXT DEFAULT '',
-//     updated_at TIMESTAMPTZ DEFAULT now()
-//   );
-// Enable RLS but allow anon read/write, or use service role.
-// Simplest: in Supabase → Table Editor → admin_notes → RLS → Disable RLS for now.
-
-// ── Admin Notes: read and write to Supabase admin_notes table ──────────────
-// Table needs: agent_name TEXT (primary key), note TEXT
-// Run this SQL once in Supabase if not already done:
-//   ALTER TABLE admin_notes ADD PRIMARY KEY (agent_name);
-
+// ─── ADMIN NOTES ───────────────────────────────────────────────────────────
 async function fetchAdminNote(agentName) {
     try {
-        const { data, error } = await supabase
-            .from('admin_notes')
-            .select('note')
-            .eq('agent_name', agentName)
-            .maybeSingle();
-        if (error) {
-            console.error('fetchAdminNote error:', error.message);
-            return '';
-        }
+        const { data, error } = await supabase.from('admin_notes').select('note').eq('agent_name', agentName).maybeSingle();
+        if (error) return '';
         return data?.note || '';
-    } catch(e) {
-        console.error('fetchAdminNote exception:', e);
-        return '';
-    }
+    } catch(e) { return ''; }
 }
 
 async function saveAdminNote(agentName, note) {
-    // Step 1: Delete existing row
-    const { error: delError } = await supabase
-        .from('admin_notes')
-        .delete()
-        .eq('agent_name', agentName);
-
-    if (delError) {
-        alert('Delete step failed: ' + delError.message + '\n\nCode: ' + delError.code);
-        return false;
-    }
-
-    // Step 2: Insert new row
-    const { error: insError } = await supabase
-        .from('admin_notes')
-        .insert({ agent_name: agentName, note: note });
-
-    if (insError) {
-        alert('Insert step failed: ' + insError.message + '\n\nCode: ' + insError.code);
-        return false;
-    }
-
+    const { error: delError } = await supabase.from('admin_notes').delete().eq('agent_name', agentName);
+    if (delError) { alert('Delete step failed: ' + delError.message); return false; }
+    const { error: insError } = await supabase.from('admin_notes').insert({ agent_name: agentName, note: note });
+    if (insError) { alert('Insert step failed: ' + insError.message); return false; }
     return true;
 }
 
-// Banner shown to PSA agents — reads from Supabase
 function AdminNotesBanner({ agentName }) {
-    const [note,    setNote]    = useState('');
+    const [note, setNote]       = useState('');
     const [visible, setVisible] = useState(true);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         setLoading(true);
         fetchAdminNote(agentName).then(n => { setNote(n); setLoading(false); });
-        // Refresh every 60s so agent sees updates without reload
-        const poll = setInterval(() => {
-            fetchAdminNote(agentName).then(n => setNote(n));
-        }, 60000);
+        const poll = setInterval(() => { fetchAdminNote(agentName).then(n => setNote(n)); }, 60000);
         return () => clearInterval(poll);
     }, [agentName]);
 
     if (loading || !note || !note.trim() || !visible) return null;
-
     return (
         <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 relative animate-fadeIn">
             <button onClick={() => setVisible(false)} className="absolute top-3 right-3 text-amber-400 hover:text-amber-700 font-black text-sm leading-none">✕</button>
@@ -1758,90 +1620,50 @@ function AdminNotesBanner({ agentName }) {
     );
 }
 
-// Editor shown to admin in the agent drill-down — saves to Supabase
 function AdminNoteEditor({ agentName }) {
-    const [note,    setNote]    = useState('');
-    const [editing, setEditing] = useState(false);
-    const [draft,   setDraft]   = useState('');
-    const [saving,  setSaving]  = useState(false);
-    const [deleting,setDeleting]= useState(false);
-    const [status,  setStatus]  = useState(''); // 'saved' | 'deleted' | 'error'
-    const [loading, setLoading] = useState(true);
+    const [note,     setNote]     = useState('');
+    const [editing,  setEditing]  = useState(false);
+    const [draft,    setDraft]    = useState('');
+    const [saving,   setSaving]   = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [status,   setStatus]   = useState('');
+    const [loading,  setLoading]  = useState(true);
 
     useEffect(() => {
         setLoading(true);
-        fetchAdminNote(agentName).then(n => {
-            setNote(n);
-            setLoading(false);
-        });
+        fetchAdminNote(agentName).then(n => { setNote(n); setLoading(false); });
     }, [agentName]);
 
     const save = async () => {
         setSaving(true);
         const ok = await saveAdminNote(agentName, draft);
         setSaving(false);
-        if (ok) {
-            setNote(draft);
-            setEditing(false);
-            setStatus('saved');
-            setTimeout(() => setStatus(''), 4000);
-        } else {
-            setStatus('error');
-            setTimeout(() => setStatus(''), 4000);
-        }
+        if (ok) { setNote(draft); setEditing(false); setStatus('saved'); setTimeout(() => setStatus(''), 4000); }
+        else { setStatus('error'); setTimeout(() => setStatus(''), 4000); }
     };
 
     const deleteNote = async () => {
-        if (!window.confirm('Delete this note for ' + agentName + '? They will no longer see it.')) return;
+        if (!window.confirm('Delete this note for ' + agentName + '?')) return;
         setDeleting(true);
         await supabase.from('admin_notes').delete().eq('agent_name', agentName);
-        setNote('');
-        setDeleting(false);
-        setStatus('deleted');
-        setTimeout(() => setStatus(''), 3000);
+        setNote(''); setDeleting(false); setStatus('deleted'); setTimeout(() => setStatus(''), 3000);
     };
 
-    if (loading) return (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-[9px] text-amber-600 font-bold animate-pulse">
-            ⏳ Loading note from Supabase...
-        </div>
-    );
+    if (loading) return <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-[9px] text-amber-600 font-bold animate-pulse">⏳ Loading note...</div>;
 
     return (
         <div className="space-y-2">
-            {/* Status messages */}
-            {status === 'saved'   && <div className="bg-green-50 border border-green-200 text-green-700 text-[9px] font-black px-3 py-2 rounded-xl uppercase tracking-widest">✅ Note saved — agent will see it on their next load</div>}
+            {status === 'saved'   && <div className="bg-green-50 border border-green-200 text-green-700 text-[9px] font-black px-3 py-2 rounded-xl uppercase tracking-widest">✅ Note saved</div>}
             {status === 'deleted' && <div className="bg-slate-50 border border-slate-200 text-slate-500 text-[9px] font-black px-3 py-2 rounded-xl uppercase tracking-widest">🗑 Note deleted</div>}
-            {status === 'error'   && <div className="bg-red-50 border border-red-200 text-red-600 text-[9px] font-black px-3 py-2 rounded-xl uppercase tracking-widest">❌ Save failed — check browser console for error</div>}
-
+            {status === 'error'   && <div className="bg-red-50 border border-red-200 text-red-600 text-[9px] font-black px-3 py-2 rounded-xl uppercase tracking-widest">❌ Save failed</div>}
             {editing ? (
                 <div className="bg-amber-50 border-2 border-amber-400 rounded-2xl p-4 space-y-3">
-                    <div className="text-[9px] font-black uppercase tracking-widest text-amber-700">
-                        📋 Note for {agentName} — they will see this on their CRM
-                    </div>
-                    <textarea
-                        rows={5}
-                        value={draft}
-                        onChange={e => setDraft(e.target.value)}
-                        placeholder="e.g. Focus on calling Prestige leads this week. Prioritise Hot leads first."
-                        className="w-full p-3 border-2 border-amber-300 rounded-xl text-sm font-semibold outline-none resize-none bg-white focus:ring-2 focus:ring-amber-400 transition"
-                        autoFocus
-                    />
+                    <div className="text-[9px] font-black uppercase tracking-widest text-amber-700">📋 Note for {agentName}</div>
+                    <textarea rows={5} value={draft} onChange={e => setDraft(e.target.value)} placeholder="e.g. Focus on calling Prestige leads this week." className="w-full p-3 border-2 border-amber-300 rounded-xl text-sm font-semibold outline-none resize-none bg-white focus:ring-2 focus:ring-amber-400 transition" autoFocus />
                     <div className="flex gap-2 flex-wrap">
-                        <button onClick={save} disabled={saving}
-                            className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-[9px] font-black px-4 py-2.5 rounded-xl uppercase tracking-widest transition flex items-center gap-1.5 shadow-md">
-                            {saving ? '⏳ Saving...' : '✅ Save Note'}
-                        </button>
-                        <button onClick={() => { setEditing(false); setDraft(''); }}
-                            className="bg-white border border-slate-200 text-slate-600 text-[9px] font-black px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition">
-                            Cancel
-                        </button>
-                        {note && (
-                            <button onClick={deleteNote} disabled={deleting}
-                                className="ml-auto bg-red-50 border border-red-200 text-red-500 text-[9px] font-black px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-red-100 transition disabled:opacity-50">
-                                {deleting ? '⏳' : '🗑 Delete Note'}
-                            </button>
-                        )}
+                        <button onClick={save} disabled={saving} className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-[9px] font-black px-4 py-2.5 rounded-xl uppercase tracking-widest transition">{saving ? '⏳ Saving...' : '✅ Save Note'}</button>
+                        <button onClick={() => { setEditing(false); setDraft(''); }} className="bg-white border border-slate-200 text-slate-600 text-[9px] font-black px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-slate-50 transition">Cancel</button>
+                        {note && <button onClick={deleteNote} disabled={deleting} className="ml-auto bg-red-50 border border-red-200 text-red-500 text-[9px] font-black px-4 py-2.5 rounded-xl uppercase tracking-widest hover:bg-red-100 transition disabled:opacity-50">{deleting ? '⏳' : '🗑 Delete'}</button>}
                     </div>
                 </div>
             ) : (
@@ -1850,27 +1672,13 @@ function AdminNoteEditor({ agentName }) {
                         <div className="flex items-start gap-3 flex-1 min-w-0">
                             <span className="text-2xl shrink-0">📋</span>
                             <div className="flex-1 min-w-0">
-                                <div className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-1">
-                                    Admin Note for {agentName}
-                                </div>
-                                {note ? (
-                                    <p className="text-sm font-semibold text-amber-900 whitespace-pre-wrap leading-relaxed">{note}</p>
-                                ) : (
-                                    <p className="text-[10px] italic text-amber-500">No note yet. Click Edit to write one.</p>
-                                )}
+                                <div className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-1">Admin Note for {agentName}</div>
+                                {note ? <p className="text-sm font-semibold text-amber-900 whitespace-pre-wrap leading-relaxed">{note}</p> : <p className="text-[10px] italic text-amber-500">No note yet.</p>}
                             </div>
                         </div>
                         <div className="flex flex-col gap-1.5 shrink-0">
-                            <button onClick={() => { setDraft(note); setEditing(true); }}
-                                className="text-[8px] font-black text-amber-600 bg-white border border-amber-300 px-3 py-1.5 rounded-lg uppercase tracking-widest hover:bg-amber-100 transition">
-                                ✏️ {note ? 'Edit' : 'Write Note'}
-                            </button>
-                            {note && (
-                                <button onClick={deleteNote} disabled={deleting}
-                                    className="text-[8px] font-black text-red-500 bg-white border border-red-200 px-3 py-1.5 rounded-lg uppercase tracking-widest hover:bg-red-50 transition disabled:opacity-50">
-                                    {deleting ? '⏳' : '🗑 Delete'}
-                                </button>
-                            )}
+                            <button onClick={() => { setDraft(note); setEditing(true); }} className="text-[8px] font-black text-amber-600 bg-white border border-amber-300 px-3 py-1.5 rounded-lg uppercase tracking-widest hover:bg-amber-100 transition">✏️ {note ? 'Edit' : 'Write'}</button>
+                            {note && <button onClick={deleteNote} disabled={deleting} className="text-[8px] font-black text-red-500 bg-white border border-red-200 px-3 py-1.5 rounded-lg uppercase tracking-widest hover:bg-red-50 transition disabled:opacity-50">{deleting ? '⏳' : '🗑'}</button>}
                         </div>
                     </div>
                 </div>
@@ -1881,11 +1689,11 @@ function AdminNoteEditor({ agentName }) {
 
 // ─── LOGIN ─────────────────────────────────────────────────────────────────
 function LoginForm({ supabase }) {
-    const [email,   setEmail]   = useState("");
-    const [pass,    setPass]    = useState("");
-    const [loading, setLoad]    = useState(false);
-    const [errMsg,  setErrMsg]  = useState("");
-    const [showPw,  setShowPw]  = useState(false);
+    const [email,   setEmail]  = useState("");
+    const [pass,    setPass]   = useState("");
+    const [loading, setLoad]   = useState(false);
+    const [errMsg,  setErrMsg] = useState("");
+    const [showPw,  setShowPw] = useState(false);
 
     const handleLogin = async (e) => {
         e.preventDefault(); setLoad(true); setErrMsg("");
@@ -1905,14 +1713,9 @@ function LoginForm({ supabase }) {
                 </div>
                 <div className="mb-8 relative">
                     <input type={showPw ? 'text' : 'password'} required placeholder="Password" className="w-full p-4 pr-12 bg-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition text-left" value={pass} onChange={e => setPass(e.target.value)} />
-                    <button type="button" onClick={() => setShowPw(v => !v)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition text-lg select-none" tabIndex={-1}>
-                        {showPw ? '🙈' : '👁️'}
-                    </button>
+                    <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition text-lg select-none" tabIndex={-1}>{showPw ? '🙈' : '👁️'}</button>
                 </div>
-                <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg disabled:opacity-50 hover:bg-blue-700 transition">
-                    {loading ? "Authenticating..." : "Login →"}
-                </button>
+                <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg disabled:opacity-50 hover:bg-blue-700 transition">{loading ? "Authenticating..." : "Login →"}</button>
                 <p className="text-[9px] text-slate-400 font-bold mt-6 uppercase tracking-widest">Contact admin to reset password</p>
             </form>
         </div>
@@ -1920,114 +1723,92 @@ function LoginForm({ supabase }) {
 }
 
 // ─── LEAD BUCKET TABS ──────────────────────────────────────────────────────
-// Buckets: New → Open → SV Scheduled → SV Done → Converted → Rejected
 const LEAD_BUCKETS = [
-    { id:'new',         label:'🆕 New',              emoji:'🆕', color:'bg-yellow-500',   desc:'Untouched / Uncalled leads' },
-    { id:'open',        label:'📂 Open',             emoji:'📂', color:'bg-blue-500',     desc:'Called, RNR, Callback scheduled' },
-    { id:'sv_scheduled',label:'📅 SV Scheduled',     emoji:'📅', color:'bg-teal-500',     desc:'Site visit booked' },
-    { id:'sv_done',     label:'✅ SV Done',           emoji:'✅', color:'bg-indigo-500',   desc:'Site visit completed' },
-    { id:'converted',   label:'🏆 Converted',        emoji:'🏆', color:'bg-green-500',    desc:'Successful closures' },
-    { id:'rejected',    label:'🗑️ Rejected',         emoji:'🗑️', color:'bg-red-500',      desc:'Rejected / Junk leads' },
+    { id:'new',          label:'🆕 New',          emoji:'🆕', color:'bg-yellow-500' },
+    { id:'open',         label:'📂 Open',          emoji:'📂', color:'bg-blue-500' },
+    { id:'sv_scheduled', label:'📅 SV Scheduled',  emoji:'📅', color:'bg-teal-500' },
+    { id:'sv_done',      label:'✅ SV Done',        emoji:'✅', color:'bg-indigo-500' },
+    { id:'converted',    label:'🏆 Converted',     emoji:'🏆', color:'bg-green-500' },
+    { id:'rejected',     label:'🗑️ Rejected',      emoji:'🗑️', color:'bg-red-500' },
 ];
 
 function filterLeadsByBucket(leads, bucket) {
     switch(bucket) {
-        case 'new':
-            return leads.filter(l => !l.lead_status || l.lead_status === 'Un called');
-        case 'open':
-            // Called + RNR + Details Shared + has a callback set
-            return leads.filter(l => ['Called','RNR','Details Shared'].includes(l.lead_status));
-        case 'sv_scheduled':
-            return leads.filter(l => l.lead_status === 'SV Scheduled');
-        case 'sv_done':
-            // SV Done = site_visit_at is set and in the past, but not yet converted/rejected
-            return leads.filter(l => l.site_visit_at && l.site_visit_at < new Date().toISOString().split('T')[0] && !['Converted','Rejected'].includes(l.lead_status));
-        case 'converted':
-            return leads.filter(l => l.lead_status === 'Converted');
-        case 'rejected':
-            return leads.filter(l => l.lead_status === 'Rejected');
-        default:
-            return leads;
+        case 'new':          return leads.filter(l => !l.lead_status || l.lead_status === 'Un called');
+        case 'open':         return leads.filter(l => ['Called','RNR','Details Shared'].includes(l.lead_status));
+        case 'sv_scheduled': return leads.filter(l => l.lead_status === 'SV Scheduled');
+        case 'sv_done':      return leads.filter(l => l.site_visit_at && l.site_visit_at < new Date().toISOString().split('T')[0] && !['Converted','Rejected'].includes(l.lead_status));
+        case 'converted':    return leads.filter(l => l.lead_status === 'Converted');
+        case 'rejected':     return leads.filter(l => l.lead_status === 'Rejected');
+        default:             return leads;
     }
 }
 
 // ─── ROUTER ────────────────────────────────────────────────────────────────
 const getInitialRoute = () => {
     const hash = window.location.hash.replace('#', '');
-    if (hash.startsWith('/library'))   return { v:'library',   c:'website' };
-    if (hash.startsWith('/add'))       return { v:'add',       c:'website' };
-    if (hash.startsWith('/admin'))     return { v:'admin',     c:'website' };
-    if (hash.startsWith('/crm/bulk'))  return { v:'dashboard', c:'bulk' };
-    if (hash.startsWith('/crm/manual'))return { v:'dashboard', c:'manual' };
+    if (hash.startsWith('/library'))    return { v:'library',   c:'website' };
+    if (hash.startsWith('/add'))        return { v:'add',       c:'website' };
+    if (hash.startsWith('/admin'))      return { v:'admin',     c:'website' };
+    if (hash.startsWith('/crm/bulk'))   return { v:'dashboard', c:'bulk' };
+    if (hash.startsWith('/crm/manual')) return { v:'dashboard', c:'manual' };
     return { v:'dashboard', c:'website' };
 };
 
 // ─── ADMIN APP ─────────────────────────────────────────────────────────────
 function AdminApp() {
     const initRoute = getInitialRoute();
-    const [session,        setSession]        = useState(null);
-    const [authChecking,   setAuthChecking]   = useState(true);
-    const [leads,          setLeads]          = useState([]);
-    const [allLeadsAdmin,  setAllLeadsAdmin]  = useState([]);
-    const [allBulkAdmin,   setAllBulkAdmin]   = useState([]);
-    const [allManualAdmin, setAllManualAdmin] = useState([]);
-    const [properties,     setProperties]     = useState([]);
-    const [editingProp,    setEditingProp]    = useState(null);
-    const [view,           setView]           = useState(initRoute.v);
-    const [leadCategory,   setLeadCategory]   = useState(initRoute.c);
-    const [loading,        setLoading]        = useState(true);
-    const [showManualModal,setShowManualModal] = useState(false);
-    const [summaryAgent,   setSummaryAgent]   = useState(ADMIN_AGENT_NAME || 'All'); // default to Tharun immediately
-    const [selectedProp,   setSelectedProp]   = useState(null);
-    const [selectedLead,   setSelectedLead]   = useState(null);
-    const [visibleCount,   setVisibleCount]   = useState(50);
-    const [searchTerm,     setSearchTerm]     = useState("");
-    const [deferredPrompt, setDeferredPrompt] = useState(null);
-    const [sessionTimeLeft, setSessionTimeLeft] = useState(''); // e.g. "2h 47m"
+    const [session,         setSession]         = useState(null);
+    const [authChecking,    setAuthChecking]     = useState(true);
+    const [leads,           setLeads]           = useState([]);
+    const [allLeadsAdmin,   setAllLeadsAdmin]   = useState([]);
+    const [allBulkAdmin,    setAllBulkAdmin]    = useState([]);
+    const [allManualAdmin,  setAllManualAdmin]  = useState([]);
+    const [properties,      setProperties]      = useState([]);
+    const [editingProp,     setEditingProp]     = useState(null);
+    const [view,            setView]            = useState(initRoute.v);
+    const [leadCategory,    setLeadCategory]    = useState(initRoute.c);
+    const [loading,         setLoading]         = useState(true);
+    const [showManualModal, setShowManualModal] = useState(false);
+    const [summaryAgent,    setSummaryAgent]    = useState(ADMIN_AGENT_NAME || 'All');
+    const [selectedProp,    setSelectedProp]    = useState(null);
+    const [selectedLead,    setSelectedLead]    = useState(null);
+    const [visibleCount,    setVisibleCount]    = useState(50);
+    const [searchTerm,      setSearchTerm]      = useState("");
+    const [deferredPrompt,  setDeferredPrompt]  = useState(null);
+    const [sessionTimeLeft, setSessionTimeLeft] = useState('');
+    const [leadBucket,      setLeadBucket]      = useState('new');
+    const [showBulkUpload,  setShowBulkUpload]  = useState(false);
+    const [scheduleFilter,  setScheduleFilter]  = useState('ALL');
+    const [priorityFilter,  setPriorityFilter]  = useState('ALL');
 
-    // ── Live session countdown — ticks every second, h:mm:ss ───────────────
-    // dep=[] so interval is created once and never reset mid-session
+    const userEmail    = session?.user?.email || '';
+    const agentName    = getAgentFromEmail(userEmail);
+    const isAdminUser  = agentName === '__ADMIN__';
+    const isKnownAgent = agentName && agentName !== '__ADMIN__' && agentName !== '__UNKNOWN__';
+
     useEffect(() => {
         const tick = () => {
             const stored = localStorage.getItem('__crm_login_time');
             if (!stored) { setSessionTimeLeft(''); return; }
             const remaining = (3 * 60 * 60 * 1000) - (Date.now() - parseInt(stored, 10));
             if (remaining <= 0) { setSessionTimeLeft('Expired'); return; }
-            const h  = Math.floor(remaining / 3600000);
-            const m  = Math.floor((remaining % 3600000) / 60000);
-            const s  = Math.floor((remaining % 60000) / 1000);
-            const mm = String(m).padStart(2, '0');
-            const ss = String(s).padStart(2, '0');
-            setSessionTimeLeft(h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`);
+            const h = Math.floor(remaining / 3600000);
+            const m = Math.floor((remaining % 3600000) / 60000);
+            const s = Math.floor((remaining % 60000) / 1000);
+            setSessionTimeLeft(h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
         };
-        tick(); // run immediately
+        tick();
         const interval = setInterval(tick, 1000);
         return () => clearInterval(interval);
-    }, []); // [] = start once, never reset
-    const [leadBucket,     setLeadBucket]     = useState('new');
-    const [showBulkUpload, setShowBulkUpload] = useState(false);  // CSV uploader panel
-    const [scheduleFilter, setScheduleFilter] = useState('ALL');
-    const [priorityFilter, setPriorityFilter] = useState('ALL');
+    }, []);
 
-    // Derive current user's agent name
-    const userEmail   = session?.user?.email || '';
-    const agentName   = getAgentFromEmail(userEmail);
-    const isAdminUser = agentName === '__ADMIN__';
-    const isKnownAgent = agentName && agentName !== '__ADMIN__' && agentName !== '__UNKNOWN__';
-
-    // ── Set summary filter as soon as we know who is logged in ─────────────
     useEffect(() => {
         if (!session) return;
         const email = session.user?.email || '';
-        if (email === ADMIN_EMAIL) {
-            // Admin: default to their dual-role agent name (Tharun) or All
-            setSummaryAgent(ADMIN_AGENT_NAME || 'All');
-        } else {
-            // PSA agent: default to their own name
-            const name = AGENT_EMAIL_MAP[email];
-            if (name) setSummaryAgent(name);
-        }
-    }, [session]); // re-runs when session changes
+        if (email === ADMIN_EMAIL) setSummaryAgent(ADMIN_AGENT_NAME || 'All');
+        else { const name = AGENT_EMAIL_MAP[email]; if (name) setSummaryAgent(name); }
+    }, [session]);
 
     useEffect(() => {
         const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
@@ -2043,11 +1824,7 @@ function AdminApp() {
     };
 
     useEffect(() => {
-        const onHashChange = () => {
-            const r = getInitialRoute();
-            setView(r.v); setLeadCategory(r.c);
-            if (r.v !== 'add') setEditingProp(null);
-        };
+        const onHashChange = () => { const r = getInitialRoute(); setView(r.v); setLeadCategory(r.c); if (r.v !== 'add') setEditingProp(null); };
         window.addEventListener('hashchange', onHashChange);
         return () => window.removeEventListener('hashchange', onHashChange);
     }, []);
@@ -2062,22 +1839,16 @@ function AdminApp() {
 
     useEffect(() => { setVisibleCount(50); }, [leadCategory, leadBucket, scheduleFilter, summaryAgent, searchTerm, priorityFilter]);
 
-    // ── Auto-logout after 3 hours from login time ─────────────────────────
-    const AUTO_LOGOUT_MS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+    const AUTO_LOGOUT_MS = 3 * 60 * 60 * 1000;
     const logoutTimerRef = useRef(null);
 
-    // ── Reschedule timer from stored login time (called on page load + refresh) ──
     const rescheduleFromStored = useCallback(() => {
         if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
         const stored = localStorage.getItem('__crm_login_time');
-        if (!stored) return; // no active session timer
-        const loginTime = parseInt(stored, 10);
-        const remaining = AUTO_LOGOUT_MS - (Date.now() - loginTime);
-        if (remaining <= 0) {
-            // Already past 3 hours — logout immediately
-            supabase.auth.signOut();
-            localStorage.removeItem('__crm_login_time');
-        } else {
+        if (!stored) return;
+        const remaining = AUTO_LOGOUT_MS - (Date.now() - parseInt(stored, 10));
+        if (remaining <= 0) { supabase.auth.signOut(); localStorage.removeItem('__crm_login_time'); }
+        else {
             logoutTimerRef.current = setTimeout(async () => {
                 await supabase.auth.signOut();
                 localStorage.removeItem('__crm_login_time');
@@ -2088,124 +1859,68 @@ function AdminApp() {
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setAuthChecking(false);
+            setSession(session); setAuthChecking(false);
             if (window.__dismissSplash) window.__dismissSplash();
-            if (session) {
-                // Already logged in on page load — stamp now if no existing stamp
-                // This handles: user opens new version of app while already logged in
-                if (!localStorage.getItem('__crm_login_time')) {
-                    localStorage.setItem('__crm_login_time', String(Date.now()));
-                }
-                rescheduleFromStored();
-            }
+            if (session) { if (!localStorage.getItem('__crm_login_time')) localStorage.setItem('__crm_login_time', String(Date.now())); rescheduleFromStored(); }
         });
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
             setSession(s);
-            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-                // Both fresh login and page reload — stamp if not already stamped
-                if (s && !localStorage.getItem('__crm_login_time')) {
-                    localStorage.setItem('__crm_login_time', String(Date.now()));
-                }
-                if (s) rescheduleFromStored();
-            } else if (event === 'SIGNED_OUT') {
-                if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
-                localStorage.removeItem('__crm_login_time');
-            }
+            if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && s) { if (!localStorage.getItem('__crm_login_time')) localStorage.setItem('__crm_login_time', String(Date.now())); rescheduleFromStored(); }
+            else if (event === 'SIGNED_OUT') { if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current); localStorage.removeItem('__crm_login_time'); }
         });
-        return () => {
-            subscription.unsubscribe();
-            if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
-        };
+        return () => { subscription.unsubscribe(); if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current); };
     }, [rescheduleFromStored]);
 
     useEffect(() => {
         if (!session) return;
         fetchProperties();
-        // Only fetch leads once agentName is resolved (not null)
-        // agentName=null means session loaded but email map not checked yet
         if (view === 'dashboard' && agentName) fetchLeads();
     }, [session, view, leadCategory, agentName]);
 
-    // Admin overview fetch — separate effect so it fires whenever admin opens the tab
     useEffect(() => {
-        if (session && view === 'admin' && isAdminUser) {
-            fetchAllForAdmin();
-        }
+        if (session && view === 'admin' && isAdminUser) fetchAllForAdmin();
     }, [session, view, isAdminUser]);
 
     async function fetchLeads() {
         setLoading(true);
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-        let query = supabase.from(table).select('*').order('created_at', { ascending:false });
-
-        const { data, error } = await query;
+        const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending:false });
         if (!error) {
             let raw = data || [];
-
-            // ── Source filter (website vs manual) ──────────────────────────
             if (table === 'leads') {
-                if (leadCategory === 'website') {
-                    raw = raw.filter(l => !l.lead_source || l.lead_source.trim() === '' || l.lead_source.toLowerCase().includes('website'));
-                } else if (leadCategory === 'manual') {
-                    raw = raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && !l.lead_source.toLowerCase().includes('website'));
-                }
+                if (leadCategory === 'website') raw = raw.filter(l => !l.lead_source || l.lead_source.trim() === '' || l.lead_source.toLowerCase().includes('website'));
+                else if (leadCategory === 'manual') raw = raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && !l.lead_source.toLowerCase().includes('website'));
             }
-
-            // ── Visibility filter (client-side) ────────────────────────────────
             if (!isAdminUser) {
-                if (agentName === '__UNKNOWN__') {
-                    // Unrecognised email — show nothing as safety net
-                    raw = [];
-                } else if (agentName) {
-                    if (leadCategory === 'website') {
-                        // Website: see unassigned leads + leads assigned to me
-                        raw = raw.filter(l =>
-                            !l.psa_agent_name ||               // unassigned → all agents see it
-                            l.psa_agent_name === agentName     // assigned to me → I see it
-                        );
-                    } else {
-                        // Bulk & Manual: strictly my own leads only
-                        raw = raw.filter(l => l.psa_agent_name === agentName);
-                    }
-                } else {
-                    // agentName is null (shouldn't happen) — show nothing
-                    raw = [];
-                }
+                if (agentName === '__UNKNOWN__') raw = [];
+                else if (agentName) {
+                    if (leadCategory === 'website') raw = raw.filter(l => !l.psa_agent_name || l.psa_agent_name === agentName);
+                    else raw = raw.filter(l => l.psa_agent_name === agentName);
+                } else raw = [];
             }
-
             setLeads(raw);
         }
         setLoading(false);
     }
 
-    // ── Soft-delete: sets is_hidden=true — data stays in DB, removed from UI ──
     async function deleteLead(lead) {
-        const confirmed = window.confirm(
-            'Delete this lead?\n\nName: ' + lead.customer_name + '\nPhone: ' + lead.phone_number + '\n\nThis lead will be removed from the CRM view but data is kept in the database.'
-        );
+        const confirmed = window.confirm('Delete this lead?\n\nName: ' + lead.customer_name + '\nPhone: ' + lead.phone_number);
         if (!confirmed) return;
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-        setLeads(prev => prev.filter(l => l.id !== lead.id)); // remove from UI instantly
+        setLeads(prev => prev.filter(l => l.id !== lead.id));
         const { error } = await supabase.from(table).update({ is_hidden: true }).eq('id', lead.id);
-        if (error) {
-            alert('Error: ' + error.message + '\n\nMake sure the \'is_hidden\' (boolean, default false) column exists in your ' + table + ' table.');
-            fetchLeads();
-        }
+        if (error) { alert('Error: ' + error.message); fetchLeads(); }
     }
 
     async function fetchAllForAdmin() {
-        // Admin sees everything
         const [{ data: websiteData }, { data: bulkData }, { data: manualData }] = await Promise.all([
             supabase.from('leads').select('*').order('created_at', { ascending:false }),
             supabase.from('bulk_leads').select('*').order('created_at', { ascending:false }),
             supabase.from('leads').select('*').order('created_at', { ascending:false }),
         ]);
-        const allLeadsRaw  = (websiteData||[]).filter(l => !l.lead_source || l.lead_source.toLowerCase().includes('website') || l.lead_source.trim() === '');
-        const allManualRaw = (manualData||[]).filter(l => l.lead_source && !l.lead_source.toLowerCase().includes('website'));
-        setAllLeadsAdmin(allLeadsRaw);
+        setAllLeadsAdmin((websiteData||[]).filter(l => !l.lead_source || l.lead_source.toLowerCase().includes('website') || l.lead_source.trim() === ''));
         setAllBulkAdmin(bulkData||[]);
-        setAllManualAdmin(allManualRaw);
+        setAllManualAdmin((manualData||[]).filter(l => l.lead_source && !l.lead_source.toLowerCase().includes('website')));
     }
 
     async function fetchProperties() {
@@ -2214,87 +1929,50 @@ function AdminApp() {
     }
 
     async function updateLead(lead, field, value) {
-        // ── CLAIM-ON-INTERACTION: non-admin agents claim unassigned website leads ──
-        // Admin is ALWAYS neutral — never auto-claims anything regardless of ADMIN_AGENT_NAME.
-        // Only a real non-admin PSA agent can claim by interacting with a lead.
-        const shouldClaim = !isAdminUser                        // admin = never claims
-            && leadCategory === 'website'                       // only website leads
-            && !lead.psa_agent_name                            // must be unassigned
-            && agentName                                        // must be a known agent
-            && agentName !== '__UNKNOWN__';                     // must be recognised
-
+        const shouldClaim = !isAdminUser && leadCategory === 'website' && !lead.psa_agent_name && agentName && agentName !== '__UNKNOWN__';
         if (shouldClaim) {
             setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, psa_agent_name: agentName } : l));
             await supabase.from('leads').update({ psa_agent_name: agentName }).eq('id', lead.id);
             lead = { ...lead, psa_agent_name: agentName };
         }
-
         let updates = {};
         const stamp = new Date().toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-        const actorName = isAdminUser
-            ? (ADMIN_AGENT_NAME || 'Admin')
-            : (agentName || lead.psa_agent_name || 'Unknown');
-
+        const actorName = isAdminUser ? (ADMIN_AGENT_NAME || 'Admin') : (agentName || lead.psa_agent_name || 'Unknown');
         if (field === 'lead_status')        { updates.lead_status   = value; updates.call_remark = `[${stamp}] [${actorName}] Status → ${value}\n\n${lead.call_remark||''}`; }
         else if (field === 'follow_up_at')  { updates.follow_up_at  = value; updates.call_remark = `[${stamp}] [${actorName}] Callback Set: ${new Date(value).toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}\n\n${lead.call_remark||''}`; }
         else if (field === 'site_visit_at') { updates.site_visit_at = value; updates.call_remark = `[${stamp}] [${actorName}] SV Booked: ${value}\n\n${lead.call_remark||''}`; }
         else if (field === 'add_note')      { if (!value.trim()) return; updates.add_note = value; updates.call_remark = `[${stamp}] [${actorName}] Note: ${value}\n\n${lead.call_remark||''}`; }
         else if (field === 'reject_reason') { updates.reject_reason = value; updates.call_remark = `[${stamp}] [${actorName}] Rejected: ${value}\n\n${lead.call_remark||''}`; }
         else if (field === 'psa_agent_name') { updates.psa_agent_name = value; updates.call_remark = `[${stamp}] [Admin] ${lead.psa_agent_name ? 'Reassigned: ' + lead.psa_agent_name + ' to ' + value : 'Assigned to ' + value}\n\n${lead.call_remark||''}`; }
-        else                                { updates[field] = value; }
-
+        else { updates[field] = value; }
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-
-        // If admin is reassigning to a different agent, remove the lead from
-        // the current local state for non-admin users immediately.
-        // Also update optimistically for admin's view.
         if (field === 'psa_agent_name') {
-            if (isAdminUser) {
-                // Admin sees all — just update the agent label in UI
-                setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...updates } : l));
-            } else {
-                // Non-admin: if reassigned away from me, remove from my view
-                setLeads(prev => prev.filter(l => l.id !== lead.id));
-            }
+            if (isAdminUser) setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...updates } : l));
+            else setLeads(prev => prev.filter(l => l.id !== lead.id));
         } else {
             setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...updates } : l));
         }
-
         const { error } = await supabase.from(table).update(updates).eq('id', lead.id);
-        if (error) {
-            alert("Save error: " + error.message);
-            fetchLeads();
-        } else if (field === 'psa_agent_name') {
-            // Refetch after reassignment to ensure server state is synced
-            setTimeout(() => fetchLeads(), 500);
-        }
+        if (error) { alert("Save error: " + error.message); fetchLeads(); }
+        else if (field === 'psa_agent_name') setTimeout(() => fetchLeads(), 500);
     }
 
     const displayedLeads = useMemo(() => {
-        // Always filter out soft-deleted leads
         let f = filterLeadsByBucket(leads.filter(l => !l.is_hidden), leadBucket);
-
         const today = new Date().toISOString().split('T')[0];
         if (scheduleFilter === 'TODAY_CB')       f = f.filter(l => l.follow_up_at?.startsWith(today));
         else if (scheduleFilter === 'TODAY_SV')  f = f.filter(l => l.site_visit_at === today);
         else if (scheduleFilter === 'MISSED_CB') f = f.filter(l => l.follow_up_at && l.follow_up_at < today && !['Rejected','Converted'].includes(l.lead_status));
         else if (scheduleFilter === 'MISSED_SV') f = f.filter(l => l.site_visit_at && l.site_visit_at < today && !['Rejected','Converted'].includes(l.lead_status));
-
         if (priorityFilter !== 'ALL') f = f.filter(l => (l.lead_priority||'Warm') === priorityFilter);
-
         if (isAdminUser && summaryAgent !== 'All') f = f.filter(l => l.psa_agent_name === summaryAgent);
-
-        if (searchTerm.trim()) {
-            const t = searchTerm.toLowerCase();
-            f = f.filter(l => (l.customer_name||'').toLowerCase().includes(t) || (l.phone_number||'').toLowerCase().includes(t) || (l.project_interested_in||'').toLowerCase().includes(t));
-        }
+        if (searchTerm.trim()) { const t = searchTerm.toLowerCase(); f = f.filter(l => (l.customer_name||'').toLowerCase().includes(t) || (l.phone_number||'').toLowerCase().includes(t) || (l.project_interested_in||'').toLowerCase().includes(t)); }
         return f;
     }, [leads, leadBucket, scheduleFilter, priorityFilter, summaryAgent, searchTerm, isAdminUser]);
 
     const visibleLeads = displayedLeads.slice(0, visibleCount);
 
     const stats = useMemo(() => {
-        // Always exclude soft-deleted leads from all counts
         let t = leads.filter(l => !l.is_hidden && l.lead_status !== 'Rejected');
         if (summaryAgent !== 'All') t = t.filter(l => l.psa_agent_name === summaryAgent);
         return {
@@ -2311,29 +1989,21 @@ function AdminApp() {
     if (selectedProp) return <PropertyDetailsPage property={selectedProp} onBack={() => setSelectedProp(null)} />;
 
     const navItems = [
-        { id:'dashboard', label:'📊 CRM',      mobileLabel:'CRM' },
-        { id:'library',   label:'🏢 Library',   mobileLabel:'Library' },
-        { id:'add',       label:'➕ Property',  mobileLabel:'Add' },
+        { id:'dashboard', label:'📊 CRM',     mobileLabel:'CRM' },
+        { id:'library',   label:'🏢 Library',  mobileLabel:'Library' },
+        { id:'add',       label:'➕ Property', mobileLabel:'Add' },
         ...(isAdminUser ? [{ id:'admin', label:'🛡️ Admin', mobileLabel:'Admin' }] : []),
     ];
 
     return (
         <div className="min-h-screen flex flex-col animate-fadeIn">
-            {/* Lead Detail Modal */}
-            {selectedLead && (
-                <LeadDetailModal lead={selectedLead} onClose={() => setSelectedLead(null)} leadCategory={leadCategory} userEmail={userEmail} />
-            )}
+            {selectedLead && <LeadDetailModal lead={selectedLead} onClose={() => setSelectedLead(null)} leadCategory={leadCategory} userEmail={userEmail} />}
 
-            {/* Nav */}
             <nav className="bg-slate-900 text-white px-4 md:px-8 py-3 flex justify-between items-center sticky top-0 z-50 shadow-lg border-b border-slate-800">
                 <div className="flex items-center gap-3">
                     <h1 className="font-black tracking-tighter text-lg md:text-xl uppercase italic">Horizon <span className="text-blue-400">CRM</span></h1>
                     {userEmail && <span className="hidden md:block text-[9px] font-bold text-slate-500 bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg uppercase tracking-widest truncate max-w-[180px]">{isAdminUser ? (ADMIN_AGENT_NAME ? `🛡️ Admin · ${ADMIN_AGENT_NAME}` : '🛡️ Admin') : `👤 ${agentName||userEmail.split('@')[0]}`}</span>}
-                    {sessionTimeLeft && (
-                        <span className="flex items-center gap-1 text-[9px] font-black text-amber-400 bg-amber-900/30 border border-amber-800/50 px-2 py-1 rounded-lg tracking-widest" title="Session expires 3 hours after login">
-                            ⏱ {sessionTimeLeft}
-                        </span>
-                    )}
+                    {sessionTimeLeft && <span className="flex items-center gap-1 text-[9px] font-black text-amber-400 bg-amber-900/30 border border-amber-800/50 px-2 py-1 rounded-lg tracking-widest" title="Session expires 3 hours after login">⏱ {sessionTimeLeft}</span>}
                 </div>
                 <div className="flex gap-1 items-center">
                     {navItems.map(n => (
@@ -2343,9 +2013,7 @@ function AdminApp() {
                             <span className="md:hidden">{n.mobileLabel}</span>
                         </button>
                     ))}
-                    {deferredPrompt && (
-                        <button onClick={handleInstallClick} className="hidden md:flex items-center gap-1 ml-1 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-md">⬇ Install</button>
-                    )}
+                    {deferredPrompt && <button onClick={handleInstallClick} className="hidden md:flex items-center gap-1 ml-1 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-md">⬇ Install</button>}
                     <button onClick={() => supabase.auth.signOut()} className="ml-1 md:ml-3 text-[9px] font-black uppercase tracking-widest text-red-400 border border-red-900/60 px-2 md:px-3 py-1.5 md:py-2 rounded-xl hover:bg-red-900/40 transition">
                         <span className="hidden md:inline">Logout</span><span className="md:hidden">Out</span>
                     </button>
@@ -2354,16 +2022,10 @@ function AdminApp() {
 
             <main className="p-3 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
 
-                {/* ── ADMIN OVERVIEW ── */}
-                {view === 'admin' && isAdminUser && (
-                    <AdminOverview allLeads={allLeadsAdmin} allBulkLeads={allBulkAdmin} allManualLeads={allManualAdmin} />
-                )}
+                {view === 'admin' && isAdminUser && <AdminOverview allLeads={allLeadsAdmin} allBulkLeads={allBulkAdmin} allManualLeads={allManualAdmin} />}
 
-                {/* ── DASHBOARD ── */}
                 {view === 'dashboard' && (
                     <div className="space-y-5">
-
-                        {/* Stats bar */}
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
                             <div className="flex flex-wrap md:grid md:grid-cols-6 gap-3 items-center">
                                 {isAdminUser && (
@@ -2375,11 +2037,11 @@ function AdminApp() {
                                     </div>
                                 )}
                                 {[
-                                    { label:'Active',    val:stats.total,     bg:'bg-slate-50',   tc:'text-slate-700',  bc:'border-slate-100' },
-                                    { label:'Uncalled',  val:stats.uncalled,  bg:'bg-amber-50',   tc:'text-amber-600',  bc:'border-amber-100' },
-                                    { label:'Working',   val:stats.called,    bg:'bg-blue-50',    tc:'text-blue-600',   bc:'border-blue-100' },
-                                    { label:'Converted', val:stats.converted, bg:'bg-green-50',   tc:'text-green-600',  bc:'border-green-100' },
-                                    { label:'Rejected',  val:stats.rejected,  bg:'bg-red-50',     tc:'text-red-600',    bc:'border-red-100' },
+                                    { label:'Active',    val:stats.total,     bg:'bg-slate-50',  tc:'text-slate-700', bc:'border-slate-100' },
+                                    { label:'Uncalled',  val:stats.uncalled,  bg:'bg-amber-50',  tc:'text-amber-600', bc:'border-amber-100' },
+                                    { label:'Working',   val:stats.called,    bg:'bg-blue-50',   tc:'text-blue-600',  bc:'border-blue-100' },
+                                    { label:'Converted', val:stats.converted, bg:'bg-green-50',  tc:'text-green-600', bc:'border-green-100' },
+                                    { label:'Rejected',  val:stats.rejected,  bg:'bg-red-50',    tc:'text-red-600',   bc:'border-red-100' },
                                 ].map(s => (
                                     <div key={s.label} className={`flex flex-col items-center flex-1 p-3 rounded-2xl ${s.bg} border ${s.bc}`}>
                                         <span className="text-[9px] uppercase font-black text-slate-400 mb-1">{s.label}</span>
@@ -2389,7 +2051,6 @@ function AdminApp() {
                             </div>
                         </div>
 
-                        {/* Channel tabs + filters */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                             <div className="flex gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm">
                                 {[{id:'website',label:'🌐 Website'},{id:'bulk',label:'📦 Bulk'},{id:'manual',label:'✍️ Manual'}].map(c => (
@@ -2398,60 +2059,35 @@ function AdminApp() {
                                 ))}
                             </div>
                             <div className="flex gap-2 items-center flex-wrap">
-                                <select value={scheduleFilter} onChange={e => setScheduleFilter(e.target.value)}
-                                    className="px-3 py-2.5 rounded-2xl text-[9px] font-black uppercase border-2 bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 border-slate-200 cursor-pointer">
+                                <select value={scheduleFilter} onChange={e => setScheduleFilter(e.target.value)} className="px-3 py-2.5 rounded-2xl text-[9px] font-black uppercase border-2 bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 border-slate-200 cursor-pointer">
                                     <option value="ALL">📋 All Schedule</option>
                                     <option value="TODAY_CB">📅 Today Callbacks</option>
                                     <option value="TODAY_SV">📅 Today Site Visits</option>
                                     <option value="MISSED_CB">⚠️ Missed Callbacks</option>
                                     <option value="MISSED_SV">⚠️ Missed Site Visits</option>
                                 </select>
-                                <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}
-                                    className="px-3 py-2.5 rounded-2xl text-[9px] font-black uppercase border-2 bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 border-slate-200 cursor-pointer">
+                                <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)} className="px-3 py-2.5 rounded-2xl text-[9px] font-black uppercase border-2 bg-white text-slate-600 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 border-slate-200 cursor-pointer">
                                     <option value="ALL">🌡️ All Priority</option>
                                     <option value="Hot">🔥 Hot</option>
                                     <option value="Warm">🌤 Warm</option>
                                     <option value="Cold">❄️ Cold</option>
                                 </select>
                                 <button onClick={() => setShowManualModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase shadow-md shrink-0 transition border border-blue-500">+ Lead</button>
-                                {/* Bulk CSV upload — admin only, bulk tab only */}
                                 {isAdminUser && leadCategory === 'bulk' && (
-                                    <button onClick={() => setShowBulkUpload(v => !v)}
-                                        className={`px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase shadow-md shrink-0 transition border ${showBulkUpload ? 'bg-amber-500 text-white border-amber-400' : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400'}`}>
+                                    <button onClick={() => setShowBulkUpload(v => !v)} className={`px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase shadow-md shrink-0 transition border ${showBulkUpload ? 'bg-amber-500 text-white border-amber-400' : 'bg-white text-slate-700 border-slate-200 hover:border-blue-400'}`}>
                                         📤 {showBulkUpload ? 'Hide Uploader' : 'Upload CSV'}
                                     </button>
                                 )}
-
                             </div>
                         </div>
 
-                        {/* Bulk CSV Uploader Panel */}
-                        {isAdminUser && leadCategory === 'bulk' && showBulkUpload && (
-                            <BulkCSVUploader
-                                supabase={supabase}
-                                isAdminUser={isAdminUser}
-                                onSuccess={(count) => {
-                                    setShowBulkUpload(false);
-                                    fetchLeads();
-                                }}
-                            />
-                        )}
+                        {isAdminUser && leadCategory === 'bulk' && showBulkUpload && <BulkCSVUploader supabase={supabase} isAdminUser={isAdminUser} onSuccess={(count) => { setShowBulkUpload(false); fetchLeads(); }} />}
 
-                        {/* Admin Notes Banner — shown to PSA agents only */}
-                        {!isAdminUser && agentName && agentName !== '__UNKNOWN__' && agentName !== '__ADMIN__' && (
-                            <AdminNotesBanner agentName={agentName} />
-                        )}
+                        {!isAdminUser && agentName && agentName !== '__UNKNOWN__' && agentName !== '__ADMIN__' && <AdminNotesBanner agentName={agentName} />}
 
-                        {/* Bucket tabs */}
                         <div className="flex gap-2 overflow-x-auto hide-scroll pb-1">
                             {LEAD_BUCKETS.map(b => {
-                                const agentFilteredLeads = leads.filter(l => {
-                                    if (l.is_hidden) return false;
-                                    if (isAdminUser && summaryAgent !== 'All') {
-                                        return l.psa_agent_name === summaryAgent;
-                                    }
-                                    return true;
-                                });
+                                const agentFilteredLeads = leads.filter(l => { if (l.is_hidden) return false; if (isAdminUser && summaryAgent !== 'All') return l.psa_agent_name === summaryAgent; return true; });
                                 const count = filterLeadsByBucket(agentFilteredLeads, b.id).length;
                                 const isActive = leadBucket === b.id;
                                 return (
@@ -2465,7 +2101,6 @@ function AdminApp() {
                             })}
                         </div>
 
-                        {/* Search */}
                         <div className="relative">
                             <input type="text" placeholder="Search name, phone or project..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full p-4 pl-12 pr-28 bg-white border-2 border-slate-200 rounded-2xl text-xs font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all" />
@@ -2476,32 +2111,18 @@ function AdminApp() {
                             </div>
                         </div>
 
-                        {/* ── Desktop Table ── */}
+                        {/* Desktop Table */}
                         <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                             {loading ? (
-                                <div className="p-6 space-y-3">
-                                    {[...Array(6)].map((_,i) => (
-                                        <div key={i} className="flex gap-4">
-                                            <div className="skeleton h-14 flex-1 rounded-xl"></div>
-                                            <div className="skeleton h-14 w-44 rounded-xl"></div>
-                                            <div className="skeleton h-14 w-36 rounded-xl"></div>
-                                            <div className="skeleton h-14 flex-1 rounded-xl"></div>
-                                        </div>
-                                    ))}
-                                </div>
+                                <div className="p-6 space-y-3">{[...Array(6)].map((_,i) => <div key={i} className="flex gap-4"><div className="skeleton h-14 flex-1 rounded-xl"></div><div className="skeleton h-14 w-44 rounded-xl"></div><div className="skeleton h-14 w-36 rounded-xl"></div><div className="skeleton h-14 flex-1 rounded-xl"></div></div>)}</div>
                             ) : visibleLeads.length === 0 ? (
-                                <div className="py-20 flex flex-col items-center text-center">
-                                    <div className="text-5xl mb-4">🔍</div>
-                                    <div className="text-sm font-black uppercase tracking-widest text-slate-400 mb-1">No leads found</div>
-                                    <div className="text-[10px] text-slate-400 font-medium">Try adjusting your filter or search term</div>
-                                </div>
+                                <div className="py-20 flex flex-col items-center text-center"><div className="text-5xl mb-4">🔍</div><div className="text-sm font-black uppercase tracking-widest text-slate-400 mb-1">No leads found</div></div>
                             ) : (
                                 <table className="w-full text-left text-xs">
                                     <thead className="bg-slate-900 text-slate-400 font-black uppercase text-[9px] tracking-widest">
                                         <tr>
                                             <th className="px-5 py-3.5">Customer</th>
-                                            {leadCategory === 'website' && <th className="px-5 py-3.5">Agent & Status</th>}
-                                            {leadCategory !== 'website' && <th className="px-5 py-3.5">Status & Priority</th>}
+                                            <th className="px-5 py-3.5">{leadCategory === 'website' ? 'Agent & Status' : 'Status & Priority'}</th>
                                             <th className="px-5 py-3.5">Scheduling</th>
                                             <th className="px-5 py-3.5 min-w-[260px]">Activity & Notes</th>
                                             <th className="px-5 py-3.5 w-16">Detail</th>
@@ -2514,14 +2135,8 @@ function AdminApp() {
                                                     <p className="font-black text-[11px] uppercase text-slate-900 leading-tight">{l.customer_name}</p>
                                                     <p className="text-blue-600 font-black text-[11px] mt-0.5">{l.phone_number}</p>
                                                     {l.customer_email && <p className="text-slate-400 text-[9px] mt-0.5 lowercase truncate font-medium max-w-[160px]">{l.customer_email}</p>}
-                                                    {(isAdminUser || l.lead_source !== 'Bulk Upload') && (
-                                                        <p className="text-[8px] text-slate-500 font-bold mt-1.5 tracking-widest uppercase truncate max-w-[160px]">
-                                                            🏠 {l.project_interested_in||'General'}
-                                                        </p>
-                                                    )}
-                                                    <p className="text-[8px] text-slate-400 font-bold mt-1 tracking-widest uppercase">
-                                                        🕐 {formatDateTime(l.created_at)}
-                                                    </p>
+                                                    {(isAdminUser || l.lead_source !== 'Bulk Upload') && <p className="text-[8px] text-slate-500 font-bold mt-1.5 tracking-widest uppercase truncate max-w-[160px]">🏠 {l.project_interested_in||'General'}</p>}
+                                                    <p className="text-[8px] text-slate-400 font-bold mt-1 tracking-widest uppercase">🕐 {formatDateTime(l.created_at)}</p>
                                                     {l.psa_agent_name && <p className="text-[8px] text-blue-500 font-bold mt-0.5 tracking-widest uppercase">👤 {l.psa_agent_name}</p>}
                                                     <div className="mt-2.5 flex gap-1.5">
                                                         <a href={`tel:${l.phone_number}`} className="bg-slate-100 text-slate-600 text-[8px] font-black px-2.5 py-1.5 rounded-lg uppercase tracking-widest hover:bg-slate-200 transition border border-slate-200">📞 Call</a>
@@ -2529,25 +2144,16 @@ function AdminApp() {
                                                     </div>
                                                 </td>
                                                 <td className="p-4 min-w-[160px]">
-                                                    {/* Agent assignment — admin can reassign on ANY channel */}
                                                     {isAdminUser && (
                                                         <div className="mb-2">
-                                                            <label className="text-[7px] font-black uppercase tracking-widest text-slate-500 mb-0.5 block">
-                                                                {l.psa_agent_name ? '🔄 Reassign Agent' : '⚡ Assign Agent'}
-                                                            </label>
-                                                            <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''}
-                                                                className="w-full p-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none bg-slate-900 border-slate-700 text-blue-300 cursor-pointer">
+                                                            <label className="text-[7px] font-black uppercase tracking-widest text-slate-500 mb-0.5 block">{l.psa_agent_name ? '🔄 Reassign' : '⚡ Assign'}</label>
+                                                            <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''} className="w-full p-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none bg-slate-900 border-slate-700 text-blue-300 cursor-pointer">
                                                                 <option value="" disabled>Select Agent</option>
                                                                 {PSA_AGENTS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
                                                             </select>
                                                         </div>
                                                     )}
-                                                    {/* Non-admin: just show who's assigned (read-only) */}
-                                                    {!isAdminUser && l.psa_agent_name && (
-                                                        <div className="text-[8px] font-black text-blue-400 bg-slate-900 border border-slate-700 px-2 py-1.5 rounded-xl mb-2 uppercase tracking-widest">
-                                                            👤 {l.psa_agent_name}
-                                                        </div>
-                                                    )}
+                                                    {!isAdminUser && l.psa_agent_name && <div className="text-[8px] font-black text-blue-400 bg-slate-900 border border-slate-700 px-2 py-1.5 rounded-xl mb-2 uppercase tracking-widest">👤 {l.psa_agent_name}</div>}
                                                     <select onChange={e => updateLead(l,'lead_status',e.target.value)} value={l.lead_status||''} className={`w-full p-2 mb-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`}>
                                                         {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">🔵 Un called</option>}
                                                         <option value="Called">✅ Called</option><option value="RNR">🔔 RNR</option><option value="Details Shared">📤 Details Shared</option><option value="SV Scheduled">📅 SV Scheduled</option><option value="Converted">🏆 Converted</option><option value="Rejected">❌ Rejected</option>
@@ -2564,38 +2170,25 @@ function AdminApp() {
                                                 </td>
                                                 <td className="px-5 py-4 min-w-[170px]">
                                                     {['Called','RNR','Details Shared'].includes(l.lead_status) && (
-                                                        <div>
-                                                            <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">📅 Callback Date</span>
-                                                            <input type="datetime-local" className="w-full p-2 border-2 border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:border-blue-400" value={l.follow_up_at?.slice(0,16)||''} onChange={e => updateLead(l,'follow_up_at',e.target.value)} />
-                                                        </div>
+                                                        <div><span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">📅 Callback Date</span>
+                                                        <input type="datetime-local" className="w-full p-2 border-2 border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:border-blue-400" value={l.follow_up_at?.slice(0,16)||''} onChange={e => updateLead(l,'follow_up_at',e.target.value)} /></div>
                                                     )}
                                                     {l.lead_status==='SV Scheduled' && (
-                                                        <div className="mt-2">
-                                                            <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">📍 Site Visit</span>
-                                                            <input type="date" className="w-full p-2 border-2 border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:border-teal-400" value={l.site_visit_at||''} onChange={e => updateLead(l,'site_visit_at',e.target.value)} />
-                                                        </div>
+                                                        <div className="mt-2"><span className="text-[8px] font-black text-teal-600 uppercase tracking-widest block mb-1">📍 Site Visit</span>
+                                                        <input type="date" className="w-full p-2 border-2 border-teal-200 bg-teal-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:border-teal-400" value={l.site_visit_at||''} onChange={e => updateLead(l,'site_visit_at',e.target.value)} /></div>
                                                     )}
                                                     {!['Called','RNR','Details Shared','SV Scheduled'].includes(l.lead_status) && <span className="text-[9px] text-slate-300 font-bold italic">—</span>}
                                                 </td>
                                                 <td className="px-5 py-4">
                                                     <div className="flex flex-col gap-2">
-                                                        <div className="h-[60px] overflow-y-auto bg-slate-900/5 p-2 rounded-xl history-scroll whitespace-pre-wrap border border-slate-200 leading-relaxed font-medium text-slate-500 text-[9px]">
-                                                            {l.call_remark || <span className="italic text-slate-300">No activity yet...</span>}
-                                                        </div>
+                                                        <div className="h-[60px] overflow-y-auto bg-slate-900/5 p-2 rounded-xl history-scroll whitespace-pre-wrap border border-slate-200 leading-relaxed font-medium text-slate-500 text-[9px]">{l.call_remark || <span className="italic text-slate-300">No activity yet...</span>}</div>
                                                         <NoteCell lead={l} onSave={updateLead} />
                                                     </div>
                                                 </td>
                                                 <td className="px-3 py-4">
                                                     <div className="flex flex-col gap-1.5">
-                                                        <button onClick={() => setSelectedLead(l)} className="bg-blue-50 hover:bg-blue-100 text-blue-600 text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border border-blue-200 transition w-full">
-                                                            👁 Detail
-                                                        </button>
-                                                        {isAdminUser && (
-                                                            <button onClick={() => deleteLead(l)}
-                                                                className="text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border transition w-full bg-red-50 text-red-500 border-red-200 hover:bg-red-100">
-                                                                🗑 Delete
-                                                            </button>
-                                                        )}
+                                                        <button onClick={() => setSelectedLead(l)} className="bg-blue-50 hover:bg-blue-100 text-blue-600 text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border border-blue-200 transition w-full">👁 Detail</button>
+                                                        {isAdminUser && <button onClick={() => deleteLead(l)} className="text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border transition w-full bg-red-50 text-red-500 border-red-200 hover:bg-red-100">🗑 Delete</button>}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -2605,14 +2198,12 @@ function AdminApp() {
                             )}
                             {!loading && visibleCount < displayedLeads.length && (
                                 <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-center">
-                                    <button onClick={() => setVisibleCount(v => v+50)} className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition shadow-sm">
-                                        Load More ({displayedLeads.length - visibleCount} hidden)
-                                    </button>
+                                    <button onClick={() => setVisibleCount(v => v+50)} className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition shadow-sm">Load More ({displayedLeads.length - visibleCount} hidden)</button>
                                 </div>
                             )}
                         </div>
 
-                        {/* ── Mobile Cards ── */}
+                        {/* Mobile Cards */}
                         <div className="lg:hidden space-y-3">
                             {loading ? (
                                 [...Array(4)].map((_,i) => (
@@ -2623,11 +2214,7 @@ function AdminApp() {
                                     </div>
                                 ))
                             ) : visibleLeads.length === 0 ? (
-                                <div className="py-16 flex flex-col items-center text-center bg-white rounded-2xl border border-slate-200">
-                                    <div className="text-4xl mb-3">📭</div>
-                                    <div className="text-sm font-black uppercase tracking-widest text-slate-400 mb-1">No leads found</div>
-                                    <div className="text-[10px] text-slate-400 font-medium">Adjust filters or search</div>
-                                </div>
+                                <div className="py-16 flex flex-col items-center text-center bg-white rounded-2xl border border-slate-200"><div className="text-4xl mb-3">📭</div><div className="text-sm font-black uppercase tracking-widest text-slate-400 mb-1">No leads found</div></div>
                             ) : visibleLeads.map(l => (
                                 <div key={`m-${l.id}`} className={`rounded-2xl shadow-sm border-2 overflow-hidden animate-fadeIn ${l.lead_priority==='Hot'?'border-red-200':l.lead_priority==='Cold'?'border-blue-200':'border-amber-200'} ${getCardTint(l.lead_status)}`}>
                                     <div className={`h-1 w-full ${l.lead_priority==='Hot'?'bg-red-500':l.lead_priority==='Cold'?'bg-blue-400':'bg-amber-400'}`}></div>
@@ -2637,9 +2224,7 @@ function AdminApp() {
                                                 <h3 className="font-black text-[13px] uppercase text-slate-900 leading-tight truncate">{l.customer_name}</h3>
                                                 <p className="font-black text-blue-600 text-[12px] mt-0.5">{l.phone_number}</p>
                                                 {l.customer_email && <p className="font-medium text-slate-400 text-[9px] truncate mt-0.5">{l.customer_email}</p>}
-                                                {(isAdminUser || l.lead_source !== 'Bulk Upload') && (
-                                                    <p className="text-[9px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate">🏠 {l.project_interested_in||'General'}</p>
-                                                )}
+                                                {(isAdminUser || l.lead_source !== 'Bulk Upload') && <p className="text-[9px] text-slate-500 font-bold mt-1 tracking-widest uppercase truncate">🏠 {l.project_interested_in||'General'}</p>}
                                                 <p className="text-[8px] text-slate-400 font-bold mt-0.5 tracking-widest uppercase">🕐 {formatDateTime(l.created_at)}</p>
                                                 {l.psa_agent_name && <p className="text-[8px] text-blue-500 font-bold mt-0.5 tracking-widest uppercase">👤 {l.psa_agent_name}</p>}
                                             </div>
@@ -2647,12 +2232,7 @@ function AdminApp() {
                                                 <span className={`text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${getStatusStyles(l.lead_status)}`}>{l.lead_status||'Un called'}</span>
                                                 <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${getPriorityColor(l.lead_priority||'Warm')}`}>{l.lead_priority==='Hot'?'🔥':l.lead_priority==='Cold'?'❄️':'🌤'} {l.lead_priority||'Warm'}</span>
                                                 <button onClick={() => setSelectedLead(l)} className="text-[8px] font-black text-blue-600 bg-blue-50 border border-blue-200 px-2 py-1 rounded-lg uppercase tracking-widest">👁 Detail</button>
-                                                {isAdminUser && (
-                                                    <button onClick={() => deleteLead(l)}
-                                                        className="text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-widest border text-red-500 bg-red-50 border-red-200 hover:bg-red-100">
-                                                        🗑
-                                                    </button>
-                                                )}
+                                                {isAdminUser && <button onClick={() => deleteLead(l)} className="text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-widest border text-red-500 bg-red-50 border-red-200 hover:bg-red-100">🗑</button>}
                                             </div>
                                         </div>
                                         <div className="flex gap-2 mb-3">
@@ -2660,14 +2240,10 @@ function AdminApp() {
                                             <a href={`https://wa.me/91${l.phone_number?.replace(/\D/g,'').slice(-10)}`} className="flex-1 flex items-center justify-center gap-1 bg-green-500 text-white text-[9px] font-black uppercase tracking-widest py-2.5 rounded-xl hover:bg-green-600 transition shadow-sm">💬 WhatsApp</a>
                                         </div>
                                         <div className="border-t border-slate-200/80 pt-3 space-y-2">
-                                            {/* Admin: reassign on any channel */}
                                             {isAdminUser && (
                                                 <div className="flex flex-col gap-1">
-                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                                                        {l.psa_agent_name ? '🔄 Reassign Agent' : '⚡ Assign Agent'}
-                                                    </label>
-                                                    <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''}
-                                                        className="p-2.5 border-2 border-slate-700 bg-slate-900 rounded-xl font-black uppercase text-[9px] outline-none text-blue-300 cursor-pointer">
+                                                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{l.psa_agent_name ? '🔄 Reassign' : '⚡ Assign'}</label>
+                                                    <select onChange={e => updateLead(l,'psa_agent_name',e.target.value)} value={l.psa_agent_name||''} className="p-2.5 border-2 border-slate-700 bg-slate-900 rounded-xl font-black uppercase text-[9px] outline-none text-blue-300 cursor-pointer">
                                                         <option value="" disabled>Select Agent</option>
                                                         {PSA_AGENTS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
                                                     </select>
@@ -2707,9 +2283,7 @@ function AdminApp() {
                                                 </div>
                                             )}
                                             <div className="mt-3 pt-3 border-t border-slate-100">
-                                                <div className="bg-slate-900/5 p-2.5 rounded-xl h-14 overflow-y-auto text-[9px] font-medium whitespace-pre-wrap history-scroll border border-slate-200 leading-relaxed text-slate-500 mb-2">
-                                                    {l.call_remark || <span className="italic text-slate-400">System logs...</span>}
-                                                </div>
+                                                <div className="bg-slate-900/5 p-2.5 rounded-xl h-14 overflow-y-auto text-[9px] font-medium whitespace-pre-wrap history-scroll border border-slate-200 leading-relaxed text-slate-500 mb-2">{l.call_remark || <span className="italic text-slate-400">System logs...</span>}</div>
                                                 <NoteCell lead={l} onSave={updateLead} />
                                             </div>
                                         </div>
@@ -2717,38 +2291,28 @@ function AdminApp() {
                                 </div>
                             ))}
                             {!loading && visibleCount < displayedLeads.length && (
-                                <button onClick={() => setVisibleCount(v => v+50)} className="w-full bg-white hover:bg-blue-50 text-blue-700 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition border-2 border-blue-200 hover:border-blue-400 shadow-sm">
-                                    Load More ({displayedLeads.length - visibleCount} remaining)
-                                </button>
+                                <button onClick={() => setVisibleCount(v => v+50)} className="w-full bg-white hover:bg-blue-50 text-blue-700 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition border-2 border-blue-200 hover:border-blue-400 shadow-sm">Load More ({displayedLeads.length - visibleCount} remaining)</button>
                             )}
                         </div>
                     </div>
                 )}
 
-                {view === 'library' && (
-                    <ProjectLibrary supabase={supabase} setProp={setSelectedProp} properties={properties} setProperties={setProperties} onEdit={p => { setEditingProp(p); handleNavigate('add'); }} />
-                )}
-
+                {view === 'library' && <ProjectLibrary supabase={supabase} setProp={setSelectedProp} properties={properties} setProperties={setProperties} onEdit={p => { setEditingProp(p); handleNavigate('add'); }} />}
                 {view === 'add' && <PropertyForm scriptUrl={GOOGLE_SCRIPT_URL} supabase={supabase} editingProp={editingProp} setView={handleNavigate} />}
             </main>
 
-            {/* Manual Lead Modal */}
             {showManualModal && (
                 <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[100] flex items-end md:items-center justify-center p-0 md:p-4" onClick={e => e.target === e.currentTarget && setShowManualModal(false)}>
                     <div className="bg-white rounded-t-[32px] md:rounded-[28px] w-full max-w-md shadow-2xl animate-slideUp overflow-hidden">
                         <div className="px-6 pt-5 pb-4 border-b border-slate-100">
                             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5 md:hidden"></div>
                             <div className="flex justify-between items-center">
-                                <div>
-                                    <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">Manual Lead Entry</h2>
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Inject directly into CRM</p>
-                                </div>
+                                <div><h2 className="text-lg font-black uppercase tracking-tight text-slate-900">Manual Lead Entry</h2><p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Inject directly into CRM</p></div>
                                 <button onClick={() => setShowManualModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 text-sm font-black">✕</button>
                             </div>
                         </div>
                         <div className="px-6 py-5 max-h-[75vh] overflow-y-auto">
-                            <ManualLeadForm properties={properties} supabase={supabase} agentName={agentName === '__ADMIN__' ? getAdminPersonaName() : agentName}
-                                onSuccess={() => { setShowManualModal(false); fetchLeads(); }} />
+                            <ManualLeadForm properties={properties} supabase={supabase} agentName={agentName === '__ADMIN__' ? getAdminPersonaName() : agentName} onSuccess={() => { setShowManualModal(false); fetchLeads(); }} />
                         </div>
                     </div>
                 </div>
