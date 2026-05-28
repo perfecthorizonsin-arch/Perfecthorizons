@@ -1001,7 +1001,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
     const upload = async (e, field, append=false) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
-        setLoading(true); setUploadingField(field);
+        setUploadingField(field);
         const categoryMap = { cover_image:'Cover Image', gallery_images:'Gallery', brochure:'Brochures', cost_sheet:'Cost Sheets', floor_plan:'Floor Plans', miscellaneous:'Miscellaneous', master_plan:'Master Plan' };
         const category = categoryMap[field] || 'General';
         let newUrls = [];
@@ -1023,7 +1023,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
             else set(field, joined);
         }
 
-        setLoading(false); setUploadingField(null);
+        setUploadingField(null);
         setUploadProgress(p => { const n={...p}; delete n[field]; return n; });
         e.target.value = '';
     };
@@ -1206,7 +1206,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                <button onClick={save} disabled={loading}
+                <button onClick={save} disabled={loading || !!uploadingField}
                     className="w-full bg-blue-600 text-white p-5 rounded-3xl font-black uppercase tracking-widest hover:bg-slate-900 transition shadow-xl disabled:opacity-50 text-sm flex items-center justify-center gap-3">
                     {loading ? <><span className="animate-spin inline-block text-lg">⏳</span> Processing...</> : <><span className="text-lg">{editingProp ? '✅' : '🚀'}</span> {editingProp ? 'Update Listing' : 'Publish Listing'}</>}
                 </button>
