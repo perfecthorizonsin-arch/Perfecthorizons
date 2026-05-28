@@ -696,47 +696,31 @@
                             </div>
                         )}
 
-                       {/* ── FULL-WIDTH: LOCATION ── */}
-<div className="detail-section mt-6">
-    <div className="detail-section-title" style={{justifyContent:'space-between'}}>
-        <span style={{display:'flex',alignItems:'center',gap:'8px'}}><span style={{fontSize:16}}>📍</span> Location</span>
-        {mapLink && mapLink !== '#' && (
-            <a 
-               href={(() => {
-    const lngMatch = mapLink.match(/!2d(-?\d+\.\d+)/);
-    const latMatch = mapLink.match(/!3d(-?\d+\.\d+)/);
-    if (lngMatch && latMatch) return `https://www.google.com/maps?q=${latMatch[1]},${lngMatch[1]}`;
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
-})()}
-                target="_blank" 
-                rel="noopener noreferrer" 
-                style={{fontSize:'0.6rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',color:'var(--teal)',display:'flex',alignItems:'center',gap:'6px'}}
-                className="hover:opacity-70 transition"
-            >
-                Open in Maps →
-            </a>
-        )}
-    </div>
-    {mapEmbedSrc ? (
-        <div style={{borderRadius:'14px',overflow:'hidden',border:'1px solid var(--border)',boxShadow:'var(--shadow-sm)'}}>
-            <iframe
-                src={mapEmbedSrc}
-                width="100%"
-                height="480"
-                style={{border:0,display:'block'}}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Property Location"
-            />
-        </div>
-    ) : (
-        <div style={{background:'var(--parchment)',borderRadius:'14px',padding:'3rem',textAlign:'center',border:'1px solid var(--border)'}}>
-            <p style={{fontSize:'0.8rem',color:'var(--slate-soft)',fontStyle:'italic',marginBottom:'1rem'}}>Map coming soon. Contact us for exact location details.</p>
-            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, I need location details for ${encodeURIComponent(propName)}`} target="_blank" style={{display:'inline-flex',alignItems:'center',gap:'8px',background:'rgba(37,211,102,0.1)',border:'1px solid rgba(37,211,102,0.25)',borderRadius:'999px',padding:'8px 20px',fontSize:'0.65rem',fontWeight:800,color:'#166534',textTransform:'uppercase',letterSpacing:'0.12em'}}>WhatsApp for Location</a>
-        </div>
-    )}
-</div>
+                      {/* ── FULL-WIDTH: LOCATION ── */}
+                        <div className="detail-section mt-6">
+                            <div className="detail-section-title"><span style={{fontSize:16}}>📍</span> Location</div>
+                            
+                            {mapEmbedSrc ? (
+                                <div style={{borderRadius:'14px',overflow:'hidden',border:'1px solid var(--border)',boxShadow:'var(--shadow-sm)'}}>
+                                    {/* sandbox removed — fixes "must be used in iframe" directions error */}
+                                    <iframe
+                                        src={mapEmbedSrc}
+                                        width="100%"
+                                        height="480"
+                                        style={{border:0,display:'block'}}
+                                        allowFullScreen
+                                        loading="lazy"
+                                        referrerPolicy="no-referrer-when-downgrade"
+                                        title="Property Location"
+                                    />
+                                </div>
+                            ) : (
+                                <div style={{background:'var(--parchment)',borderRadius:'14px',padding:'3rem',textAlign:'center',border:'1px solid var(--border)'}}>
+                                    <p style={{fontSize:'0.8rem',color:'var(--slate-soft)',fontStyle:'italic',marginBottom:'1rem'}}>Map coming soon. Contact us for exact location details.</p>
+                                    <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, I need location details for ${encodeURIComponent(propName)}`} target="_blank" style={{display:'inline-flex',alignItems:'center',gap:'8px',background:'rgba(37,211,102,0.1)',border:'1px solid rgba(37,211,102,0.25)',borderRadius:'999px',padding:'8px 20px',fontSize:'0.65rem',fontWeight:800,color:'#166534',textTransform:'uppercase',letterSpacing:'0.12em'}}>WhatsApp for Location</a>
+                                </div>
+                            )}
+                        </div>
                         {/* SIMILAR PROPERTIES */}
                         {similarProperties.length > 0 && (
                             <div className="mt-12 pt-8" style={{borderTop:'1px solid var(--border)'}}>
