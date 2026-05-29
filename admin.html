@@ -1029,42 +1029,61 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
     };
 
     // Helper: render upload section with progress indicator
-   const UploadSection = useCallback(({ field, label, multi }) => {
-    const isUploading = uploadingField === field;
-    const progress = uploadProgress[field];
-    const urls = form[field] ? form[field].split(',').filter(Boolean) : [];
-    const inputId = `file-input-${field}`;
-    return (
-        <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-4 hover:border-blue-400 transition-all">
-            <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-widest">
-                {label}
-                {isUploading && <span className="ml-2 text-blue-600 animate-pulse font-black">⬆️ Uploading to Drive {progress ? `(${progress})` : '...'}</span>}
-            </label>
-            <label htmlFor={inputId} className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition ${isUploading ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
-                {isUploading ? '⏳ Uploading...' : '📁 Choose File'}
-            </label>
-            <input 
-                id={inputId}
-                type="file" 
-                multiple={multi}
-                className="hidden"
-                disabled={isUploading}
-                onChange={(e) => {
-                    console.log("File selected:", e.target.files[0]?.name);
-                    upload(e, field, multi);
-                }}
-            />
-            {urls.length > 0 && (
-                <div className="mt-2 space-y-1">
-                    {multi
-                        ? urls.map((url, idx) => <FileTag key={idx} field={field} name={`Drive File ${idx+1}`} isArray idx={idx} onRemove={removeFile} />)
-                        : <FileTag field={field} name="Drive File" onRemove={removeFile} />
-                    }
-                </div>
-            )}
-        </div>
-    );
-}, [uploadingField, uploadProgress, form, upload, removeFile]);
+   const upload = async (e, field, append=false) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setLoading(true); setUploadingField(field);
+    const categoryMap = { cover_image:'Cover Image', gallery_images:'Gallery', brochure:'Brochures', cost_sheet:'Cost Sheets', floor_plan:'Floor Plans', miscellaneous:'Miscellaneous', master_plan:'Master Plan' };
+    const category = categoryMap[field] || 'General';
+    let newUrls = [];
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setUploadProgress(p => ({ ...p, [field]:`${i+1}/${files.length}` }));
+        try {
+            console.log("Uploading file:", file.name);
+            const base64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = () => reject(new Error('FileReader failed'));
+                reader.readAsDataURL(file);
+            });
+            console.log("Base64 ready, sending to Drive...");
+            const res = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                redirect: 'follow',
+                body: JSON.stringify({
+                    action: 'uploadFile',
+                    base64,
+                    type: file.type,
+                    name: file.name,
+                    propertyName: form.property_name || 'Uploads',
+                    category
+                })
+            });
+            const data = await res.json();
+            console.log("Drive response:", data);
+            const driveUrl = data.fileUrl || data.url || (data.fileId ? `https://drive.google.com/file/d/${data.fileId}/view` : null);
+            if (driveUrl) {
+                newUrls.push(driveUrl);
+            } else {
+                alert(`Upload failed for "${file.name}": ${data.error || 'No URL returned'}`);
+            }
+        } catch (err) {
+            console.error("Upload error:", err);
+            alert(`Upload failed for "${file.name}": ${err.message}`);
+        }
+    }
+
+    if (newUrls.length > 0) {
+        const joined = newUrls.join(',');
+        setForm(f => ({ ...f, [field]: append ? (f[field] ? f[field] + ',' + joined : joined) : joined }));
+    }
+
+    setLoading(false); setUploadingField(null);
+    setUploadProgress(p => { const n={...p}; delete n[field]; return n; });
+    e.target.value = '';
+};
     const inputCls = "w-full p-4 bg-white border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition placeholder:text-slate-400";
     const selectCls = "w-full p-4 bg-white border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition text-slate-600 cursor-pointer";
 
