@@ -332,8 +332,9 @@ const EMICalculator = ({ propertyPriceStr }) => {
     );
 };
 
-CHUNK 2: EditableField → end of PropertyDetailsPage
-jsx// ─── INLINE EDITABLE FIELD ─────────────────────────────────────────────────
+
+
+    // ─── INLINE EDITABLE FIELD ─────────────────────────────────────────────────
 const EditableField = ({ field, label, value, multiline, type='text', onSave, darkMode=false }) => {
     const [editing, setEditing] = useState(false);
     const [draft,   setDraft]   = useState('');
@@ -796,9 +797,9 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
     );
 };
 
-CHUNK 3: ProjectLibrary → end of AdminNoteEditor (THE BIG FIX)
-This is where all the bugs were. One clean ProjectLibrary, fixed AdminNoteEditor with chatOpen state declared:
-jsx// ─── PROJECT LIBRARY (single definition, with drag reorder) ────────────────
+
+
+    // ─── PROJECT LIBRARY (single definition, with drag reorder) ────────────────
 function ProjectLibrary({ properties, setProp, supabase, setProperties, onEdit }) {
     const [search,   setSearch]   = useState('');
     const [ordering, setOrdering] = useState(false);
@@ -1504,8 +1505,7 @@ function AdminNoteEditor({ agentName }) {
     );
 }
 
-CHUNK 4: AdminOverview → closing </script></body></html>
-jsx// ─── ADMIN OVERVIEW ────────────────────────────────────────────────────────
+    // ─── ADMIN OVERVIEW ────────────────────────────────────────────────────────
 function AdminOverview({ allLeads, allBulkLeads, allManualLeads, supabase }) {
     const [drillAgent, setDrillAgent] = useState(null);
 
