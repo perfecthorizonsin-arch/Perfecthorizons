@@ -131,7 +131,7 @@ const { useState, useEffect, useMemo, useRef, useCallback } = React;
 const supabaseUrl = 'https://uiiovtsktllvtecfokik.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, { auth: { storage: window.localStorage, persistSession: true, autoRefreshToken: true } });
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzV-nr4UWVqFao58BD_tJoZF9kL5ODzX18b86KsX3z27Yt2EWfBAj8lR36-XbBtcyrXSQ/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwaOLlqAQZMZczkAWuyK2F2DEHZ2ILgxlJnlDDZrrDNBSdszBZpX3M0f_p9mVtUePobDQ/exec";
 const WHATSAPP_NUMBER = "9113261205";
 const ADMIN_EMAIL = "saishetty1623@gmail.com";
 
@@ -975,7 +975,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
     const set = (k, v) => setForm(f => ({ ...f, [k]:v }));
 
     const upload = async (e, field, append=false) => {
-        console.log("Upload triggered", field, e.target.files); 
         const files = e.target.files;
         if (!files || files.length === 0) return;
         setLoading(true); setUploadingField(field);
@@ -1032,42 +1031,29 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
         setLoading(false);
     };
 
-  const UploadSection = ({ field, label, multi }) => {
-    const isUploading = uploadingField === field;
-    const progress = uploadProgress[field];
-    const urls = form[field] ? form[field].split(',').filter(Boolean) : [];
-    return (
-        <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-4 hover:border-blue-400 transition-all">
-            <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-widest">
-                {label}
-                {isUploading && <span className="ml-2 text-blue-600 animate-pulse font-black">⬆️ Uploading to Drive {progress ? `(${progress})` : '...'}</span>}
-            </label>
-            <input
-                id={`file-input-${field}`}
-                type="file"
-                {...(multi ? {multiple: true} : {})}
-                onChange={e => upload(e, field, multi)}
-                disabled={isUploading}
-                style={{display:'none'}}
-            />
-            <div
-    onClick={() => !isUploading && document.getElementById(`file-input-${field}`).click()}
-    className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl cursor-pointer transition inline-block"
-    style={{opacity: isUploading ? 0.5 : 1}}
->
-    {isUploading ? `⬆️ Uploading ${progress||''}...` : `📁 Choose ${multi ? 'Files' : 'File'}`}
-</div>
-            {urls.length > 0 && (
-                <div className="mt-2 space-y-1">
-                    {multi
-                        ? urls.map((url, idx) => <FileTag key={idx} field={field} name={`Drive File ${idx+1}`} isArray idx={idx} onRemove={removeFile} />)
-                        : <FileTag field={field} name="Drive File" onRemove={removeFile} />
-                    }
-                </div>
-            )}
-        </div>
-    );
-};
+    const UploadSection = ({ field, label, multi }) => {
+        const isUploading = uploadingField === field;
+        const progress = uploadProgress[field];
+        const urls = form[field] ? form[field].split(',').filter(Boolean) : [];
+        return (
+            <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-4 hover:border-blue-400 transition-all">
+                <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-widest">
+                    {label}
+                    {isUploading && <span className="ml-2 text-blue-600 animate-pulse font-black">⬆️ Uploading to Drive {progress ? `(${progress})` : '...'}</span>}
+                </label>
+                <input type="file" multiple={multi} onChange={e => upload(e, field, multi)} disabled={isUploading}
+                    className="w-full text-xs font-bold text-slate-600 cursor-pointer file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:tracking-widest file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer disabled:opacity-50" />
+                {urls.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                        {multi
+                            ? urls.map((url, idx) => <FileTag key={idx} field={field} name={`Drive File ${idx+1}`} isArray idx={idx} onRemove={removeFile} />)
+                            : <FileTag field={field} name="Drive File" onRemove={removeFile} />
+                        }
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     const inputCls = "w-full p-4 bg-white border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition placeholder:text-slate-400";
     const inputDarkCls = "w-full p-4 bg-slate-800 border-2 border-slate-700 rounded-2xl font-bold text-sm text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder:text-slate-500";
@@ -2171,9 +2157,8 @@ function AdminApp() {
 
     // ── Soft-delete: sets is_hidden=true — data stays in DB, removed from UI ──
     async function deleteLead(lead) {
-        const confirmed = window.confirm(
-            'Delete this lead?\n\nName: ' + lead.customer_name + '\nPhone: ' + lead.phone_number + '\n\nThis lead will be removed from the CRM view but data is kept in the database.'
-        );
+       const msg = 'Delete this lead?' + '\n\n' + 'Name: ' + lead.customer_name + '\n' + 'Phone: ' + lead.phone_number + '\n\n' + 'This lead will be removed from the CRM view but data is kept in the database.';
+const confirmed = window.confirm(msg);
         if (!confirmed) return;
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
         setLeads(prev => prev.filter(l => l.id !== lead.id)); // remove from UI instantly
