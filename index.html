@@ -829,13 +829,14 @@
                 };
                 window.addEventListener('hashchange', handleHashChange);
                 const fetchProperties = async () => {
-                    try { const { data, error } = await supabase.from('properties').select('*').eq('is_live', true); if (!error) setProperties(data||[]); } catch(e){console.error(e);} finally { setLoading(false); }
+                    try { const { data, error } = await supabase.from('properties').select('*').eq('is_live', true).order('display_order', { ascending: true, nullsFirst: false }); if (!error) setProperties(data||[]); } catch(e){console.error(e);} finally { setLoading(false); }
                 };
                 fetchProperties();
                 const channel = supabase.channel('public:properties')
                     .on('postgres_changes', { event:'*', schema:'public', table:'properties' }, (payload) => {
                         if (payload.eventType==='INSERT') { if(payload.new.is_live===true) setProperties(prev=>[payload.new,...prev]); }
-                        else if (payload.eventType==='UPDATE') { const u=payload.new; if(u.is_live===true){setProperties(prev=>{const exists=prev.some(p=>p.id===u.id);return exists?prev.map(p=>p.id===u.id?u:p):[u,...prev];});setSelectedProperty(prev=>prev&&prev.id===u.id?u:prev);}else{setProperties(prev=>prev.filter(p=>p.id!==u.id));setSelectedProperty(prev=>prev&&prev.id===u.id?null:prev);} }
+                        else if (payload.eventType==='UPDATE') { const u=payload.new; if(u.is_live===true){setProperties(prev=>{const exists=prev.some(p=>p.id===u.id);const updated = exists ? prev.map(p => p.id === u.id ? u : p) : [u, ...prev];
+return [...updated].sort((a, b) => (a.display_order || 9999) - (b.display_order || 9999));});setSelectedProperty(prev=>prev&&prev.id===u.id?u:prev);}else{setProperties(prev=>prev.filter(p=>p.id!==u.id));setSelectedProperty(prev=>prev&&prev.id===u.id?null:prev);} }
                         else if (payload.eventType==='DELETE') { setProperties(prev=>prev.filter(p=>p.id!==payload.old.id)); setSelectedProperty(prev=>prev&&prev.id===payload.old.id?null:prev); }
                     }).subscribe();
                 return () => { window.removeEventListener('hashchange', handleHashChange); supabase.removeChannel(channel); };
