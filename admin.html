@@ -217,19 +217,38 @@ const uploadToDrive = async (file, propertyName, category) => {
         const reader = new FileReader();
         reader.onload = async () => {
             try {
+                console.log("FileReader done, uploading...", file.name);
                 const base64 = reader.result.split(',')[1];
+                console.log("Base64 length:", base64?.length);
                 const res = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action:'uploadFile', base64, type:file.type, name:file.name, propertyName:propertyName||'Uploads', category:category||'General' })
+                    redirect: 'follow',
+                    body: JSON.stringify({ 
+                        action:'uploadFile', 
+                        base64, 
+                        type:file.type, 
+                        name:file.name, 
+                        propertyName:propertyName||'Uploads', 
+                        category:category||'General' 
+                    })
                 });
+                console.log("Fetch response status:", res.status);
                 const data = await res.json();
+                console.log("Drive response:", data);
                 if (data.fileUrl) resolve(data.fileUrl);
                 else if (data.url) resolve(data.url);
                 else if (data.fileId) resolve(`https://drive.google.com/file/d/${data.fileId}/view`);
                 else reject(new Error(data.error || 'No URL returned from Drive'));
-            } catch (err) { reject(err); }
+            } catch (err) { 
+                console.error("Upload error:", err);
+                reject(err); 
+            }
         };
-        reader.onerror = () => reject(new Error('FileReader failed'));
+        reader.onerror = (e) => {
+            console.error("FileReader error:", e);
+            reject(new Error('FileReader failed'));
+        };
+        reader.onloadstart = () => console.log("FileReader started for:", file.name);
         reader.readAsDataURL(file);
     });
 };
