@@ -2758,16 +2758,30 @@ shall i add block B here ???
                                                             👤 {l.psa_agent_name}
                                                         </div>
                                                     )}
-                                                    <select onChange={e => {     const newStatus = e.target.value;     if (newStatus === 'RNR') {         const dt = prompt('📅 Set Callback Date & Time
-
-e.g. 28 Jan 2025, 3:00 PM
-(Press Cancel to abort)');         if (dt === null) return; // cancelled — don't change status         updateLead(l, 'lead_status', newStatus);         if (dt.trim()) updateLead(l, 'follow_up_at', dt.trim());     } else if (newStatus === 'Rejected') {         const reasons = ['Not Interested','No Response','Wrong Number','No Incoming Call','Budget Mismatch','Already Purchased'];         const list = reasons.map((r,i) => `${i+1}. ${r}`).join('
-');         const input = prompt(`❌ Select Rejection Reason:
-
-${list}
-
-Enter number 1-${reasons.length}:
-(Press Cancel to abort)`);         if (input === null) return; // cancelled — don't change status         const idx = parseInt(input) - 1;         if (isNaN(idx) || idx < 0 || idx >= reasons.length) {             alert('Invalid selection. Status not changed.');             return;         }         updateLead(l, 'lead_status', newStatus);         updateLead(l, 'reject_reason', reasons[idx]);     } else {         updateLead(l, 'lead_status', newStatus);     } }} value={l.lead_status||''} className={`w-full p-2 mb-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`}>
+                                                    <select onChange={e => {
+    const newStatus = e.target.value;
+    if (newStatus === 'RNR') {
+        const dt = prompt('Set Callback Date & Time\ne.g. 28 Jan 2025, 3:00 PM\nPress Cancel to abort');
+        if (dt === null) return;
+        updateLead(l, 'lead_status', newStatus);
+        if (dt.trim()) updateLead(l, 'follow_up_at', dt.trim());
+    } else if (newStatus === 'Rejected') {
+        const reasons = ['Not Interested','No Response','Wrong Number','No Incoming Call','Budget Mismatch','Already Purchased'];
+        const list = reasons.map((r,i) => (i+1)+'. '+r).join('\n');
+        const input = prompt('Select Rejection Reason:\n\n'+list+'\n\nEnter number 1-6\nPress Cancel to abort');
+        if (input === null) return;
+        const idx = parseInt(input) - 1;
+        if (isNaN(idx) || idx < 0 || idx >= reasons.length) {
+            alert('Invalid selection. Status not changed.');
+            return;
+        }
+        updateLead(l, 'lead_status', newStatus);
+        updateLead(l, 'reject_reason', reasons[idx]);
+    } else {
+        updateLead(l, 'lead_status', newStatus);
+    }
+}} value={l.lead_status||''}
+                                                        className={`w-full p-2 mb-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`}>
                                                         {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">🔵 Un called</option>}
                                                         <option value="Called">✅ Called</option><option value="RNR">🔔 RNR</option><option value="Details Shared">📤 Details Shared</option><option value="SV Scheduled">📅 SV Scheduled</option><option value="Converted">🏆 Converted</option><option value="Rejected">❌ Rejected</option>
                                                     </select>
@@ -2895,16 +2909,30 @@ Enter number 1-${reasons.length}:
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div className="flex flex-col gap-1">
                                                     <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</label>
-                                                    <select onChange={e => {     const newStatus = e.target.value;     if (newStatus === 'RNR') {         const dt = prompt('📅 Set Callback Date & Time
-
-e.g. 28 Jan 2025, 3:00 PM
-(Press Cancel to abort)');         if (dt === null) return; // cancelled — don't change status         updateLead(l, 'lead_status', newStatus);         if (dt.trim()) updateLead(l, 'follow_up_at', dt.trim());     } else if (newStatus === 'Rejected') {         const reasons = ['Not Interested','No Response','Wrong Number','No Incoming Call','Budget Mismatch','Already Purchased'];         const list = reasons.map((r,i) => `${i+1}. ${r}`).join('
-');         const input = prompt(`❌ Select Rejection Reason:
-
-${list}
-
-Enter number 1-${reasons.length}:
-(Press Cancel to abort)`);         if (input === null) return; // cancelled — don't change status         const idx = parseInt(input) - 1;         if (isNaN(idx) || idx < 0 || idx >= reasons.length) {             alert('Invalid selection. Status not changed.');             return;         }         updateLead(l, 'lead_status', newStatus);         updateLead(l, 'reject_reason', reasons[idx]);     } else {         updateLead(l, 'lead_status', newStatus);     } }} value={l.lead_status||''} className={`p-2.5 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`}>
+                                                  <select onChange={e => {
+    const newStatus = e.target.value;
+    if (newStatus === 'RNR') {
+        const dt = prompt('Set Callback Date & Time\ne.g. 28 Jan 2025, 3:00 PM\nPress Cancel to abort');
+        if (dt === null) return;
+        updateLead(l, 'lead_status', newStatus);
+        if (dt.trim()) updateLead(l, 'follow_up_at', dt.trim());
+    } else if (newStatus === 'Rejected') {
+        const reasons = ['Not Interested','No Response','Wrong Number','No Incoming Call','Budget Mismatch','Already Purchased'];
+        const list = reasons.map((r,i) => (i+1)+'. '+r).join('\n');
+        const input = prompt('Select Rejection Reason:\n\n'+list+'\n\nEnter number 1-6\nPress Cancel to abort');
+        if (input === null) return;
+        const idx = parseInt(input) - 1;
+        if (isNaN(idx) || idx < 0 || idx >= reasons.length) {
+            alert('Invalid selection. Status not changed.');
+            return;
+        }
+        updateLead(l, 'lead_status', newStatus);
+        updateLead(l, 'reject_reason', reasons[idx]);
+    } else {
+        updateLead(l, 'lead_status', newStatus);
+    }
+}} value={l.lead_status||''}
+                                                      className={`p-2.5 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`}>
                                                         {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">🔵 Un called</option>}
                                                         <option value="Called">✅ Called</option><option value="RNR">🔔 RNR</option><option value="Details Shared">📤 Details</option><option value="SV Scheduled">📅 SV Sched.</option><option value="Converted">🏆 Converted</option><option value="Rejected">❌ Rejected</option>
                                                     </select>
