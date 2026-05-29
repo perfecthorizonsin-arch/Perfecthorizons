@@ -955,7 +955,10 @@ function ProjectLibrary({ properties, setProp, supabase, setProperties, onEdit }
     );
 }
 
+
 // ─── PROPERTY FORM (Add / Edit) ────────────────────────────────────────────
+// Upload flow: file → Google Drive (via Apps Script) → save returned Drive URL to Supabase
+
 function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
     const blank = {
         property_name:'', builder_name:'', property_region:'', property_type:'', location:'', price:'', bhk:'',
@@ -963,33 +966,44 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
         total_units:'', availability:'', description:'', usp_details:'', amenities:'',
         point_of_contact:'', commission_details:'', video_link:'', website_link:'',
         lead_registration_link:'', map_link:'', cover_image:'', gallery_images:'',
-        floor_plan:'', brochure:'', cost_sheet:'', miscellaneous:'', master_plan:''
+        floor_plan:'', brochure:'', cost_sheet:'', miscellaneous:''
     };
-    const [form,           setForm]          = useState(blank);
-    const [loading,        setLoading]       = useState(false);
-    const [uploadingField, setUploadingField] = useState(null);
-    const [uploadProgress, setUploadProgress] = useState({});
+    const [form,          setForm]          = useState(blank);
+    const [loading,       setLoading]       = useState(false);
+    const [uploadingField,setUploadingField] = useState(null);
+    const [uploadProgress,setUploadProgress] = useState({});
 
     useEffect(() => { setForm(editingProp ? { ...blank, ...editingProp } : blank); }, [editingProp]);
 
-    const set = (k, v) => setForm(f => ({ ...f, [k]:v }));
+    const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-    const upload = async (e, field, append=false) => {
+    // Upload files to Google Drive via Apps Script
+    const upload = async (e, field, append = false) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
-        setLoading(true); setUploadingField(field);
-        const categoryMap = { cover_image:'Cover Image', gallery_images:'Gallery', brochure:'Brochures', cost_sheet:'Cost Sheets', floor_plan:'Floor Plans', miscellaneous:'Miscellaneous', master_plan:'Master Plan' };
+        setLoading(true);
+        setUploadingField(field);
+
+        const categoryMap = {
+            cover_image:    'Cover Image',
+            gallery_images: 'Gallery',
+            brochure:       'Brochures',
+            cost_sheet:     'Cost Sheets',
+            floor_plan:     'Floor Plans',
+            miscellaneous:  'Miscellaneous'
+        };
         const category = categoryMap[field] || 'General';
         let newUrls = [];
 
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            setUploadProgress(p => ({ ...p, [field]:`${i+1}/${files.length}` }));
+            setUploadProgress(p => ({ ...p, [field]: `${i + 1}/${files.length}` }));
             try {
                 const driveUrl = await uploadToDrive(file, form.property_name, category);
                 newUrls.push(driveUrl);
             } catch (err) {
-                alert(`⚠️ Upload failed for "${file.name}": ${err.message}`);
+                console.error(`Upload failed for ${file.name}:`, err);
+                alert(`⚠️ Upload failed for "${file.name}": ${err.message}\n\nMake sure your Apps Script handles the "uploadFile" action and returns { url: "..." }`);
             }
         }
 
@@ -999,12 +1013,14 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
             else set(field, joined);
         }
 
-        setLoading(false); setUploadingField(null);
-        setUploadProgress(p => { const n={...p}; delete n[field]; return n; });
+        setLoading(false);
+        setUploadingField(null);
+        setUploadProgress(p => { const n = {...p}; delete n[field]; return n; });
+        // reset input so same file can be re-uploaded if needed
         e.target.value = '';
     };
 
-    const removeFile = (field, isArray=false, idx=null) => {
+    const removeFile = (field, isArray = false, idx = null) => {
         if (isArray) {
             const arr = form[field].split(',').filter(Boolean);
             arr.splice(idx, 1);
@@ -1016,7 +1032,8 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
 
     const save = async () => {
         if (!form.property_name || !form.price || !form.cover_image) {
-            alert("Required: Property Name, Price, and Cover Image."); return;
+            alert("Required: Property Name, Price, and Cover Image.");
+            return;
         }
         setLoading(true);
         if (editingProp) {
@@ -1031,22 +1048,34 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
         setLoading(false);
     };
 
+    // Helper: render upload section with progress indicator
     const UploadSection = ({ field, label, multi }) => {
         const isUploading = uploadingField === field;
         const progress = uploadProgress[field];
         const urls = form[field] ? form[field].split(',').filter(Boolean) : [];
         return (
-            <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-4 hover:border-blue-400 transition-all">
+            <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-4 transition-all hover:border-blue-400">
                 <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-widest">
                     {label}
-                    {isUploading && <span className="ml-2 text-blue-600 animate-pulse font-black">⬆️ Uploading to Drive {progress ? `(${progress})` : '...'}</span>}
+                    {isUploading && (
+                        <span className="ml-2 text-blue-600 animate-pulse font-black">
+                            ⬆️ Uploading to Drive {progress ? `(${progress})` : '...'}
+                        </span>
+                    )}
                 </label>
-                <input type="file" multiple={multi} onChange={e => upload(e, field, multi)} disabled={isUploading}
-                    className="w-full text-xs font-bold text-slate-600 cursor-pointer file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:tracking-widest file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer disabled:opacity-50" />
+                <input
+                    type="file"
+                    multiple={multi}
+                    onChange={e => upload(e, field, multi)}
+                    disabled={isUploading}
+                    className="w-full text-xs font-bold text-slate-600 cursor-pointer file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:tracking-widest file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer disabled:opacity-50"
+                />
                 {urls.length > 0 && (
                     <div className="mt-2 space-y-1">
                         {multi
-                            ? urls.map((url, idx) => <FileTag key={idx} field={field} name={`Drive File ${idx+1}`} isArray idx={idx} onRemove={removeFile} />)
+                            ? urls.map((url, idx) => (
+                                <FileTag key={idx} field={field} name={`Drive File ${idx + 1}`} isArray idx={idx} onRemove={removeFile} />
+                            ))
                             : <FileTag field={field} name="Drive File" onRemove={removeFile} />
                         }
                     </div>
@@ -1056,20 +1085,23 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
     };
 
     const inputCls = "w-full p-4 bg-white border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition placeholder:text-slate-400";
-    const inputDarkCls = "w-full p-4 bg-slate-800 border-2 border-slate-700 rounded-2xl font-bold text-sm text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder:text-slate-500";
     const selectCls = "w-full p-4 bg-white border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition text-slate-600 cursor-pointer";
 
     return (
         <div className="bg-white rounded-3xl shadow-sm max-w-4xl mx-auto animate-fadeIn border border-slate-200 overflow-hidden">
+            {/* Form Header */}
             <div className="bg-slate-900 px-6 md:px-10 py-6 border-b border-slate-800">
                 <h2 className="text-xl md:text-2xl font-black uppercase italic text-white tracking-tight">
-                    {editingProp ? '✏️ Edit Property Listing' : '➕ New Property Listing'}
+                    {editingProp ? '✏️ Edit Property' : '➕ New Property Listing'}
                 </h2>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Files upload directly to Google Drive</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">
+                    Files upload directly to Google Drive
+                </p>
             </div>
 
             <div className="p-5 md:p-10 space-y-8">
-                {/* Section 1 */}
+
+                {/* ── Section 1: Basic Info ── */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">1</div>
@@ -1092,7 +1124,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                {/* Section 2 */}
+                {/* ── Section 2: Project Details ── */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">2</div>
@@ -1100,9 +1132,14 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                         <div className="flex-1 h-px bg-slate-200"></div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* BHK multi-select */}
                         <div className="sm:col-span-2">
                             <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">BHK / Configurations (hold Ctrl/Cmd for multiple)</label>
-                            <select multiple className={`${selectCls} h-28`} value={form.bhk ? form.bhk.split(',').map(s => s.trim()).filter(Boolean) : []} onChange={e => set('bhk', [...e.target.selectedOptions].map(o => o.value).join(', '))}>
+                            <select
+                                multiple
+                                className={`${selectCls} h-28`}
+                                value={form.bhk ? form.bhk.split(',').map(s => s.trim()).filter(Boolean) : []}
+                                onChange={e => set('bhk', [...e.target.selectedOptions].map(o => o.value).join(', '))}>
                                 {['1 BHK','2 BHK','3 BHK','4 BHK','5 BHK','Studio','Duplex','Penthouse'].map(b => <option key={b}>{b}</option>)}
                             </select>
                         </div>
@@ -1119,7 +1156,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                 </div>
 
-                {/* Section 3 */}
+                {/* ── Section 3: Description & Highlights ── */}
                 <div>
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">3</div>
@@ -1134,33 +1171,51 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">USPs / Key Highlights</label>
-                                <textarea rows={4} className={`${inputCls} resize-none`} placeholder="One per line" value={form.usp_details} onChange={e => set('usp_details', e.target.value)} />
+                                <textarea rows={4} className={`${inputCls} resize-none`} placeholder="One per line&#10;e.g. 3 acres of open space&#10;German modular kitchen" value={form.usp_details} onChange={e => set('usp_details', e.target.value)} />
                             </div>
                             <div>
                                 <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Amenities</label>
-                                <textarea rows={4} className={`${inputCls} resize-none`} placeholder="Comma separated" value={form.amenities} onChange={e => set('amenities', e.target.value)} />
+                                <textarea rows={4} className={`${inputCls} resize-none`} placeholder="Comma separated&#10;e.g. Swimming Pool, Gym, Clubhouse" value={form.amenities} onChange={e => set('amenities', e.target.value)} />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Section 4 - Admin */}
+                {/* ── Section 4: Internal / Admin ── */}
                 <div className="bg-slate-900 rounded-3xl p-5 md:p-8">
                     <div className="flex items-center gap-3 mb-5">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">4</div>
                         <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Internal Data & Links</h3>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Internal POC (Name / Phone)</label><input className={inputDarkCls} placeholder="e.g. Ramesh — 98xx" value={form.point_of_contact} onChange={e => set('point_of_contact', e.target.value)} /></div>
-                        <div><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Commission Details</label><input className={inputDarkCls} placeholder="e.g. 2% on Agreement" value={form.commission_details} onChange={e => set('commission_details', e.target.value)} /></div>
-                        <div className="sm:col-span-2"><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Video Link (YouTube / Drive URL)</label><input className={inputDarkCls} placeholder="https://youtube.com/..." value={form.video_link} onChange={e => set('video_link', e.target.value)} /></div>
-                        <div><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Builder Website</label><input className={inputDarkCls} placeholder="https://..." value={form.website_link} onChange={e => set('website_link', e.target.value)} /></div>
-                        <div><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Lead Register Link / Email</label><input className={inputDarkCls} placeholder="URL or email@builder.com" value={form.lead_registration_link} onChange={e => set('lead_registration_link', e.target.value)} /></div>
-                        <div className="sm:col-span-2"><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Map Link (Google Maps URL)</label><input className={inputDarkCls} placeholder="https://maps.google.com/..." value={form.map_link} onChange={e => set('map_link', e.target.value)} /></div>
+                        <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Internal POC (Name / Phone)</label>
+                            <input className="w-full p-4 bg-slate-800 border-2 border-slate-700 rounded-2xl font-bold text-sm text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder:text-slate-500" placeholder="e.g. Ramesh — 98xx" value={form.point_of_contact} onChange={e => set('point_of_contact', e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Commission Details</label>
+                            <input className="w-full p-4 bg-slate-800 border-2 border-slate-700 rounded-2xl font-bold text-sm text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder:text-slate-500" placeholder="e.g. 2% on Agreement" value={form.commission_details} onChange={e => set('commission_details', e.target.value)} />
+                        </div>
+                        <div className="sm:col-span-2">
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Video Link (YouTube / Drive URL)</label>
+                            <input className="w-full p-4 bg-slate-800 border-2 border-slate-700 rounded-2xl font-bold text-sm text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder:text-slate-500" placeholder="https://youtube.com/..." value={form.video_link} onChange={e => set('video_link', e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Builder Website</label>
+                            <input className="w-full p-4 bg-slate-800 border-2 border-slate-700 rounded-2xl font-bold text-sm text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder:text-slate-500" placeholder="https://..." value={form.website_link} onChange={e => set('website_link', e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Lead Register Link / Email</label>
+                            <input className="w-full p-4 bg-slate-800 border-2 border-slate-700 rounded-2xl font-bold text-sm text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder:text-slate-500" placeholder="URL or email@builder.com" value={form.lead_registration_link} onChange={e => set('lead_registration_link', e.target.value)} />
+                        </div>
+                        <div className="sm:col-span-2">
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Map Link (Google Maps URL)</label>
+                            <input className="w-full p-4 bg-slate-800 border-2 border-slate-700 rounded-2xl font-bold text-sm text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder:text-slate-500" placeholder="https://maps.google.com/..." value={form.map_link} onChange={e => set('map_link', e.target.value)} />
+                        </div>
                     </div>
                 </div>
 
-                {/* Section 5 - Files */}
+                {/* ── Section 5: File Uploads (Google Drive) ── */}
                 <div>
                     <div className="flex items-center gap-3 mb-2">
                         <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">5</div>
@@ -1169,7 +1224,9 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                     </div>
                     <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2.5 mb-4">
                         <span className="text-base shrink-0">☁️</span>
-                        <p className="text-[10px] text-amber-800 font-bold leading-relaxed">All files upload to <strong>Google Drive</strong> via your Apps Script. The returned Drive URL is saved to Supabase.</p>
+                        <p className="text-[10px] text-amber-800 font-bold leading-relaxed">
+                            All files upload to <strong>Google Drive</strong> via your Apps Script. The returned Drive URL is saved to Supabase.
+                        </p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <UploadSection field="cover_image"    label="Main Cover Image *"                multi={false} />
@@ -1177,14 +1234,19 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                         <UploadSection field="brochure"       label="Brochure (PDF)"                   multi={false} />
                         <UploadSection field="cost_sheet"     label="Cost Sheet (PDF / Images)"        multi={true}  />
                         <UploadSection field="floor_plan"     label="Floor Plan (PDF / Image)"         multi={false} />
-                        <UploadSection field="master_plan"    label="Master Plan (PDF / Image)"        multi={false} />
                         <UploadSection field="miscellaneous"  label="Miscellaneous Docs"               multi={true}  />
                     </div>
                 </div>
 
-                <button onClick={save} disabled={loading}
+                {/* ── Save Button ── */}
+                <button
+                    onClick={save}
+                    disabled={loading}
                     className="w-full bg-blue-600 text-white p-5 rounded-3xl font-black uppercase tracking-widest hover:bg-slate-900 transition shadow-xl disabled:opacity-50 text-sm flex items-center justify-center gap-3">
-                    {loading ? <><span className="animate-spin inline-block text-lg">⏳</span> Processing...</> : <><span className="text-lg">{editingProp ? '✅' : '🚀'}</span> {editingProp ? 'Update Listing' : 'Publish Listing'}</>}
+                    {loading
+                        ? <><span className="animate-spin inline-block text-lg">⏳</span> Processing...</>
+                        : <><span className="text-lg">{editingProp ? '✅' : '🚀'}</span> {editingProp ? 'Update Listing' : 'Publish Listing'}</>
+                    }
                 </button>
             </div>
         </div>
