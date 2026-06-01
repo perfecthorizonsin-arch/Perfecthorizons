@@ -571,13 +571,14 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
             setTimeout(() => triggerDownload(dlUrl, fname), i * 400);
         }
         setIsSharing(false); setShareModal(null);
-        if (isMobile()) {
-            showToast(`⬇️ ${n} file${n>1?'s':''} downloading… Open WhatsApp & attach from Downloads 📎`, 'bg-green-600');
-            setTimeout(() => { window.location.href = `https://wa.me/?text=${encodeURIComponent(waText)}`; }, n * 400 + 700);
-        } else {
-            showToast(`⬇️ ${n} file${n>1?'s':''} downloading… Then attach in WhatsApp Web 📎`, 'bg-blue-600');
-            setTimeout(() => window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(waText)}`, '_blank'), n * 400 + 600);
-        }
+        showToast(`⬇️ ${n} file${n>1?'s':''} downloading in background… WhatsApp opening — attach from Downloads 📎`, 'bg-green-600');
+        const waOpenUrl = isMobile()
+            ? `https://wa.me/?text=${encodeURIComponent(waText)}`
+            : `https://web.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
+        setTimeout(() => {
+            if (isMobile()) window.location.href = waOpenUrl;
+            else window.open(waOpenUrl, '_blank');
+        }, n * 400 + 600);
     };
     const pocNumber = getVal(property,"point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
 
@@ -687,6 +688,27 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                             </div>
                         )}
                     </div>
+                    {imgs.length > 1 && (
+                        <>
+                            <button
+                                onClick={() => galleryRef.current?.scrollBy({ left: -(galleryRef.current.offsetWidth * 0.85), behavior: 'smooth' })}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-800 shadow-lg hover:bg-white transition text-xl font-black border border-white/50 select-none">
+                                ‹
+                            </button>
+                            <button
+                                onClick={() => galleryRef.current?.scrollBy({ left: galleryRef.current.offsetWidth * 0.85, behavior: 'smooth' })}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-800 shadow-lg hover:bg-white transition text-xl font-black border border-white/50 select-none">
+                                ›
+                            </button>
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                                {imgs.map((_, i) => (
+                                    <button key={i}
+                                        onClick={() => galleryRef.current?.scrollTo({ left: i * galleryRef.current.offsetWidth * 0.85, behavior: 'smooth' })}
+                                        className="w-1.5 h-1.5 rounded-full bg-white/60 hover:bg-white transition" />
+                                ))}
+                            </div>
+                        </>
+                    )}
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                     <div className="lg:col-span-2 space-y-8">
@@ -724,7 +746,16 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                                 <EditableField field="rera_number"            label="RERA Number"       value={getVal(property,'rera_number')}            onSave={saveField} />
                                 <EditableField field="location"               label="Location / Area"   value={getVal(property,'location')}               onSave={saveField} />
                                 <EditableField field="property_name"          label="Property Name"     value={getVal(property,'property_name')}          onSave={saveField} />
+                                <div className="col-span-2">
+                                    <EditableField field="info_for_psa" label="PSA Pitch Notes (Admin Only)" value={getVal(property,'info_for_psa')} multiline onSave={saveField} />
+                                </div>
                             </div>
+                            {getVal(property,'info_for_psa') && (
+                                <div className="mt-4 bg-amber-50 border-2 border-amber-300 rounded-2xl p-5">
+                                    <div className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-2">🎯 PSA Agent Pitch Notes (Admin Only)</div>
+                                    <p className="text-sm font-semibold text-amber-900 whitespace-pre-wrap leading-relaxed">{getVal(property,'info_for_psa')}</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div className="lg:col-span-1">
@@ -915,13 +946,44 @@ function ProjectLibrary({ properties, setProp, supabase, setProperties, onEdit }
                         <div className="p-5 flex-grow flex flex-col">
                             <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 leading-tight truncate">{getVal(p,'property_name')}</h3>
                             <p className="text-slate-500 text-xs font-bold mt-1 truncate">📍 {getVal(p,'location')}</p>
-                            <div className="mt-4 flex justify-between items-end pt-4 border-t border-slate-100">
+                            <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-start">
                                 <div>
                                     <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Starting Price</div>
                                     <div className="text-lg font-black text-blue-900">{getVal(p,'price')}</div>
                                 </div>
                                 {!ordering && <button className="bg-slate-900 text-white text-[10px] font-bold px-4 py-2 rounded-lg hover:bg-blue-600 transition">Preview</button>}
                             </div>
+                            {!ordering && (
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                    {getVal(p,'floor_plan') && getVal(p,'floor_plan').split(',').filter(Boolean).map((url, i) => {
+                                        const fpId = extractDriveId(url.trim());
+                                        const fpUrl = fpId ? `https://drive.google.com/file/d/${fpId}/view` : url.trim();
+                                        const fpCount = getVal(p,'floor_plan').split(',').filter(Boolean).length;
+                                        return (
+                                            <a key={i} href={fpUrl} target="_blank" onClick={e => e.stopPropagation()}
+                                                className="text-[8px] font-black uppercase tracking-widest bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-lg hover:bg-blue-100 transition">
+                                                📐 Floor {fpCount > 1 ? i+1 : 'Plan'}
+                                            </a>
+                                        );
+                                    })}
+                                    {getVal(p,'master_plan') && (() => {
+                                        const mpId = extractDriveId(getVal(p,'master_plan'));
+                                        const mpUrl = mpId ? `https://drive.google.com/file/d/${mpId}/view` : getVal(p,'master_plan');
+                                        return (
+                                            <a href={mpUrl} target="_blank" onClick={e => e.stopPropagation()}
+                                                className="text-[8px] font-black uppercase tracking-widest bg-purple-50 text-purple-700 border border-purple-200 px-2 py-1 rounded-lg hover:bg-purple-100 transition">
+                                                🗺️ Master Plan
+                                            </a>
+                                        );
+                                    })()}
+                                    {getVal(p,'map_link') && (
+                                        <a href={getVal(p,'map_link')} target="_blank" onClick={e => e.stopPropagation()}
+                                            className="text-[8px] font-black uppercase tracking-widest bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded-lg hover:bg-green-100 transition">
+                                            📍 Location
+                                        </a>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -938,7 +1000,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
         total_units:'', availability:'', description:'', usp_details:'', amenities:'',
         point_of_contact:'', commission_details:'', video_link:'', website_link:'',
         lead_registration_link:'', map_link:'', cover_image:'', gallery_images:'',
-        floor_plan:'', brochure:'', cost_sheet:'', miscellaneous:''
+        floor_plan:'', brochure:'', cost_sheet:'', miscellaneous:'', info_for_psa:''
     };
     const [form,          setForm]          = useState(blank);
     const [loading,       setLoading]       = useState(false);
@@ -1096,6 +1158,10 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                         <div><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Builder Website</label><input className={darkInput} placeholder="https://..." value={form.website_link} onChange={e => set('website_link', e.target.value)} /></div>
                         <div><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Lead Register Link / Email</label><input className={darkInput} placeholder="URL or email" value={form.lead_registration_link} onChange={e => set('lead_registration_link', e.target.value)} /></div>
                         <div className="sm:col-span-2"><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Map Link</label><input className={darkInput} placeholder="https://maps.google.com/..." value={form.map_link} onChange={e => set('map_link', e.target.value)} /></div>
+                        <div className="sm:col-span-2">
+                            <label className="text-[9px] font-black uppercase tracking-widest text-amber-400 mb-1.5 block">🎯 Info for PSA Agents (Pitch Script)</label>
+                            <textarea className="w-full p-4 bg-slate-800 border-2 border-amber-600 rounded-2xl font-bold text-sm text-white outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition placeholder:text-slate-500 h-28 resize-none" placeholder="How to pitch this property — key talking points, objection handling, what to highlight first..." value={form.info_for_psa} onChange={e => set('info_for_psa', e.target.value)} />
+                        </div>
                     </div>
                 </div>
                 <div>
@@ -1116,7 +1182,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                             { field:'gallery_images', label:'Gallery Images (select multiple)', multi:true  },
                             { field:'brochure',       label:'Brochure (PDF)',                   multi:false },
                             { field:'cost_sheet',     label:'Cost Sheet (PDF / Images)',        multi:true  },
-                            { field:'floor_plan',     label:'Floor Plan (PDF / Image)',         multi:false },
+                            { field:'floor_plan',     label:'Floor Plans (PDF / Images)',       multi:true  },
                             { field:'master_plan',    label:'Master Plan (PDF / Image)',        multi:false },
                             { field:'miscellaneous',  label:'Miscellaneous Docs',               multi:true  },
                         ].map(({ field, label, multi }) => {
@@ -1873,7 +1939,15 @@ function LoginForm({ supabase }) {
     return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
             <form onSubmit={handleLogin} className="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-sm text-center border-t-8 border-blue-500">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-3xl italic mx-auto mb-4 shadow-lg">H</div>
+                <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center relative">
+                    <img
+                        src="https://raw.githubusercontent.com/perfecthorizonsin-arch/Perfecthorizons/main/icon.png"
+                        alt="Horizon CRM"
+                        className="w-20 h-20 rounded-2xl object-contain shadow-lg"
+                        onError={e => { e.target.style.display='none'; e.target.nextElementSibling.style.display='flex'; }}
+                    />
+                    <div style={{display:'none'}} className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl items-center justify-center text-white font-black text-3xl italic shadow-lg absolute inset-0">H</div>
+                </div>
                 <h1 className="text-3xl font-black italic uppercase mb-1">Horizon CRM</h1>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-8">Command Center · Real Estate</p>
                 {errMsg && <div className="text-red-500 text-xs font-bold mb-4 bg-red-50 border border-red-200 p-3 rounded-2xl">{errMsg}</div>}
