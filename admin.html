@@ -1108,7 +1108,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                             <select multiple className={`${selectCls} h-28`}
                                 value={form.bhk ? form.bhk.split(',').map(s => s.trim()).filter(Boolean) : []}
                                 onChange={e => set('bhk', [...e.target.selectedOptions].map(o => o.value).join(', '))}>
-                                {['1 BHK','2 BHK','3 BHK','4 BHK','5 BHK','Studio','Duplex','Penthouse'].map(b => <option key={b}>{b}</option>)}
+                                {['1 BHK','2 BHK','2.5 BHK','3 BHK','3.5 BHK','4 BHK','5 BHK','Studio','Duplex','Penthouse'].map(b => <option key={b}>{b}</option>)}
                             </select>
                         </div>
                         <input className={inputCls} placeholder="Super Built-up Area (SqFt)" value={form.super_built_up_area} onChange={e => set('super_built_up_area', e.target.value)} />
@@ -1116,7 +1116,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                         <input className={inputCls} placeholder="Possession Date (e.g. Dec 2026)" value={form.possession_date} onChange={e => set('possession_date', e.target.value)} />
                         <select className={selectCls} value={form.construction_status} onChange={e => set('construction_status', e.target.value)}>
                             <option value="">Construction Status</option>
-                            <option>Ready to Move In</option><option>Under Construction</option><option>New Launch</option><option>Ready to Construct</option>
+                            <option>Ready to Move In</option><option>Under Construction</option><option>Pre Launch</option><option>New Launch</option><option>Ready to Construct</option>
                         </select>
                         <input className={inputCls} placeholder="Approvals (e.g. BDA, RERA)" value={form.approval} onChange={e => set('approval', e.target.value)} />
                         <input className={inputCls} placeholder="RERA Number" value={form.rera_number} onChange={e => set('rera_number', e.target.value)} />
