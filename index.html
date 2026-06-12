@@ -109,9 +109,8 @@
     .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     @media (min-width: 640px) { .gallery-grid { grid-template-columns: repeat(3, 1fr); } }
     @media (min-width: 1024px) { .gallery-grid { grid-template-columns: repeat(4, 1fr); } }
-    .blog-content h2 { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.35rem; font-weight: 700; font-style: italic; color: var(--navy); margin-bottom: 0.5rem; padding-left: 0.75rem; border-left: 3px solid var(--gold); }
     .blog-content h3 { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.25rem; font-weight: 700; font-style: italic; color: var(--navy); margin-bottom: 0.5rem; padding-left: 0.75rem; border-left: 3px solid var(--gold); }
-    .blog-content h2 strong, .blog-content h3 strong { font-weight: 700; color: var(--teal); }
+    .blog-content h3 strong { font-weight: 700; color: var(--teal); }
     .blog-content strong { color: var(--navy); }
     @supports (padding-bottom: env(safe-area-inset-bottom)) { .sticky-enq-bar { padding-bottom: env(safe-area-inset-bottom); } }
     @media (max-width: 768px) { .ph-select { min-height: 48px; font-size: 0.8rem !important; } .mobile-nav-item { min-height: 52px; padding: 14px 16px; } .prop-card { border-radius: 1.25rem; } .sticky-git-btn { display: none; } }
@@ -180,54 +179,6 @@
         backdrop-filter: blur(8px);
     }
     </style>
-
-    <!-- ═══════════════ SEO META TAGS ═══════════════ -->
-    <meta name="description" content="Perfect Horizons is Bengaluru's trusted luxury real estate advisory. Browse RERA-approved apartments, villas and plots across Whitefield, Sarjapur, Electronic City and more — with free, unbiased expert guidance and zero hidden charges.">
-    <meta name="keywords" content="Bengaluru real estate, apartments for sale in Bengaluru, RERA approved projects Bengaluru, property advisor Bengaluru, luxury villas Bengaluru, real estate channel partner Bengaluru, flats in Whitefield, flats in Sarjapur road, plots in Electronic City">
-    <meta name="robots" content="index, follow">
-    <meta name="author" content="Perfect Horizons">
-    <link rel="canonical" href="https://www.perfecthorizons.in/" />
-
-    <!-- Open Graph / Social sharing -->
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Perfect Horizons">
-    <meta property="og:title" content="Perfect Horizons | Luxury Property Portal — Bengaluru">
-    <meta property="og:description" content="Curated, RERA-approved properties in Bengaluru with honest advisory — no spam calls, no hidden charges. Apartments, villas & plots across Bengaluru's top localities.">
-    <meta property="og:url" content="https://www.perfecthorizons.in/">
-    <meta property="og:image" content="https://www.perfecthorizons.in/og-image.jpg">
-    <meta property="og:locale" content="en_IN">
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Perfect Horizons | Luxury Property Portal — Bengaluru">
-    <meta name="twitter:description" content="Curated, RERA-approved properties in Bengaluru with honest, no-pressure advisory.">
-    <meta name="twitter:image" content="https://www.perfecthorizons.in/og-image.jpg">
-
-    <!-- Structured Data: Local Real Estate Business -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "RealEstateAgent",
-        "name": "Perfect Horizons",
-        "description": "Luxury real estate advisory and authorized channel partner in Bengaluru, Karnataka. We offer free, unbiased guidance on RERA-approved apartments, villas and plots.",
-        "url": "https://www.perfecthorizons.in/",
-        "telephone": "+919113261205",
-        "email": "perfecthorizons.in@gmail.com",
-        "areaServed": {
-            "@type": "City",
-            "name": "Bengaluru"
-        },
-        "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "Bengaluru",
-            "addressRegion": "Karnataka",
-            "addressCountry": "IN"
-        },
-        "sameAs": []
-    }
-    </script>
-    <!-- ═══════════════ END SEO META TAGS ═══════════════ -->
-
 </head>
 <body class="text-gray-900 overflow-x-hidden w-full max-w-[100vw]">
 
@@ -248,7 +199,6 @@
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
         const WHATSAPP_NUMBER = "919113261205";
         const CALL_NUMBER = "9113261205";
-        const SITE_URL = "https://www.perfecthorizons.in";
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzV-nr4UWVqFao58BD_tJoZF9kL5ODzX18b86KsX3z27Yt2EWfBAj8lR36-XbBtcyrXSQ/exec";
         
         const supabaseUrl = 'https://uiiovtsktllvtecfokik.supabase.co';
@@ -265,49 +215,6 @@
         const extractPriceInCr = (priceString) => { if (!priceString) return 0; try { const cleanStr = String(priceString).toLowerCase().replace(/,/g, ''); const numMatch = cleanStr.match(/[0-9.]+/); if (!numMatch) return 0; const val = parseFloat(numMatch[0]); if (isNaN(val)) return 0; if (cleanStr.includes('cr') || cleanStr.includes('crore')) return val; if (cleanStr.includes('lac') || cleanStr.includes('lakh')) return val / 100; if (val > 100000) return val / 10000000; return 0; } catch(e) { return 0; } };
         const formatIndianCurrencyCompact = (num) => { if (num >= 10000000) return '₹' + (num / 10000000).toFixed(2).replace(/\.00$/, '') + ' Cr'; if (num >= 100000) return '₹' + (num / 100000).toFixed(2).replace(/\.00$/, '') + ' L'; return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num); };
 
-        // ─── SEO HELPER: update document title + meta description + canonical dynamically ───
-        const setSEO = (title, description, path) => {
-            if (title) document.title = title;
-            if (description) {
-                let meta = document.querySelector('meta[name="description"]');
-                if (!meta) { meta = document.createElement('meta'); meta.setAttribute('name','description'); document.head.appendChild(meta); }
-                meta.setAttribute('content', description);
-                let ogDesc = document.querySelector('meta[property="og:description"]');
-                if (ogDesc) ogDesc.setAttribute('content', description);
-            }
-            if (title) {
-                let ogTitle = document.querySelector('meta[property="og:title"]');
-                if (ogTitle) ogTitle.setAttribute('content', title);
-                let twTitle = document.querySelector('meta[name="twitter:title"]');
-                if (twTitle) twTitle.setAttribute('content', title);
-            }
-            let canonical = document.querySelector('link[rel="canonical"]');
-            if (canonical) canonical.setAttribute('href', `${SITE_URL}${path || '/'}`);
-            let ogUrl = document.querySelector('meta[property="og:url"]');
-            if (ogUrl) ogUrl.setAttribute('content', `${SITE_URL}${path || '/'}`);
-        };
-
-        // ─── JSON-LD injector for Article schema (blog posts) ───
-        const setArticleSchema = (article) => {
-            let existing = document.getElementById('article-jsonld');
-            if (existing) existing.remove();
-            if (!article) return;
-            const script = document.createElement('script');
-            script.type = 'application/ld+json';
-            script.id = 'article-jsonld';
-            script.text = JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "Article",
-                "headline": article.title,
-                "description": article.excerpt,
-                "author": { "@type": "Organization", "name": "Perfect Horizons" },
-                "publisher": { "@type": "Organization", "name": "Perfect Horizons" },
-                "mainEntityOfPage": `${SITE_URL}/#blogs/${article.id}`,
-                "articleSection": article.tag
-            });
-            document.head.appendChild(script);
-        };
-
         const AUTHORIZED_PARTNERS = [
             convertDriveLink("https://drive.google.com/file/d/1IsWpoHNh1Wj0toMnzXc4FFvqCHxMoK85/view?usp=drive_link"),
             convertDriveLink("https://drive.google.com/file/d/11r3Bj7QF_RrKZTvY3q9l4VjJqJZudIl6/view?usp=drive_link"),
@@ -319,10 +226,10 @@
         ];
 
         const BLOG_ARTICLES = [
-            { id: 1, tag: "Legal Guide", title: "What is UDS (Undivided Share) and Why Does it Matter?", metaDescription: "Learn what Undivided Share of Land (UDS) means for apartment buyers in Bengaluru, why it determines your resale value, and how to check if your builder is offering a fair share.", excerpt: "When you buy an apartment, you aren't just buying the flat; you are buying a piece of the land it sits on. Understanding your UDS is critical.", content: `<p>When purchasing an apartment in Bengaluru, many buyers focus entirely on the super built-up area and the amenities. However, the most critical element of your investment is the <strong>Undivided Share of Land (UDS)</strong>.</p><br/><h2>What is UDS?</h2><p>UDS is your personal share of the land on which the entire apartment complex is built. Since you cannot physically mark out your exact piece of land in a high-rise, it is expressed as a fraction or percentage. Every apartment owner in the project collectively owns the land, and your UDS is calculated based on your flat's area relative to the total saleable area of the project.</p><br/><h2>Why is it so important?</h2><ul style="list-style-type:disc;margin-left:20px;"><li><strong>Future Resale Value:</strong> The building structure depreciates over time, but the land appreciates. Your property's true resale value is determined largely by the UDS.</li><li><strong>Redevelopment:</strong> If the building is demolished or redeveloped decades from now, your compensation or new apartment allocation will be based strictly on your UDS.</li><li><strong>Loan & Legal Clarity:</strong> Banks and registrars use UDS figures to validate the sale deed and ensure the transaction is legally sound.</li></ul><br/><h2>How to Check Your UDS</h2><p>Your UDS should be explicitly mentioned in your sale agreement and sale deed, usually expressed in square feet or as a percentage. A simple way to estimate a fair UDS is: (Your Flat's Super Built-up Area ÷ Total Super Built-up Area of All Units) × Total Project Land Area.</p><br/><p><strong>The Rule of Thumb:</strong> Always ask the builder for the exact UDS before booking. If the UDS is unusually low compared to the size of your flat, it means the builder is over-utilizing the land, which dilutes your investment and could reduce your long-term returns.</p>` },
-            { id: 2, tag: "Finance Hack", title: "5 Hidden Charges Builders Don't Tell You About", metaDescription: "Discover the 5 most common hidden charges Bengaluru builders add after booking — BESCOM/BWSSB deposits, clubhouse fees, advance maintenance, legal charges and floor rise premiums — and how to avoid surprises.", excerpt: "The 'Base Price' is never the final price. From Club House charges to BESCOM deposits, learn how to calculate the actual landed cost.", content: `<p>You see an ad for a luxury 3BHK for "₹1.2 Cr Onwards." You visit the site, fall in love, and sit down to book it—only to realize the final cost is suddenly ₹1.45 Cr. What happened?</p><br/><h2>The Most Common Hidden Charges</h2><ol style="list-style-type:decimal;margin-left:20px;"><li><strong>BESCOM & BWSSB Charges</strong> — Electricity and water connection deposits levied by the utility boards, often passed on to the buyer at a markup.</li><li><strong>Clubhouse & Amenity Fees</strong> — A one-time charge for access to the gym, pool, and clubhouse, sometimes running into several lakhs.</li><li><strong>Advance Maintenance</strong> — Builders often collect 1-2 years of maintenance upfront before handover.</li><li><strong>Legal & Documentation Charges</strong> — Stamp duty, registration, and "legal fee" line items that vary widely between builders.</li><li><strong>Floor Rise Premium (PLC)</strong> — Higher floors and units with a "preferred view" can add a per-square-foot premium on top of the base price.</li></ol><br/><h2>How to Protect Yourself</h2><p>Always demand a comprehensive <strong>Cost Sheet</strong> before paying any token amount. A proper cost sheet should break down the base price, floor rise charges, car parking, clubhouse fee, BESCOM/BWSSB, legal charges, GST, and advance maintenance as separate line items — so there are no surprises at the time of agreement.</p>` },
-            { id: 3, tag: "Property Types", title: "Carpet Area vs. Super Built-up Area: What Are You Actually Paying For?", metaDescription: "Confused about carpet area vs super built-up area in Bengaluru apartments? Understand RERA carpet area, loading factor, and how builders calculate the price you actually pay.", excerpt: "Don't be fooled by big numbers. Learn how builders calculate space and why RERA Carpet Area is the only metric that matters.", content: `<p>One of the biggest confusions for home buyers is the difference between the area advertised and the actual livable space they get.</p><br/><h2>RERA Carpet Area</h2><p>This is the actual usable floor area inside your apartment — the space within the walls where you can lay a carpet. Under the RERA Act, builders <strong>must</strong> quote this area to buyers, as it represents the true living space you're paying for.</p><br/><h2>Super Built-up Area (SBA)</h2><p>This is the number builders use to calculate your final price. It includes the Built-up Area (carpet area plus wall thickness) PLUS a proportionate share of common areas such as lobbies, staircases, lifts, and the clubhouse. The difference between carpet area and super built-up area is called the "Loading Factor." Some builders apply a loading factor of 30-35%, meaning nearly a third of what you're paying for is common area, not your private living space.</p><br/><h2>Why This Matters</h2><p>When comparing two projects, never compare the price-per-square-foot of super built-up area alone. Always ask for the RERA carpet area and recalculate the effective price-per-square-foot of actual usable space — this is the only fair way to compare value across projects with different loading factors.</p>` },
-            { id: 4, tag: "Legal Guide", title: "A Khata vs B Khata in Bengaluru: The Ultimate Buyer's Guide", metaDescription: "A Khata vs B Khata explained for Bengaluru property buyers — what each means, why B Khata properties face home loan rejections, and how to verify property records before buying.", excerpt: "Confused about Khatas? Buying a 'B Khata' property can lead to loan rejections and legal trouble. Here is how to verify property records.", content: `<p>If you are buying property in Bengaluru, the word "Khata" will come up immediately. A Khata is essentially a property tax record maintained by the BBMP (Bruhat Bengaluru Mahanagara Palike) that identifies the assessment of a property for tax purposes.</p><br/><h2>What is A Khata?</h2><p>An 'A' Khata certificate means the property is completely legal, built according to approved plans, and recognized by the BBMP for all civic purposes. <strong>You can easily get home loans with an 'A' Khata</strong> from any nationalized or private bank.</p><br/><h2>What is B Khata?</h2><p>A 'B' Khata signifies the property is either built in violation of building bye-laws, located on revenue land, or has pending dues/approvals. While the owner still pays property tax, the property is technically considered "irregular." Nationalized banks will <strong>not</strong> give you a home loan for a B Khata property, and resale becomes significantly harder.</p><br/><h2>How to Verify Before You Buy</h2><p>Before booking any property, ask for the Khata certificate and Khata extract, and cross-check the property's status on the BBMP portal. Our advisors at Perfect Horizons help clients verify A Khata status as part of our standard due-diligence process — completely free of charge.</p>` }
+            { id: 1, tag: "Legal Guide", title: "What is UDS (Undivided Share) and Why Does it Matter?", excerpt: "When you buy an apartment, you aren't just buying the flat; you are buying a piece of the land it sits on. Understanding your UDS is critical.", content: `<p>When purchasing an apartment in Bengaluru, many buyers focus entirely on the super built-up area and the amenities. However, the most critical element of your investment is the <strong>Undivided Share of Land (UDS)</strong>.</p><br/><h3>What is UDS?</h3><p>UDS is your personal share of the land on which the entire apartment complex is built. Since you cannot physically mark out your exact piece of land in a high-rise, it is expressed as a fraction or percentage.</p><br/><h3>Why is it so important?</h3><ul style="list-style-type:disc;margin-left:20px;"><li><strong>Future Resale Value:</strong> The building structure depreciates over time, but the land appreciates. Your property's true resale value is determined by the UDS.</li><li><strong>Redevelopment:</strong> If the building is demolished or redeveloped 40 years from now, your compensation or new apartment allocation will be based strictly on your UDS.</li></ul><br/><p><strong>The Rule of Thumb:</strong> Always ask the builder for the exact UDS before booking. If the UDS is unusually low compared to the size of your flat, it means the builder is over-utilizing the land, which dilutes your investment.</p>` },
+            { id: 2, tag: "Finance Hack", title: "5 Hidden Charges Builders Don't Tell You About", excerpt: "The 'Base Price' is never the final price. From Club House charges to BESCOM deposits, learn how to calculate the actual landed cost.", content: `<p>You see an ad for a luxury 3BHK for "₹1.2 Cr Onwards." You visit the site, fall in love, and sit down to book it—only to realize the final cost is suddenly ₹1.45 Cr. What happened?</p><br/><ol style="list-style-type:decimal;margin-left:20px;"><li><strong>BESCOM & BWSSB Charges</strong></li><li><strong>Clubhouse & Amenity Fees</strong></li><li><strong>Advance Maintenance</strong></li><li><strong>Legal & Documentation Charges</strong></li><li><strong>Floor Rise Premium (PLC)</strong></li></ol><br/><p>Always demand a comprehensive <strong>Cost Sheet</strong> before paying any token amount.</p>` },
+            { id: 3, tag: "Property Types", title: "Carpet Area vs. Super Built-up Area: What Are You Actually Paying For?", excerpt: "Don't be fooled by big numbers. Learn how builders calculate space and why RERA Carpet Area is the only metric that matters.", content: `<p>One of the biggest confusions for home buyers is the difference between the area advertised and the actual livable space they get.</p><br/><h3>RERA Carpet Area</h3><p>This is the actual usable floor area inside your apartment. Under the RERA act, builders <strong>must</strong> quote this area to buyers.</p><br/><h3>Super Built-up Area (SBA)</h3><p>This is the number builders use to calculate your final price. It includes the Built-up Area PLUS a proportionate share of common areas. The difference is called the "Loading Factor." Some builders apply a loading factor of 30-35%.</p>` },
+            { id: 4, tag: "Legal Guide", title: "A Khata vs B Khata in Bengaluru: The Ultimate Buyer's Guide", excerpt: "Confused about Khatas? Buying a 'B Khata' property can lead to loan rejections and legal trouble. Here is how to verify property records.", content: `<p>If you are buying property in Bengaluru, the word "Khata" will come up immediately. An 'A' Khata certificate means the property is completely legal and approved. <strong>You can easily get home loans with an 'A' Khata.</strong></p><br/><p>A 'B' Khata signifies the property is illegal or built in violation of regulations. Nationalized banks will <strong>not</strong> give you a home loan for a B Khata property.</p>` }
         ];
 
         const getMapEmbedSrc = (mapLink) => {
@@ -510,20 +417,6 @@
 
             useEffect(() => { window.scrollTo(0, 0); setHeroImg(null); }, [property]);
 
-            // SEO: dynamic title/meta/canonical for each property
-            useEffect(() => {
-                const pName = getVal(property, "Property Name") || "Property";
-                const pLoc = getVal(property, "Location") || "Bengaluru";
-                const pPrice = getVal(property, "Price") || "On Request";
-                const pBuilder = getVal(property, "Builder Name") || "";
-                setSEO(
-                    `${pName} — ${pLoc} | Price ${pPrice} | Perfect Horizons`,
-                    `${pName} by ${pBuilder} in ${pLoc}, Bengaluru. Starting from ${pPrice}. RERA details, floor plans, amenities and EMI calculator — free expert advisory by Perfect Horizons.`,
-                    `/#property-${property.id}`
-                );
-                setArticleSchema(null);
-            }, [property]);
-
             const openAction = (type) => { setActionModal(type); setLeadData({ name: "", phone: "", email: "" }); };
 
             const handleActionSubmit = async (e) => {
@@ -615,7 +508,7 @@
                                 {(heroImg || cover) ? (
                                     <>
                                         <img src={heroImg || cover} className="absolute inset-0 w-full h-full opacity-20 blur-2xl scale-110 object-cover" alt="" />
-                                        <img src={heroImg || cover} className="relative z-10 w-full h-full object-contain" alt={`${propName} - ${getVal(property,"Property Type")||'Property'} in ${location}, Bengaluru by ${builder}`} style={{transition:'opacity 0.25s ease'}} />
+                                        <img src={heroImg || cover} className="relative z-10 w-full h-full object-contain" alt={propName} style={{transition:'opacity 0.25s ease'}} />
                                         {heroImg && heroImg !== cover && (
                                             <button onClick={() => setHeroImg(null)} style={{position:'absolute',bottom:12,left:14,zIndex:20,background:'rgba(8,15,30,0.75)',color:'white',fontSize:'0.55rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',padding:'5px 12px',borderRadius:'6px',border:'none',cursor:'pointer',backdropFilter:'blur(8px)'}}>
                                                 ← Cover Image
@@ -644,7 +537,7 @@
                                         const isActive = (heroImg === img);
                                         return (
                                             <div key={i} onClick={() => setHeroImg(img)} className="relative overflow-hidden cursor-pointer group" style={{aspectRatio:'16/10',borderRadius:'10px',background:'var(--parchment)',border:`2px solid ${isActive?'var(--gold)':'var(--border)'}`,transition:'border-color 0.2s,transform 0.2s',transform:isActive?'scale(0.97)':'scale(1)'}}>
-                                                <img src={img} loading="lazy" decoding="async" className="w-full h-full object-cover" style={{transition:'transform 0.4s ease'}} alt={`${propName} - Gallery photo ${i+1} - ${location}, Bengaluru`} />
+                                                <img src={img} loading="lazy" decoding="async" className="w-full h-full object-cover" style={{transition:'transform 0.4s ease'}} alt={`Gallery ${i+1}`} />
                                                 <div style={{position:'absolute',inset:0,background:isActive?'rgba(200,134,10,0.12)':'rgba(8,15,30,0)',transition:'background 0.2s'}} className="group-hover:bg-slate-900/15 flex items-center justify-center">
                                                     {isActive
                                                         ? <span style={{fontSize:'0.55rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.12em',color:'white',background:'rgba(200,134,10,0.85)',padding:'3px 8px',borderRadius:'4px'}}>Viewing</span>
@@ -752,7 +645,7 @@
                                 <div className="space-y-4">
                                     {masterPlanImgs.map((img, i) => (
                                         <div key={i} style={{borderRadius:'14px',overflow:'hidden',background:'var(--parchment)',border:'1px solid var(--border)'}}>
-                                            <img src={img} alt={`${propName} Master Plan ${i+1} - ${location}, Bengaluru`} style={{width:'100%',display:'block',objectFit:'contain',maxHeight:'680px'}} />
+                                            <img src={img} alt={`Master Plan ${i+1}`} style={{width:'100%',display:'block',objectFit:'contain',maxHeight:'680px'}} />
                                         </div>
                                     ))}
                                 </div>
@@ -768,7 +661,7 @@
                                         <div key={i} className="relative overflow-hidden" style={{borderRadius:'14px',background:'var(--parchment)',border:'1px solid var(--border)',cursor:isFloorPlanUnlocked?'default':'pointer'}} onClick={!isFloorPlanUnlocked ? () => openAction('unlock_floor') : undefined}>
                                             <img
                                                 src={img}
-                                                alt={`${propName} Floor Plan ${i+1} - ${location}, Bengaluru`}
+                                                alt={`Floor Plan ${i+1}`}
                                                 style={{
                                                     width:'100%',
                                                     display:'block',
@@ -836,7 +729,7 @@
                                     {similarProperties.map((simProp,i) => (
                                         <div key={i} onClick={() => { window.scrollTo(0,0); onSelectProperty(simProp); }} className="prop-card group flex flex-col" style={{cursor:'pointer'}}>
                                             <div className="relative overflow-hidden shrink-0" style={{height:'170px',background:'var(--parchment)'}}>
-                                                <img src={fixImageUrl(getVal(simProp,"Cover Image")||getVal(simProp,"cover_image"))} loading="lazy" decoding="async" className="card-img" alt={`${getVal(simProp,"Property Name")} - ${getVal(simProp,"Location")}, Bengaluru`} />
+                                                <img src={fixImageUrl(getVal(simProp,"Cover Image")||getVal(simProp,"cover_image"))} loading="lazy" decoding="async" className="card-img" />
                                             </div>
                                             <div style={{padding:'1rem 1.25rem',flexGrow:1,display:'flex',flexDirection:'column'}}>
                                                 <p style={{fontSize:'0.55rem',fontWeight:700,color:'var(--gold)',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:'3px'}}>{getVal(simProp,"Builder Name")}</p>
@@ -917,7 +810,7 @@
             const [showLeadForm, setShowLeadForm] = useState(false);
             const [leadData, setLeadData] = useState({ name: "", phone: "", email: "" });
             const [isSubmitting, setIsSubmitting] = useState(false);
-            const [activePage, setActivePage] = useState(() => (window.location.hash.replace('#','').split('/')[0]) || 'home');
+            const [activePage, setActivePage] = useState(() => window.location.hash.replace('#','') || 'home');
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
             const [mobileAboutOpen, setMobileAboutOpen] = useState(false);
             const [mobilePromisesOpen, setMobilePromisesOpen] = useState(false);
@@ -925,38 +818,16 @@
             const [activeBlog, setActiveBlog] = useState(null);
             const [legalModal, setLegalModal] = useState(null);
 
-            // ─── SEO: page-level title + meta description per route ───
-            const PAGE_SEO = {
-                'home': { title: "Perfect Horizons | Luxury Property Portal — Bengaluru", desc: "Browse RERA-approved apartments, villas and plots across Bengaluru. Free, unbiased advisory — no hidden charges, no spam calls." , path: "/"},
-                'about-us': { title: "About Us | Perfect Horizons Real Estate Advisory, Bengaluru", desc: "Learn about Perfect Horizons — a trust-first luxury real estate advisory in Bengaluru focused on honest, unbiased property guidance.", path: "/#about-us" },
-                'our-journey': { title: "Our Journey | Perfect Horizons", desc: "The story behind Perfect Horizons — built on trust over transactions, clarity over confusion, and relationships over gains.", path: "/#our-journey" },
-                'what-we-do': { title: "What We Do | Perfect Horizons Real Estate Services Bengaluru", desc: "From project discovery and guided site visits to negotiation and post-sales support — see how Perfect Horizons helps Bengaluru home buyers.", path: "/#what-we-do" },
-                'what-we-dont-do': { title: "Our Promises | Perfect Horizons — No Hidden Charges, No Spam", desc: "Perfect Horizons never charges buyers, never pushes bad projects, never spam calls, and never hides facts. See our commitments.", path: "/#what-we-dont-do" },
-                'interiors': { title: "Interior Design Services Bengaluru | Perfect Horizons", desc: "Get connected with trusted interior designers in Bengaluru for modular kitchens, wardrobes, false ceilings, flooring and full home interiors.", path: "/#interiors" },
-                'home-loan': { title: "Home Loan Assistance Bengaluru | Perfect Horizons", desc: "Free home loan assistance in Bengaluru — top bank partners, fast approvals, EMI calculator and complete documentation support.", path: "/#home-loan" },
-                'advisor': { title: "Meet Your Advisor | Perfect Horizons Bengaluru", desc: "Meet Tharun, Lead Luxury Advisor at Perfect Horizons — unbiased, expert guidance for property buyers in Bengaluru.", path: "/#advisor" },
-                'blogs': { title: "Real Estate Insights & Guides Bengaluru | Perfect Horizons", desc: "Expert guides for Bengaluru property buyers — UDS, A Khata vs B Khata, carpet area vs super built-up area, hidden charges and more.", path: "/#blogs" },
-                'customers': { title: "Customer Reviews | Perfect Horizons Bengaluru", desc: "Read what homeowners say about working with Perfect Horizons — honest advisory, guided site visits and stress-free home buying in Bengaluru.", path: "/#customers" }
-            };
-
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get("key") === "admin123") setIsAdmin(true);
                 const handleHashChange = () => {
-                    const rawHash = window.location.hash.replace('#','');
-                    const parts = rawHash.split('/');
-                    const page = parts[0] || 'home';
-                    setActivePage(page);
-                    if(page!=='home') setSelectedProperty(null);
-                    if (page === 'blogs' && parts[1]) {
-                        const blog = BLOG_ARTICLES.find(b => String(b.id) === parts[1]);
-                        setActiveBlog(blog || null);
-                    } else if (page !== 'blogs') {
-                        setActiveBlog(null);
-                    }
+                    const hash = window.location.hash.replace('#','');
+                    setActivePage(hash||'home');
+                    if(hash!=='home') setSelectedProperty(null);
+                    if(hash!=='blogs') setActiveBlog(null);
                 };
                 window.addEventListener('hashchange', handleHashChange);
-                handleHashChange();
                 const fetchProperties = async () => {
                     try { const { data, error } = await supabase.from('properties').select('*').eq('is_live', true).order('display_order', { ascending: true, nullsFirst: false }); if (!error) setProperties(data||[]); } catch(e){console.error(e);} finally { setLoading(false); }
                 };
@@ -970,19 +841,6 @@ return [...updated].sort((a, b) => (a.display_order || 9999) - (b.display_order 
                     }).subscribe();
                 return () => { window.removeEventListener('hashchange', handleHashChange); supabase.removeChannel(channel); };
             }, []);
-
-            // ─── SEO: update title/meta whenever page or blog changes (and no property is selected) ───
-            useEffect(() => {
-                if (selectedProperty) return; // property page handles its own SEO
-                if (activePage === 'blogs' && activeBlog) {
-                    setSEO(`${activeBlog.title} | Perfect Horizons Insights`, activeBlog.metaDescription || activeBlog.excerpt, `/#blogs/${activeBlog.id}`);
-                    setArticleSchema(activeBlog);
-                } else {
-                    const seo = PAGE_SEO[activePage] || PAGE_SEO['home'];
-                    setSEO(seo.title, seo.desc, seo.path);
-                    setArticleSchema(null);
-                }
-            }, [activePage, activeBlog, selectedProperty]);
 
             const handleLeadSubmit = async (dataToSubmit, projectName, actionType="General Enquiry", event=null) => {
                 if(event) event.preventDefault();
@@ -1034,15 +892,6 @@ return [...updated].sort((a, b) => (a.display_order || 9999) - (b.display_order 
                 setIsMobileMenuOpen(false); setMobileAboutOpen(false); setMobilePromisesOpen(false); setMobileServicesOpen(false);
                 setActiveBlog(null); setSelectedProperty(null);
                 window.location.hash = page; window.scrollTo(0,0);
-            };
-            const openBlog = (blog) => {
-                setActiveBlog(blog);
-                window.location.hash = `blogs/${blog.id}`;
-                window.scrollTo(0,0);
-            };
-            const closeBlog = () => {
-                setActiveBlog(null);
-                window.location.hash = 'blogs';
             };
             const openEnquiry = useCallback(() => { setShowLeadForm(true); }, []);
 
@@ -1133,7 +982,7 @@ return [...updated].sort((a, b) => (a.display_order || 9999) - (b.display_order 
                             <div style={{background:'#FFFFFF',borderBottom:'1px solid var(--border)'}} className="py-2.5 md:py-3 overflow-hidden flex flex-col items-center marquee-container">
                                 <p style={{fontSize:'0.55rem',letterSpacing:'0.22em',color:'#92600A'}} className="font-black uppercase mb-1.5">Associated With</p>
                                 <div className="animate-marquee flex items-center">
-                                    {AUTHORIZED_PARTNERS.concat(AUTHORIZED_PARTNERS).map((logo,index) => (<img key={index} src={logo} loading="lazy" decoding="async" width="120" height="36" className="h-7 md:h-9 mx-8 md:mx-12 opacity-90 hover:opacity-100 transition-opacity" style={{objectFit:'contain'}} alt="Authorized builder partner logo" />))}
+                                    {AUTHORIZED_PARTNERS.concat(AUTHORIZED_PARTNERS).map((logo,index) => (<img key={index} src={logo} loading="lazy" decoding="async" width="120" height="36" className="h-7 md:h-9 mx-8 md:mx-12 opacity-90 hover:opacity-100 transition-opacity" style={{objectFit:'contain'}} />))}
                                 </div>
                             </div>
                             <div className="filter-bar py-2.5 md:py-3 px-4 relative z-40 w-full">
@@ -1250,7 +1099,7 @@ return [...updated].sort((a, b) => (a.display_order || 9999) - (b.display_order 
                                                 return (
                                                     <div key={i} onClick={() => setSelectedProperty(p)} className="prop-card group flex flex-col relative">
                                                         <div className="relative overflow-hidden shrink-0 bg-slate-100" style={{height:'240px'}}>
-                                                            <img src={fixImageUrl(getVal(p,"Cover Image")||getVal(p,"cover_image"))} loading={i<6?'eager':'lazy'} decoding="async" fetchpriority={i<3?'high':'auto'} width="480" height="240" className="card-img" alt={`${getVal(p,"Property Name")||"Property"} - ${getVal(p,"Property Type")||"Apartment"} in ${getVal(p,"Location")||"Bengaluru"} by ${getVal(p,"Builder Name")||"Premium Builder"}`} style={{objectFit:'cover',width:'100%',height:'100%'}} />
+                                                            <img src={fixImageUrl(getVal(p,"Cover Image")||getVal(p,"cover_image"))} loading={i<6?'eager':'lazy'} decoding="async" fetchpriority={i<3?'high':'auto'} width="480" height="240" className="card-img" alt={getVal(p,"Property Name")} style={{objectFit:'cover',width:'100%',height:'100%'}} />
                                                             <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(8,15,30,0.5) 0%,transparent 50%)'}}></div>
                                                             <div className="type-badge">{getVal(p,"Property Type")||'Apartment'}</div>
                                                             <div style={{position:'absolute',bottom:'12px',left:'14px'}}><span style={{fontSize:'0.6rem',fontWeight:700,color:'rgba(255,255,255,0.9)',letterSpacing:'0.1em',textTransform:'uppercase',textShadow:'0 1px 4px rgba(0,0,0,0.4)'}}>📍 {getVal(p,"Location")}</span></div>
@@ -1333,7 +1182,7 @@ return [...updated].sort((a, b) => (a.display_order || 9999) - (b.display_order 
                                 </div>
                                 <div className="w-full md:w-1/2 flex justify-center mb-4 md:mb-0">
                                     <div style={{background:'var(--parchment)',borderRadius:'1.5rem',border:'4px solid white',boxShadow:'0 24px 64px rgba(8,15,30,0.2)',overflow:'hidden',position:'relative'}} className="w-[220px] h-[220px] md:w-[400px] md:h-[400px]">
-                                        <img src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w1920" loading="lazy" decoding="async" alt="Tharun - Lead Luxury Advisor at Perfect Horizons, Bengaluru" className="w-full h-full object-cover object-top" onError={(e) => { e.target.src = 'https://i.ibb.co/Y7Y6K3r/professional-placeholder.jpg'; }} />
+                                        <img src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w1920" loading="lazy" decoding="async" alt="Tharun Profile" className="w-full h-full object-cover object-top" onError={(e) => { e.target.src = 'https://i.ibb.co/Y7Y6K3r/professional-placeholder.jpg'; }} />
                                     </div>
                                 </div>
                             </div>
@@ -1397,4 +1246,192 @@ return [...updated].sort((a, b) => (a.display_order || 9999) - (b.display_order 
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                             {[{icon:'💰',label:'Transparent Pricing'},{icon:'⏱️',label:'On-Time Delivery'},{icon:'🏆',label:'Quality Guarantee'},{icon:'🔧',label:'Post-Move Support'}].map((item,i) => (
                                                 <div key={i} className="text-center">
-                                                </html>
+                                                    <div style={{fontSize:'1.75rem',marginBottom:'8px'}}>{item.icon}</div>
+                                                    <p style={{fontSize:'0.65rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.12em',color:'var(--navy)'}}>{item.label}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="mb-10">
+                                        <h3 style={{fontSize:'0.72rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.18em',color:'var(--navy)',marginBottom:'1rem'}}>Services Covered</h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            {['Modular Kitchen','Wardrobes & Storage','False Ceilings','Flooring','Bathroom Fittings','Lighting Design','Painting & Wall Finish','Furniture Curation','Window Treatments','Balcony Design'].map((s,i) => (<span key={i} className="amenity-pill">{s}</span>))}
+                                        </div>
+                                    </div>
+                                    <div style={{background:'var(--navy)',borderRadius:'1.5rem',padding:'2.5rem',textAlign:'center'}}>
+                                        <p style={{fontSize:'0.6rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.22em',color:'rgba(200,134,10,0.8)',marginBottom:'10px'}}>Free Consultation</p>
+                                        <h3 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.5rem',fontWeight:700,fontStyle:'italic',color:'white',marginBottom:'8px'}}>Ready to Design Your Dream Home?</h3>
+                                        <p style={{fontSize:'0.78rem',color:'rgba(255,255,255,0.6)',marginBottom:'1.5rem'}}>Share your details and our interior design advisor will reach out within 24 hours.</p>
+                                        <button onClick={() => setShowLeadForm(true)} className="btn-gold text-white font-black py-4 px-10 rounded-xl uppercase tracking-widest" style={{fontSize:'0.72rem'}}>Get Free Consultation</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* HOME LOAN PAGE */}
+                        {activePage==='home-loan' && (
+                            <div style={{background:'var(--card-bg)',borderRadius:'2rem',padding:'2rem',boxShadow:'var(--shadow-sm)',border:'1px solid var(--border)'}} className="animate-fadeIn md:p-16">
+                                <div className="text-center mb-10">
+                                    <span className="section-pill">Services</span>
+                                    <h1 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'clamp(1.8rem,5vw,3rem)',fontWeight:700,fontStyle:'italic',color:'var(--navy)',marginTop:'1.25rem',lineHeight:1.1}}>Home Loan Assistance</h1>
+                                    <p style={{fontSize:'0.65rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.18em',color:'var(--slate-soft)',marginTop:'0.75rem'}}>Hassle-free financing for your dream property</p>
+                                </div>
+                                <div className="max-w-5xl mx-auto">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
+                                        {[{icon:'🏦',title:'Top Bank Partners',desc:'We work with SBI, HDFC, ICICI, Axis Bank, Kotak, and more to get you the most competitive rates available.'},{icon:'⚡',title:'Fast Approvals',desc:'Pre-approved loan letters within 48-72 hours. We handle all documentation and liaise directly with bank representatives.'},{icon:'📋',title:'Complete Support',desc:'From eligibility check to disbursement, our loan experts guide you every step of the way — completely free of charge.'}].map((s,i) => (
+                                            <div key={i} style={{background:'var(--parchment)',borderRadius:'1.25rem',border:'1px solid var(--border)',padding:'1.75rem',textAlign:'center'}}>
+                                                <div style={{fontSize:'2.5rem',marginBottom:'12px'}}>{s.icon}</div>
+                                                <h4 style={{fontSize:'0.72rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',color:'var(--navy)',marginBottom:'8px'}}>{s.title}</h4>
+                                                <p style={{color:'var(--slate-soft)',fontSize:'0.82rem',lineHeight:1.7}}>{s.desc}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                                        <div style={{background:'rgba(26,68,128,0.04)',borderRadius:'1.25rem',border:'1px solid rgba(26,68,128,0.12)',padding:'2rem'}}>
+                                            <h3 style={{fontSize:'0.72rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',color:'var(--teal)',marginBottom:'1rem'}}>Documents Needed</h3>
+                                            <div className="space-y-2">
+                                                {['PAN Card & Aadhaar','Last 3 months salary slips','Last 6 months bank statements','Form 16 / ITR (last 2 years)','Employment letter','Property documents (we help gather these)'].map((doc,i) => (<div key={i} className="flex items-center gap-2" style={{fontSize:'0.82rem',color:'var(--navy)',fontWeight:500}}><span style={{color:'var(--emerald)'}}>✓</span>{doc}</div>))}
+                                            </div>
+                                        </div>
+                                        <div style={{background:'rgba(5,150,105,0.04)',borderRadius:'1.25rem',border:'1px solid rgba(5,150,105,0.12)',padding:'2rem'}}>
+                                            <h3 style={{fontSize:'0.72rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',color:'#065F46',marginBottom:'1rem'}}>Loan Process</h3>
+                                            <div className="space-y-3">
+                                                {[{step:'1',label:'Eligibility Check',desc:'Free assessment in minutes'},{step:'2',label:'Bank Selection',desc:'Best rate comparison across lenders'},{step:'3',label:'Document Submission',desc:'We handle the paperwork'},{step:'4',label:'Approval & Disbursal',desc:'Usually within 7-14 working days'}].map((item,i) => (
+                                                    <div key={i} className="flex items-start gap-3">
+                                                        <span style={{width:'24px',height:'24px',borderRadius:'50%',background:'var(--emerald)',color:'white',fontSize:'0.6rem',fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:'1px'}}>{item.step}</span>
+                                                        <div><p style={{fontSize:'0.78rem',fontWeight:700,color:'var(--navy)'}}>{item.label}</p><p style={{fontSize:'0.7rem',color:'var(--slate-soft)'}}>{item.desc}</p></div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="mb-10">
+                                        <h3 style={{fontSize:'0.72rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.18em',color:'var(--navy)',marginBottom:'1rem'}}>Calculate Your EMI</h3>
+                                        <EMICalculator propertyPriceStr="1 Cr" onApplyAction={() => setShowLeadForm(true)} />
+                                    </div>
+                                    <div style={{background:'var(--navy)',borderRadius:'1.5rem',padding:'2.5rem',textAlign:'center'}}>
+                                        <p style={{fontSize:'0.6rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.22em',color:'rgba(200,134,10,0.8)',marginBottom:'10px'}}>Free Service</p>
+                                        <h3 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.5rem',fontWeight:700,fontStyle:'italic',color:'white',marginBottom:'8px'}}>Get Pre-Approved in 48 Hours</h3>
+                                        <p style={{fontSize:'0.78rem',color:'rgba(255,255,255,0.6)',marginBottom:'1.5rem'}}>No fees. No obligation. Just expert guidance to get you the best loan.</p>
+                                        <button onClick={() => setShowLeadForm(true)} className="btn-gold text-white font-black py-4 px-10 rounded-xl uppercase tracking-widest" style={{fontSize:'0.72rem'}}>Apply for Home Loan</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* CUSTOMERS */}
+                        {activePage==='customers' && (
+                            <div style={{background:'var(--card-bg)',borderRadius:'2rem',padding:'2rem',boxShadow:'var(--shadow-sm)',border:'1px solid var(--border)'}} className="animate-fadeIn md:p-16">
+                                <div className="text-center mb-10">
+                                    <span className="section-pill">Client Stories</span>
+                                    <h1 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'clamp(1.8rem,5vw,3rem)',fontWeight:700,fontStyle:'italic',color:'var(--navy)',marginTop:'1.25rem',marginBottom:'0.5rem',lineHeight:1.1}}>Happy Homeowners</h1>
+                                    <p style={{fontSize:'0.65rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.18em',color:'var(--slate-soft)'}}>Don't just take our word for it.</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto">
+                                    {[{initials:'SK',name:'Sandeep & Kavya',location:'Bought in Sarjapur',stars:5,review:"We were completely lost trying to find a 3BHK in East Bangalore. Tharun didn't just show us properties; he explained the actual ROI and negotiated a price we couldn't have gotten directly from the builder."},{initials:'AN',name:'Arjun Nair',location:'Bought in Chandapura',stars:5,review:'We were looking for a budget-friendly plot in Chandapura. Tharun provided a clear legal vetting report and made sure the khata transfer was smooth. Highly reliable!'},{initials:'AT',name:'Ananya T.',location:'Bought in Whitefield',stars:5,review:'From the free site visits to handling the endless paperwork with the bank and the builder, the team made the entire process stress-free. Highly recommend them to any first-time buyer.'},{initials:'RV',name:'Ravi Venkatesh',location:'Bought in Mysuru',stars:4,review:"I was skeptical about using a channel partner at first, but Tharun's honesty won me over. He told me the actual ground realities of two projects I liked before I could make a mistake."}].map((r,i) => (
+                                        <div key={i} style={{background:'var(--parchment)',borderRadius:'1.25rem',border:'1px solid var(--border)',padding:'1.75rem',position:'relative',overflow:'hidden'}}>
+                                            <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:'linear-gradient(90deg,var(--gold),transparent)'}}></div>
+                                            <div style={{color:'#C8860A',fontSize:'1rem',marginBottom:'1rem',letterSpacing:'2px'}}>{'★'.repeat(r.stars)}{r.stars<5?<span style={{color:'#CBD5E1'}}>{'★'.repeat(5-r.stars)}</span>:''}</div>
+                                            <p style={{color:'var(--slate-soft)',fontSize:'0.88rem',lineHeight:1.8,fontStyle:'italic',marginBottom:'1.25rem'}}>"{r.review}"</p>
+                                            <div className="flex items-center gap-3">
+                                                <div style={{width:'44px',height:'44px',borderRadius:'50%',background:'linear-gradient(135deg,var(--teal),var(--navy))',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontWeight:800,fontSize:'0.75rem',flexShrink:0}}>{r.initials}</div>
+                                                <div><h5 style={{fontWeight:800,fontSize:'0.72rem',textTransform:'uppercase',letterSpacing:'0.14em',color:'var(--navy)'}}>{r.name}</h5><p style={{fontSize:'0.6rem',color:'var(--slate-soft)',textTransform:'uppercase',letterSpacing:'0.16em',fontWeight:600,marginTop:'2px'}}>📍 {r.location}</p></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* BLOGS */}
+                        {activePage==='blogs' && !activeBlog && (
+                            <div style={{background:'var(--card-bg)',borderRadius:'2rem',padding:'2rem',boxShadow:'var(--shadow-sm)',border:'1px solid var(--border)'}} className="animate-fadeIn md:p-16">
+                                <span className="section-pill">Knowledge Hub</span>
+                                <h1 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'clamp(1.8rem,5vw,3rem)',fontWeight:700,fontStyle:'italic',color:'var(--navy)',marginTop:'1.25rem',marginBottom:'0.5rem',lineHeight:1.1}}>Real Estate Insights</h1>
+                                <p style={{fontSize:'0.65rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.18em',color:'var(--slate-soft)',marginBottom:'2.5rem'}}>Expert guides for Bengaluru buyers</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+                                    {BLOG_ARTICLES.map(blog => (
+                                        <div key={blog.id} onClick={() => { setActiveBlog(blog); window.scrollTo(0,0); }} className="group flex flex-col cursor-pointer" style={{background:'var(--parchment)',borderRadius:'1.25rem',border:'1px solid var(--border)',overflow:'hidden',transition:'box-shadow 0.25s,transform 0.25s',boxShadow:'var(--shadow-sm)'}} onMouseEnter={e=>{e.currentTarget.style.boxShadow='var(--shadow-lift)';e.currentTarget.style.transform='translateY(-4px)';}} onMouseLeave={e=>{e.currentTarget.style.boxShadow='var(--shadow-sm)';e.currentTarget.style.transform='translateY(0)';}}>
+                                            <div style={{padding:'1.5rem',flexGrow:1}}>
+                                                <span style={{display:'inline-block',background:'linear-gradient(135deg,var(--teal),var(--navy))',color:'white',fontSize:'0.55rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.18em',padding:'5px 14px',borderRadius:'999px',marginBottom:'1rem'}}>{blog.tag}</span>
+                                                <h3 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.1rem',fontWeight:700,fontStyle:'italic',color:'var(--navy)',lineHeight:1.35,marginBottom:'0.75rem'}}>{blog.title}</h3>
+                                                <p style={{color:'var(--slate-soft)',fontSize:'0.8rem',lineHeight:1.7}} className="line-clamp-3">{blog.excerpt}</p>
+                                            </div>
+                                            <div style={{padding:'1rem 1.5rem',borderTop:'1px solid var(--border)',background:'rgba(8,15,30,0.02)'}}><span style={{fontSize:'0.65rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',color:'var(--teal)',display:'flex',alignItems:'center',gap:'6px'}}>Read Article <span style={{transition:'transform 0.2s'}} className="group-hover:translate-x-1 inline-block">→</span></span></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {activePage==='blogs' && activeBlog && (
+                            <div style={{background:'var(--card-bg)',borderRadius:'2rem',padding:'2rem',boxShadow:'var(--shadow-sm)',border:'1px solid var(--border)',maxWidth:'56rem',margin:'0 auto'}} className="animate-fadeIn md:p-16">
+                                <button onClick={() => setActiveBlog(null)} style={{fontSize:'0.65rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.16em',color:'var(--slate-soft)',display:'flex',alignItems:'center',gap:'6px',marginBottom:'2rem'}} className="hover:text-yellow-600 transition">← Back to Insights</button>
+                                <span style={{display:'inline-block',background:'linear-gradient(135deg,var(--teal),var(--navy))',color:'white',fontSize:'0.55rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.18em',padding:'5px 14px',borderRadius:'999px',marginBottom:'1.25rem'}}>{activeBlog.tag}</span>
+                                <h1 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'clamp(1.6rem,4vw,2.5rem)',fontWeight:700,fontStyle:'italic',color:'var(--navy)',lineHeight:1.15,marginBottom:'2rem'}}>{activeBlog.title}</h1>
+                                <div className="blog-content" style={{color:'var(--slate-soft)',lineHeight:1.85,fontSize:'0.9rem'}} dangerouslySetInnerHTML={{__html:activeBlog.content}}></div>
+                                <div className="mt-14 pt-8 border-t text-center" style={{borderColor:'var(--border)'}}>
+                                    <p style={{fontSize:'0.65rem',fontWeight:800,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--slate-soft)',marginBottom:'1rem'}}>Get off the internet; trust a professional.</p>
+                                    <button onClick={() => setShowLeadForm(true)} className="btn-gold text-white font-black py-4 px-10 rounded-xl uppercase tracking-widest" style={{fontSize:'0.75rem'}}>Talk with Advisor</button>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* FOOTER */}
+                    <PhFooter onNavTo={navTo} setLegalModal={setLegalModal} />
+
+                    {/* WhatsApp FAB */}
+                    <div className="fixed bottom-24 md:bottom-24 right-6 z-[55] flex flex-col items-end animate-fadeIn">
+                        <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi, what properties are available?`} target="_blank" className="bg-gradient-to-tr from-green-500 to-green-400 text-white p-4 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-transform flex items-center justify-center">
+                            <svg className="w-7 h-7 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.12.553 4.148 1.603 5.946L.2 24l6.195-1.62c1.737.947 3.69 1.445 5.636 1.445 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.615 0 12.031 0zm0 21.846c-1.802 0-3.568-.484-5.115-1.402l-.366-.217-3.805.996.996-3.805-.217-.366a9.92 9.92 0 0 1-1.402-5.115c0-5.514 4.486-10 10-10 5.514 0 10 4.486 10 10 0 5.514-4.486 10-10 10zm5.496-7.518c-.301-.15-1.785-.885-2.062-.986-.277-.1-.478-.15-.678.15-.201.301-.778.986-.954 1.187-.176.201-.351.226-.653.076-1.609-.816-2.73-1.637-3.784-3.411-.176-.301.176-.277.453-.827.076-.15-.038-.277-.038-.427-.076-.15-.678-1.631-.929-2.233-.251-.602-.502-.527-.678-.527-.176 0-.377 0-.578 0-.201 0-.527.076-.803.427-.276.351-1.054 1.028-1.054 2.508 0 1.48 1.079 2.91 1.229 3.111.15.201 2.133 3.262 5.169 4.566.726.301 1.28.478 1.731.628.728.227 1.381.194 1.905.118.578-.084 1.785-.728 2.036-1.431.251-.703.251-1.305.176-1.431-.076-.126-.277-.201-.578-.352z"/></svg>
+                        </a>
+                    </div>
+
+                    {/* STICKY BOTTOM ENQUIRY BAR */}
+                    {activePage === 'home' && <StickyEnquiryBar onSubmitLead={handleLeadSubmit} />}
+
+                    {/* Legal Modals */}
+                    {legalModal && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setLegalModal(null)}>
+                            <div style={{background:'var(--card-bg)',borderRadius:'24px',padding:'2.5rem',maxWidth:'640px',width:'100%',maxHeight:'80vh',overflowY:'auto',boxShadow:'0 32px 80px rgba(8,15,30,0.45)',position:'relative'}} onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setLegalModal(null)} style={{position:'absolute',top:'16px',right:'20px',fontSize:'1.5rem',color:'rgba(100,116,139,0.5)',fontWeight:300}} className="hover:text-slate-900 transition">×</button>
+                                <div style={{height:'3px',background:'linear-gradient(90deg,var(--gold),transparent)',borderRadius:'2px',marginBottom:'1.5rem'}}></div>
+                                <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.5rem',fontWeight:700,fontStyle:'italic',color:'var(--navy)',textTransform:'uppercase',marginBottom:'1.5rem',paddingBottom:'1rem',borderBottom:'1px solid var(--border)'}}>{legalModal==='terms'?"Terms & Conditions":"Privacy Policy"}</h2>
+                                <div style={{fontSize:'0.8rem',color:'var(--slate-soft)',lineHeight:1.8}} className="space-y-4">
+                                    <p style={{fontWeight:600,color:'var(--navy)',background:'var(--gold-light)',padding:'1rem',borderRadius:'10px',border:'1px solid rgba(200,134,10,0.15)',fontSize:'0.78rem'}}>Disclaimer: Perfect Horizons acts solely as an authorized channel partner and real estate advisory. We are not the developers or builders of the properties listed on this website.</p>
+                                    <p><strong>Logos & Trademarks:</strong> Any builder logos used on this platform are for representative and associative purposes only and remain the absolute property of their respective trademark owners.</p>
+                                    <p><strong>Information Accuracy:</strong> All images, layouts, pricing, and project details displayed are for informational and representational purposes only. We advise clients to verify all legal and RERA documents independently before making a financial commitment.</p>
+                                    <p><strong>Liability:</strong> Perfect Horizons shall not be held liable for any disputes, delays in possession, or discrepancies between the builder's promised specifications and the final delivered product.</p>
+                                    <p><strong>Data Privacy:</strong> Any information submitted through our enquiry forms is kept strictly confidential. We do not sell your personal data to third-party marketing agencies.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* General Lead Form Modal */}
+                    {showLeadForm && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fadeIn" onClick={() => setShowLeadForm(false)}>
+                            <div style={{background:'var(--card-bg)',borderRadius:'28px',maxWidth:'380px',width:'100%',padding:'2.5rem',boxShadow:'0 32px 80px rgba(8,15,30,0.5),0 0 0 1px rgba(200,134,10,0.12)',position:'relative'}} onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setShowLeadForm(false)} style={{position:'absolute',top:'16px',right:'20px',fontSize:'1.5rem',color:'rgba(100,116,139,0.6)',fontWeight:300,lineHeight:1}} className="hover:text-slate-900 transition">×</button>
+                                <div style={{height:'3px',background:'linear-gradient(90deg,var(--gold),transparent)',borderRadius:'2px',marginBottom:'1.5rem'}}></div>
+                                <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.6rem',fontWeight:700,fontStyle:'italic',color:'var(--navy)',marginBottom:'4px',textTransform:'uppercase'}}>Get in Touch</h2>
+                                <p style={{fontSize:'0.6rem',fontWeight:700,color:'var(--slate-soft)',textTransform:'uppercase',letterSpacing:'0.18em',marginBottom:'1.5rem'}}>Our advisor will call you shortly</p>
+                                <form onSubmit={(e) => handleLeadSubmit(null,"General Enquiry","Website - General",e)} className="space-y-3 text-left">
+                                    <input type="text" placeholder="Full Name" required style={{width:'100%',border:'1px solid var(--border)',background:'var(--cream)',padding:'14px 16px',borderRadius:'12px',outline:'none',fontFamily:"'DM Sans',sans-serif",fontSize:'0.875rem',fontWeight:500}} className="focus:ring-2 focus:ring-amber-300" value={leadData.name} onChange={e => setLeadData({...leadData,name:e.target.value})} />
+                                    <input type="tel" placeholder="Mobile Number (10 Digits)" required style={{width:'100%',border:'1px solid var(--border)',background:'var(--cream)',padding:'14px 16px',borderRadius:'12px',outline:'none',fontFamily:"'DM Sans',sans-serif",fontSize:'0.875rem',fontWeight:500}} className="focus:ring-2 focus:ring-amber-300" value={leadData.phone} onChange={e => setLeadData({...leadData,phone:e.target.value})} />
+                                    <input type="email" placeholder="Email Address (Optional)" style={{width:'100%',border:'1px solid var(--border)',background:'var(--cream)',padding:'14px 16px',borderRadius:'12px',outline:'none',fontFamily:"'DM Sans',sans-serif",fontSize:'0.875rem',fontWeight:500}} className="focus:ring-2 focus:ring-amber-300" value={leadData.email} onChange={e => setLeadData({...leadData,email:e.target.value})} />
+                                    <button disabled={isSubmitting} type="submit" className="btn-gold w-full font-black py-4 rounded-xl uppercase tracking-widest mt-2 active:scale-95 text-white" style={{fontSize:'0.75rem'}}>{isSubmitting?"Processing…":"Submit Interest"}</button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
