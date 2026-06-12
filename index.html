@@ -3,7 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfect Horizons | Luxury Property Portal</title>
+    <title>Perfect Horizons | Trusted Real Estate Advisory in Bengaluru</title>
+    <meta name="description" content="Perfect Horizons is Bengaluru's trusted property advisory. We curate verified apartments, villas & plots in Electronic City, Sarjapur, Whitefield & more. Independent advice, no pressure sales. Talk to Tharun today." />
+    <meta name="keywords" content="real estate agent Bengaluru, property advisor Bangalore, flats in Bangalore, apartments for sale Bangalore, property consultant Electronic City, Sarjapur apartments, Whitefield flats, new projects Bangalore 2025, channel partner Bangalore, home loan assistance Bangalore" />
+    <meta name="author" content="Perfect Horizons" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://perfecthorizons.in/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://perfecthorizons.in/" />
+    <meta property="og:title" content="Perfect Horizons | Trusted Real Estate Advisory in Bengaluru" />
+    <meta property="og:description" content="We reject bad projects so you don't waste weekends on wrong site visits. Curated flats, villas & plots in Bengaluru. Independent advice, zero pressure." />
+    <meta property="og:image" content="https://perfecthorizons.in/og-cover.jpg" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Perfect Horizons | Real Estate Advisory Bengaluru" />
+    <meta name="twitter:description" content="Curated properties in Bengaluru. We only recommend what we'd confidently suggest to family." />
+
+    <!-- Local Business Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "RealEstateAgent",
+      "name": "Perfect Horizons",
+      "description": "Independent real estate advisory in Bengaluru offering curated property recommendations, home loan assistance, and guided site visits.",
+      "url": "https://perfecthorizons.in",
+      "telephone": "+91-9113261205",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Bengaluru",
+        "addressRegion": "Karnataka",
+        "addressCountry": "IN"
+      },
+      "areaServed": ["Bengaluru", "Electronic City", "Sarjapur", "Whitefield", "Chandapura", "Mysuru"],
+      "openingHours": "Mo-Sa 09:00-20:00",
+      "priceRange": "Free Advisory"
+    }
+    </script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%22 y=%2254%22 font-family=%22Arial, sans-serif%22 font-size=%2260%22 font-weight=%22900%22 font-style=%22italic%22 fill=%22%23C8860A%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22>PH</text></svg>">
     <link rel="preconnect" href="https://uiiovtsktllvtecfokik.supabase.co" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -821,11 +859,27 @@
             useEffect(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get("key") === "admin123") setIsAdmin(true);
+
+                // Handle deep-link blog hash on first load e.g. #blogs/2
+                const initialHash = window.location.hash.replace('#','');
+                if (initialHash.startsWith('blogs/')) {
+                    const blogId = parseInt(initialHash.split('/')[1]);
+                    const found = BLOG_ARTICLES.find(b => b.id === blogId);
+                    if (found) { setActivePage('blogs'); setActiveBlog(found); }
+                }
+
                 const handleHashChange = () => {
                     const hash = window.location.hash.replace('#','');
-                    setActivePage(hash||'home');
-                    if(hash!=='home') setSelectedProperty(null);
-                    if(hash!=='blogs') setActiveBlog(null);
+                    if (hash.startsWith('blogs/')) {
+                        const blogId = parseInt(hash.split('/')[1]);
+                        const found = BLOG_ARTICLES.find(b => b.id === blogId);
+                        setActivePage('blogs');
+                        if (found) setActiveBlog(found);
+                    } else {
+                        setActivePage(hash||'home');
+                        if(hash!=='home') setSelectedProperty(null);
+                        if(hash!=='blogs') setActiveBlog(null);
+                    }
                 };
                 window.addEventListener('hashchange', handleHashChange);
                 const fetchProperties = async () => {
@@ -841,6 +895,43 @@ return [...updated].sort((a, b) => (a.display_order || 9999) - (b.display_order 
                     }).subscribe();
                 return () => { window.removeEventListener('hashchange', handleHashChange); supabase.removeChannel(channel); };
             }, []);
+
+            // Dynamic document title + blog hash URL
+            useEffect(() => {
+                const BASE = "Perfect Horizons | Real Estate Advisory Bengaluru";
+                if (activeBlog) {
+                    document.title = `${activeBlog.title} | Perfect Horizons Insights`;
+                    let meta = document.querySelector('meta[name="description"]');
+                    if (meta) meta.setAttribute('content', activeBlog.excerpt);
+                    // Update hash without triggering hashchange
+                    history.replaceState(null, '', `#blogs/${activeBlog.id}`);
+                    // Inject Article schema
+                    let existing = document.getElementById('article-schema');
+                    if (existing) existing.remove();
+                    const s = document.createElement('script');
+                    s.id = 'article-schema'; s.type = 'application/ld+json';
+                    s.text = JSON.stringify({
+                        "@context":"https://schema.org","@type":"Article",
+                        "headline": activeBlog.title,
+                        "description": activeBlog.excerpt,
+                        "author":{"@type":"Organization","name":"Perfect Horizons"},
+                        "publisher":{"@type":"Organization","name":"Perfect Horizons","logo":{"@type":"ImageObject","url":"https://perfecthorizons.in/logo.png"}},
+                        "url": `https://perfecthorizons.in/#blogs/${activeBlog.id}`
+                    });
+                    document.head.appendChild(s);
+                } else {
+                    const existing = document.getElementById('article-schema');
+                    if (existing) existing.remove();
+                    const meta = document.querySelector('meta[name="description"]');
+                    if (meta) meta.setAttribute('content', "Perfect Horizons is Bengaluru's trusted property advisory. Curated apartments, villas & plots in Electronic City, Sarjapur, Whitefield & more. Independent advice, no pressure sales.");
+                    if (activePage === 'home' || !activePage) {
+                        document.title = BASE;
+                    } else {
+                        const pageLabel = activePage.replace(/-/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+                        document.title = `${pageLabel} | Perfect Horizons`;
+                    }
+                }
+            }, [activeBlog, activePage]);
 
             const handleLeadSubmit = async (dataToSubmit, projectName, actionType="General Enquiry", event=null) => {
                 if(event) event.preventDefault();
@@ -1086,6 +1177,25 @@ return [...updated].sort((a, b) => (a.display_order || 9999) - (b.display_order 
                         {/* HOME */}
                         {activePage==='home' && (
                             <>
+                                {/* CURATION PROMISE BANNER */}
+                                <div style={{background:'linear-gradient(135deg,var(--navy),var(--navy-mid))',borderRadius:'1.5rem',padding:'1.75rem 2rem',marginBottom:'2rem',border:'1px solid rgba(200,134,10,0.2)',boxShadow:'var(--shadow-md)'}} className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                                    <div className="shrink-0 text-center md:text-left">
+                                        <p style={{fontSize:'0.55rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.22em',color:'rgba(200,134,10,0.9)',marginBottom:'4px'}}>Our Curation Promise</p>
+                                        <h3 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.3rem',fontWeight:700,fontStyle:'italic',color:'white',lineHeight:1.2}}>We Don't Show Everything</h3>
+                                    </div>
+                                    <div style={{width:'1px',background:'rgba(255,255,255,0.1)',alignSelf:'stretch'}} className="hidden md:block"></div>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 flex-1">
+                                        {['Legal concerns','Overpriced for the area','Poor builder track record','Weak long-term value'].map((reason,i) => (
+                                            <div key={i} style={{display:'flex',alignItems:'center',gap:'8px',background:'rgba(255,255,255,0.05)',borderRadius:'8px',padding:'8px 12px',border:'1px solid rgba(255,255,255,0.08)'}}>
+                                                <span style={{color:'#F87171',fontSize:'0.75rem',fontWeight:800,flexShrink:0}}>✕</span>
+                                                <span style={{fontSize:'0.6rem',fontWeight:600,color:'rgba(255,255,255,0.7)',lineHeight:1.4}}>{reason}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div style={{borderLeft:'none',paddingLeft:0,flexShrink:0,textAlign:'center'}} className="hidden md:block md:border-l md:border-white/10 md:pl-6">
+                                        <p style={{fontSize:'0.58rem',fontWeight:700,color:'rgba(255,255,255,0.5)',textTransform:'uppercase',letterSpacing:'0.1em',lineHeight:1.6}}>Only properties we'd<br/>recommend to family</p>
+                                    </div>
+                                </div>
                                 {loading ? (
                                     <div className="text-center py-24 animate-pulse font-black uppercase tracking-widest" style={{color:'var(--teal)'}}><div style={{fontSize:'2rem',marginBottom:'0.75rem'}}>🏗️</div>Curating Properties…</div>
                                 ) : (
@@ -1102,11 +1212,11 @@ return [...updated].sort((a, b) => (a.display_order || 9999) - (b.display_order 
                                                             <img src={fixImageUrl(getVal(p,"Cover Image")||getVal(p,"cover_image"))} loading={i<6?'eager':'lazy'} decoding="async" fetchpriority={i<3?'high':'auto'} width="480" height="240" className="card-img" alt={getVal(p,"Property Name")} style={{objectFit:'cover',width:'100%',height:'100%'}} />
                                                             <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(8,15,30,0.5) 0%,transparent 50%)'}}></div>
                                                             <div className="type-badge">{getVal(p,"Property Type")||'Apartment'}</div>
-                                                            <div style={{position:'absolute',bottom:'12px',left:'14px'}}><span style={{fontSize:'0.6rem',fontWeight:700,color:'rgba(255,255,255,0.9)',letterSpacing:'0.1em',textTransform:'uppercase',textShadow:'0 1px 4px rgba(0,0,0,0.4)'}}>📍 {getVal(p,"Location")}</span></div>
                                                         </div>
                                                         <div className="p-5 md:p-6 flex-grow flex flex-col">
                                                             <p style={{fontSize:'0.65rem',fontWeight:700,color:'var(--gold)',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:'4px'}}>{getVal(p,"Builder Name")||"Premium Builder"}</p>
-                                                            <h2 style={{fontSize:'1.05rem',fontWeight:800,color:'var(--navy)',lineHeight:1.2,marginBottom:'10px',fontFamily:"'DM Sans',sans-serif",letterSpacing:'-0.01em'}} className="truncate">{getVal(p,"Property Name")||"Listed Property"}</h2>
+                                                            <h2 style={{fontSize:'1.05rem',fontWeight:800,color:'var(--navy)',lineHeight:1.2,marginBottom:'6px',fontFamily:"'DM Sans',sans-serif",letterSpacing:'-0.01em'}} className="truncate">{getVal(p,"Property Name")||"Listed Property"}</h2>
+                                                            <div style={{display:'inline-flex',alignItems:'center',gap:'4px',background:'#EFF6FF',border:'1px solid #BFDBFE',borderRadius:'999px',padding:'3px 10px',fontSize:'0.58rem',fontWeight:700,color:'#1E40AF',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:'10px',width:'fit-content'}}>📍 {getVal(p,"Location")||"Bengaluru"}</div>
                                                             <div className="flex flex-wrap gap-1.5 mb-4">
                                                                 <span className={`status-badge ${badgeClass}`}>{getVal(p,"Construction Status")||"Status"}</span>
                                                                 {getVal(p,"No of BHK's") && <span className="status-badge status-default">{getVal(p,"No of BHK's")} BHK</span>}
@@ -1323,22 +1433,25 @@ return [...updated].sort((a, b) => (a.display_order || 9999) - (b.display_order 
                         {activePage==='customers' && (
                             <div style={{background:'var(--card-bg)',borderRadius:'2rem',padding:'2rem',boxShadow:'var(--shadow-sm)',border:'1px solid var(--border)'}} className="animate-fadeIn md:p-16">
                                 <div className="text-center mb-10">
-                                    <span className="section-pill">Client Stories</span>
-                                    <h1 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'clamp(1.8rem,5vw,3rem)',fontWeight:700,fontStyle:'italic',color:'var(--navy)',marginTop:'1.25rem',marginBottom:'0.5rem',lineHeight:1.1}}>Happy Homeowners</h1>
-                                    <p style={{fontSize:'0.65rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.18em',color:'var(--slate-soft)'}}>Don't just take our word for it.</p>
+                                    <span className="section-pill">Why Work With Us</span>
+                                    <h1 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'clamp(1.8rem,5vw,3rem)',fontWeight:700,fontStyle:'italic',color:'var(--navy)',marginTop:'1.25rem',marginBottom:'0.5rem',lineHeight:1.1}}>Why Clients Choose Perfect Horizons</h1>
+                                    <p style={{fontSize:'0.65rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.18em',color:'var(--slate-soft)',maxWidth:'540px',margin:'0 auto'}}>We let our principles speak before testimonials do.</p>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto">
-                                    {[{initials:'SK',name:'Sandeep & Kavya',location:'Bought in Sarjapur',stars:5,review:"We were completely lost trying to find a 3BHK in East Bangalore. Tharun didn't just show us properties; he explained the actual ROI and negotiated a price we couldn't have gotten directly from the builder."},{initials:'AN',name:'Arjun Nair',location:'Bought in Chandapura',stars:5,review:'We were looking for a budget-friendly plot in Chandapura. Tharun provided a clear legal vetting report and made sure the khata transfer was smooth. Highly reliable!'},{initials:'AT',name:'Ananya T.',location:'Bought in Whitefield',stars:5,review:'From the free site visits to handling the endless paperwork with the bank and the builder, the team made the entire process stress-free. Highly recommend them to any first-time buyer.'},{initials:'RV',name:'Ravi Venkatesh',location:'Bought in Mysuru',stars:4,review:"I was skeptical about using a channel partner at first, but Tharun's honesty won me over. He told me the actual ground realities of two projects I liked before I could make a mistake."}].map((r,i) => (
-                                        <div key={i} style={{background:'var(--parchment)',borderRadius:'1.25rem',border:'1px solid var(--border)',padding:'1.75rem',position:'relative',overflow:'hidden'}}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto mb-14">
+                                    {[{icon:'🧭',title:'Independent Advice',desc:'We are not tied to any single developer. Our recommendations are based entirely on what makes sense for your budget, lifestyle, and long-term goals — never on who pays the highest commission.'},{icon:'🤝',title:'No Pressure Sales',desc:'We share facts, answer questions, and step back. You decide at your own pace. No follow-up calls the moment you leave a site visit. No urgency tricks.'},{icon:'🔍',title:'Curated Projects Only',desc:'We evaluate dozens of projects before listing even one. If a project has legal concerns, a poor builder track record, or questionable value — it simply does not appear on our platform.'},{icon:'🏦',title:'Home Loan Assistance',desc:"Navigating bank paperwork and getting the right loan structure is genuinely complex. We coordinate with lenders and guide you through the process from application to disbursement."},{icon:'📋',title:'Legal Vetting Support',desc:'Before you commit, we walk you through the RERA status, encumbrance, builder approvals, and title clarity so there are no surprises after booking.'},{icon:'🗝️',title:'Post-Sales Follow-Through',desc:"Our relationship doesn't end at the booking cheque. We stay in contact until you get possession and help resolve any builder-side delays or documentation issues."}].map((item,i) => (
+                                        <div key={i} style={{background:'var(--parchment)',borderRadius:'1.25rem',border:'1px solid var(--border)',padding:'1.75rem',position:'relative',overflow:'hidden',transition:'box-shadow 0.2s,transform 0.2s'}} className="hover:shadow-md hover:-translate-y-0.5">
                                             <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:'linear-gradient(90deg,var(--gold),transparent)'}}></div>
-                                            <div style={{color:'#C8860A',fontSize:'1rem',marginBottom:'1rem',letterSpacing:'2px'}}>{'★'.repeat(r.stars)}{r.stars<5?<span style={{color:'#CBD5E1'}}>{'★'.repeat(5-r.stars)}</span>:''}</div>
-                                            <p style={{color:'var(--slate-soft)',fontSize:'0.88rem',lineHeight:1.8,fontStyle:'italic',marginBottom:'1.25rem'}}>"{r.review}"</p>
-                                            <div className="flex items-center gap-3">
-                                                <div style={{width:'44px',height:'44px',borderRadius:'50%',background:'linear-gradient(135deg,var(--teal),var(--navy))',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontWeight:800,fontSize:'0.75rem',flexShrink:0}}>{r.initials}</div>
-                                                <div><h5 style={{fontWeight:800,fontSize:'0.72rem',textTransform:'uppercase',letterSpacing:'0.14em',color:'var(--navy)'}}>{r.name}</h5><p style={{fontSize:'0.6rem',color:'var(--slate-soft)',textTransform:'uppercase',letterSpacing:'0.16em',fontWeight:600,marginTop:'2px'}}>📍 {r.location}</p></div>
-                                            </div>
+                                            <div style={{fontSize:'1.75rem',marginBottom:'12px'}}>{item.icon}</div>
+                                            <h4 style={{fontSize:'0.72rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.14em',color:'var(--navy)',marginBottom:'8px'}}>{item.title}</h4>
+                                            <p style={{color:'var(--slate-soft)',fontSize:'0.85rem',lineHeight:1.8}}>{item.desc}</p>
                                         </div>
                                     ))}
+                                </div>
+                                <div style={{background:'linear-gradient(135deg,var(--navy),var(--navy-mid))',borderRadius:'1.5rem',padding:'2.5rem',textAlign:'center',maxWidth:'640px',margin:'0 auto'}}>
+                                    <p style={{fontSize:'0.6rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'0.22em',color:'rgba(200,134,10,0.9)',marginBottom:'1rem'}}>Ready to find your home?</p>
+                                    <h3 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.6rem',fontWeight:700,fontStyle:'italic',color:'white',marginBottom:'0.75rem',lineHeight:1.2}}>Talk to Tharun. No obligation.</h3>
+                                    <p style={{fontSize:'0.78rem',color:'rgba(255,255,255,0.6)',marginBottom:'1.75rem',lineHeight:1.7}}>One call is all it takes to understand whether we're the right fit for your property search.</p>
+                                    <button onClick={() => setShowLeadForm(true)} className="btn-gold text-white font-black py-4 px-10 rounded-xl uppercase tracking-widest" style={{fontSize:'0.72rem'}}>Schedule a Free Call</button>
                                 </div>
                             </div>
                         )}
