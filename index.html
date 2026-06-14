@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,7 +22,6 @@
 {"@context":"https://schema.org","@type":"RealEstateAgent","name":"Perfect Horizons","description":"Independent real estate advisory in Bengaluru offering curated property recommendations, home loan assistance, and guided site visits.","url":"https://perfecthorizons.in","telephone":"+91-9113261205","address":{"@type":"PostalAddress","addressLocality":"Bengaluru","addressRegion":"Karnataka","addressCountry":"IN"},"areaServed":["Bengaluru","Electronic City","Sarjapur","Whitefield","Chandapura","Mysuru"],"openingHours":"Mo-Sa 09:00-20:00","priceRange":"Free Advisory"}
 </script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%22 y=%2254%22 font-family=%22Arial,sans-serif%22 font-size=%2260%22 font-weight=%22900%22 font-style=%22italic%22 fill=%22%23C8860A%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22>PH</text></svg>">
-<!-- Google tag (gtag.js) — replace G-XXXXXXXXXX with your real GA4 Measurement ID -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -58,12 +58,9 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--navy);overflow-x:hidden;-webkit-font-smoothing:antialiased;width:100%;max-width:100%;box-sizing:border-box}
-
-/* ── Mobile overflow fix ── */
-* { box-sizing: border-box; }
-html, body { width: 100%; overflow-x: hidden; }
-
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--navy);overflow-x:hidden;-webkit-font-smoothing:antialiased;width:100%;max-width:100%}
+html,body{width:100%;overflow-x:hidden}
+ 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:var(--cream)}
@@ -71,19 +68,20 @@ html, body { width: 100%; overflow-x: hidden; }
 ::-webkit-scrollbar-thumb:hover{background:var(--gold)}
 .hide-scroll::-webkit-scrollbar{display:none}
 .hide-scroll{-ms-overflow-style:none;scrollbar-width:none}
-
+ 
 /* ── Animations ── */
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 @keyframes drawHouse{to{stroke-dashoffset:0}}
 @keyframes pulseSlow{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .anim-fadeUp{animation:fadeUp .4s cubic-bezier(.22,.68,0,1.1) forwards}
 .anim-fadeIn{animation:fadeIn .3s ease forwards}
 .marquee-wrap{overflow:hidden}
 .marquee-track{display:flex;white-space:nowrap;animation:marquee 22s linear infinite}
 .marquee-wrap:hover .marquee-track{animation-play-state:paused}
-
+ 
 /* ── Buttons ── */
 .btn-gold{background:linear-gradient(135deg,#B8720A,#DA9610);color:#fff;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:var(--r-btn);border:none;cursor:pointer;transition:transform .18s,box-shadow .18s,filter .18s;box-shadow:0 4px 16px rgba(184,114,10,.32)}
 .btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(184,114,10,.42);filter:brightness(1.05)}
@@ -92,23 +90,37 @@ html, body { width: 100%; overflow-x: hidden; }
 .btn-outline:hover{border-color:var(--gold);background:var(--gold-lt)}
 .btn-dark{background:var(--navy);color:#fff;font-weight:700;border-radius:var(--r-btn);border:none;cursor:pointer;transition:opacity .18s}
 .btn-dark:hover{opacity:.82}
-
+ 
+/* ── PROPERTY CARD — Ceyone-inspired ── */
+.prop-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden;cursor:pointer;transition:transform .32s cubic-bezier(.22,.68,0,1.1),box-shadow .32s;box-shadow:var(--sh-sm);display:flex;flex-direction:column}
+.prop-card:hover{transform:translateY(-8px);box-shadow:0 28px 64px rgba(7,14,29,.18)}
+.prop-card:hover .card-img{transform:scale(1.08)}
+.prop-card:hover .card-cta{background:linear-gradient(135deg,#B8720A,#DA9610);color:#fff;border-color:transparent}
+.card-img-wrap{position:relative;overflow:hidden;flex-shrink:0}
+.card-img{width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.22,.68,0,1.1);display:block}
+.card-img-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(7,14,29,.72) 0%,rgba(7,14,29,.2) 45%,transparent 70%)}
+.card-price-badge{position:absolute;bottom:0;left:0;right:0;padding:14px 16px;z-index:3}
+.card-type-tag{position:absolute;top:12px;left:12px;z-index:3;background:rgba(7,14,29,.82);backdrop-filter:blur(10px);color:#FCD34D;font-size:.52rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;padding:5px 12px;border-radius:6px;border:1px solid rgba(200,134,10,.35)}
+.card-status-dot{position:absolute;top:12px;right:12px;z-index:3}
+.card-body{padding:16px 18px 0;flex:1;display:flex;flex-direction:column;gap:0}
+.card-builder{font-size:.52rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px}
+.card-name{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.15rem;font-weight:700;color:var(--navy);line-height:1.2;margin-bottom:8px;letter-spacing:-.01em}
+.card-location{display:flex;align-items:center;gap:5px;font-size:.62rem;font-weight:600;color:var(--muted);margin-bottom:12px}
+.card-meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.card-chip{display:inline-flex;align-items:center;gap:4px;background:var(--parch);border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:.56rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.08em}
+.card-cta{margin:0 18px 18px;padding:11px;background:transparent;border:1.5px solid var(--border);border-radius:10px;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--navy);cursor:pointer;transition:all .22s;text-align:center}
+ 
 /* ── Cards ── */
 .card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--sh-sm)}
-.prop-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden;cursor:pointer;transition:transform .28s cubic-bezier(.22,.68,0,1.1),box-shadow .28s;box-shadow:var(--sh-sm)}
-.prop-card:hover{transform:translateY(-6px);box-shadow:var(--sh-lg)}
-.prop-card:hover .card-img{transform:scale(1.07)}
-.card-img{width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.22,.68,0,1.1)}
-
+ 
 /* ── Badges ── */
-.badge{display:inline-flex;align-items:center;gap:4px;font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:999px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:.55rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:999px}
 .badge-ready{background:#DCFCE7;color:#166534}
 .badge-under{background:#FEF3C7;color:#92400E}
 .badge-new{background:#EFF6FF;color:#1E40AF}
 .badge-default{background:var(--parch);color:var(--muted)}
 .badge-rera{background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;font-size:.58rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;word-break:break-all;line-height:1.4}
-.type-ribbon{position:absolute;top:14px;left:0;background:rgba(7,14,29,.88);backdrop-filter:blur(8px);color:#FCD34D;font-size:.58rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding:5px 14px 5px 12px;border-radius:0 8px 8px 0;border-left:3px solid var(--gold);box-shadow:2px 0 12px rgba(0,0,0,.22)}
-
+ 
 /* ── Nav ── */
 .nav-link{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.65);cursor:pointer;padding:4px 0;position:relative;transition:color .18s}
 .nav-link:hover,.nav-link.active{color:#FCD34D}
@@ -124,13 +136,16 @@ html, body { width: 100%; overflow-x: hidden; }
 .dd-item:hover .dd-icon{background:rgba(200,134,10,.18)}
 .caret{display:inline-block;margin-left:4px;width:0;height:0;vertical-align:middle;border-top:4px solid currentColor;border-right:4px solid transparent;border-left:4px solid transparent;transition:transform .22s}
 .dd-group:hover .caret{transform:rotate(180deg)}
-
+ 
 /* ── Filter bar ── */
 .filter-bar{background:var(--white);border-bottom:1px solid var(--border)}
 .ph-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23334155' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px!important;cursor:pointer;border:1.5px solid var(--border);border-radius:10px;font-family:'Inter',sans-serif;transition:border-color .18s,box-shadow .18s}
 .ph-select:hover{border-color:var(--gold)}
 .ph-select:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(26,68,128,.1);outline:none}
-
+ 
+/* ── Sticky nav wrapper (home page) ── */
+.sticky-nav-home{position:sticky;top:0;z-index:40;box-shadow:0 4px 24px rgba(7,14,29,.22)}
+ 
 /* ── Detail page ── */
 .section-block{background:var(--white);border:1px solid var(--border);border-radius:var(--r-card);padding:2rem;box-shadow:var(--sh-sm)}
 .section-label{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.22em;color:var(--muted);margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
@@ -141,90 +156,92 @@ html, body { width: 100%; overflow-x: hidden; }
 .amenity-chip:hover{border-color:var(--gold);background:var(--gold-lt)}
 .highlight-row{display:flex;align-items:flex-start;gap:12px;padding:.75rem 0;border-bottom:1px solid var(--border);font-size:.82rem;font-weight:500;color:var(--navy);line-height:1.65}
 .highlight-row:last-child{border-bottom:none}
-
+ 
 /* ── Anchor tab nav ── */
 .anchor-nav{background:var(--white);border-bottom:1px solid var(--border);box-shadow:0 2px 8px rgba(7,14,29,.05)}
 .anchor-tab{padding:14px 20px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;transition:color .18s,border-color .18s}
 .anchor-tab:hover{color:var(--navy)}
 .anchor-tab.active{color:var(--navy);border-bottom-color:var(--gold)}
-
+ 
 /* ── Floor plan lock ── */
 .fp-lock-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(7,14,29,.35);backdrop-filter:blur(3px);border-radius:14px;cursor:pointer;z-index:5;transition:background .2s}
 .fp-lock-overlay:hover{background:rgba(7,14,29,.48)}
 .fp-ring{width:58px;height:58px;border-radius:50%;background:rgba(200,134,10,.15);border:2px solid rgba(200,134,10,.5);display:flex;align-items:center;justify-content:center;transition:transform .2s,background .2s;box-shadow:0 4px 20px rgba(200,134,10,.22)}
 .fp-lock-overlay:hover .fp-ring{transform:scale(1.08);background:rgba(200,134,10,.25)}
 .fp-lock-label{background:rgba(7,14,29,.85);border:1px solid rgba(200,134,10,.38);color:#FCD34D;font-size:.56rem;font-weight:800;text-transform:uppercase;letter-spacing:.18em;padding:5px 14px;border-radius:999px}
-
+ 
 /* ── Sticky bottom bar ── */
 .sticky-bar{position:fixed;bottom:0;left:0;right:0;z-index:44;background:linear-gradient(135deg,#040A14 0%,#070E1D 100%);border-top:1.5px solid rgba(200,134,10,.28);box-shadow:0 -8px 36px rgba(7,14,29,.32)}
 @supports(padding-bottom:env(safe-area-inset-bottom)){.sticky-bar{padding-bottom:env(safe-area-inset-bottom)}}
-
-/* ── Sidebar ── */
-.sidebar-sticky{position:static}
-
+ 
 /* ── EMI range ── */
 input[type=range]{-webkit-appearance:none;background:transparent;width:100%}
 input[type=range]::-webkit-slider-runnable-track{width:100%;height:4px;background:linear-gradient(90deg,var(--teal),#CBD5E1);border-radius:2px;cursor:pointer}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;height:20px;width:20px;background:linear-gradient(135deg,var(--gold),#DA9610);cursor:pointer;margin-top:-8px;border-radius:50%;box-shadow:0 2px 8px rgba(200,134,10,.4);border:2px solid #fff;transition:transform .14s,box-shadow .14s}
 input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);box-shadow:0 3px 14px rgba(200,134,10,.5)}
-
+ 
 /* ── Footer ── */
 .ph-footer{background:linear-gradient(135deg,#030810,#070E1D);border-top:1px solid rgba(200,134,10,.12)}
-
+ 
 /* ── Splash ── */
 .splash-title{font-family:'Cormorant Garamond',Georgia,serif;color:var(--navy);font-size:2.25rem;font-weight:700;font-style:italic;text-transform:uppercase;letter-spacing:.04em;animation:pulseSlow 1.1s ease-in-out infinite}
 .splash-sub{font-family:'Inter',sans-serif;color:var(--muted);font-size:.65rem;margin-top:.875rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase}
 .splash-path{stroke-dasharray:300;stroke-dashoffset:300;animation:drawHouse 1.4s ease-in-out forwards}
-
+ 
 /* ── Blog ── */
 .blog-content p{color:var(--muted);line-height:1.85;font-size:.875rem;margin-bottom:1rem}
 .blog-content strong{color:var(--navy)}
 .blog-content h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.2rem;font-weight:700;font-style:italic;color:var(--navy);margin:1.5rem 0 .5rem;padding-left:.875rem;border-left:3px solid var(--gold)}
 .blog-content ul{list-style:disc;margin-left:1.25rem;margin-bottom:1rem;font-size:.875rem;color:var(--muted);line-height:1.85}
 .blog-content ol{list-style:decimal;margin-left:1.25rem;margin-bottom:1rem;font-size:.875rem;color:var(--muted);line-height:1.85}
-
+ 
 /* ── Section pill ── */
 .pill{display:inline-block;background:var(--gold-lt);color:var(--gold);font-size:.58rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;padding:5px 14px;border-radius:999px;border:1px solid rgba(200,134,10,.22)}
-
+ 
 /* ── Accordion ── */
 .accordion-body{overflow:hidden;transition:max-height .32s cubic-bezier(.4,0,.2,1),opacity .25s}
-
+ 
 /* ── Mobile menu ── */
 .mob-accordion{max-height:0;overflow:hidden;transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .25s;opacity:0}
 .mob-accordion.open{max-height:280px;opacity:1}
-
+ 
 /* ── Gallery grid ── */
 .gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 @media(min-width:768px){.gallery-grid{grid-template-columns:repeat(4,1fr)}}
 @media(min-width:1024px){.gallery-grid{grid-template-columns:repeat(5,1fr)}}
-
-/* ── Map ── */
-.map-wrap{border-radius:14px;overflow:hidden;border:1px solid var(--border)}
-
+ 
+/* ── Whatsapp FAB — uses real WA SVG ── */
+.wa-fab{position:fixed;bottom:5rem;right:1.25rem;z-index:55;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,211,102,.4);transition:transform .18s,box-shadow .18s;cursor:pointer;text-decoration:none}
+.wa-fab:hover{transform:scale(1.1);box-shadow:0 8px 28px rgba(37,211,102,.5)}
+@media(min-width:768px){.wa-fab{bottom:5.5rem;right:1.5rem}}
+ 
+/* ── Sticky get-in-touch vertical btn ── */
+.git-btn{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:50;writing-mode:vertical-rl;text-orientation:mixed;background:linear-gradient(180deg,#B8720A,#DA9610);color:#fff;font-size:.58rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;padding:16px 9px;border-radius:10px 0 0 10px;box-shadow:-4px 0 22px rgba(184,114,10,.32);cursor:pointer;transition:padding-right .18s;border:none}
+.git-btn:hover{padding-right:13px}
+@media(max-width:767px){.git-btn{display:none}}
+ 
+/* line-clamp */
+.line-clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.line-clamp-3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+ 
+/* ── Location highlight accordion ── */
+.loc-accordion-btn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--parch);border:1px solid var(--border);cursor:pointer;text-align:left;transition:background .18s;border-radius:0}
+.loc-accordion-btn:first-child{border-radius:10px 10px 0 0}
+.loc-accordion-btn.last-closed{border-radius:0 0 10px 10px}
+.loc-accordion-btn:hover{background:#fef9ec}
+.loc-accordion-content{border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;transition:max-height .3s cubic-bezier(.4,0,.2,1)}
+.loc-accordion-content.last{border-radius:0 0 10px 10px}
+ 
 /* ── Mobile ── */
 @media(max-width:767px){
   .ph-select{min-height:46px;font-size:.78rem!important}
   .section-block{padding:1.25rem}
   .anchor-tab{padding:12px 14px;font-size:.58rem}
 }
-
-/* ── Whatsapp FAB ── */
-.wa-fab{position:fixed;bottom:5rem;right:1.25rem;z-index:55;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,211,102,.4);transition:transform .18s,box-shadow .18s;cursor:pointer}
-.wa-fab:hover{transform:scale(1.1);box-shadow:0 8px 28px rgba(37,211,102,.5)}
-@media(min-width:768px){.wa-fab{bottom:5.5rem;right:1.5rem}}
-
-/* ── Sticky get-in-touch vertical btn ── */
-.git-btn{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:50;writing-mode:vertical-rl;text-orientation:mixed;background:linear-gradient(180deg,#B8720A,#DA9610);color:#fff;font-size:.58rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;padding:16px 9px;border-radius:10px 0 0 10px;box-shadow:-4px 0 22px rgba(184,114,10,.32);cursor:pointer;transition:padding-right .18s}
-.git-btn:hover{padding-right:13px}
-@media(max-width:767px){.git-btn{display:none}}
-
-/* line-clamp */
-.line-clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.line-clamp-3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 </style>
 </head>
 <body>
-
+ 
 <!-- SPLASH -->
 <div id="splash" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#F9F6F0,#F2EDE3);display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity .5s ease">
   <svg width="100" height="100" viewBox="0 0 100 100" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px;filter:drop-shadow(0 6px 20px rgba(200,134,10,.22))">
@@ -236,12 +253,12 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);box-shadow:0
   <div class="splash-sub">Curating your perfect home…</div>
 </div>
 <script>setTimeout(function(){var s=document.getElementById('splash');if(s){s.style.opacity='0';setTimeout(function(){s.remove()},450)}},1700)</script>
-
+ 
 <div id="root"></div>
-
+ 
 <script type="text/babel">
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
-
+ 
 /* ── Constants ── */
 const WA = "919113261205";
 const CALL = "9113261205";
@@ -249,7 +266,7 @@ const GS_URL = "https://script.google.com/macros/s/AKfycbzV-nr4UWVqFao58BD_tJoZF
 const SB_URL = 'https://uiiovtsktllvtecfokik.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
 const supabase = window.supabase.createClient(SB_URL, SB_KEY);
-
+ 
 const PARTNERS = [
   "https://drive.google.com/file/d/1IsWpoHNh1Wj0toMnzXc4FFvqCHxMoK85/view?usp=drive_link",
   "https://drive.google.com/file/d/11r3Bj7QF_RrKZTvY3q9l4VjJqJZudIl6/view?usp=drive_link",
@@ -259,14 +276,14 @@ const PARTNERS = [
   "https://drive.google.com/file/d/1SOkZTC6wYSOBrm87knHFhkAFuxFXpmoD/view?usp=drive_link",
   "https://drive.google.com/file/d/1a-ekJ7mVoDG5Yp9K1-nAtw8qCMWU7tXC/view?usp=drive_link",
 ].map(u => { const m=u.match(/\/d\/(.*?)\//); return m?`https://drive.google.com/thumbnail?id=${m[1]}&sz=w600`:u; });
-
+ 
 const BLOGS = [
   { id:1, tag:"Legal Guide", title:"What is UDS (Undivided Share) and Why Does it Matter?", excerpt:"When you buy an apartment, you aren't just buying the flat — you're buying a piece of the land it sits on. Understanding your UDS is critical.", content:`<p>When purchasing an apartment in Bengaluru, many buyers focus entirely on the super built-up area and amenities. The most critical element of your investment, however, is the <strong>Undivided Share of Land (UDS)</strong>.</p><h3>What is UDS?</h3><p>UDS is your personal share of the land on which the entire apartment complex is built. Since you cannot physically mark out your exact piece of land in a high-rise, it is expressed as a fraction or percentage.</p><h3>Why it matters</h3><ul><li><strong>Future Resale Value:</strong> The building structure depreciates over time, but the land appreciates. Your property's true resale value is determined by the UDS.</li><li><strong>Redevelopment:</strong> If the building is demolished 40 years from now, your compensation will be based strictly on your UDS.</li></ul><p>Always ask the builder for the exact UDS before booking. A suspiciously low UDS means the builder is over-utilising the land — which dilutes your investment.</p>` },
   { id:2, tag:"Finance Hack", title:"5 Hidden Charges Builders Don't Tell You About", excerpt:"The 'Base Price' is never the final price. From Club House charges to BESCOM deposits, learn how to calculate the actual landed cost.", content:`<p>You see an ad for a luxury 3BHK for "₹1.2 Cr Onwards." You visit, fall in love, and sit down to book — only to find the final cost is ₹1.45 Cr. What happened?</p><ol><li><strong>BESCOM & BWSSB Charges</strong></li><li><strong>Clubhouse & Amenity Fees</strong></li><li><strong>Advance Maintenance</strong></li><li><strong>Legal & Documentation Charges</strong></li><li><strong>Floor Rise Premium (PLC)</strong></li></ol><p>Always demand a comprehensive <strong>Cost Sheet</strong> before paying any token amount. This is your right as a buyer under RERA.</p>` },
   { id:3, tag:"Property Guide", title:"Carpet Area vs. Super Built-up: What Are You Actually Paying For?", excerpt:"Don't be fooled by big numbers. Learn why RERA Carpet Area is the only metric that truly matters when comparing flats.", content:`<p>One of the biggest confusions for home buyers is the difference between the area advertised and the actual livable space.</p><h3>RERA Carpet Area</h3><p>The actual usable floor area inside your apartment. Under RERA, builders <strong>must</strong> quote this figure.</p><h3>Super Built-up Area (SBA)</h3><p>This includes your flat's Built-up Area PLUS a proportionate share of common areas. The difference is called the "Loading Factor" — some builders apply 30–35%. Always compare RERA carpet areas, never SBA, when evaluating two projects.</p>` },
   { id:4, tag:"Legal Guide", title:"A Khata vs B Khata: The Ultimate Bengaluru Buyer's Guide", excerpt:"Confused about Khatas? Buying a 'B Khata' property can lead to loan rejections and legal trouble. Here's how to verify.", content:`<p>If you are buying property in Bengaluru, the word "Khata" will come up immediately.</p><p>An <strong>'A' Khata</strong> certificate means the property is completely legal and approved. You can easily get home loans with an A Khata from any nationalised bank.</p><p>A <strong>'B' Khata</strong> signifies the property is illegal or built in violation of regulations. Nationalised banks will <strong>not</strong> give you a home loan for a B Khata property. Avoid unless you have very specific advice from a property lawyer.</p>` },
 ];
-
+ 
 /* ── Helpers ── */
 const gdId = u => { if(!u||typeof u!=='string')return null; const m=u.match(/\/d\/(.*?)\//)??u.match(/id=([a-zA-Z0-9_-]+)/); return m?m[1].split('&')[0]:null; };
 const gdThumb = u => { if(!u||typeof u!=='string')return u; const id=gdId(u); return id?`https://drive.google.com/thumbnail?id=${id}&sz=w1920`:u; };
@@ -276,7 +293,21 @@ const priceInCr = s => { if(!s)return 0; try{ const c=String(s).toLowerCase().re
 const fmtInr = n => { if(n>=10000000)return'₹'+(n/10000000).toFixed(2).replace(/\.00$/,'')+'Cr'; if(n>=100000)return'₹'+(n/100000).toFixed(2).replace(/\.00$/,'')+'L'; return'₹'+n.toLocaleString('en-IN'); };
 const mapEmbed = link => { if(!link)return null; const l=String(link).trim(); if(!l||l==='#')return null; if(l.includes('maps/embed'))return l; try{ const m=l.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/); if(m)return`https://maps.google.com/maps?q=${m[1]},${m[2]}&z=16&output=embed`; const u=new URL(l.startsWith('http')?l:'https://'+l); let q=u.searchParams.get('q')||u.searchParams.get('query')||''; if(!q){const pm=l.match(/\/maps\/place\/([^/@?]+)/);if(pm)q=decodeURIComponent(pm[1].replace(/\+/g,' '))} if(q)return`https://maps.google.com/maps?q=${encodeURIComponent(q)}&z=15&output=embed`; }catch{} return`https://maps.google.com/maps?q=${encodeURIComponent('Bengaluru, Karnataka')}&z=13&output=embed`; };
 const statusStyle = s => { const v=String(s).toLowerCase(); if(v.includes('ready'))return{bg:'#DCFCE7',cl:'#166534'}; if(v.includes('under'))return{bg:'#FEF3C7',cl:'#92400E'}; if(v.includes('new')||v.includes('launch')||v.includes('pre'))return{bg:'#EFF6FF',cl:'#1E40AF'}; return{bg:'#F1F5F9',cl:'#475569'}; };
-
+ 
+/* ── Official WhatsApp SVG Logo ── */
+const WASvg = ({size=26,color="#fff"}) => (
+  <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path fillRule="evenodd" clipRule="evenodd" d="M24 4C12.954 4 4 12.954 4 24c0 3.6.96 6.98 2.64 9.9L4 44l10.34-2.6A19.9 19.9 0 0024 44c11.046 0 20-8.954 20-20S35.046 4 24 4z" fill={color} fillOpacity=".15"/>
+    <path fillRule="evenodd" clipRule="evenodd" d="M24 6C14.059 6 6 14.059 6 24a17.93 17.93 0 002.46 9.12l.28.48-1.62 5.9 6.06-1.59.46.27A17.93 17.93 0 0024 42c9.941 0 18-8.059 18-18S33.941 6 24 6zm-7.16 10.46c.26 0 .54.01.78.02.28.01.58.03.86.68.34.78 1.08 2.64 1.18 2.83.1.2.16.43.03.69-.13.26-.2.42-.39.64-.2.23-.42.51-.6.69-.2.19-.4.4-.17.78.23.38 1.02 1.68 2.19 2.72 1.5 1.34 2.77 1.76 3.17 1.96.4.2.63.17.86-.1.23-.27.98-1.14 1.24-1.53.26-.39.52-.33.88-.2.36.13 2.28 1.08 2.67 1.28.39.2.65.3.75.46.1.16.1.92-.2 1.8-.3.88-1.76 1.73-2.42 1.82-.62.08-1.4.12-2.26-.14a20.5 20.5 0 01-2.04-.75c-3.58-1.55-5.92-5.17-6.1-5.41-.18-.24-1.46-1.94-1.46-3.7 0-1.77.93-2.64 1.26-3 .33-.35.72-.44.96-.44z" fill={color}/>
+  </svg>
+);
+ 
+/* ══════════════════════════════════════════════════════════
+   ROUTING — Hash-based, survives page refresh
+══════════════════════════════════════════════════════════ */
+// We use window.location.hash for routing. On refresh, the browser keeps the hash.
+// The app reads hash on mount and on hashchange.
+ 
 /* ══════════════════════════════════════════════════════════
    EMI CALCULATOR
 ══════════════════════════════════════════════════════════ */
@@ -296,7 +327,6 @@ function EMICalc({ priceStr, onApply }) {
       <div style={{fontSize:'.6rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--muted)',marginBottom:'1.25rem',display:'flex',alignItems:'center',gap:8}}>
         <span style={{fontSize:16}}>📊</span> EMI Calculator
       </div>
-      {/* Donut + legend */}
       <div className="flex items-center gap-5 mb-6">
         <div style={{width:72,height:72,borderRadius:'50%',background:`conic-gradient(var(--teal) ${pPct}%,var(--border) ${pPct}% 100%)`,flexShrink:0}} />
         <div style={{width:'100%'}}>
@@ -311,7 +341,6 @@ function EMICalc({ priceStr, onApply }) {
           ))}
         </div>
       </div>
-      {/* Sliders */}
       <div style={{display:'flex',flexDirection:'column',gap:16,marginBottom:20}}>
         {[
           {lbl:'Loan Amount',val:fmtInr(loan),min:1000000,max:50000000,step:100000,v:loan,set:setLoan},
@@ -337,9 +366,9 @@ function EMICalc({ priceStr, onApply }) {
     </div>
   );
 }
-
+ 
 /* ══════════════════════════════════════════════════════════
-   LEAD MODAL — shared across both pages
+   LEAD MODAL
 ══════════════════════════════════════════════════════════ */
 function LeadModal({ title, subtitle, onSubmit, onClose, extra }) {
   const [d, setD] = useState({name:'',phone:'',email:''});
@@ -355,7 +384,7 @@ function LeadModal({ title, subtitle, onSubmit, onClose, extra }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 anim-fadeIn" style={{background:'rgba(7,14,29,.88)',backdropFilter:'blur(6px)'}} onClick={onClose}>
       <div className="card" style={{maxWidth:380,width:'100%',padding:'2.25rem',position:'relative'}} onClick={e=>e.stopPropagation()}>
-        <button onClick={onClose} style={{position:'absolute',top:14,right:18,fontSize:'1.4rem',color:'rgba(100,116,139,.5)',background:'none',border:'none',cursor:'pointer',lineHeight:1}} className="hover:text-slate-700">×</button>
+        <button onClick={onClose} style={{position:'absolute',top:14,right:18,fontSize:'1.4rem',color:'rgba(100,116,139,.5)',background:'none',border:'none',cursor:'pointer',lineHeight:1}}>×</button>
         <div style={{height:3,background:'linear-gradient(90deg,var(--gold),transparent)',borderRadius:2,marginBottom:'1.5rem'}}/>
         <div style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.45rem',fontWeight:700,color:'var(--navy)',marginBottom:4,textTransform:'uppercase'}}>{title}</div>
         {subtitle && <p style={{fontSize:'.58rem',fontWeight:700,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.18em',marginBottom:'1.5rem'}}>{subtitle}</p>}
@@ -364,7 +393,6 @@ function LeadModal({ title, subtitle, onSubmit, onClose, extra }) {
           {['Full Name','Mobile Number (10 Digits)','Email Address (Optional)'].map((ph,i)=>(
             <input key={i} type={i===1?'tel':i===2?'email':'text'} placeholder={ph} required={i<2}
               style={{border:'1.5px solid var(--border)',background:'var(--cream)',padding:'13px 15px',borderRadius:10,outline:'none',fontFamily:'Inter,sans-serif',fontSize:'.875rem',fontWeight:500,transition:'border-color .18s'}}
-              className="focus:outline-none"
               onFocus={e=>e.target.style.borderColor='var(--teal)'}
               onBlur={e=>e.target.style.borderColor='var(--border)'}
               value={[d.name,d.phone,d.email][i]}
@@ -379,7 +407,7 @@ function LeadModal({ title, subtitle, onSubmit, onClose, extra }) {
     </div>
   );
 }
-
+ 
 /* ══════════════════════════════════════════════════════════
    FOOTER
 ══════════════════════════════════════════════════════════ */
@@ -424,7 +452,7 @@ function Footer({ navTo, setLegal }) {
     </footer>
   );
 }
-
+ 
 /* ══════════════════════════════════════════════════════════
    STICKY BOTTOM ENQUIRY BAR
 ══════════════════════════════════════════════════════════ */
@@ -489,7 +517,7 @@ function StickyBar({ onSubmitLead }) {
           <div style={{position:'fixed',bottom:'50%',left:'50%',transform:'translate(-50%, 50%)',background:'var(--white)',borderRadius:'var(--r-card)',padding:'1.5rem',boxShadow:'var(--sh-lg)',zIndex:101,width:'calc(100% - 2rem)',maxWidth:380}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
               <span style={{fontSize:'.58rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--navy)'}}>Quick Enquiry</span>
-              <button onClick={()=>setOpen(false)} style={{color:'var(--muted)',fontSize:'1.25rem',lineHeight:1,background:'none',border:'none',cursor:'pointer'}} className="hover:text-navy">×</button>
+              <button onClick={()=>setOpen(false)} style={{color:'var(--muted)',fontSize:'1.25rem',lineHeight:1,background:'none',border:'none',cursor:'pointer'}}>×</button>
             </div>
             {done ? <p style={{fontSize:'.8rem',fontWeight:700,color:'#4ade80',textAlign:'center',padding:'8px 0'}}>✅ Registered! We'll call you shortly.</p> : (
               <form onSubmit={submit} style={{display:'grid',gridTemplateColumns:'1fr',gap:8}}>
@@ -505,96 +533,210 @@ function StickyBar({ onSubmitLead }) {
     </div>
   );
 }
-
+ 
 /* ══════════════════════════════════════════════════════════
-   PROPERTY LISTING CARD
+   PROPERTY LISTING CARD — Ceyone-inspired elevated design
 ══════════════════════════════════════════════════════════ */
 function PropCard({ p, idx, onClick }) {
-  const name   = gv(p,'Property Name')||'Listed Property';
-  const builder= gv(p,'Builder Name')||'Premium Builder';
-  const loc    = gv(p,'Location')||'Bengaluru';
-  const price  = gv(p,'Price')||'On Request';
-  const bhk    = (() => { const b = gv(p,'No of BHK\'s')||gv(p,'bhk'); if(!b) return null; const s = String(b).trim(); const m = s.match(/^(\d+(?:\.\d+)?)\s*BHK$/i); return m ? m[1] + ' BHK' : s; })();
-  const status = gv(p,'Construction Status')||'';
-  const type   = gv(p,'Property Type')||'Apartment';
-  const img    = fixImg(gv(p,'Cover Image')||gv(p,'cover_image'));
-  const sc     = statusStyle(status);
+  const name    = gv(p,'Property Name')||'Listed Property';
+  const builder = gv(p,'Builder Name')||'Premium Builder';
+  const loc     = gv(p,'Location')||'Bengaluru';
+  const price   = gv(p,'Price')||'On Request';
+  const bhkRaw  = gv(p,"No of BHK's")||gv(p,'bhk')||'';
+  const bhk     = bhkRaw ? (() => { const s=String(bhkRaw).trim(); const m=s.match(/^(\d+(?:\.\d+)?)\s*BHK$/i); return m?m[1]+' BHK':s; })() : null;
+  const status  = gv(p,'Construction Status')||'';
+  const type    = gv(p,'Property Type')||'Apartment';
+  const poss    = gv(p,'possession_date')||'';
+  const img     = fixImg(gv(p,'Cover Image')||gv(p,'cover_image'));
+  const sc      = statusStyle(status);
+ 
   return (
-    <article className="prop-card flex flex-col" onClick={onClick}>
-      <div style={{position:'relative',height:220,background:'var(--parch)',overflow:'hidden',flexShrink:0}}>
+    <article className="prop-card" onClick={onClick} style={{borderRadius:'var(--r-card)'}}>
+      {/* Image area — fixed 220px, no overflow into meta */}
+      <div className="card-img-wrap" style={{height:220}}>
         <img
           src={img} loading={idx<6?'eager':'lazy'} decoding="async"
-          fetchpriority={idx<3?'high':'auto'} width="480" height="220"
+          fetchpriority={idx<3?'high':'auto'}
           className="card-img"
-          alt={`${name} by ${builder} in ${loc} — ${type}`}
-          style={{objectFit:'cover',width:'100%',height:'100%'}}
+          alt={`${name} by ${builder} in ${loc}`}
+          style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}
+          onError={e=>{e.target.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 220%22><rect width=%22400%22 height=%22220%22 fill=%22%23F2EDE3%22/><text x=%22200%22 y=%22110%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2248%22>🏗️</text></svg>'}}
         />
-        <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(7,14,29,.5) 0%,transparent 55%)'}} />
-        <div className="type-ribbon">{type}</div>
-        <div style={{position:'absolute',bottom:12,left:12,zIndex:5}}>
-          <div style={{fontSize:'.5rem',fontWeight:700,color:'rgba(255,255,255,.65)',textTransform:'uppercase',letterSpacing:'.16em',marginBottom:2}}>Starting from</div>
-          <div style={{fontSize:'1.25rem',fontWeight:800,color:'#fff',lineHeight:1,textShadow:'0 2px 8px rgba(0,0,0,.4)'}}>{price}</div>
+        <div className="card-img-overlay" />
+        {/* Type tag top-left */}
+        <div className="card-type-tag">{type}</div>
+        {/* Status badge top-right */}
+        {status && (
+          <div className="card-status-dot">
+            <span style={{background:sc.bg,color:sc.cl,fontSize:'.5rem',fontWeight:800,padding:'4px 9px',borderRadius:999,letterSpacing:'.1em',textTransform:'uppercase',display:'inline-block'}}>{status}</span>
+          </div>
+        )}
+        {/* Price overlay — bottom of image */}
+        <div className="card-price-badge">
+          <div style={{fontSize:'.48rem',fontWeight:700,color:'rgba(255,255,255,.62)',textTransform:'uppercase',letterSpacing:'.18em',marginBottom:2}}>Starting from</div>
+          <div style={{fontSize:'1.3rem',fontWeight:800,color:'#fff',lineHeight:1,letterSpacing:'-.02em',textShadow:'0 2px 12px rgba(0,0,0,.5)'}}>{price}</div>
         </div>
       </div>
-      <div style={{padding:'1.125rem 1.25rem',flexGrow:1,display:'flex',flexDirection:'column'}}>
-        <div style={{fontSize:'.58rem',fontWeight:700,color:'var(--gold)',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:3}}>{builder}</div>
-        <h2 style={{fontSize:'1rem',fontWeight:700,color:'var(--navy)',lineHeight:1.25,marginBottom:8,letterSpacing:'-.01em'}} className="truncate">{name}</h2>
-        <div style={{display:'inline-flex',alignItems:'center',gap:4,background:'#EFF6FF',border:'1px solid #BFDBFE',borderRadius:999,padding:'3px 10px',fontSize:'.58rem',fontWeight:700,color:'#1E40AF',textTransform:'uppercase',letterSpacing:'.1em',marginBottom:12,width:'fit-content'}} className="md:hidden">
-          📍 {loc}
+ 
+      {/* Card body */}
+      <div className="card-body" style={{padding:'14px 16px 0'}}>
+        <div className="card-builder">{builder}</div>
+        <h2 className="card-name">{name}</h2>
+        <div className="card-location">
+          <svg width="10" height="12" viewBox="0 0 10 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/>
+          </svg>
+          {loc}
         </div>
-        <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:'auto'}}>
-          {status && <span className="badge" style={{background:sc.bg,color:sc.cl}}>{status}</span>}
-          {bhk && <span className="badge badge-default">{bhk.includes('BHK') ? bhk : bhk + ' BHK'}</span>}
+        {/* Config + Possession chips — always visible, clean */}
+        <div className="card-meta-row">
+          {bhk && (
+            <span className="card-chip">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              {bhk.includes('BHK') ? bhk : bhk+' BHK'}
+            </span>
+          )}
+          {poss && (
+            <span className="card-chip">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              {poss}
+            </span>
+          )}
         </div>
-        <button className="btn-gold w-full" style={{marginTop:14,fontSize:'.62rem',padding:'11px 0'}}>View Details →</button>
+      </div>
+ 
+      {/* CTA — part of card flow, no overlap */}
+      <div style={{padding:'0 16px 16px',marginTop:'auto'}}>
+        <div className="card-cta">View Details →</div>
       </div>
     </article>
   );
 }
-
+ 
+/* ══════════════════════════════════════════════════════════
+   LOCATION HIGHLIGHTS ACCORDION
+══════════════════════════════════════════════════════════ */
+function LocationHighlights({ raw }) {
+  // raw is JSON string like:
+  // {"schools":["DPS - 1.2km","National High School - 2km"], "hospitals":["Manipal - 3km"], "malls":["Forum Mall - 4km"], "connectivity":["NICE Road - 500m"]}
+  const [open, setOpen] = useState({});
+ 
+  const sections = useMemo(() => {
+    if(!raw) return [];
+    let data = null;
+    try { data = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch { return []; }
+    if(!data || typeof data !== 'object') return [];
+    const icons = { schools:'🎓', colleges:'🎓', hospitals:'🏥', malls:'🛍️', connectivity:'🚇', transport:'🚇', parks:'🌳', restaurants:'🍽️' };
+    return Object.entries(data).map(([k, v]) => ({
+      key: k,
+      label: k.charAt(0).toUpperCase() + k.slice(1),
+      icon: icons[k.toLowerCase()] || '📍',
+      items: Array.isArray(v) ? v : String(v).split(',').map(s=>s.trim()).filter(Boolean)
+    })).filter(s => s.items.length > 0);
+  }, [raw]);
+ 
+  if(!sections.length) return null;
+ 
+  const toggle = k => setOpen(o => ({...o, [k]: !o[k]}));
+ 
+  return (
+    <div style={{marginTop:'1.25rem'}}>
+      <div style={{fontSize:'.58rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.2em',color:'var(--muted)',marginBottom:10,display:'flex',alignItems:'center',gap:6}}>
+        <span style={{color:'var(--gold)'}}>✦</span> Location Highlights
+      </div>
+      <div style={{borderRadius:10,overflow:'hidden',border:'1px solid var(--border)'}}>
+        {sections.map((s, i) => {
+          const isOpen = !!open[s.key];
+          const isLast = i === sections.length - 1;
+          return (
+            <React.Fragment key={s.key}>
+              <button
+                onClick={() => toggle(s.key)}
+                style={{
+                  width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between',
+                  padding:'12px 16px', background: isOpen ? '#fef9ec' : 'var(--parch)',
+                  border:'none', borderBottom: isOpen || !isLast ? '1px solid var(--border)' : 'none',
+                  cursor:'pointer', textAlign:'left', transition:'background .18s'
+                }}
+              >
+                <span style={{display:'flex',alignItems:'center',gap:8,fontSize:'.65rem',fontWeight:700,color:'var(--navy)',textTransform:'uppercase',letterSpacing:'.1em'}}>
+                  <span style={{fontSize:'1rem'}}>{s.icon}</span>
+                  {s.label}
+                  <span style={{background:'var(--parch)',border:'1px solid var(--border)',borderRadius:999,padding:'1px 7px',fontSize:'.52rem',color:'var(--muted)',fontWeight:700}}>{s.items.length}</span>
+                </span>
+                <span style={{fontSize:'.6rem',color:'var(--muted)',transition:'transform .22s',display:'inline-block',transform:isOpen?'rotate(180deg)':'none'}}>▼</span>
+              </button>
+              <div style={{
+                maxHeight: isOpen ? s.items.length * 52 + 'px' : '0',
+                overflow:'hidden',
+                transition:'max-height .3s cubic-bezier(.4,0,.2,1)',
+                borderBottom: isOpen && !isLast ? '1px solid var(--border)' : 'none'
+              }}>
+                {s.items.map((item, j) => (
+                  <div key={j} style={{
+                    display:'flex', alignItems:'center', gap:10, padding:'10px 16px',
+                    background:'#fff', borderBottom: j < s.items.length-1 ? '1px solid var(--border)' : 'none',
+                    fontSize:'.78rem', fontWeight:500, color:'var(--navy)', lineHeight:1.5
+                  }}>
+                    <span style={{color:'var(--gold)',fontSize:'.6rem',flexShrink:0}}>●</span>
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+ 
 /* ══════════════════════════════════════════════════════════
    PROPERTY DETAIL PAGE
 ══════════════════════════════════════════════════════════ */
 function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
-  const [heroImg, setHeroImg]   = useState(null);
-  const [modal, setModal]       = useState(null);
-  const [unlocked, setUnlocked] = useState(false);
+  const [heroImg, setHeroImg]    = useState(null);
+  const [modal, setModal]        = useState(null);
+  const [unlocked, setUnlocked]  = useState(false);
   const [activeTab, setActiveTab]= useState('about');
-  const [hlOpen, setHlOpen]     = useState(true); // Location highlights open by default
-  const [legal, setLegal]       = useState(null);
-
-  const refs = { about:useRef(), amenities:useRef(), masterplan:useRef(), floorplan:useRef(), location:useRef() };
-
+  const [legal, setLegal]        = useState(null);
+ 
+  const refs = {
+    about:useRef(), amenities:useRef(), highlights:useRef(),
+    masterplan:useRef(), floorplan:useRef(), location:useRef()
+  };
+ 
   useEffect(()=>{ window.scrollTo(0,0); setHeroImg(null); setActiveTab('about'); },[p]);
-
+ 
   useEffect(()=>{
     const obs=[];
-    ['about','amenities','masterplan','floorplan','location'].forEach(k=>{
+    ['about','amenities','highlights','masterplan','floorplan','location'].forEach(k=>{
       if(!refs[k]?.current) return;
       const o=new IntersectionObserver(([e])=>{ if(e.isIntersecting)setActiveTab(k); },{rootMargin:'-25% 0px -60% 0px'});
       o.observe(refs[k].current); obs.push(o);
     });
     return ()=>obs.forEach(o=>o.disconnect());
   },[p]);
-
+ 
   const scrollTo = k => { refs[k]?.current?.scrollIntoView({behavior:'smooth',block:'start'}); setActiveTab(k); };
-
-  const name   = gv(p,'Property Name');
-  const builder= gv(p,'Builder Name');
-  const loc    = gv(p,'Location');
-  const price  = gv(p,'Price');
-  const bhk    = (() => { const b = gv(p,'bhk')||gv(p,"No of BHK's"); if(!b) return null; const s = String(b).trim(); const m = s.match(/^(\d+(?:\.\d+)?)\s*BHK$/i); return m ? m[1] + ' BHK' : s; })();
-  const status = gv(p,'construction_status')||gv(p,'Construction Status');
-  const poss   = gv(p,'possession_date');
-  const appr   = gv(p,'approval');
-  const desc   = gv(p,'description');
-  const rera   = gv(p,'rera_number');
-  const usps   = gv(p,'usp-details')||gv(p,'usp_details')||gv(p,"USP's")||gv(p,'Project Highlights');
-  const amen   = gv(p,'Amenities');
-  const mapLnk = gv(p,'map_link')||gv(p,'map link')||gv(p,'maplink');
-  const mapSrc = mapEmbed(mapLnk);
-  const sc     = statusStyle(status);
-
+ 
+  const name    = gv(p,'Property Name');
+  const builder = gv(p,'Builder Name');
+  const loc     = gv(p,'Location');
+  const price   = gv(p,'Price');
+  const bhk     = (() => { const b=gv(p,'bhk')||gv(p,"No of BHK's"); if(!b)return null; const s=String(b).trim(); const m=s.match(/^(\d+(?:\.\d+)?)\s*BHK$/i); return m?m[1]+' BHK':s; })();
+  const status  = gv(p,'construction_status')||gv(p,'Construction Status');
+  const poss    = gv(p,'possession_date');
+  const appr    = gv(p,'approval');
+  const desc    = gv(p,'description');
+  const rera    = gv(p,'rera_number');
+  const usps    = gv(p,'usp-details')||gv(p,'usp_details')||gv(p,"USP's")||gv(p,'Project Highlights');
+  const amen    = gv(p,'Amenities');
+  const mapLnk  = gv(p,'map_link')||gv(p,'map link')||gv(p,'maplink');
+  const mapSrc  = mapEmbed(mapLnk);
+  const locHL   = gv(p,'location_highlights'); // new column
+  const sc      = statusStyle(status);
+ 
   const cover  = gdThumb(gv(p,'cover_image')||gv(p,'cover-image')||gv(p,'Cover Image'));
   const galRaw = gv(p,'gallery_images')||gv(p,'gallery-images')||gv(p,'Images and short videos \nif any')||'';
   const gal    = typeof galRaw==='string'&&galRaw.length>5 ? galRaw.split(',').map(l=>gdThumb(l.trim())).filter(x=>x&&!x.includes('undefined')) : [];
@@ -603,20 +745,24 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
   const fpImgs = fpRaw ? String(fpRaw).split(',').map(l=>gdThumb(l.trim())).filter(Boolean) : [];
   const mpImgs = mpRaw ? String(mpRaw).split(',').map(l=>gdThumb(l.trim())).filter(Boolean) : [];
   const hlLines= usps ? String(usps).split('\n').filter(l=>l.trim()) : [];
-
+ 
   const similar = useMemo(()=>{
     if(!all?.length) return [];
     return all.filter(x=>x.id!==p.id&&(gv(x,'Location')===loc||gv(x,'Property Type')===gv(p,'Property Type'))).slice(0,3);
   },[p,all]);
-
+ 
+  const hasHighlights = hlLines.length > 0;
+  const hasLocHL = !!(locHL && String(locHL).trim().length > 2);
+ 
   const tabs = [
     {k:'about',lbl:'About'},
     {k:'amenities',lbl:'Amenities',hide:!amen},
+    {k:'highlights',lbl:'Highlights',hide:!hasHighlights},
     {k:'masterplan',lbl:'Master Plan',hide:!mpImgs.length},
     {k:'floorplan',lbl:'Floor Plan',hide:!fpImgs.length},
     {k:'location',lbl:'Location'},
   ].filter(t=>!t.hide);
-
+ 
   const handleModalSubmit = async d => {
     const ok = await submitLead(d, name, modal||'interest');
     if(ok){
@@ -634,28 +780,30 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
     }
     return ok;
   };
-
+ 
   const modalTitles = { interest:'Get in Touch', brochure:'Download Brochure', cost_sheet:'Get Cost Sheet', apply:'Apply for Loan', unlock:'Unlock Floor Plan' };
-
+ 
   return (
     <div style={{minHeight:'100vh',background:'var(--cream)',paddingTop:54}} className="overflow-x-hidden">
-
+ 
       {/* TOP BAR */}
       <div className="fixed top-0 left-0 right-0 z-50" style={{background:'#fff',borderBottom:'1px solid var(--border)',boxShadow:'var(--sh-sm)'}}>
         <div style={{maxWidth:'72rem',margin:'0 auto',padding:'0 1.5rem',display:'flex',justifyContent:'space-between',alignItems:'center',height:54}}>
-          <button onClick={onBack} style={{display:'flex',alignItems:'center',gap:8,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.14em',color:'var(--teal)',background:'none',border:'none',cursor:'pointer',transition:'opacity .18s'}} className="hover:opacity-65 group">
-            <span style={{transition:'transform .18s'}} className="group-hover:-translate-x-1 inline-block">←</span>
+          <button onClick={onBack} style={{display:'flex',alignItems:'center',gap:8,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.14em',color:'var(--teal)',background:'none',border:'none',cursor:'pointer'}} className="hover:opacity-65 group">
+            <span className="group-hover:-translate-x-1 inline-block transition">←</span>
             <span className="hidden sm:inline">Back to Listings</span>
             <span className="sm:hidden">Back</span>
           </button>
           <div style={{display:'flex',alignItems:'center',gap:14}}>
             <span className="hidden md:block" style={{fontSize:'.6rem',fontWeight:600,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.1em'}}>📍 {loc} · {builder}</span>
+            {/* Desktop: show number */}
             <a href={`tel:${CALL}`} style={{display:'flex',alignItems:'center',gap:6,fontSize:'.72rem',fontWeight:700,color:'var(--navy)'}} className="hover:text-yellow-600 transition hidden md:flex">📞 {CALL}</a>
-            <a href={`tel:${CALL}`} style={{border:'1px solid var(--border)',borderRadius:8,fontSize:'.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--navy)',padding:'8px 14px'}} className="md:hidden hover:border-yellow-400 transition">📞 Call</a>
+            {/* Mobile: icon only, NO number */}
+            <a href={`tel:${CALL}`} style={{border:'1px solid var(--border)',borderRadius:8,fontSize:'.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--navy)',padding:'8px 14px',display:'flex',alignItems:'center',gap:6}} className="md:hidden hover:border-yellow-400 transition">📞 Call</a>
           </div>
         </div>
       </div>
-
+ 
       {/* HERO */}
       <div style={{position:'relative',background:'#060D1C',minHeight:'clamp(240px,44vw,520px)',overflow:'hidden'}}>
         {(heroImg||cover) ? (
@@ -673,7 +821,9 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
           </div>
         )}
         <div style={{position:'absolute',bottom:0,left:0,right:0,height:'55%',background:'linear-gradient(to top,rgba(6,13,28,.85),transparent)',zIndex:3}} />
-        <div className="type-ribbon" style={{zIndex:5}}>{gv(p,'Property Type')||'Property'}</div>
+        <div style={{position:'absolute',top:14,left:0,background:'rgba(7,14,29,.88)',backdropFilter:'blur(8px)',color:'#FCD34D',fontSize:'.58rem',fontWeight:800,letterSpacing:'.14em',textTransform:'uppercase',padding:'5px 14px 5px 12px',borderRadius:'0 8px 8px 0',border:'none',borderLeft:'3px solid var(--gold)',zIndex:5}}>
+          {gv(p,'Property Type')||'Property'}
+        </div>
         <div style={{position:'absolute',bottom:0,left:0,right:0,zIndex:4,padding:'1.25rem 1.5rem'}}>
           <div style={{maxWidth:'72rem',margin:'0 auto',display:'flex',flexDirection:'column',gap:6}}>
             <span style={{fontSize:'.6rem',fontWeight:700,color:'rgba(200,134,10,.9)',textTransform:'uppercase',letterSpacing:'.14em'}}>{builder}</span>
@@ -689,21 +839,26 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
           <button onClick={()=>setHeroImg(null)} style={{position:'absolute',top:12,right:14,zIndex:6,background:'rgba(7,14,29,.78)',color:'#fff',fontSize:'.54rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',padding:'5px 12px',borderRadius:6,border:'none',cursor:'pointer',backdropFilter:'blur(8px)'}}>← Cover</button>
         )}
       </div>
-
+ 
       {/* STATS BAR */}
       <div style={{background:'var(--navy)'}}>
         <div style={{maxWidth:'72rem',margin:'0 auto',display:'grid',gridTemplateColumns:'repeat(4,1fr)'}}>
-          {[              {lbl:'Configuration',val:bhk?(bhk.includes('BHK')?bhk:`${bhk} BHK`):'—'},{lbl:'Possession',val:poss||'—'},{lbl:'Approval',val:rera?`${appr||'RERA'}`:(appr||'—')},{lbl:'Starting Price',val:price||'On Request'}].map((s,i)=>(
+          {[
+            {lbl:'Configuration', val:bhk?(bhk.includes('BHK')?bhk:`${bhk} BHK`):'—'},
+            {lbl:'Possession',     val:poss||'—'},
+            {lbl:'Approval',       val:rera?`${appr||'RERA'}`:(appr||'—')},
+            {lbl:'Starting Price', val:price||'On Request'}
+          ].map((s,i)=>(
             <div key={i} style={{padding:'14px 18px',borderRight:i<3?'1px solid rgba(255,255,255,.07)':undefined}}>
               <div style={{fontSize:'.5rem',fontWeight:700,color:'rgba(200,134,10,.72)',textTransform:'uppercase',letterSpacing:'.2em',marginBottom:3}}>{s.lbl}</div>
-              <div style={{fontSize:'.8rem',fontWeight:700,color:'#fff'}}>{s.val}</div>
+              <div style={{fontSize:'.8rem',fontWeight:700,color:'#fff',wordBreak:'break-word'}}>{s.val}</div>
             </div>
           ))}
         </div>
       </div>
-
+ 
       {/* ANCHOR NAV */}
-      <div className="anchor-nav fixed z-40" style={{top:54,left:0,right:0,background:'var(--white)',borderBottom:'1px solid var(--border)',boxShadow:'0 2px 8px rgba(7,14,29,.05)'}}>
+      <div className="anchor-nav fixed z-40" style={{top:54,left:0,right:0}}>
         <div style={{maxWidth:'72rem',margin:'0 auto',display:'flex',overflowX:'auto',padding:'0 1rem'}} className="hide-scroll">
           {tabs.map(t=>(
             <button key={t.k} onClick={()=>scrollTo(t.k)} className={`anchor-tab ${activeTab===t.k?'active':''}`}>{t.lbl}</button>
@@ -712,7 +867,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
           <button onClick={()=>setModal('cost_sheet')} style={{padding:'14px 18px',fontSize:'.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--muted)',background:'none',border:'none',cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}>📄 Cost Sheet</button>
         </div>
       </div>
-
+ 
       {/* GALLERY STRIP */}
       {gal.length>0 && (
         <div style={{maxWidth:'72rem',margin:'0 auto',padding:'1.5rem 1.5rem 0'}}>
@@ -733,12 +888,12 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
           </div>
         </div>
       )}
-
+ 
       {/* MAIN CONTENT */}
       <div style={{maxWidth:'72rem',margin:'0 auto',padding:'1.5rem',display:'grid',gridTemplateColumns:'1fr',gap:'1.5rem'}} className="lg:grid-cols-[1fr_320px]">
-        {/* LEFT */}
+        {/* LEFT COLUMN */}
         <div style={{display:'flex',flexDirection:'column',gap:'1.5rem',minWidth:0}}>
-
+ 
           {/* ABOUT */}
           <section ref={refs.about} className="section-block" style={{scrollMarginTop:'7rem'}}>
             <div className="section-label"><span style={{fontSize:15}}>🏗️</span> About the Project</div>
@@ -747,7 +902,12 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               : <p style={{color:'var(--muted)',fontSize:'.875rem'}}>Details coming soon. Contact our advisor for a complete project brief.</p>
             }
             <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10,marginTop:'1.5rem',paddingTop:'1.25rem',borderTop:'1px solid var(--border)'}}>
-              {[              {l:'Configurations',v:bhk?(bhk.includes('BHK')?bhk:`${bhk} BHK`):'—'},{l:'Possession',v:poss||'—'},{l:'Property Type',v:gv(p,'Property Type')||'—'},{l:'Approval',v:rera?`${appr||'RERA'} · ${rera}`:(appr||'—')}].map((s,i)=>(
+              {[
+                {l:'Configurations', v:bhk?(bhk.includes('BHK')?bhk:`${bhk} BHK`):'—'},
+                {l:'Possession',     v:poss||'—'},
+                {l:'Property Type',  v:gv(p,'Property Type')||'—'},
+                {l:'Approval',       v:rera?`${appr||'RERA'} · ${rera}`:(appr||'—')}
+              ].map((s,i)=>(
                 <div key={i} className="stat-box">
                   <div className="stat-box-label">{s.l}</div>
                   <div className="stat-box-val">{s.v}</div>
@@ -755,7 +915,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               ))}
             </div>
           </section>
-
+ 
           {/* AMENITIES */}
           {amen && (
             <section ref={refs.amenities} className="section-block" style={{scrollMarginTop:'7rem'}}>
@@ -767,7 +927,22 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               </div>
             </section>
           )}
-
+ 
+          {/* KEY HIGHLIGHTS — sits next to/after amenities */}
+          {hasHighlights && (
+            <section ref={refs.highlights} className="section-block" style={{scrollMarginTop:'7rem'}}>
+              <div className="section-label"><span style={{fontSize:15}}>✦</span> Key Highlights</div>
+              <div style={{display:'flex',flexDirection:'column',gap:0}}>
+                {hlLines.map((l,i)=>(
+                  <div key={i} className="highlight-row">
+                    <span style={{color:'var(--gold)',fontSize:'.68rem',flexShrink:0,marginTop:3}}>✦</span>
+                    <span>{l.trim()}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+ 
           {/* MASTER PLAN */}
           {mpImgs.length>0 && (
             <section ref={refs.masterplan} className="section-block" style={{scrollMarginTop:'7rem'}}>
@@ -781,7 +956,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               </div>
             </section>
           )}
-
+ 
           {/* FLOOR PLAN */}
           {fpImgs.length>0 && (
             <section ref={refs.floorplan} className="section-block" style={{scrollMarginTop:'7rem'}}>
@@ -813,58 +988,38 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               </div>
             </section>
           )}
-
-          {/* LOCATION */}
+ 
+          {/* LOCATION + Location Highlights below map */}
           <section ref={refs.location} className="section-block" style={{scrollMarginTop:'7rem'}}>
-            <div className="section-label"><span style={{fontSize:15}}>📍</span> Location &amp; Highlights</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr',gap:16}} className="lg:grid-cols-2">
-              <div style={{borderRadius:12,overflow:'hidden',border:'1px solid var(--border)',minHeight:300}}>
-                {mapSrc ? (
-                  <iframe src={mapSrc} width="100%" height="100%" style={{border:0,display:'block',minHeight:300}} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title={`${name} location map in ${loc}, Bengaluru`} />
-                ) : (
-                  <div style={{background:'var(--parch)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,padding:'3rem',minHeight:200,textAlign:'center'}}>
-                    <p style={{fontSize:'.8rem',color:'var(--muted)',fontStyle:'italic'}}>Map coming soon.</p>
-                    <a href={`https://wa.me/${WA}?text=Hi, I need location details for ${encodeURIComponent(name)}`} target="_blank" style={{display:'inline-flex',alignItems:'center',gap:8,background:'rgba(37,211,102,.1)',border:'1px solid rgba(37,211,102,.22)',borderRadius:999,padding:'8px 18px',fontSize:'.62rem',fontWeight:700,color:'#166534',textTransform:'uppercase',letterSpacing:'.1em'}}>WhatsApp for Location</a>
-                  </div>
-                )}
-              </div>
-              {hlLines.length>0 ? (
-                <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  <button onClick={()=>setHlOpen(v=>!v)} style={{display:'flex',alignItems:'center',justifyContent:'space-between',width:'100%',padding:'13px 16px',background:'var(--parch)',border:'1px solid var(--border)',borderRadius:hlOpen?'10px 10px 0 0':'10px',cursor:'pointer',transition:'background .18s'}} className="hover:bg-amber-50">
-                    <span style={{fontSize:'.6rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--navy)',display:'flex',alignItems:'center',gap:8}}>
-                      <span style={{color:'var(--gold)'}}>✦</span> Key Highlights
-                    </span>
-                    <span style={{fontSize:'.7rem',color:'var(--muted)',transition:'transform .25s',display:'inline-block',transform:hlOpen?'rotate(180deg)':'none'}}>▼</span>
-                  </button>
-                  <div className="accordion-body" style={{maxHeight:hlOpen?'9999px':'0',opacity:hlOpen?1:0,border:'1px solid var(--border)',borderTop:'none',borderRadius:'0 0 10px 10px',background:'#fff'}}>
-                    {hlLines.map((l,i)=>(
-                      <div key={i} className="highlight-row" style={{padding:'10px 16px',borderBottom:i<hlLines.length-1?'1px solid var(--border)':'none'}}>
-                        <span style={{color:'var(--gold)',fontSize:'.68rem',flexShrink:0,marginTop:2}}>✦</span>
-                        <span>{l.trim()}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <a href={`https://wa.me/${WA}?text=Hi, I'm interested in ${encodeURIComponent(name)}`} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,background:'rgba(37,211,102,.06)',border:'1px solid rgba(37,211,102,.2)',borderRadius:10,padding:'13px',fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'#166534',transition:'background .18s'}} className="hover:bg-green-50">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-1.577-.816-2.677-1.6-3.716-3.336-.27-.467.27-.271.443-.804.157-.534.083-.923-.04-1.289-.121-.366-.671-1.61-.92-2.206-.254-.589-.51-.51-.67-.51-.173 0-.371 0-.57 0-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.71 2.035-1.404.276-.694.276-1.289.202-1.414-.074-.123-.272-.198-.57-.347m-5.421-7.403h-.004c-1.025 0-2.059.338-2.927.999-.601.47-1.11 1.075-1.438 1.74-.528 1.122-.666 2.215-.399 3.23.264 1.015.93 1.9 1.85 2.54.51.348 1.084.573 1.662.657.577.084 1.17.05 1.735-.1.565-.15 1.096-.424 1.555-.801.458-.377.82-.87 1.063-1.42.243-.55.357-1.14.317-1.723-.04-.584-.233-1.14-.57-1.615-.337-.475-.825-.855-1.38-1.116-.556-.26-1.157-.38-1.76-.38m5.529-2.566c-1.162-1.147-2.71-1.824-4.366-1.976-1.656-.152-3.31.227-4.745 1.066-1.436.84-2.557 2.163-3.228 3.682-.671 1.519-.844 3.22-.5 4.856.344 1.635 1.215 3.128 2.458 4.287 1.243 1.159 2.86 1.888 4.568 2.104 1.708.216 3.43-.047 4.999-.76 1.569-.714 2.873-1.926 3.723-3.413.85-1.487 1.204-3.222 1.006-4.934-.198-1.712-1.01-3.302-2.172-4.449"/></svg>
-                    Chat on WhatsApp
-                  </a>
-                </div>
+            <div className="section-label"><span style={{fontSize:15}}>📍</span> Location</div>
+            {/* Map */}
+            <div style={{borderRadius:12,overflow:'hidden',border:'1px solid var(--border)',marginBottom: hasLocHL ? '1.25rem' : 0}}>
+              {mapSrc ? (
+                <iframe src={mapSrc} width="100%" height="320" style={{border:0,display:'block'}} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title={`${name} location map in ${loc}, Bengaluru`} />
               ) : (
-                <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  <a href={`https://wa.me/${WA}?text=Hi, I'm interested in ${encodeURIComponent(name)}`} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,background:'rgba(37,211,102,.06)',border:'1px solid rgba(37,211,102,.2)',borderRadius:10,padding:'14px',fontSize:'.65rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'#166534'}}>
-                    Chat on WhatsApp →
-                  </a>
+                <div style={{background:'var(--parch)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,padding:'3rem',minHeight:200,textAlign:'center'}}>
+                  <p style={{fontSize:'.8rem',color:'var(--muted)',fontStyle:'italic'}}>Map coming soon.</p>
+                  <a href={`https://wa.me/${WA}?text=Hi, I need location details for ${encodeURIComponent(name)}`} target="_blank" style={{display:'inline-flex',alignItems:'center',gap:8,background:'rgba(37,211,102,.1)',border:'1px solid rgba(37,211,102,.22)',borderRadius:999,padding:'8px 18px',fontSize:'.62rem',fontWeight:700,color:'#166534',textTransform:'uppercase',letterSpacing:'.1em'}}>WhatsApp for Location</a>
                 </div>
               )}
             </div>
+ 
+            {/* Location Highlights — dropdowns below map */}
+            {hasLocHL && <LocationHighlights raw={locHL} />}
+ 
+            {/* WhatsApp CTA */}
+            <a href={`https://wa.me/${WA}?text=Hi, I'm interested in ${encodeURIComponent(name)}`} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,background:'rgba(37,211,102,.06)',border:'1px solid rgba(37,211,102,.2)',borderRadius:10,padding:'13px',fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'#166534',transition:'background .18s',marginTop:'1.25rem',textDecoration:'none'}} className="hover:bg-green-50">
+              <WASvg size={16} color="#166534" />
+              Chat on WhatsApp
+            </a>
           </section>
-
+ 
         </div>
-
+ 
         {/* SIDEBAR */}
         <aside style={{minWidth:0}}>
-          <div className="sidebar-sticky" style={{display:'flex',flexDirection:'column',gap:14}}>
-
+          <div style={{position:'static',display:'flex',flexDirection:'column',gap:14}}>
+ 
             {/* Price + CTA */}
             <div className="card" style={{padding:'1.5rem',position:'relative',overflow:'hidden'}}>
               <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,var(--gold),transparent)'}} />
@@ -878,17 +1033,14 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               </div>
               <button onClick={()=>setModal('brochure')} className="btn-outline" style={{fontSize:'.65rem',padding:'11px',width:'100%',display:'flex',justifyContent:'center',alignItems:'center',gap:6,marginTop:8}}>📥 Brochure</button>
             </div>
-
+ 
             {/* EMI */}
             <EMICalc priceStr={price} onApply={()=>setModal('apply')} />
-
-
           </div>
         </aside>
-
       </div>
-
-      {/* SIMILAR */}
+ 
+      {/* SIMILAR PROPERTIES */}
       {similar.length>0 && (
         <div style={{maxWidth:'72rem',margin:'0 auto',padding:'0 1.5rem 3rem'}}>
           <div style={{borderTop:'1px solid var(--border)',paddingTop:'2.5rem',marginTop:'1rem'}}>
@@ -901,9 +1053,9 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
           </div>
         </div>
       )}
-
+ 
       <Footer navTo={navTo} setLegal={setLegal} />
-
+ 
       {rera && (
         <div style={{background:'#030810',borderTop:'1px solid rgba(200,134,10,.1)',padding:'12px 24px'}}>
           <div style={{maxWidth:'72rem',margin:'0 auto',display:'flex',flexDirection:'column',gap:6}} className="md:flex-row md:items-center md:gap-8">
@@ -912,12 +1064,12 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               RERA Approved · {rera}
             </span>
             <p style={{fontSize:'.56rem',color:'rgba(255,255,255,.28)',lineHeight:1.7,maxWidth:680}}>
-              Perfect Horizons is an authorized channel partner. All images, pricing, and project details are representational. Buyers are advised to verify RERA registration and legal documents independently before booking. Builder logos are property of their respective owners.
+              Perfect Horizons is an authorized channel partner. All images, pricing, and project details are representational. Buyers are advised to verify RERA registration and legal documents independently before booking.
             </p>
           </div>
         </div>
       )}
-
+ 
       {modal && (
         <LeadModal
           title={modalTitles[modal]||'Get in Touch'}
@@ -950,7 +1102,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
     </div>
   );
 }
-
+ 
 /* ══════════════════════════════════════════════════════════
    INFO PAGE TEMPLATE
 ══════════════════════════════════════════════════════════ */
@@ -979,67 +1131,88 @@ function InfoPage({ children, legal, setLegal, navTo }) {
     </div>
   );
 }
-
+ 
 /* ══════════════════════════════════════════════════════════
    MAIN APP
 ══════════════════════════════════════════════════════════ */
 function App() {
-  const [props, setProps]         = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [selProp, setSelProp]     = useState(null);
-  const [search, setSearch]       = useState('');
+  const [props, setProps]           = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [selProp, setSelProp]       = useState(null);
+  const [search, setSearch]         = useState('');
   const [mobileSearch, setMobileSearch] = useState(false);
   const [mobileFilter, setMobileFilter] = useState(false);
-  const [filters, setFilters]     = useState({bhk:'',status:'',type:'',price:'',poss:''});
-  const [showLead, setShowLead]   = useState(false);
-  const [page, setPage]           = useState(()=>window.location.hash.replace('#','')||'home');
-  const [mobileMenu, setMobileMenu]= useState(false);
-  const [mobAbout, setMobAbout]   = useState(false);
+  const [filters, setFilters]       = useState({bhk:'',status:'',type:'',price:'',poss:''});
+  const [showLead, setShowLead]     = useState(false);
+  const [page, setPage]             = useState(()=>{
+    const h = window.location.hash.replace('#','');
+    // On mount: if hash is a property ID, restore that too (handled below)
+    return h || 'home';
+  });
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const [mobAbout, setMobAbout]     = useState(false);
   const [mobPromises, setMobPromises]= useState(false);
   const [mobServices, setMobServices]= useState(false);
-  const [activeBlog, setActiveBlog]= useState(null);
-  const [legal, setLegal]         = useState(null);
-  const [curPromiseOpen, setCurPromiseOpen] = useState(true);
-
-  const parseBhk = (bhkStr) => {
-    if(!bhkStr) return null;
-    const s = String(bhkStr).trim();
-    const m = s.match(/^(\d+(?:\.\d+)?)\s*BHK$/i);
-    return m ? m[1] + ' BHK' : s;
-  };
-
-  useEffect(()=>{
-    const initial = window.location.hash.replace('#','');
-    if(initial.startsWith('blogs/')){
-      const id=parseInt(initial.split('/')[1]);
+  const [activeBlog, setActiveBlog] = useState(null);
+  const [legal, setLegal]           = useState(null);
+ 
+  // Hash-based routing that survives refresh
+  // Format: #home, #about-us, #property/ID, #blogs/ID
+  const readHash = useCallback((h) => {
+    const hash = (h || window.location.hash).replace('#','');
+    if(hash.startsWith('blogs/')){
+      const id=parseInt(hash.split('/')[1]);
       const b=BLOGS.find(b=>b.id===id);
       setPage('blogs'); if(b) setActiveBlog(b);
+    } else if(hash.startsWith('property/')) {
+      // handled after props load
+      setPage('property/'+hash.split('/')[1]);
+    } else {
+      setPage(hash||'home');
+      setActiveBlog(null);
     }
-    const onHash=()=>{
-      const h=window.location.hash.replace('#','');
-      if(h.startsWith('blogs/')){const id=parseInt(h.split('/')[1]);const b=BLOGS.find(b=>b.id===id);setPage('blogs');if(b)setActiveBlog(b);}
-      else{setPage(h||'home');if(h!=='home')setSelProp(null);if(h!=='blogs')setActiveBlog(null);}
-    };
-    window.addEventListener('hashchange',onHash);
+  },[]);
+ 
+  useEffect(()=>{
+    readHash(window.location.hash);
+    const onHash=()=>{ readHash(window.location.hash); setSelProp(null); };
+    window.addEventListener('hashchange', onHash);
+ 
     supabase.from('properties').select('*').eq('is_live',true).order('display_order',{ascending:true,nullsFirst:false})
-      .then(({data,error})=>{ if(!error)setProps(data||[]); setLoading(false); })
+      .then(({data,error})=>{
+        if(!error) {
+          setProps(data||[]);
+          // Restore property from hash after load
+          const h = window.location.hash.replace('#','');
+          if(h.startsWith('property/')){
+            const id = parseInt(h.split('/')[1]);
+            const found = (data||[]).find(p=>p.id===id);
+            if(found) setSelProp(found);
+          }
+        }
+        setLoading(false);
+      })
       .catch(()=>setLoading(false));
+ 
     const ch=supabase.channel('public:properties')
       .on('postgres_changes',{event:'*',schema:'public',table:'properties'},payload=>{
         if(payload.eventType==='INSERT'){if(payload.new.is_live===true)setProps(prev=>[payload.new,...prev]);}
         else if(payload.eventType==='UPDATE'){const u=payload.new;if(u.is_live===true){setProps(prev=>{const ex=prev.some(p=>p.id===u.id);const up=ex?prev.map(p=>p.id===u.id?u:p):[u,...prev];return [...up].sort((a,b)=>(a.display_order||9999)-(b.display_order||9999));});setSelProp(prev=>prev&&prev.id===u.id?u:prev);}else{setProps(prev=>prev.filter(p=>p.id!==u.id));setSelProp(prev=>prev&&prev.id===u.id?null:prev);}}
         else if(payload.eventType==='DELETE'){setProps(prev=>prev.filter(p=>p.id!==payload.old.id));setSelProp(prev=>prev&&prev.id===payload.old.id?null:prev);}
       }).subscribe();
-    return ()=>{ window.removeEventListener('hashchange',onHash); supabase.removeChannel(ch); };
+ 
+    return ()=>{ window.removeEventListener('hashchange', onHash); supabase.removeChannel(ch); };
   },[]);
-
+ 
+  // Sync title
   useEffect(()=>{
     const base='Perfect Horizons | Real Estate Advisory Bengaluru';
-    if(activeBlog){ document.title=`${activeBlog.title} | Perfect Horizons`; history.replaceState(null,'',`#blogs/${activeBlog.id}`); }
-    else if(page==='home'||!page) document.title=base;
+    if(selProp){ document.title=`${gv(selProp,'Property Name')} | Perfect Horizons`; return; }
+    if(activeBlog){ document.title=`${activeBlog.title} | Perfect Horizons`; return; }
+    if(!page||page==='home') document.title=base;
     else document.title=`${page.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())} | Perfect Horizons`;
-  },[activeBlog,page]);
-
+  },[activeBlog,page,selProp]);
+ 
   const submitLead = async (data, project='General', action='General') => {
     if(!/^[6-9]\d{9}$/.test(data.phone)){alert('Enter valid 10-digit number');return false;}
     const src=action==='brochure'?'Website - Brochure':action==='cost_sheet'?'Website - Cost Sheet':action==='apply'?'Website - EMI Apply':'Website - General';
@@ -1050,13 +1223,32 @@ function App() {
       return true;
     }catch{ alert('Error saving. Please try again.'); return false; }
   };
-
+ 
   const navTo = useCallback(p=>{
     setMobileMenu(false);setMobAbout(false);setMobPromises(false);setMobServices(false);
-    setActiveBlog(null);setSelProp(null);
-    window.location.hash=p; window.scrollTo(0,0);
+    setActiveBlog(null);
+    if(p==='home') {
+      setSelProp(null);
+      window.location.hash='home';
+    } else {
+      window.location.hash=p;
+    }
+    window.scrollTo(0,0);
   },[]);
-
+ 
+  // Pick a property — update hash so refresh works
+  const pickProp = useCallback((p) => {
+    setSelProp(p);
+    window.location.hash = p ? `property/${p.id}` : 'home';
+    window.scrollTo(0,0);
+  }, []);
+ 
+  const goBack = useCallback(() => {
+    setSelProp(null);
+    window.location.hash = 'home';
+    window.scrollTo(0,0);
+  }, []);
+ 
   /* filtered listing */
   const filtered = useMemo(()=>{
     if(!Array.isArray(props))return[];
@@ -1076,7 +1268,7 @@ function App() {
       return ms&&mb&&mst&&mty&&mp&&mpo;
     });
   },[props,search,filters]);
-
+ 
   /* ── Nav ── */
   const NavLink = ({label,p}) => (
     <button className={`nav-link ${page===p?'active':''}`} onClick={()=>navTo(p)}>{label}</button>
@@ -1095,33 +1287,33 @@ function App() {
       </div>
     </div>
   );
-
+ 
   const selects = [
-    {k:'bhk',ph:'🏠 Configuration',opts:[['1 BHK','1'],['2 BHK','2'],['2.5 BHK','2.5'],['3 BHK','3'],['3.5 BHK','3.5'],['4 BHK','4'],['4.5 BHK','4.5'],['5 BHK','5']]},
-    {k:'status',ph:'🔑 Status',opts:[['Ready to Move','Ready to Move In'],['Under Construction','Under Construction'],['New Launch','New Launch'],['Pre Launch','Pre Launch']]},
-    {k:'type',ph:'🏗️ Type',opts:[['Apartment','Apartment'],['Villa','Villa'],['Plot','Plot']]},
-    {k:'price',ph:'💰 Budget',opts:[['Under ₹1 Cr','under1'],['₹1–2 Cr','1-2'],['₹2–3 Cr','2-3'],['₹3–4 Cr','3-4'],['₹4–5 Cr','4-5'],['₹5 Cr+','5plus']]},
-    {k:'poss',ph:'📅 Possession',opts:[['Ready to Move','ready'],['2026','2026'],['2027','2027'],['2028','2028'],['2029+','2029']]},
+    {k:'bhk',   ph:'🏠 Configuration', opts:[['1 BHK','1'],['2 BHK','2'],['2.5 BHK','2.5'],['3 BHK','3'],['3.5 BHK','3.5'],['4 BHK','4'],['4.5 BHK','4.5'],['5 BHK','5']]},
+    {k:'status',ph:'🔑 Status',         opts:[['Ready to Move','Ready to Move In'],['Under Construction','Under Construction'],['New Launch','New Launch'],['Pre Launch','Pre Launch']]},
+    {k:'type',  ph:'🏗️ Type',           opts:[['Apartment','Apartment'],['Villa','Villa'],['Plot','Plot']]},
+    {k:'price', ph:'💰 Budget',          opts:[['Under ₹1 Cr','under1'],['₹1–2 Cr','1-2'],['₹2–3 Cr','2-3'],['₹3–4 Cr','3-4'],['₹4–5 Cr','4-5'],['₹5 Cr+','5plus']]},
+    {k:'poss',  ph:'📅 Possession',      opts:[['Ready to Move','ready'],['2026','2026'],['2027','2027'],['2028','2028'],['2029+','2029']]},
   ];
-
+ 
   /* ── DETAIL PAGE ── */
   if(selProp) return (
     <>
-      <DetailPage p={selProp} all={props} onBack={()=>setSelProp(null)} navTo={navTo} submitLead={submitLead} onPickProp={setSelProp} />
-      <div className="git-btn" onClick={()=>setShowLead(true)}>Get in Touch</div>
+      <DetailPage p={selProp} all={props} onBack={goBack} navTo={navTo} submitLead={submitLead} onPickProp={pickProp} />
+      <button className="git-btn" onClick={()=>setShowLead(true)}>Get in Touch</button>
       <a href={`https://wa.me/${WA}`} target="_blank" className="wa-fab" aria-label="Chat on WhatsApp">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-1.577-.816-2.677-1.6-3.716-3.336-.27-.467.27-.271.443-.804.157-.534.083-.923-.04-1.289-.121-.366-.671-1.61-.92-2.206-.254-.589-.51-.51-.67-.51-.173 0-.371 0-.57 0-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.71 2.035-1.404.276-.694.276-1.289.202-1.414-.074-.123-.272-.198-.57-.347m-5.421-7.403h-.004c-1.025 0-2.059.338-2.927.999-.601.47-1.11 1.075-1.438 1.74-.528 1.122-.666 2.215-.399 3.23.264 1.015.93 1.9 1.85 2.54.51.348 1.084.573 1.662.657.577.084 1.17.05 1.735-.1.565-.15 1.096-.424 1.555-.801.458-.377.82-.87 1.063-1.42.243-.55.357-1.14.317-1.723-.04-.584-.233-1.14-.57-1.615-.337-.475-.825-.855-1.38-1.116-.556-.26-1.157-.38-1.76-.38m5.529-2.566c-1.162-1.147-2.71-1.824-4.366-1.976-1.656-.152-3.31.227-4.745 1.066-1.436.84-2.557 2.163-3.228 3.682-.671 1.519-.844 3.22-.5 4.856.344 1.635 1.215 3.128 2.458 4.287 1.243 1.159 2.86 1.888 4.568 2.104 1.708.216 3.43-.047 4.999-.76 1.569-.714 2.873-1.926 3.723-3.413.85-1.487 1.204-3.222 1.006-4.934-.198-1.712-1.01-3.302-2.172-4.449"/></svg>
+        <WASvg size={27} color="#fff" />
       </a>
       {showLead && <LeadModal title="Get in Touch" subtitle={`About: ${gv(selProp,'Property Name')}`} onClose={()=>setShowLead(false)} onSubmit={async d=>{const ok=await submitLead(d,gv(selProp,'Property Name'),'General');if(ok)setShowLead(false);return ok;}} />}
     </>
   );
-
+ 
   /* ── INNER PAGES ── */
   const mkPage = (pageContent) => (
     <InfoPage navTo={navTo} legal={legal} setLegal={setLegal}>{pageContent}</InfoPage>
   );
-  const secCard = (children) => <div className="card" style={{padding:'2.5rem',marginBottom:'1.5rem'}}>{children}</div>;
-  const secHead = (pill,h1,sub) => (
+  const secCard  = (children) => <div className="card" style={{padding:'2.5rem',marginBottom:'1.5rem'}}>{children}</div>;
+  const secHead  = (pill,h1,sub) => (
     <div style={{textAlign:'center',marginBottom:'2.5rem'}}>
       {pill && <span className="pill">{pill}</span>}
       <h1 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'clamp(1.8rem,4vw,3rem)',fontWeight:700,fontStyle:'italic',color:'var(--navy)',marginTop:'1rem',marginBottom:sub?'.5rem':0,lineHeight:1.15}}>{h1}</h1>
@@ -1140,7 +1332,7 @@ function App() {
       ))}
     </div>
   );
-
+ 
   const renderPage = () => {
     if(page==='about-us') return mkPage(<>
       {secCard(<>
@@ -1155,7 +1347,7 @@ function App() {
         ])}
       </>)}
     </>);
-
+ 
     if(page==='our-journey') return mkPage(<>
       {secCard(<>
         {secHead('Our Story','The Perfect Horizons Story','A platform where honesty comes before profit')}
@@ -1174,7 +1366,7 @@ function App() {
         </div>
       </>)}
     </>);
-
+ 
     if(page==='advisor') return mkPage(<>
       <div className="card md:grid-cols-2" style={{padding:'2.5rem',display:'grid',gridTemplateColumns:'1fr',gap:'2.5rem',alignItems:'center'}}>
         <div>
@@ -1194,7 +1386,7 @@ function App() {
       </div>
       {showLead && <LeadModal title="Schedule Consultation" subtitle="Perfect Horizons Advisory" onClose={()=>setShowLead(false)} onSubmit={async d=>{const ok=await submitLead(d,'General','Consultation');if(ok)setShowLead(false);return ok;}} />}
     </>);
-
+ 
     if(page==='what-we-do') return mkPage(<>
       {secCard(<>
         {secHead('Our Promises','What We Do')}
@@ -1206,7 +1398,7 @@ function App() {
         ])}
       </>)}
     </>);
-
+ 
     if(page==='what-we-dont-do') return mkPage(<>
       {secCard(<>
         {secHead('Our Commitments',"What We Don't Do")}
@@ -1218,7 +1410,7 @@ function App() {
         ])}
       </>)}
     </>);
-
+ 
     if(page==='interiors') return mkPage(<>
       {secCard(<>
         {secHead('Services','Interior Design Services','Transform your new home into a stunning living space')}
@@ -1240,7 +1432,7 @@ function App() {
         {showLead && <LeadModal title="Interior Consultation" subtitle="Perfect Horizons" onClose={()=>setShowLead(false)} onSubmit={async d=>{const ok=await submitLead(d,'Interior Design','Interiors');if(ok)setShowLead(false);return ok;}} />}
       </>)}
     </>);
-
+ 
     if(page==='home-loan') return mkPage(<>
       {secCard(<>
         {secHead('Services','Home Loan Assistance','Hassle-free financing for your dream property')}
@@ -1258,7 +1450,7 @@ function App() {
         {showLead && <LeadModal title="Home Loan Application" subtitle="Perfect Horizons" onClose={()=>setShowLead(false)} onSubmit={async d=>{const ok=await submitLead(d,'Home Loan','Home Loan');if(ok)setShowLead(false);return ok;}} />}
       </>)}
     </>);
-
+ 
     if(page==='customers') return mkPage(<>
       {secCard(<>
         {secHead('Why Work With Us','Why Clients Choose Perfect Horizons')}
@@ -1278,7 +1470,7 @@ function App() {
         {showLead && <LeadModal title="Schedule a Free Call" subtitle="Perfect Horizons Advisory" onClose={()=>setShowLead(false)} onSubmit={async d=>{const ok=await submitLead(d,'General','Free Call');if(ok)setShowLead(false);return ok;}} />}
       </>)}
     </>);
-
+ 
     if(page==='blogs') {
       if(activeBlog) return mkPage(<>
         <div style={{maxWidth:'48rem',margin:'0 auto'}}>
@@ -1313,40 +1505,39 @@ function App() {
         </div>
       </>);
     }
-
+ 
     return null;
   };
-
+ 
   if(page!=='home') {
     const inner = renderPage();
     if(inner) return inner;
   }
-
+ 
   /* ════════════════════════════════════
      HOME PAGE
   ════════════════════════════════════ */
   return (
     <div style={{minHeight:'100vh',display:'flex',flexDirection:'column'}}>
-
-      {/* STICKY NAV */}
-      <div className="sticky top-0 z-40" style={{boxShadow:'0 4px 24px rgba(7,14,29,.22)'}}>
+ 
+      {/* ── STICKY NAV BLOCK (nav + partners + filters all sticky together) ── */}
+      <div className="sticky-nav-home">
+        {/* Main nav */}
         <nav style={{background:'linear-gradient(135deg,#040A14,#070E1D)',padding:'0 1.5rem',height:56,display:'flex',alignItems:'center',justifyContent:'space-between',gap:'1rem'}}>
           <div style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.35rem',fontWeight:700,fontStyle:'italic',color:'#fff',textTransform:'uppercase',letterSpacing:'-.01em',cursor:'pointer',flexShrink:0,transition:'color .18s'}} className="hover:text-yellow-300" onClick={()=>navTo('home')}>Perfect Horizons</div>
-
+ 
           {/* Desktop search */}
-          {page==='home' && (
-            <div className="hidden lg:flex flex-1 justify-center px-4" style={{maxWidth:'32rem'}}>
-              <div style={{position:'relative',width:'100%'}}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'rgba(255,255,255,.4)',pointerEvents:'none'}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input type="search" placeholder="Search location, project, builder…" aria-label="Search properties"
-                  style={{width:'100%',background:'rgba(255,255,255,.07)',border:'1px solid rgba(255,255,255,.12)',borderRadius:999,paddingLeft:36,paddingRight:16,paddingTop:9,paddingBottom:9,color:'#fff',fontSize:'.74rem',fontFamily:'Inter,sans-serif',outline:'none',transition:'border-color .18s,background .18s'}}
-                  className="placeholder-slate-500 focus:border-yellow-400/50 focus:bg-white/10"
-                  value={search} onChange={e=>setSearch(e.target.value)}
-                />
-              </div>
+          <div className="hidden lg:flex flex-1 justify-center px-4" style={{maxWidth:'32rem'}}>
+            <div style={{position:'relative',width:'100%'}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'rgba(255,255,255,.4)',pointerEvents:'none'}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="search" placeholder="Search location, project, builder…" aria-label="Search properties"
+                style={{width:'100%',background:'rgba(255,255,255,.07)',border:'1px solid rgba(255,255,255,.12)',borderRadius:999,paddingLeft:36,paddingRight:16,paddingTop:9,paddingBottom:9,color:'#fff',fontSize:'.74rem',fontFamily:'Inter,sans-serif',outline:'none',transition:'border-color .18s,background .18s'}}
+                className="placeholder-slate-500 focus:border-yellow-400/50 focus:bg-white/10"
+                value={search} onChange={e=>setSearch(e.target.value)}
+              />
             </div>
-          )}
-
+          </div>
+ 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-5">
             <NavLink label="Properties" p="home" />
@@ -1357,79 +1548,70 @@ function App() {
             <NavLink label="Insights" p="blogs" />
             <NavLink label="Reviews" p="customers" />
           </div>
-
-          {/* Mobile */}
+ 
+          {/* Mobile controls */}
           <div className="md:hidden flex items-center gap-2">
-            {page==='home' && (
-              <button onClick={()=>setMobileSearch(v=>!v)} style={{display:'flex',alignItems:'center',gap:5,border:'1px solid rgba(255,255,255,.16)',borderRadius:999,padding:'7px 12px',background:'none',cursor:'pointer',color:'rgba(255,255,255,.8)',fontSize:'.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em'}}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Search
-              </button>
-            )}
+            <button onClick={()=>setMobileSearch(v=>!v)} style={{display:'flex',alignItems:'center',gap:5,border:'1px solid rgba(255,255,255,.16)',borderRadius:999,padding:'7px 12px',background:'none',cursor:'pointer',color:'rgba(255,255,255,.8)',fontSize:'.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em'}}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Search
+            </button>
             <button onClick={()=>setMobileMenu(v=>!v)} style={{background:'none',border:'none',cursor:'pointer',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',width:44,height:44}}>
               <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d={mobileMenu?"M6 18L18 6M6 6l12 12":"M4 6h16M4 12h16M4 18h16"}/></svg>
             </button>
           </div>
         </nav>
-
-        {/* Partners marquee + filters */}
-        {page==='home' && (
-          <>
-            <div style={{background:'#fff',borderBottom:'1px solid var(--border)',padding:'8px 0'}}>
-              <div style={{fontSize:'.52rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.2em',color:'rgba(146,96,10,.9)',textAlign:'center',marginBottom:6}}>Associated With</div>
-              <div className="marquee-wrap">
-                <div className="marquee-track">
-                  {PARTNERS.concat(PARTNERS).map((l,i)=><img key={i} src={l} loading="lazy" alt={`Partner builder ${i+1}`} width="120" height="36" style={{height:32,marginInline:36,objectFit:'contain',opacity:.88}} />)}
-                </div>
-              </div>
+ 
+        {/* Partners marquee */}
+        <div style={{background:'#fff',borderBottom:'1px solid var(--border)',padding:'8px 0'}}>
+          <div style={{fontSize:'.52rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.2em',color:'rgba(146,96,10,.9)',textAlign:'center',marginBottom:6}}>Associated With</div>
+          <div className="marquee-wrap">
+            <div className="marquee-track">
+              {PARTNERS.concat(PARTNERS).map((l,i)=><img key={i} src={l} loading="lazy" alt={`Partner builder ${i+1}`} width="120" height="36" style={{height:32,marginInline:36,objectFit:'contain',opacity:.88}} />)}
             </div>
-            {/* Filter bar */}
-            <div className="filter-bar" style={{padding:'10px 1.5rem'}}>
-              <div style={{maxWidth:'72rem',margin:'0 auto'}}>
-                {mobileSearch && (
-                  <div style={{position:'relative',marginBottom:10}}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'var(--muted)',pointerEvents:'none'}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <input type="search" placeholder="Search location, project…" autoFocus aria-label="Search properties"
-                      style={{width:'100%',border:'2px solid var(--teal)',borderRadius:10,paddingLeft:36,paddingRight:14,paddingTop:11,paddingBottom:11,fontSize:'.8rem',fontFamily:'Inter,sans-serif',outline:'none'}}
-                      value={search} onChange={e=>setSearch(e.target.value)}
-                    />
-                  </div>
-                )}
-                <div className="md:hidden flex justify-between items-center" style={{height:28}}>
-                  <span style={{fontSize:'.58rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--muted)'}}>Property Finder</span>
-                  <button onClick={()=>setMobileFilter(v=>!v)} style={{display:'flex',alignItems:'center',gap:6,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--teal)',background:'none',border:'none',cursor:'pointer',minHeight:44}}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-                    Filters {mobileFilter?'▲':'▼'}
-                  </button>
-                </div>
-                <div className={`${mobileFilter?'grid':'hidden'} md:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-2 md:mt-0`}>
-                  {selects.map(s=>(
-                    <select key={s.k} className="ph-select" style={{width:'100%',background:'#fff',padding:'9px 12px',fontSize:'.72rem',fontWeight:600,color:'var(--navy)',cursor:'pointer',minHeight:44}}
-                      value={filters[s.k]} onChange={e=>setFilters(f=>({...f,[s.k]:e.target.value}))}>
-                      <option value="">{s.ph}</option>
-                      {s.opts.map(([l,v])=><option key={v} value={v}>{l}</option>)}
-                    </select>
-                  ))}
-                  <button onClick={()=>{setSearch('');setFilters({bhk:'',status:'',type:'',price:'',poss:''});setMobileFilter(false);setMobileSearch(false);}}
-                    style={{border:'1.5px solid var(--border)',borderRadius:10,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--muted)',background:'#fff',cursor:'pointer',minHeight:44,padding:'0 12px',transition:'border-color .18s,color .18s',gridColumn:'span 1'}}
-                    className="hover:border-red-300 hover:text-red-500 col-span-2 md:col-span-1">
-                    ✕ Reset
-                  </button>
-                </div>
+          </div>
+        </div>
+ 
+        {/* Filter bar */}
+        <div className="filter-bar" style={{padding:'10px 1.5rem'}}>
+          <div style={{maxWidth:'72rem',margin:'0 auto'}}>
+            {mobileSearch && (
+              <div style={{position:'relative',marginBottom:10}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'var(--muted)',pointerEvents:'none'}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="search" placeholder="Search location, project…" autoFocus aria-label="Search properties"
+                  style={{width:'100%',border:'2px solid var(--teal)',borderRadius:10,paddingLeft:36,paddingRight:14,paddingTop:11,paddingBottom:11,fontSize:'.8rem',fontFamily:'Inter,sans-serif',outline:'none'}}
+                  value={search} onChange={e=>setSearch(e.target.value)}
+                />
               </div>
+            )}
+            <div className="md:hidden flex justify-between items-center" style={{height:28}}>
+              <span style={{fontSize:'.58rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--muted)'}}>Property Finder</span>
+              <button onClick={()=>setMobileFilter(v=>!v)} style={{display:'flex',alignItems:'center',gap:6,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--teal)',background:'none',border:'none',cursor:'pointer',minHeight:44}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                Filters {mobileFilter?'▲':'▼'}
+              </button>
             </div>
-          </>
-        )}
-
+            <div className={`${mobileFilter?'grid':'hidden'} md:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-2 md:mt-0`}>
+              {selects.map(s=>(
+                <select key={s.k} className="ph-select" style={{width:'100%',background:'#fff',padding:'9px 12px',fontSize:'.72rem',fontWeight:600,color:'var(--navy)',cursor:'pointer',minHeight:44}}
+                  value={filters[s.k]} onChange={e=>setFilters(f=>({...f,[s.k]:e.target.value}))}>
+                  <option value="">{s.ph}</option>
+                  {s.opts.map(([l,v])=><option key={v} value={v}>{l}</option>)}
+                </select>
+              ))}
+              <button onClick={()=>{setSearch('');setFilters({bhk:'',status:'',type:'',price:'',poss:''});setMobileFilter(false);setMobileSearch(false);}}
+                style={{border:'1.5px solid var(--border)',borderRadius:10,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--muted)',background:'#fff',cursor:'pointer',minHeight:44,padding:'0 12px',transition:'border-color .18s,color .18s'}}
+                className="hover:border-red-300 hover:text-red-500 col-span-2 md:col-span-1">
+                ✕ Reset
+              </button>
+            </div>
+          </div>
+        </div>
+ 
         {/* Mobile dropdown nav */}
         {mobileMenu && (
-          <div className="md:hidden" style={{background:'linear-gradient(180deg,#040A14,#070E1D)',borderTop:'1px solid rgba(200,134,10,.12)',position:'absolute',width:'100%',left:0,top:'100%',zIndex:50,boxShadow:'0 16px 40px rgba(7,14,29,.5)'}}>
-            {[
-              {lbl:'Properties',icon:'🏠',p:'home'},
-            ].map(({lbl,icon,p:pg})=>(
-              <div key={pg} onClick={()=>navTo(pg)} style={{display:'flex',alignItems:'center',gap:12,padding:'15px 20px',borderBottom:'1px solid rgba(255,255,255,.05)',fontSize:'.74rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'rgba(255,255,255,.8)',cursor:'pointer'}}>
-                <span style={{fontSize:'1rem'}}>{icon}</span>{lbl}
-              </div>
-            ))}
+          <div className="md:hidden" style={{background:'linear-gradient(180deg,#040A14,#070E1D)',borderTop:'1px solid rgba(200,134,10,.12)',position:'absolute',width:'100%',left:0,zIndex:50,boxShadow:'0 16px 40px rgba(7,14,29,.5)'}}>
+            <div onClick={()=>navTo('home')} style={{display:'flex',alignItems:'center',gap:12,padding:'15px 20px',borderBottom:'1px solid rgba(255,255,255,.05)',fontSize:'.74rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'rgba(255,255,255,.8)',cursor:'pointer'}}>
+              <span style={{fontSize:'1rem'}}>🏠</span> Properties
+            </div>
             {[
               {lbl:'About',icon:'🏛️',state:mobAbout,set:setMobAbout,subs:[['About Us','about-us'],['Our Journey','our-journey']]},
               {lbl:'Our Promises',icon:'✨',state:mobPromises,set:setMobPromises,subs:[['What We Do','what-we-do'],["What We Don't Do",'what-we-dont-do']]},
@@ -1455,38 +1637,19 @@ function App() {
           </div>
         )}
       </div>
-
-      {/* SEO H1 — visually hidden, single H1 on homepage */}
+      {/* END STICKY NAV BLOCK */}
+ 
+      {/* SEO H1 — visually hidden */}
       <h1 style={{position:'absolute',width:1,height:1,padding:0,margin:-1,overflow:'hidden',clip:'rect(0,0,0,0)',whiteSpace:'nowrap',border:0}}>
         Trusted Real Estate Advisory in Bengaluru — Perfect Horizons
       </h1>
-
+ 
       {/* GET IN TOUCH SIDEBAR BTN */}
-      <div className="git-btn" onClick={()=>setShowLead(true)}>Get in Touch</div>
-
+      <button className="git-btn" onClick={()=>setShowLead(true)}>Get in Touch</button>
+ 
       {/* MAIN */}
       <main style={{maxWidth:'72rem',margin:'0 auto',padding:'1.5rem',paddingTop:'2rem',flexGrow:1,width:'100%'}}>
-
-        {/* Curation promise banner */}
-        {curPromiseOpen && (
-        <div style={{background:'linear-gradient(135deg,var(--navy),var(--navy-mid))',borderRadius:'var(--r-card)',padding:'1rem 1.25rem',marginBottom:'1.5rem',border:'1px solid rgba(200,134,10,.18)',boxShadow:'var(--sh-md)',display:'flex',flexDirection:'column',gap:'.75rem',position:'relative'}} className="md:flex-row md:items-center md:gap-4">
-          <button onClick={()=>setCurPromiseOpen(false)} style={{position:'absolute',top:10,right:12,background:'none',border:'none',color:'rgba(255,255,255,.5)',fontSize:'1.2rem',cursor:'pointer',padding:0}} className="hover:text-white">×</button>
-          <div style={{flexShrink:0}}>
-            <div style={{fontSize:'.48rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.2em',color:'rgba(200,134,10,.88)',marginBottom:2}}>Our Curation Promise</div>
-            <div style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1rem',fontWeight:700,fontStyle:'italic',color:'#fff',lineHeight:1.1}}>We Don't Show Everything</div>
-          </div>
-          <div style={{width:1,background:'rgba(255,255,255,.09)',alignSelf:'stretch'}} className="hidden md:block" />
-          <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:6,flex:1}} className="md:grid-cols-4">
-            {['Legal concerns','Overpriced','Poor builders','Weak value'].map((r,i)=>(
-              <div key={i} style={{display:'flex',alignItems:'center',gap:5,background:'rgba(255,255,255,.05)',borderRadius:6,padding:'6px 8px',border:'1px solid rgba(255,255,255,.07)'}}>
-                <span style={{color:'#F87171',fontSize:'.65rem',fontWeight:700,flexShrink:0}}>✕</span>
-                <span style={{fontSize:'.55rem',fontWeight:600,color:'rgba(255,255,255,.65)',lineHeight:1.3}}>{r}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        )}
-
+ 
         {/* Property Grid */}
         {loading ? (
           <div style={{textAlign:'center',paddingTop:'5rem',paddingBottom:'5rem',color:'var(--teal)',fontWeight:700,fontSize:'.82rem',textTransform:'uppercase',letterSpacing:'.16em'}}>
@@ -1502,12 +1665,12 @@ function App() {
         ) : (
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:'1.5rem'}}>
             {filtered.map((p,i)=>(
-              <PropCard key={p.id||i} p={p} idx={i} onClick={()=>setSelProp(p)} />
+              <PropCard key={p.id||i} p={p} idx={i} onClick={()=>pickProp(p)} />
             ))}
           </div>
         )}
-
-        {/* SEO content block — expanded for better rankings */}
+ 
+        {/* SEO content block */}
         <div style={{marginTop:'3rem',background:'var(--white)',border:'1px solid var(--border)',borderRadius:'var(--r-card)',padding:'2rem 2.25rem'}}>
           <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.4rem',fontWeight:700,fontStyle:'italic',color:'var(--navy)',marginBottom:'1.25rem',borderLeft:'3px solid var(--gold)',paddingLeft:'1rem'}}>Why Choose Perfect Horizons?</h2>
           <div style={{display:'grid',gridTemplateColumns:'1fr',gap:'1rem',color:'var(--muted)',fontSize:'.855rem',lineHeight:1.9,maxWidth:'60rem'}} className="md:grid-cols-2">
@@ -1529,18 +1692,18 @@ function App() {
           </div>
         </div>
       </main>
-
+ 
       <Footer navTo={navTo} setLegal={setLegal} />
       <StickyBar onSubmitLead={submitLead} />
-
+ 
       {/* WA FAB */}
       <a href={`https://wa.me/${WA}?text=Hi, what properties are available?`} target="_blank" className="wa-fab" aria-label="Chat on WhatsApp" style={{bottom:'5.5rem'}}>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-1.577-.816-2.677-1.6-3.716-3.336-.27-.467.27-.271.443-.804.157-.534.083-.923-.04-1.289-.121-.366-.671-1.61-.92-2.206-.254-.589-.51-.51-.67-.51-.173 0-.371 0-.57 0-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.71 2.035-1.404.276-.694.276-1.289.202-1.414-.074-.123-.272-.198-.57-.347m-5.421-7.403h-.004c-1.025 0-2.059.338-2.927.999-.601.47-1.11 1.075-1.438 1.74-.528 1.122-.666 2.215-.399 3.23.264 1.015.93 1.9 1.85 2.54.51.348 1.084.573 1.662.657.577.084 1.17.05 1.735-.1.565-.15 1.096-.424 1.555-.801.458-.377.82-.87 1.063-1.42.243-.55.357-1.14.317-1.723-.04-.584-.233-1.14-.57-1.615-.337-.475-.825-.855-1.38-1.116-.556-.26-1.157-.38-1.76-.38m5.529-2.566c-1.162-1.147-2.71-1.824-4.366-1.976-1.656-.152-3.31.227-4.745 1.066-1.436.84-2.557 2.163-3.228 3.682-.671 1.519-.844 3.22-.5 4.856.344 1.635 1.215 3.128 2.458 4.287 1.243 1.159 2.86 1.888 4.568 2.104 1.708.216 3.43-.047 4.999-.76 1.569-.714 2.873-1.926 3.723-3.413.85-1.487 1.204-3.222 1.006-4.934-.198-1.712-1.01-3.302-2.172-4.449"/></svg>
+        <WASvg size={27} color="#fff" />
       </a>
-
+ 
       {/* General lead modal */}
       {showLead && <LeadModal title="Get in Touch" subtitle="Our advisor will call you shortly" onClose={()=>setShowLead(false)} onSubmit={async d=>{const ok=await submitLead(d,'General Enquiry','General');if(ok)setShowLead(false);return ok;}} />}
-
+ 
       {/* Legal modal */}
       {legal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 anim-fadeIn" style={{background:'rgba(7,14,29,.88)',backdropFilter:'blur(6px)'}} onClick={()=>setLegal(null)}>
@@ -1561,7 +1724,7 @@ function App() {
     </div>
   );
 }
-
+ 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
