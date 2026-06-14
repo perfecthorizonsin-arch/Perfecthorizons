@@ -21,6 +21,14 @@
 {"@context":"https://schema.org","@type":"RealEstateAgent","name":"Perfect Horizons","description":"Independent real estate advisory in Bengaluru offering curated property recommendations, home loan assistance, and guided site visits.","url":"https://perfecthorizons.in","telephone":"+91-9113261205","address":{"@type":"PostalAddress","addressLocality":"Bengaluru","addressRegion":"Karnataka","addressCountry":"IN"},"areaServed":["Bengaluru","Electronic City","Sarjapur","Whitefield","Chandapura","Mysuru"],"openingHours":"Mo-Sa 09:00-20:00","priceRange":"Free Advisory"}
 </script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%22 y=%2254%22 font-family=%22Arial,sans-serif%22 font-size=%2260%22 font-weight=%22900%22 font-style=%22italic%22 fill=%22%23C8860A%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22>PH</text></svg>">
+<!-- Google tag (gtag.js) — replace G-XXXXXXXXXX with your real GA4 Measurement ID -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -289,7 +297,7 @@ function EMICalc({ priceStr, onApply }) {
         <div style={{width:72,height:72,borderRadius:'50%',background:`conic-gradient(var(--teal) ${pPct}%,var(--border) ${pPct}% 100%)`,flexShrink:0}} />
         <div style={{width:'100%'}}>
           {[{lbl:'Principal',val:fmtInr(loan),dot:'var(--teal)'},{lbl:'Interest',val:fmtInr(totalInt),dot:'var(--border)'}].map((r,i)=>(
-            <div key={i} className="flex justify-between items-center" style={{paddingBottom:i===0?6:0,marginBottom:i===0?6:0,borderBottom:i===0?'1px solid var(--border)':none}}>
+            <div key={i} className="flex justify-between items-center" style={{paddingBottom:i===0?6:0,marginBottom:i===0?6:0,borderBottom:i===0?'1px solid var(--border)':'none'}}>
               <span style={{display:'flex',alignItems:'center',gap:6,fontSize:'.58rem',fontWeight:700,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.12em'}}>
                 <span style={{width:8,height:8,borderRadius:'50%',background:r.dot,display:'inline-block'}}/>
                 {r.lbl}
@@ -351,7 +359,7 @@ function LeadModal({ title, subtitle, onSubmit, onClose, extra }) {
         <form onSubmit={submit} style={{display:'flex',flexDirection:'column',gap:10}}>
           {['Full Name','Mobile Number (10 Digits)','Email Address (Optional)'].map((ph,i)=>(
             <input key={i} type={i===1?'tel':i===2?'email':'text'} placeholder={ph} required={i<2}
-              style={{border:'1.5px solid var(--border)',background:' var(--cream)',padding:'13px 15px',borderRadius:10,outline:'none',fontFamily:'Inter,sans-serif',fontSize:'.875rem',fontWeight:500,transition:'border-color .18s'}}
+              style={{border:'1.5px solid var(--border)',background:'var(--cream)',padding:'13px 15px',borderRadius:10,outline:'none',fontFamily:'Inter,sans-serif',fontSize:'.875rem',fontWeight:500,transition:'border-color .18s'}}
               className="focus:outline-none"
               onFocus={e=>e.target.style.borderColor='var(--teal)'}
               onBlur={e=>e.target.style.borderColor='var(--border)'}
@@ -517,10 +525,8 @@ function PropCard({ p, idx, onClick }) {
           alt={`${name} by ${builder} in ${loc} — ${type}`}
           style={{objectFit:'cover',width:'100%',height:'100%'}}
         />
-        {/* Gradient */}
         <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(7,14,29,.5) 0%,transparent 55%)'}} />
         <div className="type-ribbon">{type}</div>
-        {/* Price overlay on image */}
         <div style={{position:'absolute',bottom:12,left:12,zIndex:5}}>
           <div style={{fontSize:'.5rem',fontWeight:700,color:'rgba(255,255,255,.65)',textTransform:'uppercase',letterSpacing:'.16em',marginBottom:2}}>Starting from</div>
           <div style={{fontSize:'1.25rem',fontWeight:800,color:'#fff',lineHeight:1,textShadow:'0 2px 8px rgba(0,0,0,.4)'}}>{price}</div>
@@ -547,7 +553,7 @@ function PropCard({ p, idx, onClick }) {
 ══════════════════════════════════════════════════════════ */
 function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
   const [heroImg, setHeroImg]   = useState(null);
-  const [modal, setModal]       = useState(null); // 'interest'|'brochure'|'cost_sheet'|'apply'|'unlock'
+  const [modal, setModal]       = useState(null);
   const [unlocked, setUnlocked] = useState(false);
   const [activeTab, setActiveTab]= useState('about');
   const [hlOpen, setHlOpen]     = useState(true);
@@ -557,7 +563,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
 
   useEffect(()=>{ window.scrollTo(0,0); setHeroImg(null); setActiveTab('about'); },[p]);
 
-  // Intersection observer for anchor nav
   useEffect(()=>{
     const obs=[];
     ['about','amenities','masterplan','floorplan','location'].forEach(k=>{
@@ -570,7 +575,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
 
   const scrollTo = k => { refs[k]?.current?.scrollIntoView({behavior:'smooth',block:'start'}); setActiveTab(k); };
 
-  /* ── field reads ── */
   const name   = gv(p,'Property Name');
   const builder= gv(p,'Builder Name');
   const loc    = gv(p,'Location');
@@ -609,7 +613,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
     {k:'location',lbl:'Location'},
   ].filter(t=>!t.hide);
 
-  /* ── Modal submit handler ── */
   const handleModalSubmit = async d => {
     const ok = await submitLead(d, name, modal||'interest');
     if(ok){
@@ -633,7 +636,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
   return (
     <div style={{minHeight:'100vh',background:'var(--cream)'}} className="overflow-x-hidden">
 
-      {/* ── TOP BAR ── */}
+      {/* TOP BAR */}
       <div className="sticky top-0 z-40" style={{background:'#fff',borderBottom:'1px solid var(--border)',boxShadow:'var(--sh-sm)'}}>
         <div style={{maxWidth:'72rem',margin:'0 auto',padding:'0 1.5rem',display:'flex',justifyContent:'space-between',alignItems:'center',height:54}}>
           <button onClick={onBack} style={{display:'flex',alignItems:'center',gap:8,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.14em',color:'var(--teal)',background:'none',border:'none',cursor:'pointer',transition:'opacity .18s'}} className="hover:opacity-65 group">
@@ -649,7 +652,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
         </div>
       </div>
 
-      {/* ── HERO ── */}
+      {/* HERO */}
       <div style={{position:'relative',background:'#060D1C',minHeight:'clamp(240px,44vw,520px)',overflow:'hidden'}}>
         {(heroImg||cover) ? (
           <>
@@ -665,15 +668,11 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
             <p style={{color:'var(--muted)',fontSize:'.7rem',fontWeight:600,textTransform:'uppercase',letterSpacing:'.16em'}}>Images Coming Soon</p>
           </div>
         )}
-        {/* Bottom gradient */}
         <div style={{position:'absolute',bottom:0,left:0,right:0,height:'55%',background:'linear-gradient(to top,rgba(6,13,28,.85),transparent)',zIndex:3}} />
-        {/* Type ribbon */}
         <div className="type-ribbon" style={{zIndex:5}}>{gv(p,'Property Type')||'Property'}</div>
-        {/* Hero text */}
         <div style={{position:'absolute',bottom:0,left:0,right:0,zIndex:4,padding:'1.25rem 1.5rem'}}>
           <div style={{maxWidth:'72rem',margin:'0 auto',display:'flex',flexDirection:'column',gap:6}}>
             <span style={{fontSize:'.6rem',fontWeight:700,color:'rgba(200,134,10,.9)',textTransform:'uppercase',letterSpacing:'.14em'}}>{builder}</span>
-            {/* Single H1 for this page */}
             <h1 style={{fontSize:'clamp(1.3rem,3vw,2rem)',fontWeight:800,color:'#fff',lineHeight:1.15,letterSpacing:'-.02em'}}>{name}</h1>
             <div style={{display:'flex',flexWrap:'wrap',gap:8,alignItems:'center'}}>
               <span style={{fontSize:'.58rem',fontWeight:700,color:'rgba(255,255,255,.7)',background:'rgba(255,255,255,.1)',backdropFilter:'blur(6px)',padding:'3px 10px',borderRadius:999}}>📍 {loc}</span>
@@ -687,7 +686,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
         )}
       </div>
 
-      {/* ── STATS BAR ── */}
+      {/* STATS BAR */}
       <div style={{background:'var(--navy)'}}>
         <div style={{maxWidth:'72rem',margin:'0 auto',display:'grid',gridTemplateColumns:'repeat(4,1fr)'}}>
           {[{lbl:'Configuration',val:bhk?`${bhk} BHK`:'—'},{lbl:'Possession',val:poss||'—'},{lbl:'Approval',val:rera?`${appr||'RERA'}`:(appr||'—')},{lbl:'Starting Price',val:price||'On Request'}].map((s,i)=>(
@@ -699,7 +698,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
         </div>
       </div>
 
-      {/* ── ANCHOR NAV ── */}
+      {/* ANCHOR NAV */}
       <div className="anchor-nav sticky z-30" style={{top:54}}>
         <div style={{maxWidth:'72rem',margin:'0 auto',display:'flex',overflowX:'auto',padding:'0 1rem'}} className="hide-scroll">
           {tabs.map(t=>(
@@ -710,7 +709,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
         </div>
       </div>
 
-      {/* ── GALLERY STRIP ── */}
+      {/* GALLERY STRIP */}
       {gal.length>0 && (
         <div style={{maxWidth:'72rem',margin:'0 auto',padding:'1.5rem 1.5rem 0'}}>
           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
@@ -731,9 +730,9 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
         </div>
       )}
 
-      {/* ── MAIN CONTENT ── */}
+      {/* MAIN CONTENT */}
       <div style={{maxWidth:'72rem',margin:'0 auto',padding:'1.5rem',display:'grid',gridTemplateColumns:'1fr',gap:'1.5rem'}} className="lg:grid-cols-[1fr_320px]">
-        {/* ═══ LEFT ═══ */}
+        {/* LEFT */}
         <div style={{display:'flex',flexDirection:'column',gap:'1.5rem',minWidth:0}}>
 
           {/* ABOUT */}
@@ -811,12 +810,10 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
             </section>
           )}
 
-          {/* LOCATION — Map 50% + Highlights 50% */}
+          {/* LOCATION */}
           <section ref={refs.location} className="section-block" style={{scrollMarginTop:'7rem'}}>
-            <div className="section-label"><span style={{fontSize:15}}>📍</span> Location & Highlights</div>
+            <div className="section-label"><span style={{fontSize:15}}>📍</span> Location &amp; Highlights</div>
             <div style={{display:'grid',gridTemplateColumns:'1fr',gap:16}} className="lg:grid-cols-2">
-
-              {/* MAP */}
               <div style={{borderRadius:12,overflow:'hidden',border:'1px solid var(--border)',minHeight:300}}>
                 {mapSrc ? (
                   <iframe src={mapSrc} width="100%" height="100%" style={{border:0,display:'block',minHeight:300}} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title={`${name} location map in ${loc}, Bengaluru`} />
@@ -827,12 +824,9 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
                   </div>
                 )}
               </div>
-
-              {/* HIGHLIGHTS ACCORDION */}
               {hlLines.length>0 ? (
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  {/* Accordion header */}
-                  <button onClick={()=>setHlOpen(v=>!v)} style={{display:'flex',alignItems:'center',justifyContent:'space-between',width:'100%',padding:'13px 16px',background:'var(--parch)',border:'1px solid var(--border)',borderRadius:hlOpen?'10px 10px 0 0':10,cursor:'pointer',transition:'background .18s'}} className="hover:bg-amber-50">
+                  <button onClick={()=>setHlOpen(v=>!v)} style={{display:'flex',alignItems:'center',justifyContent:'space-between',width:'100%',padding:'13px 16px',background:'var(--parch)',border:'1px solid var(--border)',borderRadius:hlOpen?'10px 10px 0 0':'10px',cursor:'pointer',transition:'background .18s'}} className="hover:bg-amber-50">
                     <span style={{fontSize:'.6rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--navy)',display:'flex',alignItems:'center',gap:8}}>
                       <span style={{color:'var(--gold)'}}>✦</span> Key Highlights
                     </span>
@@ -846,7 +840,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
                       </div>
                     ))}
                   </div>
-                  {/* WhatsApp CTA */}
                   <a href={`https://wa.me/${WA}?text=Hi, I'm interested in ${encodeURIComponent(name)}`} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,background:'rgba(37,211,102,.06)',border:'1px solid rgba(37,211,102,.2)',borderRadius:10,padding:'13px',fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'#166534',transition:'background .18s'}} className="hover:bg-green-50">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="#22c55e"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.12.553 4.148 1.603 5.946L.2 24l6.195-1.62c1.737.947 3.69 1.445 5.636 1.445 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.615 0 12.031 0zm0 21.846c-1.802 0-3.568-.484-5.115-1.402l-.366-.217-3.805.996.996-3.805-.217-.366a9.92 9.92 0 0 1-1.402-5.115c0-5.514 4.486-10 10-10 5.514 0 10 4.486 10 10 0 5.514-4.486 10-10 10zm5.496-7.518c-.301-.15-1.785-.885-2.062-.986-.277-.1-.478-.15-.678.15-.201.301-.778.986-.954 1.187-.176.201-.351.226-.653.076-1.609-.816-2.73-1.637-3.784-3.411-.176-.301.176-.277.453-.827.076-.15-.038-.277-.038-.427-.076-.15-.678-1.631-.929-2.233-.251-.602-.502-.527-.678-.527-.176 0-.377 0-.578 0-.201 0-.527.076-.803.427-.276.351-1.054 1.028-1.054 2.508 0 1.48 1.079 2.91 1.229 3.111.15.201 2.133 3.262 5.169 4.566.726.301 1.28.478 1.731.628.728.227 1.381.194 1.905.118.578-.084 1.785-.728 2.036-1.431.251-.703.251-1.305.176-1.431-.076-.126-.277-.201-.578-.352z"/></svg>
                     Chat on WhatsApp
@@ -863,9 +856,8 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
           </section>
 
         </div>
-        {/* ═══ END LEFT ═══ */}
 
-        {/* ═══ SIDEBAR ═══ */}
+        {/* SIDEBAR */}
         <aside style={{minWidth:0}}>
           <div className="sidebar-sticky" style={{display:'flex',flexDirection:'column',gap:14}}>
 
@@ -888,7 +880,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
             <EMICalc priceStr={price} onApply={()=>setModal('apply')} />
 
             {/* Site visit */}
-            <div style={{background:'linear-gradient(135deg,var(--navy),var(--navy-mid))',borderRadius:var(--r-card),padding:'1.375rem',textAlign:'center',border:'1px solid rgba(200,134,10,.15)'}}>
+            <div style={{background:'linear-gradient(135deg,var(--navy),var(--navy-mid))',borderRadius:'var(--r-card)',padding:'1.375rem',textAlign:'center',border:'1px solid rgba(200,134,10,.15)'}}>
               <div style={{fontSize:'.55rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.2em',color:'rgba(200,134,10,.82)',marginBottom:6}}>Free Service</div>
               <p style={{fontSize:'.8rem',fontWeight:600,color:'#fff',marginBottom:14,lineHeight:1.5}}>Book a Guided Site Visit</p>
               <a href={`tel:${CALL}`} style={{display:'inline-flex',alignItems:'center',gap:8,background:'rgba(255,255,255,.08)',border:'1px solid rgba(255,255,255,.18)',borderRadius:999,padding:'9px 20px',fontSize:'.65rem',fontWeight:700,color:'#fff',textTransform:'uppercase',letterSpacing:'.12em',transition:'background .18s'}} className="hover:bg-white/15">📞 {CALL}</a>
@@ -896,7 +888,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
 
           </div>
         </aside>
-        {/* ═══ END SIDEBAR ═══ */}
 
       </div>
 
@@ -914,10 +905,8 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
         </div>
       )}
 
-      {/* FOOTER */}
       <Footer navTo={navTo} setLegal={setLegal} />
 
-      {/* RERA FOOTNOTE */}
       {rera && (
         <div style={{background:'#030810',borderTop:'1px solid rgba(200,134,10,.1)',padding:'12px 24px'}}>
           <div style={{maxWidth:'72rem',margin:'0 auto',display:'flex',flexDirection:'column',gap:6}} className="md:flex-row md:items-center md:gap-8">
@@ -932,7 +921,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
         </div>
       )}
 
-      {/* MODAL */}
       {modal && (
         <LeadModal
           title={modalTitles[modal]||'Get in Touch'}
@@ -945,7 +933,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
           }}
         />
       )}
-      {/* LEGAL */}
       {legal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 anim-fadeIn" style={{background:'rgba(7,14,29,.88)',backdropFilter:'blur(6px)'}} onClick={()=>setLegal(null)}>
           <div className="card" style={{maxWidth:600,width:'100%',maxHeight:'80vh',overflowY:'auto',padding:'2.25rem',position:'relative'}} onClick={e=>e.stopPropagation()}>
@@ -1184,7 +1171,7 @@ function App() {
     </>);
 
     if(page==='advisor') return mkPage(<>
-      <div className="card" style={{padding:'2.5rem',display:'grid',gridTemplateColumns:'1fr',gap:'2.5rem',alignItems:'center'}} className="md:grid-cols-2">
+      <div className="card md:grid-cols-2" style={{padding:'2.5rem',display:'grid',gridTemplateColumns:'1fr',gap:'2.5rem',alignItems:'center'}}>
         <div>
           {secHead('Your Expert','Meet Tharun','Lead Luxury Advisor')}
           <div style={{color:'var(--muted)',fontSize:'.875rem',lineHeight:1.88,display:'flex',flexDirection:'column',gap:'1rem',marginBottom:'1.5rem'}}>
@@ -1307,7 +1294,7 @@ function App() {
         {secHead('Knowledge Hub','Real Estate Insights','Expert guides for Bengaluru property buyers')}
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:'1.25rem'}}>
           {BLOGS.map(b=>(
-            <div key={b.id} onClick={()=>{setActiveBlog(b);window.scrollTo(0,0);}} style={{background:'var(--white)',border:'1px solid var(--border)',borderRadius:var(--r-card),overflow:'hidden',cursor:'pointer',transition:'box-shadow .25s,transform .25s'}} className="hover:shadow-lg hover:-translate-y-1">
+            <div key={b.id} onClick={()=>{setActiveBlog(b);window.scrollTo(0,0);}} style={{background:'var(--white)',border:'1px solid var(--border)',borderRadius:'var(--r-card)',overflow:'hidden',cursor:'pointer',transition:'box-shadow .25s,transform .25s'}} className="hover:shadow-lg hover:-translate-y-1">
               <div style={{padding:'1.5rem',flexGrow:1}}>
                 <span style={{display:'inline-block',background:'linear-gradient(135deg,var(--teal),var(--navy))',color:'#fff',fontSize:'.54rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.14em',padding:'4px 12px',borderRadius:999,marginBottom:'1rem'}}>{b.tag}</span>
                 <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.1rem',fontWeight:700,fontStyle:'italic',color:'var(--navy)',lineHeight:1.32,marginBottom:10}}>{b.title}</h2>
@@ -1336,7 +1323,7 @@ function App() {
   return (
     <div style={{minHeight:'100vh',display:'flex',flexDirection:'column'}}>
 
-      {/* ── STICKY NAV ── */}
+      {/* STICKY NAV */}
       <div className="sticky top-0 z-40" style={{boxShadow:'0 4px 24px rgba(7,14,29,.22)'}}>
         <nav style={{background:'linear-gradient(135deg,#040A14,#070E1D)',padding:'0 1.5rem',height:56,display:'flex',alignItems:'center',justifyContent:'space-between',gap:'1rem'}}>
           <div style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.35rem',fontWeight:700,fontStyle:'italic',color:'#fff',textTransform:'uppercase',letterSpacing:'-.01em',cursor:'pointer',flexShrink:0,transition:'color .18s'}} className="hover:text-yellow-300" onClick={()=>navTo('home')}>Perfect Horizons</div>
@@ -1379,7 +1366,7 @@ function App() {
           </div>
         </nav>
 
-        {/* Partners marquee + filters — only on home */}
+        {/* Partners marquee + filters */}
         {page==='home' && (
           <>
             <div style={{background:'#fff',borderBottom:'1px solid var(--border)',padding:'8px 0'}}>
@@ -1393,7 +1380,6 @@ function App() {
             {/* Filter bar */}
             <div className="filter-bar" style={{padding:'10px 1.5rem'}}>
               <div style={{maxWidth:'72rem',margin:'0 auto'}}>
-                {/* Mobile search */}
                 {mobileSearch && (
                   <div style={{position:'relative',marginBottom:10}}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'var(--muted)',pointerEvents:'none'}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -1403,7 +1389,6 @@ function App() {
                     />
                   </div>
                 )}
-                {/* Mobile filter toggle */}
                 <div className="md:hidden flex justify-between items-center" style={{height:28}}>
                   <span style={{fontSize:'.58rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--muted)'}}>Property Finder</span>
                   <button onClick={()=>setMobileFilter(v=>!v)} style={{display:'flex',alignItems:'center',gap:6,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--teal)',background:'none',border:'none',cursor:'pointer',minHeight:44}}>
@@ -1411,7 +1396,6 @@ function App() {
                     Filters {mobileFilter?'▲':'▼'}
                   </button>
                 </div>
-                {/* Selects */}
                 <div className={`${mobileFilter?'grid':'hidden'} md:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-2 md:mt-0`}>
                   {selects.map(s=>(
                     <select key={s.k} className="ph-select" style={{width:'100%',background:'#fff',padding:'9px 12px',fontSize:'.72rem',fontWeight:600,color:'var(--navy)',cursor:'pointer',minHeight:44}}
@@ -1467,19 +1451,19 @@ function App() {
         )}
       </div>
 
-      {/* ── HOME: hidden H1 for SEO (single H1 per page) ── */}
-      <h1 style={{position:'absolute',opacity:0,pointerEvents:'none',height:0,overflow:'hidden',fontSize:0}}>
-        Curated Properties in Bengaluru — Perfect Horizons Real Estate Advisory
+      {/* SEO H1 — visually hidden, single H1 on homepage */}
+      <h1 style={{position:'absolute',width:1,height:1,padding:0,margin:-1,overflow:'hidden',clip:'rect(0,0,0,0)',whiteSpace:'nowrap',border:0}}>
+        Trusted Real Estate Advisory in Bengaluru — Perfect Horizons
       </h1>
 
-      {/* ── GIT SIDEBAR BTN ── */}
+      {/* GET IN TOUCH SIDEBAR BTN */}
       <div className="git-btn" onClick={()=>setShowLead(true)}>Get in Touch</div>
 
-      {/* ── MAIN ── */}
+      {/* MAIN */}
       <main style={{maxWidth:'72rem',margin:'0 auto',padding:'1.5rem',flexGrow:1,width:'100%'}}>
 
-        {/* Curation promise */}
-        <div style={{background:'linear-gradient(135deg,var(--navy),var(--navy-mid))',borderRadius:var(--r-card),padding:'1.5rem 1.75rem',marginBottom:'1.75rem',border:'1px solid rgba(200,134,10,.18)',boxShadow:'var(--sh-md)',display:'flex',flexDirection:'column',gap:'1rem'}} className="md:flex-row md:items-center md:gap-6">
+        {/* Curation promise banner */}
+        <div style={{background:'linear-gradient(135deg,var(--navy),var(--navy-mid))',borderRadius:'var(--r-card)',padding:'1.5rem 1.75rem',marginBottom:'1.75rem',border:'1px solid rgba(200,134,10,.18)',boxShadow:'var(--sh-md)',display:'flex',flexDirection:'column',gap:'1rem'}} className="md:flex-row md:items-center md:gap-6">
           <div style={{flexShrink:0}}>
             <div style={{fontSize:'.52rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.22em',color:'rgba(200,134,10,.88)',marginBottom:4}}>Our Curation Promise</div>
             <div style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.2rem',fontWeight:700,fontStyle:'italic',color:'#fff',lineHeight:1.22}}>We Don't Show Everything</div>
@@ -1496,7 +1480,7 @@ function App() {
           <p className="hidden md:block" style={{fontSize:'.56rem',fontWeight:600,color:'rgba(255,255,255,.38)',textTransform:'uppercase',letterSpacing:'.1em',lineHeight:1.65,flexShrink:0,textAlign:'center'}}>Only properties we'd<br/>recommend to family</p>
         </div>
 
-        {/* Grid */}
+        {/* Property Grid */}
         {loading ? (
           <div style={{textAlign:'center',paddingTop:'5rem',paddingBottom:'5rem',color:'var(--teal)',fontWeight:700,fontSize:'.82rem',textTransform:'uppercase',letterSpacing:'.16em'}}>
             <div style={{fontSize:'2.5rem',marginBottom:'1rem',animation:'pulseSlow 1s ease-in-out infinite',display:'inline-block'}}>🏗️</div>
@@ -1516,12 +1500,26 @@ function App() {
           </div>
         )}
 
-        {/* SEO text block */}
-        <div style={{marginTop:'3rem',background:'var(--white)',border:'1px solid var(--border)',borderRadius:var(--r-card),padding:'2rem'}}>
-          <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.3rem',fontWeight:700,fontStyle:'italic',color:'var(--navy)',marginBottom:'1rem'}}>Trusted Property Advisory in Bengaluru</h2>
-          <p style={{color:'var(--muted)',fontSize:'.82rem',lineHeight:1.85,maxWidth:'56rem'}}>
-            Perfect Horizons is an independent real estate advisory that curates verified apartments, villas, and plots across Bengaluru's key corridors — Electronic City, Sarjapur Road, Whitefield, Chandapura, and more. We are an authorized channel partner for leading builders including Prestige, Brigade, Sobha, Godrej, and Embassy, offering free, unbiased guidance to home buyers. Our promise: we reject projects with legal issues, poor construction quality, or weak long-term value — so you don't waste weekends on the wrong site visits. Talk to Tharun, our lead advisor, for a no-obligation consultation.
-          </p>
+        {/* SEO content block — expanded for better rankings */}
+        <div style={{marginTop:'3rem',background:'var(--white)',border:'1px solid var(--border)',borderRadius:'var(--r-card)',padding:'2rem 2.25rem'}}>
+          <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.4rem',fontWeight:700,fontStyle:'italic',color:'var(--navy)',marginBottom:'1.25rem',borderLeft:'3px solid var(--gold)',paddingLeft:'1rem'}}>Why Choose Perfect Horizons?</h2>
+          <div style={{display:'grid',gridTemplateColumns:'1fr',gap:'1rem',color:'var(--muted)',fontSize:'.855rem',lineHeight:1.9,maxWidth:'60rem'}} className="md:grid-cols-2">
+            <div>
+              <p style={{marginBottom:'.75rem'}}><strong style={{color:'var(--navy)'}}>Perfect Horizons</strong> is an independent real estate advisory helping Bengaluru homebuyers discover curated, RERA-verified apartments, villas, and plots across the city's most in-demand corridors — Electronic City, Sarjapur Road, Whitefield, Chandapura, Budigere Cross, and North Bengaluru.</p>
+              <p style={{marginBottom:'.75rem'}}>We are an authorized channel partner for leading builders including Prestige, Brigade, Sobha, Godrej, Embassy, Assetz, and more — giving you access to the best projects at builder-direct pricing with no hidden costs.</p>
+              <p>Our promise is simple: we evaluate dozens of projects before listing a single one. If a project has legal concerns, a poor builder track record, inflated pricing, or weak resale potential, we walk away — so you don't have to waste weekends on wrong site visits.</p>
+            </div>
+            <div>
+              <p style={{marginBottom:'.75rem'}}><strong style={{color:'var(--navy)'}}>What makes us different?</strong> Unlike most agents who push whatever project offers the highest brokerage, we operate on a strict curation model. Every property listed on Perfect Horizons has passed our internal evaluation for legal clarity, construction quality, builder credibility, and long-term value.</p>
+              <p style={{marginBottom:'.75rem'}}>We also offer <strong style={{color:'var(--navy)'}}>free home loan assistance</strong>, connecting you with SBI, HDFC, ICICI, Axis, and other lenders to secure the most competitive rate. And our guided site visits mean you're never alone in making one of the biggest decisions of your life.</p>
+              <p>Talk to <strong style={{color:'var(--navy)'}}>Tharun</strong>, our lead advisor, for a completely free, no-obligation consultation. Call or WhatsApp <strong style={{color:'var(--navy)'}}>+91 {CALL}</strong> — Mon to Sat, 9 AM to 8 PM.</p>
+            </div>
+          </div>
+          <div style={{marginTop:'1.5rem',paddingTop:'1.25rem',borderTop:'1px solid var(--border)',display:'flex',flexWrap:'wrap',gap:8}}>
+            {['Electronic City','Sarjapur Road','Whitefield','Chandapura','Budigere Cross','Hebbal','Devanahalli','HSR Layout','Marathahalli','Yelahanka'].map((area,i)=>(
+              <span key={i} style={{background:'var(--parch)',border:'1px solid var(--border)',borderRadius:8,padding:'5px 12px',fontSize:'.62rem',fontWeight:600,color:'var(--navy)'}}>📍 {area}</span>
+            ))}
+          </div>
         </div>
       </main>
 
