@@ -703,7 +703,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
       </div>
 
       {/* ANCHOR NAV */}
-      <div className="anchor-nav fixed z-40" style={{top:54,left:0,right:0,background:'var(--white)',borderBottom:'1px solid var(--border)',boxShadow:'0 2px 8px rgba(7,14,29,.05)'}}
+      <div className="anchor-nav fixed z-40" style={{top:54,left:0,right:0,background:'var(--white)',borderBottom:'1px solid var(--border)',boxShadow:'0 2px 8px rgba(7,14,29,.05)'}}>
         <div style={{maxWidth:'72rem',margin:'0 auto',display:'flex',overflowX:'auto',padding:'0 1rem'}} className="hide-scroll">
           {tabs.map(t=>(
             <button key={t.k} onClick={()=>scrollTo(t.k)} className={`anchor-tab ${activeTab===t.k?'active':''}`}>{t.lbl}</button>
@@ -1558,4 +1558,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
 </html>
-
