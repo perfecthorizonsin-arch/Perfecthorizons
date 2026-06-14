@@ -514,7 +514,7 @@ function PropCard({ p, idx, onClick }) {
   const builder= gv(p,'Builder Name')||'Premium Builder';
   const loc    = gv(p,'Location')||'Bengaluru';
   const price  = gv(p,'Price')||'On Request';
-  const bhk    = gv(p,'No of BHK\'s')||gv(p,'bhk');
+  const bhk    = (() => { const b = gv(p,'No of BHK\'s')||gv(p,'bhk'); if(!b) return null; const s = String(b).trim(); const m = s.match(/^(\d+(?:\.\d+)?)\s*BHK$/i); return m ? m[1] + ' BHK' : s; })();
   const status = gv(p,'Construction Status')||'';
   const type   = gv(p,'Property Type')||'Apartment';
   const img    = fixImg(gv(p,'Cover Image')||gv(p,'cover_image'));
@@ -544,7 +544,7 @@ function PropCard({ p, idx, onClick }) {
         </div>
         <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:'auto'}}>
           {status && <span className="badge" style={{background:sc.bg,color:sc.cl}}>{status}</span>}
-          {bhk && <span className="badge badge-default">{bhk} BHK</span>}
+          {bhk && <span className="badge badge-default">{bhk.includes('BHK') ? bhk : bhk + ' BHK'}</span>}
         </div>
         <button className="btn-gold w-full" style={{marginTop:14,fontSize:'.62rem',padding:'11px 0'}}>View Details →</button>
       </div>
@@ -693,7 +693,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
       {/* STATS BAR */}
       <div style={{background:'var(--navy)'}}>
         <div style={{maxWidth:'72rem',margin:'0 auto',display:'grid',gridTemplateColumns:'repeat(4,1fr)'}}>
-          {[{lbl:'Configuration',val:bhk?`${bhk} BHK`:'—'},{lbl:'Possession',val:poss||'—'},{lbl:'Approval',val:rera?`${appr||'RERA'}`:(appr||'—')},{lbl:'Starting Price',val:price||'On Request'}].map((s,i)=>(
+          {[              {lbl:'Configuration',val:bhk?(bhk.includes('BHK')?bhk:`${bhk} BHK`):'—'},{lbl:'Possession',val:poss||'—'},{lbl:'Approval',val:rera?`${appr||'RERA'}`:(appr||'—')},{lbl:'Starting Price',val:price||'On Request'}].map((s,i)=>(
             <div key={i} style={{padding:'14px 18px',borderRight:i<3?'1px solid rgba(255,255,255,.07)':undefined}}>
               <div style={{fontSize:'.5rem',fontWeight:700,color:'rgba(200,134,10,.72)',textTransform:'uppercase',letterSpacing:'.2em',marginBottom:3}}>{s.lbl}</div>
               <div style={{fontSize:'.8rem',fontWeight:700,color:'#fff'}}>{s.val}</div>
@@ -747,7 +747,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               : <p style={{color:'var(--muted)',fontSize:'.875rem'}}>Details coming soon. Contact our advisor for a complete project brief.</p>
             }
             <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10,marginTop:'1.5rem',paddingTop:'1.25rem',borderTop:'1px solid var(--border)'}}>
-              {[{l:'Configurations',v:bhk?`${bhk} BHK`:'—'},{l:'Possession',v:poss||'—'},{l:'Property Type',v:gv(p,'Property Type')||'—'},{l:'Approval',v:rera?`${appr||'RERA'} · ${rera}`:(appr||'—')}].map((s,i)=>(
+              {[              {l:'Configurations',v:bhk?(bhk.includes('BHK')?bhk:`${bhk} BHK`):'—'},{l:'Possession',v:poss||'—'},{l:'Property Type',v:gv(p,'Property Type')||'—'},{l:'Approval',v:rera?`${appr||'RERA'} · ${rera}`:(appr||'—')}].map((s,i)=>(
                 <div key={i} className="stat-box">
                   <div className="stat-box-label">{s.l}</div>
                   <div className="stat-box-val">{s.v}</div>
@@ -999,6 +999,14 @@ function App() {
   const [mobServices, setMobServices]= useState(false);
   const [activeBlog, setActiveBlog]= useState(null);
   const [legal, setLegal]         = useState(null);
+  const [curPromiseOpen, setCurPromiseOpen] = useState(true);
+
+  const parseBhk = (bhkStr) => {
+    if(!bhkStr) return null;
+    const s = String(bhkStr).trim();
+    const m = s.match(/^(\d+(?:\.\d+)?)\s*BHK$/i);
+    return m ? m[1] + ' BHK' : s;
+  };
 
   useEffect(()=>{
     const initial = window.location.hash.replace('#','');
@@ -1056,7 +1064,7 @@ function App() {
     return props.filter(p=>{
       if(!p||typeof p!=='object')return false;
       const ms=!t||[gv(p,'Property Name'),gv(p,'Location'),gv(p,'Builder Name')].some(v=>String(v).toLowerCase().includes(t));
-      const mb=!filters.bhk||String(gv(p,"No of BHK's")||gv(p,'bhk')).includes(filters.bhk);
+      const mb=!filters.bhk||String(gv(p,"No of BHK's")||gv(p,'bhk')).replace(/\s*BHK/i, '').includes(filters.bhk);
       const mst=!filters.status||String(gv(p,'Construction Status')).includes(filters.status);
       const mty=!filters.type||String(gv(p,'Property Type')).includes(filters.type);
       const cr=priceInCr(gv(p,'Price'));
