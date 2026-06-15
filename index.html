@@ -56,7 +56,9 @@
   --r-card:    20px;
   --r-btn:     12px;
   --nav-h:     56px;
-  --anchor-h:  48px;
+  --filter-h:  56px;
+  --partners-h: 56px;
+  --sticky-total: 112px; /* nav + filter */
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -83,11 +85,6 @@ html,body{width:100%;overflow-x:hidden}
 .marquee-track{display:flex;white-space:nowrap;animation:marquee 22s linear infinite}
 .marquee-wrap:hover .marquee-track{animation-play-state:paused}
 
-/* ── Auto-sliding gallery ── */
-@keyframes autoSlide{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
-.gallery-auto-slide{animation:autoSlide 5s ease-in-out infinite}
-.gallery-auto-slide.paused{animation-play-state:paused}
-
 /* ── Buttons ── */
 .btn-gold{background:linear-gradient(135deg,#B8720A,#DA9610);color:#fff;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:var(--r-btn);border:none;cursor:pointer;transition:transform .18s,box-shadow .18s,filter .18s;box-shadow:0 4px 16px rgba(184,114,10,.32)}
 .btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(184,114,10,.42);filter:brightness(1.05)}
@@ -97,7 +94,7 @@ html,body{width:100%;overflow-x:hidden}
 .btn-dark{background:var(--navy);color:#fff;font-weight:700;border-radius:var(--r-btn);border:none;cursor:pointer;transition:opacity .18s}
 .btn-dark:hover{opacity:.82}
 
-/* ── PROPERTY CARD — equal height grid ── */
+/* ── PROPERTY CARD ── */
 .prop-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden;cursor:pointer;transition:transform .32s cubic-bezier(.22,.68,0,1.1),box-shadow .32s;box-shadow:var(--sh-sm);display:flex;flex-direction:column;height:100%}
 .prop-card:hover{transform:translateY(-8px);box-shadow:0 28px 64px rgba(7,14,29,.18)}
 .prop-card:hover .card-img{transform:scale(1.08)}
@@ -114,19 +111,9 @@ html,body{width:100%;overflow-x:hidden}
 .card-location{display:flex;align-items:center;gap:5px;font-size:.62rem;font-weight:600;color:var(--muted);margin-bottom:12px}
 .card-meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .card-chip{display:inline-flex;align-items:center;gap:4px;background:var(--parch);border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:.56rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.08em}
-/* CTA always at bottom */
 .card-cta-wrap{padding:0 16px 16px;margin-top:auto}
 .card-cta{width:100%;padding:11px;background:linear-gradient(135deg,rgba(184,114,10,.08),rgba(218,150,16,.08));border:1.5px solid var(--gold);border-radius:10px;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);cursor:pointer;transition:all .22s;text-align:center;display:block}
 .prop-card:hover .card-cta{background:linear-gradient(135deg,#B8720A,#DA9610);color:#fff;border-color:transparent}
-
-/* ── Mobile property card simplification ── */
-@media(max-width:767px){
-  .card-img-overlay{display:none}
-  .card-type-tag{display:none}
-  .card-status-dot{display:none}
-  .card-price-badge{display:none}
-  .card-img-wrap{height:260px}
-}
 
 /* ── Cards ── */
 .card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--sh-sm)}
@@ -139,7 +126,39 @@ html,body{width:100%;overflow-x:hidden}
 .badge-default{background:var(--parch);color:var(--muted)}
 .badge-rera{background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;font-size:.58rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;word-break:break-all;line-height:1.4}
 
-/* ── Nav ── */
+/* ── STICKY HEADER SYSTEM ── */
+/* The sticky wrapper holds nav + filters together */
+.sticky-top-block{
+  position:sticky;
+  top:0;
+  z-index:50;
+  width:100%;
+}
+.sticky-top-block .ph-main-nav{
+  background:linear-gradient(135deg,#040A14,#070E1D);
+  height:var(--nav-h);
+  display:flex;
+  align-items:center;
+  padding:0 1.5rem;
+  justify-content:space-between;
+  gap:1rem;
+  box-shadow:0 2px 0 rgba(200,134,10,.08);
+}
+.sticky-top-block .ph-filter-bar{
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  padding:10px 1.5rem;
+  box-shadow:0 4px 16px rgba(7,14,29,.08);
+}
+/* Shadow only on the whole sticky block bottom */
+.sticky-top-block::after{
+  content:'';
+  display:block;
+  height:0;
+  box-shadow:0 6px 24px rgba(7,14,29,.14);
+}
+
+/* Nav links */
 .nav-link{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.65);cursor:pointer;padding:4px 0;position:relative;transition:color .18s}
 .nav-link:hover,.nav-link.active{color:#FCD34D}
 .nav-link.active::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:2px;background:var(--gold);border-radius:1px}
@@ -155,16 +174,34 @@ html,body{width:100%;overflow-x:hidden}
 .caret{display:inline-block;margin-left:4px;width:0;height:0;vertical-align:middle;border-top:4px solid currentColor;border-right:4px solid transparent;border-left:4px solid transparent;transition:transform .22s}
 .dd-group:hover .caret{transform:rotate(180deg)}
 
-/* ── Sticky nav (search + filters only, not partners) ── */
-.sticky-nav-home{position:sticky;top:0;z-index:45;box-shadow:0 4px 24px rgba(7,14,29,.22);background:var(--white)}
-
-/* ── Filter bar ── */
-.filter-bar{background:var(--white);border-bottom:1px solid var(--border);position:relative;z-index:44}
+/* Filter bar selects */
 .ph-select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23334155' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px!important;cursor:pointer;border:1.5px solid var(--border);border-radius:10px;font-family:'Inter',sans-serif;transition:border-color .18s,box-shadow .18s}
 .ph-select:hover{border-color:var(--gold)}
 .ph-select:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(26,68,128,.1);outline:none}
 
-/* ── Detail page ── */
+/* Detail page top bar offset */
+.detail-topbar{
+  position:fixed;
+  top:0;left:0;right:0;
+  z-index:50;
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  box-shadow:var(--sh-sm);
+  height:54px;
+}
+.detail-anchor-nav{
+  position:fixed;
+  top:54px;left:0;right:0;
+  z-index:49;
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  box-shadow:0 2px 8px rgba(7,14,29,.05);
+}
+.anchor-tab{padding:14px 20px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;transition:color .18s,border-color .18s}
+.anchor-tab:hover{color:var(--navy)}
+.anchor-tab.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+/* ── Detail page sections ── */
 .section-block{background:var(--white);border:1px solid var(--border);border-radius:var(--r-card);padding:2rem;box-shadow:var(--sh-sm)}
 .section-label{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.22em;color:var(--muted);margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
 .stat-box{padding:.875rem 1.125rem;background:var(--parch);border-radius:12px;border:1px solid var(--border)}
@@ -174,12 +211,6 @@ html,body{width:100%;overflow-x:hidden}
 .amenity-chip:hover{border-color:var(--gold);background:var(--gold-lt)}
 .highlight-row{display:flex;align-items:flex-start;gap:12px;padding:.75rem 0;border-bottom:1px solid var(--border);font-size:.82rem;font-weight:500;color:var(--navy);line-height:1.65}
 .highlight-row:last-child{border-bottom:none}
-
-/* ── Anchor tab nav ── */
-.anchor-nav{background:var(--white);border-bottom:1px solid var(--border);box-shadow:0 2px 8px rgba(7,14,29,.05)}
-.anchor-tab{padding:14px 20px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;transition:color .18s,border-color .18s}
-.anchor-tab:hover{color:var(--navy)}
-.anchor-tab.active{color:var(--navy);border-bottom-color:var(--gold)}
 
 /* ── Floor plan lock ── */
 .fp-lock-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(7,14,29,.35);backdrop-filter:blur(3px);border-radius:14px;cursor:pointer;z-index:5;transition:background .2s}
@@ -223,7 +254,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);box-shadow:0
 .mob-accordion{max-height:0;overflow:hidden;transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .25s;opacity:0}
 .mob-accordion.open{max-height:280px;opacity:1}
 
-/* ── Gallery swipe ── */
+/* ── Gallery ── */
 .gallery-swipe{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;padding-bottom:4px;-webkit-overflow-scrolling:touch}
 .gallery-swipe::-webkit-scrollbar{height:3px}
 .gallery-swipe::-webkit-scrollbar-track{background:var(--parch)}
@@ -272,15 +303,18 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);box-shadow:0
 .location-grid{display:grid;grid-template-columns:1fr;gap:1.25rem}
 @media(min-width:768px){.location-grid{grid-template-columns:1fr 1fr}}
 
-/* ── Mobile ── */
+/* ── Partners (non-sticky, normal flow) ── */
+.partners-bar{background:#fff;border-bottom:1px solid var(--border);border-top:1px solid var(--border);padding:8px 0}
+
+/* ── Auto-sliding gallery ── */
+@keyframes galSlide{0%{opacity:0;transform:scale(1.03)}8%{opacity:1;transform:scale(1)}92%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1)}}
+
+/* Mobile card — cleaner header */
 @media(max-width:767px){
   .ph-select{min-height:46px;font-size:.78rem!important}
   .section-block{padding:1.25rem}
   .anchor-tab{padding:12px 14px;font-size:.58rem}
 }
-
-/* ── Partners (non-sticky, normal flow) ── */
-.partners-bar{background:#fff;border-bottom:1px solid var(--border);border-top:1px solid var(--border);padding:8px 0}
 </style>
 </head>
 <body>
@@ -300,7 +334,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);box-shadow:0
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useEffect, useMemo, useRef, useCallback } = React;
+const { useState, useEffect, useMemo, useRef, useCallback, useInterval } = React;
 
 /* ── Constants ── */
 const WA = "919113261205";
@@ -338,20 +372,16 @@ const fmtInr = n => { if(n>=10000000)return'₹'+(n/10000000).toFixed(2).replace
 const mapEmbed = link => { if(!link)return null; const l=String(link).trim(); if(!l||l==='#')return null; if(l.includes('maps/embed'))return l; try{ const m=l.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/); if(m)return`https://maps.google.com/maps?q=${m[1]},${m[2]}&z=16&output=embed`; const u=new URL(l.startsWith('http')?l:'https://'+l); let q=u.searchParams.get('q')||u.searchParams.get('query')||''; if(!q){const pm=l.match(/\/maps\/place\/([^/@?]+)/);if(pm)q=decodeURIComponent(pm[1].replace(/\+/g,' '))} if(q)return`https://maps.google.com/maps?q=${encodeURIComponent(q)}&z=15&output=embed`; }catch{} return`https://maps.google.com/maps?q=${encodeURIComponent('Bengaluru, Karnataka')}&z=13&output=embed`; };
 const statusStyle = s => { const v=String(s).toLowerCase(); if(v.includes('ready'))return{bg:'#DCFCE7',cl:'#166534'}; if(v.includes('under'))return{bg:'#FEF3C7',cl:'#92400E'}; if(v.includes('new')||v.includes('launch')||v.includes('pre'))return{bg:'#EFF6FF',cl:'#1E40AF'}; return{bg:'#F1F5F9',cl:'#475569'}; };
 
-/* ── Slug generation for clean URLs ── */
+/* ── Slug generation ── */
 const slugify = str => String(str||'').toLowerCase().replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-');
-const propSlug = p => {
-  const name = gv(p,'Property Name');
-  const loc  = gv(p,'Location');
-  return slugify(`${name}${loc?' '+loc:''}`);
-};
+const propSlug = p => { const name=gv(p,'Property Name'); const loc=gv(p,'Location'); return slugify(`${name}${loc?' '+loc:''}`); };
 const propPath = p => `/property/${propSlug(p)}`;
 
 /* ── History API routing ── */
 const pushRoute = (path) => { window.history.pushState({path},'',path); };
 const replaceRoute = (path) => { window.history.replaceState({path},'',path); };
 
-/* ── Update SEO meta tags dynamically ── */
+/* ── Update SEO meta tags ── */
 const updateMeta = ({title,desc,url,schema}) => {
   document.title = title;
   const setMeta = (id,v) => { const el=document.getElementById(id); if(el)el.content=v; };
@@ -362,7 +392,7 @@ const updateMeta = ({title,desc,url,schema}) => {
   if(sd && schema) sd.textContent = JSON.stringify(schema);
 };
 
-/* ── WhatsApp SVG (official logo) ── */
+/* ── WhatsApp SVG ── */
 const WASvg = ({size=26,color="#fff"}) => (
   <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path fillRule="evenodd" clipRule="evenodd" d="M24 4C12.954 4 4 12.954 4 24c0 3.6.96 6.98 2.64 9.9L4 44l10.34-2.6A19.9 19.9 0 0024 44c11.046 0 20-8.954 20-20S35.046 4 24 4z" fill={color} fillOpacity=".15"/>
@@ -371,15 +401,199 @@ const WASvg = ({size=26,color="#fff"}) => (
 );
 
 /* ══════════════════════════════════════════════════════════
-   EMI CALCULATOR — defaults to full property price
+   AUTO-SLIDING GALLERY COMPONENT
+   - Auto-advances every 4 seconds
+   - Pauses on hover/touch interaction
+   - Manual navigation always available
+   - Lightbox on click
+══════════════════════════════════════════════════════════ */
+function Gallery({ images, propName }) {
+  const [active, setActive] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const timerRef = useRef(null);
+  const touchStartX = useRef(null);
+
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+
+  // Auto-slide
+  useEffect(() => {
+    if(images.length <= 1 || paused || lightbox) return;
+    timerRef.current = setInterval(() => {
+      setActive(a => (a + 1) % images.length);
+    }, 4000);
+    return () => clearInterval(timerRef.current);
+  }, [images.length, paused, lightbox]);
+
+  const prev = useCallback(() => { setActive(a => (a - 1 + images.length) % images.length); }, [images.length]);
+  const next = useCallback(() => { setActive(a => (a + 1) % images.length); }, [images.length]);
+
+  const goTo = useCallback((i) => {
+    setActive(i);
+    setPaused(true);
+    setTimeout(() => setPaused(false), 6000);
+  }, []);
+
+  const handleManualNav = useCallback((fn) => {
+    fn();
+    setPaused(true);
+    setTimeout(() => setPaused(false), 6000);
+  }, []);
+
+  // Touch swipe
+  const onTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; setPaused(true); };
+  const onTouchEnd = (e) => {
+    if(touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if(Math.abs(dx) > 40) { dx < 0 ? next() : prev(); }
+    touchStartX.current = null;
+    setTimeout(() => setPaused(false), 6000);
+  };
+
+  // Keyboard for lightbox
+  useEffect(() => {
+    if(!lightbox) return;
+    const handler = e => {
+      if(e.key==='ArrowLeft') prev();
+      if(e.key==='ArrowRight') next();
+      if(e.key==='Escape') setLightbox(false);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [lightbox, prev, next]);
+
+  if(!images.length) return null;
+
+  return (
+    <div>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+        <span style={{fontSize:'.58rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.2em',color:'var(--muted)'}}>Gallery</span>
+        <span style={{background:'var(--parch)',border:'1px solid var(--border)',padding:'2px 8px',borderRadius:999,fontSize:'.54rem',fontWeight:700,color:'var(--muted)'}}>{images.length} Photos</span>
+        {images.length > 1 && (
+          <span style={{marginLeft:'auto',fontSize:'.52rem',fontWeight:600,color:'var(--muted)',background:'var(--parch)',padding:'2px 8px',borderRadius:999}}>
+            {paused ? '⏸ Paused' : '▶ Auto'}
+          </span>
+        )}
+      </div>
+
+      {/* Main slide area */}
+      <div
+        style={{position:'relative',borderRadius:12,overflow:'hidden',cursor:'pointer',aspectRatio:'16/9',background:'var(--parch)',userSelect:'none'}}
+        onMouseEnter={()=>setPaused(true)}
+        onMouseLeave={()=>setPaused(false)}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        onClick={()=>setLightbox(true)}
+      >
+        {images.map((img, i) => (
+          <img
+            key={i}
+            src={img}
+            loading={i === 0 ? 'eager' : 'lazy'}
+            decoding="async"
+            alt={`${propName} — photo ${i+1}`}
+            style={{
+              position:'absolute',inset:0,
+              width:'100%',height:'100%',
+              objectFit:'cover',
+              display:'block',
+              opacity: active === i ? 1 : 0,
+              transition:'opacity .6s cubic-bezier(.4,0,.2,1)',
+              pointerEvents: active === i ? 'auto' : 'none',
+            }}
+          />
+        ))}
+
+        {/* Gradient & enlarge hint */}
+        <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(7,14,29,.3),transparent)',pointerEvents:'none'}}/>
+        <div style={{position:'absolute',bottom:10,left:12,pointerEvents:'none'}}>
+          <span style={{fontSize:'.54rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'rgba(255,255,255,.8)',background:'rgba(7,14,29,.5)',padding:'3px 9px',borderRadius:4}}>🔍 Tap to enlarge</span>
+        </div>
+
+        {/* Counter */}
+        {images.length > 1 && (
+          <div style={{position:'absolute',top:10,right:10,background:'rgba(7,14,29,.6)',color:'#fff',fontSize:'.54rem',fontWeight:700,padding:'3px 9px',borderRadius:999,pointerEvents:'none'}}>
+            {active+1}/{images.length}
+          </div>
+        )}
+
+        {/* Prev/Next arrows */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={e=>{e.stopPropagation();handleManualNav(prev);}}
+              style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',background:'rgba(7,14,29,.6)',border:'none',color:'#fff',width:36,height:36,borderRadius:'50%',cursor:'pointer',fontSize:'1rem',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2,backdropFilter:'blur(4px)',transition:'background .18s'}}
+              onMouseEnter={e=>e.currentTarget.style.background='rgba(200,134,10,.7)'}
+              onMouseLeave={e=>e.currentTarget.style.background='rgba(7,14,29,.6)'}
+            >‹</button>
+            <button
+              onClick={e=>{e.stopPropagation();handleManualNav(next);}}
+              style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'rgba(7,14,29,.6)',border:'none',color:'#fff',width:36,height:36,borderRadius:'50%',cursor:'pointer',fontSize:'1rem',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2,backdropFilter:'blur(4px)',transition:'background .18s'}}
+              onMouseEnter={e=>e.currentTarget.style.background='rgba(200,134,10,.7)'}
+              onMouseLeave={e=>e.currentTarget.style.background='rgba(7,14,29,.6)'}
+            >›</button>
+          </>
+        )}
+      </div>
+
+      {/* Dot indicators */}
+      {images.length > 1 && (
+        <div style={{display:'flex',justifyContent:'center',gap:5,marginTop:8,flexWrap:'wrap'}}>
+          {images.map((_,i)=>(
+            <button
+              key={i}
+              onClick={()=>goTo(i)}
+              style={{width:active===i?20:6,height:6,borderRadius:3,background:active===i?'var(--gold)':'var(--border)',border:'none',cursor:'pointer',padding:0,transition:'all .25s ease'}}
+              aria-label={`Go to photo ${i+1}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Thumbnail strip — desktop only */}
+      {!isMobile && images.length > 1 && (
+        <div className="gallery-grid" style={{marginTop:10}}>
+          {images.map((img,i)=>(
+            <div
+              key={i}
+              onClick={()=>goTo(i)}
+              style={{aspectRatio:'4/3',borderRadius:7,overflow:'hidden',cursor:'pointer',border:`2px solid ${active===i?'var(--gold)':'var(--border)'}`,transition:'border-color .18s',background:'var(--parch)'}}
+            >
+              <img src={img} loading="lazy" decoding="async" alt={`${propName} — thumbnail ${i+1}`} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div className="lightbox anim-fadeIn" onClick={()=>setLightbox(false)}>
+          <button onClick={()=>setLightbox(false)} style={{position:'absolute',top:16,right:20,background:'rgba(255,255,255,.1)',border:'none',color:'#fff',fontSize:'1.5rem',lineHeight:1,cursor:'pointer',width:40,height:40,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
+          <img src={images[active]} className="lightbox-img" alt={`${propName} — full view ${active+1}`} onClick={e=>e.stopPropagation()} loading="eager"/>
+          <div className="lightbox-nav" onClick={e=>e.stopPropagation()}>
+            <button className="lightbox-btn" onClick={prev}>‹</button>
+            <span style={{fontSize:'.65rem',fontWeight:700,color:'rgba(255,255,255,.6)',textTransform:'uppercase',letterSpacing:'.12em'}}>{active+1} / {images.length}</span>
+            <button className="lightbox-btn" onClick={next}>›</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   EMI CALCULATOR
 ══════════════════════════════════════════════════════════ */
 function EMICalc({ priceStr, onApply }) {
   const base = (() => { const v=priceInCr(priceStr); return v>0?Math.round(v*10000000):10000000; })();
   const [loan, setLoan] = useState(base);
   const [rate, setRate] = useState(8.5);
   const [yrs, setYrs]   = useState(20);
-
-  // Sync loan when property changes
   useEffect(() => { setLoan(base); }, [base]);
 
   const { emi, totalInt, pPct } = useMemo(() => {
@@ -604,7 +818,7 @@ function StickyBar({ onSubmitLead }) {
 /* ══════════════════════════════════════════════════════════
    PROPERTY CARD
 ══════════════════════════════════════════════════════════ */
-function PropCard({ p, idx, onClick }) {
+function PropCard({ p, idx, onClick, isMobile }) {
   const name    = gv(p,'Property Name')||'Listed Property';
   const builder = gv(p,'Builder Name')||'Premium Builder';
   const loc     = gv(p,'Location')||'Bengaluru';
@@ -617,6 +831,61 @@ function PropCard({ p, idx, onClick }) {
   const img     = fixImg(gv(p,'Cover Image')||gv(p,'cover_image'));
   const sc      = statusStyle(status);
 
+  if(isMobile) {
+    /* ── MOBILE CARD: Clean, image-first, minimal overlay ── */
+    return (
+      <article className="prop-card" onClick={onClick}>
+        {/* Full image — no heavy overlay */}
+        <div className="card-img-wrap" style={{height:200,position:'relative'}}>
+          <img
+            src={img} loading={idx<4?'eager':'lazy'} decoding="async"
+            className="card-img"
+            alt={`${name} by ${builder} — ${type} in ${loc}`}
+            onError={e=>{e.target.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 220%22><rect width=%22400%22 height=%22220%22 fill=%22%23F2EDE3%22/><text x=%22200%22 y=%22110%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2248%22>🏗️</text></svg>'}}
+          />
+          {/* Light scrim at bottom only for price readability */}
+          <div style={{position:'absolute',bottom:0,left:0,right:0,height:'50%',background:'linear-gradient(to top,rgba(7,14,29,.78),transparent)',pointerEvents:'none'}}/>
+          {/* Type tag — small, top-left */}
+          <div style={{position:'absolute',top:8,left:8,background:'rgba(7,14,29,.8)',backdropFilter:'blur(8px)',color:'#FCD34D',fontSize:'.48rem',fontWeight:800,letterSpacing:'.14em',textTransform:'uppercase',padding:'3px 9px',borderRadius:5,border:'1px solid rgba(200,134,10,.3)'}}>
+            {type}
+          </div>
+          {/* Status — top right */}
+          {status && (
+            <div style={{position:'absolute',top:8,right:8}}>
+              <span style={{background:sc.bg,color:sc.cl,fontSize:'.46rem',fontWeight:800,padding:'3px 8px',borderRadius:999,letterSpacing:'.08em',textTransform:'uppercase'}}>{status}</span>
+            </div>
+          )}
+          {/* Price — bottom-left on image */}
+          <div style={{position:'absolute',bottom:10,left:12,zIndex:3}}>
+            <div style={{fontSize:'.44rem',fontWeight:700,color:'rgba(255,255,255,.7)',textTransform:'uppercase',letterSpacing:'.14em',marginBottom:2}}>From</div>
+            <div style={{fontSize:'1.1rem',fontWeight:800,color:'#fff',lineHeight:1,textShadow:'0 2px 8px rgba(0,0,0,.5)'}}>{price}</div>
+          </div>
+          {/* Call button — bottom right on image */}
+          <a
+            href={`tel:${CALL}`}
+            onClick={e=>e.stopPropagation()}
+            style={{position:'absolute',bottom:10,right:12,zIndex:3,display:'flex',alignItems:'center',gap:5,background:'linear-gradient(135deg,#B8720A,#DA9610)',border:'none',borderRadius:8,padding:'7px 12px',fontSize:'.56rem',fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:'.1em',textDecoration:'none',boxShadow:'0 2px 10px rgba(184,114,10,.4)'}}
+          >
+            📞 Call
+          </a>
+        </div>
+        {/* Card body — only essentials */}
+        <div style={{padding:'12px 14px 0',flex:1,display:'flex',flexDirection:'column'}}>
+          <div style={{fontSize:'.48rem',fontWeight:700,color:'var(--gold)',textTransform:'uppercase',letterSpacing:'.12em',marginBottom:3}}>{builder}</div>
+          <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.05rem',fontWeight:700,color:'var(--navy)',lineHeight:1.2,marginBottom:6}}>{name}</h2>
+          <div style={{display:'flex',alignItems:'center',gap:4,fontSize:'.58rem',fontWeight:600,color:'var(--muted)'}}>
+            <svg width="9" height="11" viewBox="0 0 10 14" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/></svg>
+            {loc}
+          </div>
+        </div>
+        <div className="card-cta-wrap" style={{padding:'10px 14px 14px',marginTop:'auto'}}>
+          <div className="card-cta">View Details →</div>
+        </div>
+      </article>
+    );
+  }
+
+  /* ── DESKTOP CARD: Full detail ── */
   return (
     <article className="prop-card" onClick={onClick}>
       <div className="card-img-wrap">
@@ -669,107 +938,6 @@ function PropCard({ p, idx, onClick }) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   GALLERY — swipe on mobile, main+thumbs on desktop
-══════════════════════════════════════════════════════════ */
-function Gallery({ images, propName }) {
-  const [active, setActive] = useState(0);
-  const [lightbox, setLightbox] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [autoPlay, setAutoPlay] = useState(true);
-  const autoPlayRef = useRef(null);
-
-  useEffect(() => {
-    const h = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-
-  useEffect(() => {
-    if (!autoPlay || images.length <= 1) return;
-    autoPlayRef.current = setInterval(() => {
-      setActive(a => (a + 1) % images.length);
-    }, 5000);
-    return () => clearInterval(autoPlayRef.current);
-  }, [autoPlay, images.length]);
-
-  const pauseAutoPlay = () => { setAutoPlay(false); };
-  const resumeAutoPlay = () => { setAutoPlay(true); };
-
-  const prev = () => { pauseAutoPlay(); setActive(a => (a - 1 + images.length) % images.length); setTimeout(resumeAutoPlay, 3000); };
-  const next = () => { pauseAutoPlay(); setActive(a => (a + 1) % images.length); setTimeout(resumeAutoPlay, 3000); };
-
-  useEffect(() => {
-    if (!lightbox) return;
-    const handler = e => { if(e.key==='ArrowLeft')prev(); if(e.key==='ArrowRight')next(); if(e.key==='Escape')setLightbox(false); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [lightbox, images.length]);
-
-  if (!images.length) return null;
-
-  return (
-    <div>
-      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-        <span style={{fontSize:'.58rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.2em',color:'var(--muted)'}}>Gallery</span>
-        <span style={{background:'var(--parch)',border:'1px solid var(--border)',padding:'2px 8px',borderRadius:999,fontSize:'.54rem',fontWeight:700,color:'var(--muted)'}}>{images.length} Photos</span>
-      </div>
-
-      {isMobile ? (
-        // Mobile: horizontal swipe
-        <div>
-          <div className="gallery-swipe hide-scroll" style={{borderRadius:12,overflow:'hidden'}} onMouseEnter={pauseAutoPlay} onMouseLeave={resumeAutoPlay} onTouchStart={pauseAutoPlay} onTouchEnd={resumeAutoPlay}>
-            {images.map((img, i) => (
-              <div key={i} className={`gallery-swipe-item ${active===i?'active':''}`} style={{width:'80vw',height:200}} onClick={()=>{setActive(i);setLightbox(true);}}>
-                <img src={img} loading="lazy" decoding="async" alt={`${propName} — photo ${i+1}`} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
-              </div>
-            ))}
-          </div>
-          <div style={{display:'flex',justifyContent:'center',gap:5,marginTop:8}}>
-            {images.map((_,i)=><span key={i} onClick={()=>{pauseAutoPlay();setActive(i);setTimeout(resumeAutoPlay,3000);}} style={{width:active===i?18:6,height:6,borderRadius:3,background:active===i?'var(--gold)':'var(--border)',cursor:'pointer',transition:'all .2s'}}/>)}
-          </div>
-        </div>
-      ) : (
-        // Desktop: main + thumbs
-        <div style={{display:'flex',flexDirection:'column',gap:8}} onMouseEnter={pauseAutoPlay} onMouseLeave={resumeAutoPlay}>
-          <div style={{position:'relative',borderRadius:12,overflow:'hidden',cursor:'pointer',aspectRatio:'16/9',background:'var(--parch)'}} onClick={()=>setLightbox(true)}>
-            <img src={images[active]} loading="eager" decoding="async" alt={`${propName} — photo ${active+1}`} style={{width:'100%',height:'100%',objectFit:'cover',display:'block',transition:'transform .4s'}}/>
-            <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(7,14,29,.3),transparent)',display:'flex',alignItems:'flex-end',padding:'12px 14px'}}>
-              <span style={{fontSize:'.54rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'rgba(255,255,255,.8)',background:'rgba(7,14,29,.5)',padding:'3px 9px',borderRadius:4}}>🔍 Click to enlarge</span>
-            </div>
-            {images.length > 1 && (
-              <>
-                <button onClick={e=>{e.stopPropagation();prev();}} style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',background:'rgba(7,14,29,.6)',border:'none',color:'#fff',width:34,height:34,borderRadius:'50%',cursor:'pointer',fontSize:'.9rem',display:'flex',alignItems:'center',justifyContent:'center'}}>‹</button>
-                <button onClick={e=>{e.stopPropagation();next();}} style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'rgba(7,14,29,.6)',border:'none',color:'#fff',width:34,height:34,borderRadius:'50%',cursor:'pointer',fontSize:'.9rem',display:'flex',alignItems:'center',justifyContent:'center'}}>›</button>
-              </>
-            )}
-          </div>
-          <div className="gallery-grid">
-            {images.map((img,i)=>(
-              <div key={i} onClick={()=>{pauseAutoPlay();setActive(i);setTimeout(resumeAutoPlay,3000);}} style={{aspectRatio:'4/3',borderRadius:7,overflow:'hidden',cursor:'pointer',border:`2px solid ${active===i?'var(--gold)':'var(--border)'}`,transition:'border-color .18s',background:'var(--parch)'}}>
-                <img src={img} loading="lazy" decoding="async" alt={`${propName} — thumbnail ${i+1}`} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Lightbox */}
-      {lightbox && (
-        <div className="lightbox anim-fadeIn" onClick={()=>setLightbox(false)}>
-          <button onClick={()=>setLightbox(false)} style={{position:'absolute',top:16,right:20,background:'rgba(255,255,255,.1)',border:'none',color:'#fff',fontSize:'1.5rem',lineHeight:1,cursor:'pointer',width:40,height:40,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
-          <img src={images[active]} className="lightbox-img" alt={`${propName} — full view ${active+1}`} onClick={e=>e.stopPropagation()} loading="eager"/>
-          <div className="lightbox-nav" onClick={e=>e.stopPropagation()}>
-            <button className="lightbox-btn" onClick={prev}>‹</button>
-            <span style={{fontSize:'.65rem',fontWeight:700,color:'rgba(255,255,255,.6)',textTransform:'uppercase',letterSpacing:'.12em'}}>{active+1} / {images.length}</span>
-            <button className="lightbox-btn" onClick={next}>›</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════
    LOCATION HIGHLIGHTS
 ══════════════════════════════════════════════════════════ */
 function LocationHighlights({ raw }) {
@@ -786,10 +954,8 @@ function LocationHighlights({ raw }) {
       items:Array.isArray(v)?v:String(v).split(',').map(s=>s.trim()).filter(Boolean)
     })).filter(s=>s.items.length>0);
   },[raw]);
-
   if(!sections.length) return null;
   const toggle = k => setOpen(o=>({...o,[k]:!o[k]}));
-
   return (
     <div>
       <div style={{fontSize:'.58rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.2em',color:'var(--muted)',marginBottom:10,display:'flex',alignItems:'center',gap:6}}>
@@ -837,10 +1003,8 @@ function FAQSection({ raw, title }) {
     if(typeof data==='object') return Object.entries(data).map(([q,a])=>({q,a}));
     return [];
   }, [raw]);
-
   if(!items.length) return null;
   const toggle = i => setOpen(o=>({...o,[i]:!o[i]}));
-
   return (
     <section className="section-block" style={{scrollMarginTop:'7rem'}}>
       <div className="section-label"><span style={{fontSize:15}}>❓</span> {title||'Frequently Asked Questions'}</div>
@@ -850,13 +1014,13 @@ function FAQSection({ raw, title }) {
           const a = item.a||item.answer||item[1];
           const isOpen = !!open[i];
           return (
-            <div key={i} className="faq-item">
-              <button className="faq-btn" aria-expanded={isOpen} onClick={()=>toggle(i)}>
-                <span className="faq-q">{q}</span>
-                <span className="faq-icon">▼</span>
+            <div key={i} style={{borderBottom:i<items.length-1?'1px solid var(--border)':'none'}}>
+              <button style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 0',background:'none',border:'none',cursor:'pointer',textAlign:'left',gap:12}} aria-expanded={isOpen} onClick={()=>toggle(i)}>
+                <span style={{fontSize:'.82rem',fontWeight:700,color:'var(--navy)',lineHeight:1.5,flex:1}}>{q}</span>
+                <span style={{flexShrink:0,width:22,height:22,borderRadius:'50%',background:isOpen?'var(--gold-lt)':'var(--parch)',border:`1px solid ${isOpen?'rgba(200,134,10,.3)':'var(--border)'}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'.55rem',color:isOpen?'var(--gold)':'var(--muted)',transition:'all .25s',transform:isOpen?'rotate(180deg)':'none'}}>▼</span>
               </button>
-              <div className="faq-answer" style={{maxHeight:isOpen?'600px':'0'}}>
-                <div className="faq-answer-inner">{a}</div>
+              <div style={{maxHeight:isOpen?'600px':'0',overflow:'hidden',transition:'max-height .3s cubic-bezier(.4,0,.2,1)'}}>
+                <div style={{padding:'0 0 14px',fontSize:'.8rem',color:'var(--muted)',lineHeight:1.78}}>{a}</div>
               </div>
             </div>
           );
@@ -874,11 +1038,9 @@ function GrowthRateDisplay({ raw, location }) {
     if(!raw) return null;
     try { return typeof raw==='string'?JSON.parse(raw):raw; } catch { return typeof raw==='string'?{rate:raw}:raw; }
   },[raw]);
-
   if(!data) return null;
   const rate = data.rate||data.growth_rate||data.yoy||raw;
   const area = data.area||data.direction||location||'';
-
   return (
     <div style={{background:'var(--parch)',border:'1px solid var(--border)',borderRadius:14,padding:'1.25rem',display:'flex',alignItems:'center',gap:16,marginTop:'1rem'}}>
       <div className="growth-badge">
@@ -901,26 +1063,24 @@ function GrowthRateDisplay({ raw, location }) {
    PROPERTY DETAIL PAGE
 ══════════════════════════════════════════════════════════ */
 function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
-  const [heroImg, setHeroImg]    = useState(null);
   const [modal, setModal]        = useState(null);
   const [unlocked, setUnlocked]  = useState(false);
-  const [activeTab, setActiveTab]= useState('about');
+  const [activeTab, setActiveTab]= useState('gallery');
   const [legal, setLegal]        = useState(null);
   const [showLead, setShowLead]  = useState(false);
 
   const refs = {
-    about:useRef(), amenities:useRef(), highlights:useRef(),
-    masterplan:useRef(), floorplan:useRef(), location:useRef(),
-    faq:useRef()
+    gallery:useRef(), about:useRef(), amenities:useRef(), highlights:useRef(),
+    masterplan:useRef(), floorplan:useRef(), location:useRef(), faq:useRef()
   };
 
-  useEffect(()=>{ window.scrollTo(0,0); setHeroImg(null); setActiveTab('about'); },[p]);
+  useEffect(()=>{ window.scrollTo(0,0); setActiveTab('gallery'); },[p]);
 
   useEffect(()=>{
     const obs=[];
     Object.entries(refs).forEach(([k,r])=>{
       if(!r?.current) return;
-      const o=new IntersectionObserver(([e])=>{ if(e.isIntersecting)setActiveTab(k); },{rootMargin:'-25% 0px -60% 0px'});
+      const o=new IntersectionObserver(([e])=>{ if(e.isIntersecting)setActiveTab(k); },{rootMargin:'-20% 0px -65% 0px'});
       o.observe(r.current); obs.push(o);
     });
     return ()=>obs.forEach(o=>o.disconnect());
@@ -946,7 +1106,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
   const growthRaw = gv(p,'growth_rate');
   const sc      = statusStyle(status);
 
-  // FAQ — pick right type
   const propType = String(gv(p,'Property Type')||'').toLowerCase();
   const faqRaw = propType.includes('villa')?gv(p,'villa_faq'):propType.includes('plot')?gv(p,'plot_faq'):gv(p,'apartment_faq');
   const phFaqRaw = gv(p,'perfect_horizons_faq');
@@ -954,6 +1113,15 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
   const cover  = gdThumb(gv(p,'cover_image')||gv(p,'cover-image')||gv(p,'Cover Image'));
   const galRaw = gv(p,'gallery_images')||gv(p,'gallery-images')||gv(p,'Images and short videos \nif any')||'';
   const gal    = typeof galRaw==='string'&&galRaw.length>5 ? galRaw.split(',').map(l=>gdThumb(l.trim())).filter(x=>x&&!x.includes('undefined')) : [];
+
+  // Gallery images: cover + gallery combined, cover first if not duplicate
+  const allGalleryImgs = useMemo(() => {
+    const imgs = [];
+    if(cover) imgs.push(cover);
+    gal.forEach(img => { if(img && !imgs.includes(img)) imgs.push(img); });
+    return imgs;
+  }, [cover, gal]);
+
   const fpRaw  = gv(p,'floor_plan')||gv(p,'Floor Plan')||gv(p,'floor plan');
   const mpRaw  = gv(p,'master_plan')||gv(p,'Master Plan')||gv(p,'master plan');
   const fpImgs = fpRaw ? String(fpRaw).split(',').map(l=>gdThumb(l.trim())).filter(Boolean) : [];
@@ -969,13 +1137,14 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
   const hasLocHL = !!(locHL && String(locHL).trim().length > 2);
 
   const tabs = [
-    {k:'about',lbl:'About'},
-    {k:'amenities',lbl:'Amenities',hide:!amen},
+    {k:'gallery',  lbl:'Gallery',    hide:!allGalleryImgs.length},
+    {k:'about',    lbl:'About'},
+    {k:'amenities',lbl:'Amenities',  hide:!amen},
     {k:'highlights',lbl:'Highlights',hide:!hasHighlights},
     {k:'masterplan',lbl:'Master Plan',hide:!mpImgs.length},
-    {k:'floorplan',lbl:'Floor Plan',hide:!fpImgs.length},
-    {k:'location',lbl:'Location'},
-    {k:'faq',lbl:'FAQs',hide:!faqRaw},
+    {k:'floorplan', lbl:'Floor Plan', hide:!fpImgs.length},
+    {k:'location',  lbl:'Location'},
+    {k:'faq',       lbl:'FAQs',       hide:!faqRaw},
   ].filter(t=>!t.hide);
 
   const handleModalSubmit = async d => {
@@ -998,7 +1167,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
 
   const modalTitles = { interest:'Get in Touch', brochure:'Download Brochure', cost_sheet:'Get Cost Sheet', apply:'Apply for Loan', unlock:'Unlock Floor Plan' };
 
-  // Update SEO when property loads
   useEffect(()=>{
     const bhkStr = bhk?(bhk.includes('BHK')?bhk:`${bhk} BHK`):'';
     const titleStr = `${name}${bhkStr?' | '+bhkStr:''} in ${loc} | Perfect Horizons`;
@@ -1024,8 +1192,8 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
   return (
     <div style={{minHeight:'100vh',background:'var(--cream)',paddingTop:0}} className="overflow-x-hidden">
 
-      {/* TOP BAR — mobile: only WA + Enquire (no call button) */}
-      <div className="fixed top-0 left-0 right-0 z-50" style={{background:'#fff',borderBottom:'1px solid var(--border)',boxShadow:'var(--sh-sm)'}}>
+      {/* FIXED TOP BAR */}
+      <div className="detail-topbar">
         <div style={{maxWidth:'72rem',margin:'0 auto',padding:'0 1.5rem',display:'flex',justifyContent:'space-between',alignItems:'center',height:54}}>
           <button onClick={onBack} style={{display:'flex',alignItems:'center',gap:8,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.14em',color:'var(--teal)',background:'none',border:'none',cursor:'pointer'}} className="hover:opacity-65 group">
             <span className="group-hover:-translate-x-1 inline-block transition">←</span>
@@ -1034,9 +1202,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
           </button>
           <div style={{display:'flex',alignItems:'center',gap:10}}>
             <span className="hidden md:block" style={{fontSize:'.6rem',fontWeight:600,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.1em'}}>📍 {loc} · {builder}</span>
-            {/* Desktop: show call number */}
             <a href={`tel:${CALL}`} style={{display:'flex',alignItems:'center',gap:6,fontSize:'.72rem',fontWeight:700,color:'var(--navy)'}} className="hover:text-yellow-600 transition hidden md:flex">📞 {CALL}</a>
-            {/* Mobile: WhatsApp + Enquire only (no call button) */}
             <a href={`https://wa.me/${WA}?text=Hi, I'm interested in ${encodeURIComponent(name)}`} target="_blank" style={{display:'flex',alignItems:'center',gap:5,border:'1px solid rgba(37,211,102,.4)',borderRadius:8,fontSize:'.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'#166534',padding:'7px 12px',background:'rgba(37,211,102,.06)'}} className="md:hidden">
               <WASvg size={14} color="#166534" /> WA
             </a>
@@ -1045,15 +1211,15 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
         </div>
       </div>
 
-      {/* MOBILE COMPACT HERO — shows property info clearly */}
+      {/* MOBILE HERO */}
       <div className="md:hidden" style={{paddingTop:54,background:'var(--navy)'}}>
-        <div style={{position:'relative',height:220,overflow:'hidden'}}>
+        <div style={{position:'relative',height:240,overflow:'hidden'}}>
           {cover ? (
-            <img src={heroImg||cover} alt={`${name} by ${builder} in ${loc}`} style={{width:'100%',height:'100%',objectFit:'cover',display:'block',opacity:.85}}/>
+            <img src={cover} alt={`${name} by ${builder} in ${loc}`} style={{width:'100%',height:'100%',objectFit:'cover',display:'block',opacity:.88}}/>
           ) : (
             <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:'3rem'}}>🏗️</span></div>
           )}
-          <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(7,14,29,.9) 0%,rgba(7,14,29,.4) 60%,transparent 100%)'}}/>
+          <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(7,14,29,.9) 0%,rgba(7,14,29,.35) 60%,transparent 100%)'}}/>
           <div style={{position:'absolute',top:10,left:10}}>
             <span style={{background:'rgba(7,14,29,.88)',color:'#FCD34D',fontSize:'.52rem',fontWeight:800,letterSpacing:'.14em',textTransform:'uppercase',padding:'4px 10px',borderRadius:5}}>{gv(p,'Property Type')||'Property'}</span>
           </div>
@@ -1063,7 +1229,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
             </div>
           )}
         </div>
-        {/* Compact info strip below image */}
         <div style={{padding:'14px 16px 0',background:'var(--navy)'}}>
           <div style={{fontSize:'.56rem',fontWeight:700,color:'rgba(200,134,10,.85)',textTransform:'uppercase',letterSpacing:'.14em',marginBottom:4}}>{builder}</div>
           <h1 style={{fontSize:'1.2rem',fontWeight:800,color:'#fff',lineHeight:1.2,marginBottom:6}}>{name}</h1>
@@ -1071,7 +1236,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
             <span style={{fontSize:'.56rem',fontWeight:700,color:'rgba(255,255,255,.65)',background:'rgba(255,255,255,.08)',padding:'3px 8px',borderRadius:999}}>📍 {loc}</span>
             {rera && <span style={{fontSize:'.54rem',fontWeight:700,color:'#93C5FD',background:'rgba(147,197,253,.1)',padding:'3px 8px',borderRadius:999}}>✓ RERA</span>}
           </div>
-          {/* Key stats row */}
           <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:0,borderTop:'1px solid rgba(255,255,255,.08)',paddingTop:10,marginBottom:0}}>
             {[
               {l:'Config',v:bhk?(bhk.includes('BHK')?bhk:bhk+' BHK'):'—'},
@@ -1089,10 +1253,10 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
 
       {/* DESKTOP HERO */}
       <div className="hidden md:block" style={{position:'relative',background:'#060D1C',minHeight:'clamp(240px,40vw,500px)',overflow:'hidden',marginTop:54}}>
-        {(heroImg||cover) ? (
+        {cover ? (
           <>
-            <img src={heroImg||cover} aria-hidden="true" alt="" className="absolute inset-0 w-full h-full object-cover opacity-15 scale-110" style={{filter:'blur(28px)'}} />
-            <img src={heroImg||cover} alt={`${name} by ${builder} — ${gv(p,'Property Type')||'Property'} in ${loc}, Bengaluru`} style={{position:'relative',zIndex:2,width:'100%',height:'100%',objectFit:'contain',maxHeight:'clamp(240px,40vw,500px)',display:'block',margin:'0 auto'}}/>
+            <img src={cover} aria-hidden="true" alt="" className="absolute inset-0 w-full h-full object-cover opacity-15 scale-110" style={{filter:'blur(28px)'}} />
+            <img src={cover} alt={`${name} by ${builder} — ${gv(p,'Property Type')||'Property'} in ${loc}, Bengaluru`} style={{position:'relative',zIndex:2,width:'100%',height:'100%',objectFit:'contain',maxHeight:'clamp(240px,40vw,500px)',display:'block',margin:'0 auto'}}/>
           </>
         ) : (
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'clamp(240px,40vw,500px)'}}>
@@ -1114,9 +1278,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
             </div>
           </div>
         </div>
-        {heroImg && heroImg!==cover && (
-          <button onClick={()=>setHeroImg(null)} style={{position:'absolute',top:12,right:14,zIndex:6,background:'rgba(7,14,29,.78)',color:'#fff',fontSize:'.54rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',padding:'5px 12px',borderRadius:6,border:'none',cursor:'pointer',backdropFilter:'blur(8px)'}}>← Cover</button>
-        )}
       </div>
 
       {/* STATS BAR — desktop only */}
@@ -1137,7 +1298,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
       </div>
 
       {/* ANCHOR NAV */}
-      <div className="anchor-nav fixed z-40" style={{top:54,left:0,right:0}}>
+      <div className="detail-anchor-nav">
         <div style={{maxWidth:'72rem',margin:'0 auto',display:'flex',overflowX:'auto',padding:'0 1rem'}} className="hide-scroll">
           {tabs.map(t=>(
             <button key={t.k} onClick={()=>scrollTo(t.k)} className={`anchor-tab ${activeTab===t.k?'active':''}`}>{t.lbl}</button>
@@ -1147,20 +1308,21 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
         </div>
       </div>
 
-      {/* PAGE CONTENT — offset for both topbar + anchor nav */}
+      {/* PAGE CONTENT — offset for topbar + anchor nav (54 + 48 = 102px) */}
       <div style={{paddingTop:'calc(54px + 48px)'}}>
-
-        {/* GALLERY */}
-        {gal.length > 0 && (
-          <div style={{maxWidth:'72rem',margin:'0 auto',padding:'1.5rem 1.5rem 0'}}>
-            <Gallery images={gal} propName={name} />
-          </div>
-        )}
 
         {/* MAIN CONTENT */}
         <div style={{maxWidth:'72rem',margin:'0 auto',padding:'1.5rem',display:'grid',gridTemplateColumns:'1fr',gap:'1.5rem'}} className="lg:grid-cols-[1fr_320px]">
+
           {/* LEFT COLUMN */}
           <div style={{display:'flex',flexDirection:'column',gap:'1.5rem',minWidth:0}}>
+
+            {/* ── GALLERY SECTION — first in content flow ── */}
+            {allGalleryImgs.length > 0 && (
+              <section ref={refs.gallery} className="section-block" style={{scrollMarginTop:'7rem'}}>
+                <Gallery images={allGalleryImgs} propName={name} />
+              </section>
+            )}
 
             {/* ABOUT */}
             <section ref={refs.about} className="section-block" style={{scrollMarginTop:'7rem'}}>
@@ -1182,8 +1344,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
                   </div>
                 ))}
               </div>
-
-              {/* Growth Rate near project info */}
               {growthRaw && <GrowthRateDisplay raw={growthRaw} location={loc} />}
             </section>
 
@@ -1260,38 +1420,33 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               </section>
             )}
 
-            {/* LOCATION — desktop 2-col, mobile stacked */}
+            {/* LOCATION */}
             <section ref={refs.location} className="section-block" style={{scrollMarginTop:'7rem'}}>
               <div className="section-label"><span style={{fontSize:15}}>📍</span> Location</div>
               <div className="location-grid">
-                {/* Map */}
                 <div style={{borderRadius:12,overflow:'hidden',border:'1px solid var(--border)'}}>
                   {mapSrc ? (
                     <iframe src={mapSrc} width="100%" height="320" style={{border:0,display:'block'}} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title={`${name} location map in ${loc}, Bengaluru`}/>
                   ) : (
                     <div style={{background:'var(--parch)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,padding:'3rem',minHeight:200,textAlign:'center'}}>
                       <p style={{fontSize:'.8rem',color:'var(--muted)',fontStyle:'italic'}}>Map coming soon.</p>
-                      <a href={`https://wa.me/${WA}?text=Hi, I need location details for ${encodeURIComponent(name)}`} target="_blank" style={{display:'inline-flex',alignItems:'center',gap:8,background:'rgba(37,211,102,.1)',border:'1px solid rgba(37,211,102,.22)',borderRadius:999,padding:'8px 18px',fontSize:'.62rem',fontWeight:700,color:'#166534',textTransform:'uppercase',letterSpacing:'.1em'}}>WhatsApp for Location</a>
+                      <a href={`https://wa.me/${WA}?text=Hi, I need location details for ${encodeURIComponent(name)}`} target="_blank" style={{display:'inline-flex',alignItems:'center',gap:8,background:'rgba(37,211,102,.1)',border:'1px solid rgba(37,211,102,.22)',borderRadius:999,padding:'8px 18px',fontSize:'.62rem',fontWeight:700,color:'#166634',textTransform:'uppercase',letterSpacing:'.1em'}}>WhatsApp for Location</a>
                     </div>
                   )}
-                  {/* Directions button always shown below map on mobile */}
                   {mapLnk && (
                     <a href={mapLnk} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'10px',background:'rgba(26,68,128,.05)',borderTop:'1px solid var(--border)',fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'var(--teal)',textDecoration:'none'}}>
                       🗺️ Get Directions →
                     </a>
                   )}
                 </div>
-                {/* Location Highlights — shown on both desktop and mobile */}
                 {hasLocHL && (
                   <div>
                     <LocationHighlights raw={locHL} />
                   </div>
                 )}
               </div>
-
-              {/* WhatsApp CTA */}
-              <a href={`https://wa.me/${WA}?text=Hi, I'm interested in ${encodeURIComponent(name)}`} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,background:'rgba(37,211,102,.06)',border:'1px solid rgba(37,211,102,.2)',borderRadius:10,padding:'13px',fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'#166534',transition:'background .18s',marginTop:'1.25rem',textDecoration:'none'}} className="hover:bg-green-50">
-                <WASvg size={16} color="#166534" />
+              <a href={`https://wa.me/${WA}?text=Hi, I'm interested in ${encodeURIComponent(name)}`} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,background:'rgba(37,211,102,.06)',border:'1px solid rgba(37,211,102,.2)',borderRadius:10,padding:'13px',fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'#166634',transition:'background .18s',marginTop:'1.25rem',textDecoration:'none'}} className="hover:bg-green-50">
+                <WASvg size={16} color="#166634" />
                 Chat on WhatsApp for More Details
               </a>
             </section>
@@ -1307,7 +1462,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
 
           {/* SIDEBAR */}
           <aside style={{minWidth:0}}>
-            <div style={{position:'static',display:'flex',flexDirection:'column',gap:14}}>
+            <div style={{display:'flex',flexDirection:'column',gap:14}}>
               {/* Price + CTA */}
               <div className="card" style={{padding:'1.5rem',position:'relative',overflow:'hidden'}}>
                 <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'linear-gradient(90deg,var(--gold),transparent)'}}/>
@@ -1322,13 +1477,13 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
                 <button onClick={()=>setModal('brochure')} className="btn-outline" style={{fontSize:'.65rem',padding:'11px',width:'100%',display:'flex',justifyContent:'center',alignItems:'center',gap:6,marginTop:8}}>📥 Brochure</button>
               </div>
 
-              {/* EMI — full property price as default */}
+              {/* EMI */}
               <EMICalc priceStr={price} onApply={()=>setModal('apply')} />
             </div>
           </aside>
         </div>
 
-        {/* Perfect Horizons FAQ — below sidebar content */}
+        {/* Perfect Horizons FAQ */}
         {phFaqRaw && (
           <div style={{maxWidth:'72rem',margin:'0 auto',padding:'0 1.5rem 1.5rem'}}>
             <FAQSection raw={phFaqRaw} title="About Perfect Horizons" />
@@ -1342,7 +1497,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.5rem',fontWeight:700,color:'var(--navy)',marginBottom:'1.5rem',borderLeft:'3px solid var(--gold)',paddingLeft:'1rem'}}>Similar Properties</h2>
               <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:'1.25rem'}}>
                 {similar.map((sp,i)=>(
-                  <PropCard key={i} p={sp} idx={i} onClick={()=>{window.scrollTo(0,0);onPickProp(sp);}} />
+                  <PropCard key={i} p={sp} idx={i} isMobile={false} onClick={()=>{window.scrollTo(0,0);onPickProp(sp);}} />
                 ))}
               </div>
             </div>
@@ -1378,11 +1533,9 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
           }}
         />
       )}
-
       {showLead && (
         <LeadModal title="Get in Touch" subtitle={`About: ${name}`} onClose={()=>setShowLead(false)} onSubmit={async d=>{const ok=await submitLead(d,name,'General');if(ok)setShowLead(false);return ok;}} />
       )}
-
       {legal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 anim-fadeIn" style={{background:'rgba(7,14,29,.88)',backdropFilter:'blur(6px)'}} onClick={()=>setLegal(null)}>
           <div className="card" style={{maxWidth:600,width:'100%',maxHeight:'80vh',overflowY:'auto',padding:'2.25rem',position:'relative'}} onClick={e=>e.stopPropagation()}>
@@ -1450,9 +1603,16 @@ function App() {
   const [mobServices, setMobServices]= useState(false);
   const [activeBlog, setActiveBlog] = useState(null);
   const [legal, setLegal]           = useState(null);
+  const [isMobile, setIsMobile]     = useState(window.innerWidth < 768);
   const propsRef = useRef([]);
 
-  // ── History API routing ──
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+
+  /* ── History API routing ── */
   const resolvePath = useCallback((pathname, loadedProps) => {
     const allProps = loadedProps || propsRef.current;
     if(pathname === '/' || pathname === '') { setSelProp(null); setPage('home'); return; }
@@ -1461,20 +1621,7 @@ function App() {
       const slug = parts.slice(1).join('/');
       const found = allProps.find(p => propSlug(p) === slug);
       if(found){ setSelProp(found); setPage('home'); return; }
-    }
-    if(parts[0]==='builder' && parts[1]){
-      const builderSlug = parts.slice(1).join('-');
-      const builderName = builderSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      setSearch(builderName);
-      setPage('home');
-      return;
-    }
-    if(parts[0]==='location' && parts[1]){
-      const locSlug = parts.slice(1).join('-');
-      const locName = locSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-      setSearch(locName);
-      setPage('home');
-      return;
+      /* Property not loaded yet — will resolve after Supabase load */
     }
     if(parts[0]==='blogs' && parts[1]){
       const id=parseInt(parts[1]);
@@ -1483,33 +1630,34 @@ function App() {
       if(b) setActiveBlog(b);
       return;
     }
-    // Static pages
     const staticPages=['about-us','our-journey','what-we-do','what-we-dont-do','advisor','blogs','customers','interiors','home-loan'];
     if(staticPages.includes(parts[0])){ setPage(parts[0]); setSelProp(null); return; }
+    /* Unknown path: show home, don't 404 */
     setPage('home'); setSelProp(null);
   }, []);
 
   useEffect(()=>{
-    // Read initial path
+    /* Initialise from current URL */
     resolvePath(window.location.pathname, []);
 
-    // Supabase load
+    /* Load properties */
     supabase.from('properties').select('*').eq('is_live',true).order('display_order',{ascending:true,nullsFirst:false})
       .then(({data,error})=>{
         if(!error){
           propsRef.current = data||[];
           setProps(data||[]);
+          /* Re-resolve now that props are loaded (handles /property/slug direct load) */
           resolvePath(window.location.pathname, data||[]);
         }
         setLoading(false);
       })
       .catch(()=>setLoading(false));
 
-    // popstate (back/forward)
+    /* Browser back/forward */
     const onPop = () => resolvePath(window.location.pathname, propsRef.current);
     window.addEventListener('popstate', onPop);
 
-    // Realtime
+    /* Realtime */
     const ch=supabase.channel('public:properties')
       .on('postgres_changes',{event:'*',schema:'public',table:'properties'},payload=>{
         if(payload.eventType==='INSERT'){if(payload.new.is_live===true)setProps(prev=>{propsRef.current=[payload.new,...prev];return[payload.new,...prev];});}
@@ -1520,15 +1668,15 @@ function App() {
     return ()=>{ window.removeEventListener('popstate',onPop); supabase.removeChannel(ch); };
   },[]);
 
-  // ── Update SEO per page ──
+  /* ── SEO per page ── */
   useEffect(()=>{
-    if(selProp) return; // handled inside DetailPage
+    if(selProp) return;
     if(activeBlog){
       updateMeta({title:`${activeBlog.title} | Perfect Horizons`,desc:activeBlog.excerpt,url:`${SITE}/blogs/${activeBlog.id}`});
       return;
     }
     const baseTitle='Perfect Horizons | Trusted Real Estate Advisory in Bengaluru';
-    const baseDesc='Perfect Horizons — Bengaluru\'s trusted property advisory. Curated, RERA-verified apartments, villas & plots. Independent advice, zero pressure.';
+    const baseDesc="Perfect Horizons — Bengaluru's trusted property advisory. Curated, RERA-verified apartments, villas & plots. Independent advice, zero pressure.";
     if(!page||page==='home'){ updateMeta({title:baseTitle,desc:baseDesc,url:SITE}); }
     else { updateMeta({title:`${page.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())} | Perfect Horizons`,desc:baseDesc,url:`${SITE}/${page}`}); }
   },[activeBlog,page,selProp]);
@@ -1567,7 +1715,7 @@ function App() {
     window.scrollTo(0,0);
   }, []);
 
-  /* filtered listing */
+  /* Filtered listing */
   const filtered = useMemo(()=>{
     if(!Array.isArray(props))return[];
     const t=search.toLowerCase();
@@ -1587,7 +1735,7 @@ function App() {
     });
   },[props,search,filters]);
 
-  /* ── Nav ── */
+  /* Nav helpers */
   const NavLink = ({label,p}) => (
     <button className={`nav-link ${page===p?'active':''}`} onClick={()=>navTo(p)}>{label}</button>
   );
@@ -1619,7 +1767,7 @@ function App() {
     <>
       <DetailPage p={selProp} all={props} onBack={goBack} navTo={navTo} submitLead={submitLead} onPickProp={pickProp} />
       <button className="git-btn" onClick={()=>setShowLead(true)}>Get in Touch</button>
-      <a href={`https://wa.me/${WA}`} target="_blank" className="wa-fab" aria-label="Chat on WhatsApp via WhatsApp">
+      <a href={`https://wa.me/${WA}`} target="_blank" className="wa-fab" aria-label="Chat on WhatsApp">
         <WASvg size={26} color="#fff" />
       </a>
       {showLead && <LeadModal title="Get in Touch" subtitle={`About: ${gv(selProp,'Property Name')}`} onClose={()=>setShowLead(false)} onSubmit={async d=>{const ok=await submitLead(d,gv(selProp,'Property Name'),'General');if(ok)setShowLead(false);return ok;}} />}
@@ -1660,7 +1808,7 @@ function App() {
           <p>We don't believe in selling properties. We believe in curating the right living experience and investment for you.</p>
         </div>
         {grid2([
-          {icon:'💡',title:'Our Philosophy',desc:'Luxury is not just about price — it\'s about clarity, confidence, and peace of mind. The right home for you matters more than any commission.'},
+          {icon:'💡',title:'Our Philosophy',desc:"Luxury is not just about price — it's about clarity, confidence, and peace of mind. The right home for you matters more than any commission."},
           {icon:'🤝',title:'A Relationship Beyond Transactions',desc:'At Perfect Horizons, you are not a lead, not a deal, not a number. You are part of a circle built on trust. Our true success is earning your trust for life.'},
         ])}
       </>)}
@@ -1777,7 +1925,7 @@ function App() {
           {icon:'🤝',title:'No Pressure Sales',desc:'We share facts, answer questions, and step back. You decide at your own pace.'},
           {icon:'🔍',title:'Curated Projects Only',desc:'We evaluate dozens of projects before listing one. No legal concerns, no poor builders.'},
           {icon:'🏦',title:'Home Loan Assistance',desc:'We coordinate with lenders and guide you from application to disbursement.'},
-          {icon:'📋',title:'Legal Vetting Support',desc:'We walk you through RERA status, encumbrance, builder approvals, and title clarity before you commit.'},
+          {icon:'📋',title:'Legal Vetting Support',desc:"We walk you through RERA status, encumbrance, builder approvals, and title clarity before you commit."},
           {icon:'🗝️',title:'Post-Sales Follow-Through',desc:'We stay in contact until possession and help resolve any builder-side delays.'},
         ],{marginBottom:'2rem'})}
         <div style={{background:'linear-gradient(135deg,var(--navy),var(--navy-mid))',borderRadius:14,padding:'2.5rem',textAlign:'center',maxWidth:'38rem',margin:'0 auto'}}>
@@ -1823,7 +1971,6 @@ function App() {
         </div>
       </>);
     }
-
     return null;
   };
 
@@ -1838,11 +1985,17 @@ function App() {
   return (
     <div style={{minHeight:'100vh',display:'flex',flexDirection:'column'}}>
 
-      {/* ── STICKY NAV BLOCK (nav + filters only — partners scroll normally) ── */}
-      <div className="sticky-nav-home">
-        {/* Main nav */}
-        <nav style={{background:'linear-gradient(135deg,#040A14,#070E1D)',padding:'0 1.5rem',height:56,display:'flex',alignItems:'center',justifyContent:'space-between',gap:'1rem'}}>
-          <div style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.35rem',fontWeight:700,fontStyle:'italic',color:'#fff',textTransform:'uppercase',letterSpacing:'-.01em',cursor:'pointer',flexShrink:0,transition:'color .18s'}} className="hover:text-yellow-300" onClick={()=>navTo('home')}>Perfect Horizons</div>
+      {/* ══ UNIFIED STICKY TOP BLOCK (nav + filters) ══ */}
+      <div className="sticky-top-block">
+        {/* Main Nav */}
+        <nav className="ph-main-nav">
+          <div
+            style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.35rem',fontWeight:700,fontStyle:'italic',color:'#fff',textTransform:'uppercase',letterSpacing:'-.01em',cursor:'pointer',flexShrink:0,transition:'color .18s'}}
+            className="hover:text-yellow-300"
+            onClick={()=>navTo('home')}
+          >
+            Perfect Horizons
+          </div>
 
           {/* Desktop search */}
           <div className="hidden lg:flex flex-1 justify-center px-4" style={{maxWidth:'32rem'}}>
@@ -1856,7 +2009,7 @@ function App() {
             </div>
           </div>
 
-          {/* Desktop links */}
+          {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-5">
             <NavLink label="Properties" p="home" />
             <DropNav label="About" active={['about-us','our-journey'].includes(page)} pages={[['About Us','about-us','🏛️'],['Our Journey','our-journey','🗺️']]} />
@@ -1869,7 +2022,10 @@ function App() {
 
           {/* Mobile controls */}
           <div className="md:hidden flex items-center gap-2">
-            <button onClick={()=>setMobileSearch(v=>!v)} style={{display:'flex',alignItems:'center',gap:5,border:'1px solid rgba(255,255,255,.16)',borderRadius:999,padding:'7px 12px',background:'none',cursor:'pointer',color:'rgba(255,255,255,.8)',fontSize:'.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em'}}>
+            <button
+              onClick={()=>setMobileSearch(v=>!v)}
+              style={{display:'flex',alignItems:'center',gap:5,border:'1px solid rgba(255,255,255,.16)',borderRadius:999,padding:'7px 12px',background:'none',cursor:'pointer',color:'rgba(255,255,255,.8)',fontSize:'.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em'}}
+            >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Search
             </button>
             <button onClick={()=>setMobileMenu(v=>!v)} style={{background:'none',border:'none',cursor:'pointer',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',width:44,height:44}}>
@@ -1878,9 +2034,10 @@ function App() {
           </div>
         </nav>
 
-        {/* Filter bar — stays sticky */}
-        <div className="filter-bar" style={{padding:'10px 1.5rem'}}>
+        {/* Filter Bar */}
+        <div className="ph-filter-bar">
           <div style={{maxWidth:'72rem',margin:'0 auto'}}>
+            {/* Mobile search input */}
             {mobileSearch && (
               <div style={{position:'relative',marginBottom:10}}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'var(--muted)',pointerEvents:'none'}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -1890,13 +2047,15 @@ function App() {
                 />
               </div>
             )}
-            <div className="md:hidden flex justify-between items-center" style={{height:28}}>
+            {/* Mobile filter toggle */}
+            <div className="md:hidden flex justify-between items-center" style={{height:36}}>
               <span style={{fontSize:'.58rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--muted)'}}>Property Finder</span>
               <button onClick={()=>setMobileFilter(v=>!v)} style={{display:'flex',alignItems:'center',gap:6,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--teal)',background:'none',border:'none',cursor:'pointer',minHeight:44}}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
                 Filters {mobileFilter?'▲':'▼'}
               </button>
             </div>
+            {/* Filter selects */}
             <div className={`${mobileFilter?'grid':'hidden'} md:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-2 md:mt-0`}>
               {selects.map(s=>(
                 <select key={s.k} className="ph-select" style={{width:'100%',background:'#fff',padding:'9px 12px',fontSize:'.72rem',fontWeight:600,color:'var(--navy)',cursor:'pointer',minHeight:44}}
@@ -1905,9 +2064,11 @@ function App() {
                   {s.opts.map(([l,v])=><option key={v} value={v}>{l}</option>)}
                 </select>
               ))}
-              <button onClick={()=>{setSearch('');setFilters({bhk:'',status:'',type:'',price:'',poss:''});setMobileFilter(false);setMobileSearch(false);}}
+              <button
+                onClick={()=>{setSearch('');setFilters({bhk:'',status:'',type:'',price:'',poss:''});setMobileFilter(false);setMobileSearch(false);}}
                 style={{border:'1.5px solid var(--border)',borderRadius:10,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--muted)',background:'#fff',cursor:'pointer',minHeight:44,padding:'0 12px',transition:'border-color .18s,color .18s'}}
-                className="hover:border-red-300 hover:text-red-500 col-span-2 md:col-span-1">
+                className="hover:border-red-300 hover:text-red-500 col-span-2 md:col-span-1"
+              >
                 ✕ Reset
               </button>
             </div>
@@ -1916,7 +2077,7 @@ function App() {
 
         {/* Mobile dropdown nav */}
         {mobileMenu && (
-          <div className="md:hidden" style={{background:'linear-gradient(180deg,#040A14,#070E1D)',borderTop:'1px solid rgba(200,134,10,.12)',position:'absolute',width:'100%',left:0,zIndex:50,boxShadow:'0 16px 40px rgba(7,14,29,.5)'}}>
+          <div className="md:hidden" style={{background:'linear-gradient(180deg,#040A14,#070E1D)',borderTop:'1px solid rgba(200,134,10,.12)',width:'100%',zIndex:50,boxShadow:'0 16px 40px rgba(7,14,29,.5)'}}>
             <div onClick={()=>navTo('home')} style={{display:'flex',alignItems:'center',gap:12,padding:'15px 20px',borderBottom:'1px solid rgba(255,255,255,.05)',fontSize:'.74rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'rgba(255,255,255,.8)',cursor:'pointer'}}>
               <span style={{fontSize:'1rem'}}>🏠</span> Properties
             </div>
@@ -1945,7 +2106,7 @@ function App() {
           </div>
         )}
       </div>
-      {/* END STICKY NAV BLOCK */}
+      {/* ══ END STICKY BLOCK ══ */}
 
       {/* PARTNER LOGOS — in normal flow, NOT sticky */}
       <div className="partners-bar">
@@ -1957,7 +2118,7 @@ function App() {
         </div>
       </div>
 
-      {/* SEO H1 — visually hidden */}
+      {/* SEO H1 */}
       <h1 style={{position:'absolute',width:1,height:1,padding:0,margin:-1,overflow:'hidden',clip:'rect(0,0,0,0)',whiteSpace:'nowrap',border:0}}>
         Trusted Real Estate Advisory in Bengaluru — Perfect Horizons
       </h1>
@@ -1965,10 +2126,9 @@ function App() {
       {/* GET IN TOUCH SIDEBAR BTN */}
       <button className="git-btn" onClick={()=>setShowLead(true)}>Get in Touch</button>
 
-      {/* MAIN */}
+      {/* MAIN CONTENT */}
       <main style={{maxWidth:'72rem',margin:'0 auto',padding:'1.5rem',paddingTop:'2rem',flexGrow:1,width:'100%'}}>
 
-        {/* Property Grid — equal height */}
         {loading ? (
           <div style={{textAlign:'center',paddingTop:'5rem',paddingBottom:'5rem',color:'var(--teal)',fontWeight:700,fontSize:'.82rem',textTransform:'uppercase',letterSpacing:'.16em'}}>
             <div style={{fontSize:'2.5rem',marginBottom:'1rem',animation:'pulseSlow 1s ease-in-out infinite',display:'inline-block'}}>🏗️</div>
@@ -1983,12 +2143,12 @@ function App() {
         ) : (
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:'1.5rem',alignItems:'stretch'}}>
             {filtered.map((p,i)=>(
-              <PropCard key={p.id||i} p={p} idx={i} onClick={()=>pickProp(p)} />
+              <PropCard key={p.id||i} p={p} idx={i} isMobile={isMobile} onClick={()=>pickProp(p)} />
             ))}
           </div>
         )}
 
-        {/* WHY PERFECT HORIZONS — company-focused, no personal refs, dynamic locations */}
+        {/* WHY PERFECT HORIZONS */}
         <div style={{marginTop:'3rem',background:'var(--white)',border:'1px solid var(--border)',borderRadius:'var(--r-card)',padding:'2rem 2.25rem'}}>
           <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.4rem',fontWeight:700,fontStyle:'italic',color:'var(--navy)',marginBottom:'1.25rem',borderLeft:'3px solid var(--gold)',paddingLeft:'1rem'}}>Why Choose Perfect Horizons?</h2>
           <div style={{display:'grid',gridTemplateColumns:'1fr',gap:'1rem',color:'var(--muted)',fontSize:'.855rem',lineHeight:1.9,maxWidth:'60rem'}} className="md:grid-cols-2">
@@ -2003,7 +2163,6 @@ function App() {
               <p>Reach us at <strong style={{color:'var(--navy)'}}>+91 {CALL}</strong> or WhatsApp — Mon to Sat, 9 AM to 8 PM. Our advisory services are 100% free for homebuyers.</p>
             </div>
           </div>
-          {/* Dynamic areas from loaded properties */}
           <div style={{marginTop:'1.5rem',paddingTop:'1.25rem',borderTop:'1px solid var(--border)',display:'flex',flexWrap:'wrap',gap:8}}>
             {[...new Set(props.map(p=>gv(p,'Location')).filter(Boolean))].slice(0,12).map((area,i)=>(
               <button key={i} onClick={()=>setSearch(area)} style={{background:'var(--parch)',border:'1px solid var(--border)',borderRadius:8,padding:'5px 12px',fontSize:'.62rem',fontWeight:600,color:'var(--navy)',cursor:'pointer',transition:'border-color .18s,background .18s'}} className="hover:border-yellow-400 hover:bg-yellow-50">📍 {area}</button>
@@ -2020,10 +2179,8 @@ function App() {
         <WASvg size={26} color="#fff" />
       </a>
 
-      {/* General lead modal */}
       {showLead && <LeadModal title="Get in Touch" subtitle="Our advisor will call you shortly" onClose={()=>setShowLead(false)} onSubmit={async d=>{const ok=await submitLead(d,'General Enquiry','General');if(ok)setShowLead(false);return ok;}} />}
 
-      {/* Legal modal */}
       {legal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 anim-fadeIn" style={{background:'rgba(7,14,29,.88)',backdropFilter:'blur(6px)'}} onClick={()=>setLegal(null)}>
           <div className="card" style={{maxWidth:600,width:'100%',maxHeight:'80vh',overflowY:'auto',padding:'2.25rem',position:'relative'}} onClick={e=>e.stopPropagation()}>
