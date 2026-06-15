@@ -17,6 +17,27 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" id="tw-title" content="Perfect Horizons | Real Estate Advisory Bengaluru">
 <meta name="twitter:description" id="tw-desc" content="Curated properties in Bengaluru. We only recommend what we'd confidently suggest to family.">
+
+<script>
+// ── GitHub Pages SPA Routing ──
+// On first load, if we were redirected via 404.html, restore the real path
+(function() {
+  var query = window.location.search;
+  if (query) {
+    var params = {};
+    query.slice(1).split('&').forEach(function(p) {
+      var kv = p.split('=');
+      params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
+    });
+    if (params.p) {
+      var path = '/' + params.p;
+      // Remove ?p=... from the URL and set the real path
+      window.history.replaceState(null, '', path);
+    }
+  }
+})();
+</script>
+
 <script id="schema-localbusiness" type="application/ld+json">
 {"@context":"https://schema.org","@type":"RealEstateAgent","name":"Perfect Horizons","description":"Independent real estate advisory in Bengaluru offering curated property recommendations, home loan assistance, and guided site visits.","url":"https://perfecthorizons.in","telephone":"+91-9113261205","address":{"@type":"PostalAddress","addressLocality":"Bengaluru","addressRegion":"Karnataka","addressCountry":"IN"},"areaServed":["Bengaluru","Electronic City","Sarjapur","Whitefield","Chandapura","Mysuru"],"openingHours":"Mo-Sa 09:00-20:00","priceRange":"Free Advisory"}
 </script>
@@ -57,8 +78,6 @@
   --r-btn:     12px;
   --nav-h:     56px;
   --filter-h:  56px;
-  --partners-h: 56px;
-  --sticky-total: 112px; /* nav + filter */
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -113,21 +132,15 @@ html,body{width:100%;overflow-x:hidden}
 .card-chip{display:inline-flex;align-items:center;gap:4px;background:var(--parch);border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:.56rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.08em}
 .card-cta-wrap{padding:0 16px 16px;margin-top:auto}
 .card-cta{width:100%;padding:11px;background:linear-gradient(135deg,rgba(184,114,10,.08),rgba(218,150,16,.08));border:1.5px solid var(--gold);border-radius:10px;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);cursor:pointer;transition:all .22s;text-align:center;display:block}
-.prop-card:hover .card-cta{background:linear-gradient(135deg,#B8720A,#DA9610);color:#fff;border-color:transparent}
 
 /* ── Cards ── */
 .card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--sh-sm)}
 
 /* ── Badges ── */
 .badge{display:inline-flex;align-items:center;gap:4px;font-size:.55rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:999px}
-.badge-ready{background:#DCFCE7;color:#166534}
-.badge-under{background:#FEF3C7;color:#92400E}
-.badge-new{background:#EFF6FF;color:#1E40AF}
-.badge-default{background:var(--parch);color:var(--muted)}
 .badge-rera{background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;font-size:.58rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;word-break:break-all;line-height:1.4}
 
 /* ── STICKY HEADER SYSTEM ── */
-/* The sticky wrapper holds nav + filters together */
 .sticky-top-block{
   position:sticky;
   top:0;
@@ -144,18 +157,22 @@ html,body{width:100%;overflow-x:hidden}
   gap:1rem;
   box-shadow:0 2px 0 rgba(200,134,10,.08);
 }
-.sticky-top-block .ph-filter-bar{
-  background:#fff;
-  border-bottom:1px solid var(--border);
-  padding:10px 1.5rem;
-  box-shadow:0 4px 16px rgba(7,14,29,.08);
+/* Desktop: filter bar is sticky inside the block */
+@media(min-width:768px){
+  .sticky-top-block .ph-filter-bar{
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    padding:10px 1.5rem;
+    box-shadow:0 4px 16px rgba(7,14,29,.08);
+  }
 }
-/* Shadow only on the whole sticky block bottom */
-.sticky-top-block::after{
-  content:'';
-  display:block;
-  height:0;
-  box-shadow:0 6px 24px rgba(7,14,29,.14);
+/* Mobile: filter bar scrolls away — NOT in sticky block */
+@media(max-width:767px){
+  .sticky-top-block .ph-filter-bar{
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    padding:8px 1rem;
+  }
 }
 
 /* Nav links */
@@ -179,19 +196,19 @@ html,body{width:100%;overflow-x:hidden}
 .ph-select:hover{border-color:var(--gold)}
 .ph-select:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(26,68,128,.1);outline:none}
 
-/* Detail page top bar offset */
+/* ── Detail page top bar ── */
 .detail-topbar{
-  position:fixed;
-  top:0;left:0;right:0;
+  position:sticky;
+  top:0;
   z-index:50;
-  background:#fff;
-  border-bottom:1px solid var(--border);
+  background:linear-gradient(135deg,#040A14,#070E1D);
+  border-bottom:1px solid rgba(200,134,10,.15);
   box-shadow:var(--sh-sm);
   height:54px;
 }
 .detail-anchor-nav{
-  position:fixed;
-  top:54px;left:0;right:0;
+  position:sticky;
+  top:54px;
   z-index:49;
   background:#fff;
   border-bottom:1px solid var(--border);
@@ -200,6 +217,21 @@ html,body{width:100%;overflow-x:hidden}
 .anchor-tab{padding:14px 20px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;transition:color .18s,border-color .18s}
 .anchor-tab:hover{color:var(--navy)}
 .anchor-tab.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+/* ── Info page back bar ── */
+.info-back-bar{
+  position:sticky;
+  top:0;
+  z-index:50;
+  background:linear-gradient(135deg,#040A14,#070E1D);
+  border-bottom:1px solid rgba(200,134,10,.15);
+  height:54px;
+  display:flex;
+  align-items:center;
+  padding:0 1.5rem;
+  gap:1rem;
+  box-shadow:var(--sh-sm);
+}
 
 /* ── Detail page sections ── */
 .section-block{background:var(--white);border:1px solid var(--border);border-radius:var(--r-card);padding:2rem;box-shadow:var(--sh-sm)}
@@ -255,12 +287,6 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);box-shadow:0
 .mob-accordion.open{max-height:280px;opacity:1}
 
 /* ── Gallery ── */
-.gallery-swipe{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;padding-bottom:4px;-webkit-overflow-scrolling:touch}
-.gallery-swipe::-webkit-scrollbar{height:3px}
-.gallery-swipe::-webkit-scrollbar-track{background:var(--parch)}
-.gallery-swipe::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-.gallery-swipe-item{scroll-snap-align:start;flex-shrink:0;border-radius:10px;overflow:hidden;cursor:pointer;border:2px solid var(--border);transition:border-color .18s}
-.gallery-swipe-item.active{border-color:var(--gold)}
 .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px}
 
 /* ── Lightbox ── */
@@ -284,15 +310,8 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);box-shadow:0
 .line-clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .line-clamp-3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 
-/* ── FAQ Accordion ── */
-.faq-item{border-bottom:1px solid var(--border)}
-.faq-item:last-child{border-bottom:none}
+/* ── FAQ ── */
 .faq-btn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 0;background:none;border:none;cursor:pointer;text-align:left;gap:12px}
-.faq-q{font-size:.82rem;font-weight:700;color:var(--navy);line-height:1.5;flex:1}
-.faq-icon{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--parch);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.55rem;color:var(--muted);transition:background .18s,transform .25s}
-.faq-btn[aria-expanded="true"] .faq-icon{background:var(--gold-lt);border-color:rgba(200,134,10,.3);color:var(--gold);transform:rotate(180deg)}
-.faq-answer{overflow:hidden;transition:max-height .3s cubic-bezier(.4,0,.2,1)}
-.faq-answer-inner{padding:0 0 14px;font-size:.8rem;color:var(--muted);line-height:1.78}
 
 /* ── Growth Rate Badge ── */
 .growth-badge{display:inline-flex;flex-direction:column;align-items:center;gap:3px;background:linear-gradient(135deg,#DCFCE7,#D1FAE5);border:1px solid #86EFAC;border-radius:12px;padding:12px 18px;min-width:100px}
@@ -303,13 +322,10 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);box-shadow:0
 .location-grid{display:grid;grid-template-columns:1fr;gap:1.25rem}
 @media(min-width:768px){.location-grid{grid-template-columns:1fr 1fr}}
 
-/* ── Partners (non-sticky, normal flow) ── */
+/* ── Partners ── */
 .partners-bar{background:#fff;border-bottom:1px solid var(--border);border-top:1px solid var(--border);padding:8px 0}
 
-/* ── Auto-sliding gallery ── */
-@keyframes galSlide{0%{opacity:0;transform:scale(1.03)}8%{opacity:1;transform:scale(1)}92%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1)}}
-
-/* Mobile card — cleaner header */
+/* Mobile adjustments */
 @media(max-width:767px){
   .ph-select{min-height:46px;font-size:.78rem!important}
   .section-block{padding:1.25rem}
@@ -334,7 +350,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);box-shadow:0
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useEffect, useMemo, useRef, useCallback, useInterval } = React;
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
 /* ── Constants ── */
 const WA = "919113261205";
@@ -372,16 +388,13 @@ const fmtInr = n => { if(n>=10000000)return'₹'+(n/10000000).toFixed(2).replace
 const mapEmbed = link => { if(!link)return null; const l=String(link).trim(); if(!l||l==='#')return null; if(l.includes('maps/embed'))return l; try{ const m=l.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/); if(m)return`https://maps.google.com/maps?q=${m[1]},${m[2]}&z=16&output=embed`; const u=new URL(l.startsWith('http')?l:'https://'+l); let q=u.searchParams.get('q')||u.searchParams.get('query')||''; if(!q){const pm=l.match(/\/maps\/place\/([^/@?]+)/);if(pm)q=decodeURIComponent(pm[1].replace(/\+/g,' '))} if(q)return`https://maps.google.com/maps?q=${encodeURIComponent(q)}&z=15&output=embed`; }catch{} return`https://maps.google.com/maps?q=${encodeURIComponent('Bengaluru, Karnataka')}&z=13&output=embed`; };
 const statusStyle = s => { const v=String(s).toLowerCase(); if(v.includes('ready'))return{bg:'#DCFCE7',cl:'#166534'}; if(v.includes('under'))return{bg:'#FEF3C7',cl:'#92400E'}; if(v.includes('new')||v.includes('launch')||v.includes('pre'))return{bg:'#EFF6FF',cl:'#1E40AF'}; return{bg:'#F1F5F9',cl:'#475569'}; };
 
-/* ── Slug generation ── */
+/* ── Slug / routing ── */
 const slugify = str => String(str||'').toLowerCase().replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-');
 const propSlug = p => { const name=gv(p,'Property Name'); const loc=gv(p,'Location'); return slugify(`${name}${loc?' '+loc:''}`); };
 const propPath = p => `/property/${propSlug(p)}`;
+const pushRoute = path => window.history.pushState({path},'',path);
+const replaceRoute = path => window.history.replaceState({path},'',path);
 
-/* ── History API routing ── */
-const pushRoute = (path) => { window.history.pushState({path},'',path); };
-const replaceRoute = (path) => { window.history.replaceState({path},'',path); };
-
-/* ── Update SEO meta tags ── */
 const updateMeta = ({title,desc,url,schema}) => {
   document.title = title;
   const setMeta = (id,v) => { const el=document.getElementById(id); if(el)el.content=v; };
@@ -401,11 +414,7 @@ const WASvg = ({size=26,color="#fff"}) => (
 );
 
 /* ══════════════════════════════════════════════════════════
-   AUTO-SLIDING GALLERY COMPONENT
-   - Auto-advances every 4 seconds
-   - Pauses on hover/touch interaction
-   - Manual navigation always available
-   - Lightbox on click
+   GALLERY COMPONENT (auto-sliding)
 ══════════════════════════════════════════════════════════ */
 function Gallery({ images, propName }) {
   const [active, setActive] = useState(0);
@@ -421,33 +430,19 @@ function Gallery({ images, propName }) {
     return () => window.removeEventListener('resize', h);
   }, []);
 
-  // Auto-slide
   useEffect(() => {
     if(images.length <= 1 || paused || lightbox) return;
-    timerRef.current = setInterval(() => {
-      setActive(a => (a + 1) % images.length);
-    }, 4000);
+    timerRef.current = setInterval(() => setActive(a => (a + 1) % images.length), 4000);
     return () => clearInterval(timerRef.current);
   }, [images.length, paused, lightbox]);
 
-  const prev = useCallback(() => { setActive(a => (a - 1 + images.length) % images.length); }, [images.length]);
-  const next = useCallback(() => { setActive(a => (a + 1) % images.length); }, [images.length]);
+  const prev = useCallback(() => setActive(a => (a - 1 + images.length) % images.length), [images.length]);
+  const next = useCallback(() => setActive(a => (a + 1) % images.length), [images.length]);
+  const goTo = useCallback(i => { setActive(i); setPaused(true); setTimeout(() => setPaused(false), 6000); }, []);
+  const handleManualNav = useCallback(fn => { fn(); setPaused(true); setTimeout(() => setPaused(false), 6000); }, []);
 
-  const goTo = useCallback((i) => {
-    setActive(i);
-    setPaused(true);
-    setTimeout(() => setPaused(false), 6000);
-  }, []);
-
-  const handleManualNav = useCallback((fn) => {
-    fn();
-    setPaused(true);
-    setTimeout(() => setPaused(false), 6000);
-  }, []);
-
-  // Touch swipe
-  const onTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; setPaused(true); };
-  const onTouchEnd = (e) => {
+  const onTouchStart = e => { touchStartX.current = e.touches[0].clientX; setPaused(true); };
+  const onTouchEnd = e => {
     if(touchStartX.current === null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if(Math.abs(dx) > 40) { dx < 0 ? next() : prev(); }
@@ -455,16 +450,11 @@ function Gallery({ images, propName }) {
     setTimeout(() => setPaused(false), 6000);
   };
 
-  // Keyboard for lightbox
   useEffect(() => {
     if(!lightbox) return;
-    const handler = e => {
-      if(e.key==='ArrowLeft') prev();
-      if(e.key==='ArrowRight') next();
-      if(e.key==='Escape') setLightbox(false);
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    const h = e => { if(e.key==='ArrowLeft')prev(); if(e.key==='ArrowRight')next(); if(e.key==='Escape')setLightbox(false); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
   }, [lightbox, prev, next]);
 
   if(!images.length) return null;
@@ -480,97 +470,51 @@ function Gallery({ images, propName }) {
           </span>
         )}
       </div>
-
-      {/* Main slide area */}
       <div
         style={{position:'relative',borderRadius:12,overflow:'hidden',cursor:'pointer',aspectRatio:'16/9',background:'var(--parch)',userSelect:'none'}}
-        onMouseEnter={()=>setPaused(true)}
-        onMouseLeave={()=>setPaused(false)}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        onClick={()=>setLightbox(true)}
+        onClick={() => setLightbox(true)}
       >
         {images.map((img, i) => (
-          <img
-            key={i}
-            src={img}
-            loading={i === 0 ? 'eager' : 'lazy'}
-            decoding="async"
-            alt={`${propName} — photo ${i+1}`}
-            style={{
-              position:'absolute',inset:0,
-              width:'100%',height:'100%',
-              objectFit:'cover',
-              display:'block',
-              opacity: active === i ? 1 : 0,
-              transition:'opacity .6s cubic-bezier(.4,0,.2,1)',
-              pointerEvents: active === i ? 'auto' : 'none',
-            }}
+          <img key={i} src={img} loading={i===0?'eager':'lazy'} decoding="async" alt={`${propName} — photo ${i+1}`}
+            style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',display:'block',opacity:active===i?1:0,transition:'opacity .6s cubic-bezier(.4,0,.2,1)',pointerEvents:active===i?'auto':'none'}}
           />
         ))}
-
-        {/* Gradient & enlarge hint */}
         <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(7,14,29,.3),transparent)',pointerEvents:'none'}}/>
         <div style={{position:'absolute',bottom:10,left:12,pointerEvents:'none'}}>
           <span style={{fontSize:'.54rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'rgba(255,255,255,.8)',background:'rgba(7,14,29,.5)',padding:'3px 9px',borderRadius:4}}>🔍 Tap to enlarge</span>
         </div>
-
-        {/* Counter */}
         {images.length > 1 && (
           <div style={{position:'absolute',top:10,right:10,background:'rgba(7,14,29,.6)',color:'#fff',fontSize:'.54rem',fontWeight:700,padding:'3px 9px',borderRadius:999,pointerEvents:'none'}}>
             {active+1}/{images.length}
           </div>
         )}
-
-        {/* Prev/Next arrows */}
         {images.length > 1 && (
           <>
-            <button
-              onClick={e=>{e.stopPropagation();handleManualNav(prev);}}
-              style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',background:'rgba(7,14,29,.6)',border:'none',color:'#fff',width:36,height:36,borderRadius:'50%',cursor:'pointer',fontSize:'1rem',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2,backdropFilter:'blur(4px)',transition:'background .18s'}}
-              onMouseEnter={e=>e.currentTarget.style.background='rgba(200,134,10,.7)'}
-              onMouseLeave={e=>e.currentTarget.style.background='rgba(7,14,29,.6)'}
-            >‹</button>
-            <button
-              onClick={e=>{e.stopPropagation();handleManualNav(next);}}
-              style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'rgba(7,14,29,.6)',border:'none',color:'#fff',width:36,height:36,borderRadius:'50%',cursor:'pointer',fontSize:'1rem',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2,backdropFilter:'blur(4px)',transition:'background .18s'}}
-              onMouseEnter={e=>e.currentTarget.style.background='rgba(200,134,10,.7)'}
-              onMouseLeave={e=>e.currentTarget.style.background='rgba(7,14,29,.6)'}
-            >›</button>
+            <button onClick={e=>{e.stopPropagation();handleManualNav(prev);}} style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',background:'rgba(7,14,29,.6)',border:'none',color:'#fff',width:36,height:36,borderRadius:'50%',cursor:'pointer',fontSize:'1rem',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2,backdropFilter:'blur(4px)',transition:'background .18s'}} onMouseEnter={e=>e.currentTarget.style.background='rgba(200,134,10,.7)'} onMouseLeave={e=>e.currentTarget.style.background='rgba(7,14,29,.6)'}>‹</button>
+            <button onClick={e=>{e.stopPropagation();handleManualNav(next);}} style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'rgba(7,14,29,.6)',border:'none',color:'#fff',width:36,height:36,borderRadius:'50%',cursor:'pointer',fontSize:'1rem',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2,backdropFilter:'blur(4px)',transition:'background .18s'}} onMouseEnter={e=>e.currentTarget.style.background='rgba(200,134,10,.7)'} onMouseLeave={e=>e.currentTarget.style.background='rgba(7,14,29,.6)'}>›</button>
           </>
         )}
       </div>
-
-      {/* Dot indicators */}
       {images.length > 1 && (
         <div style={{display:'flex',justifyContent:'center',gap:5,marginTop:8,flexWrap:'wrap'}}>
           {images.map((_,i)=>(
-            <button
-              key={i}
-              onClick={()=>goTo(i)}
-              style={{width:active===i?20:6,height:6,borderRadius:3,background:active===i?'var(--gold)':'var(--border)',border:'none',cursor:'pointer',padding:0,transition:'all .25s ease'}}
-              aria-label={`Go to photo ${i+1}`}
-            />
+            <button key={i} onClick={()=>goTo(i)} style={{width:active===i?20:6,height:6,borderRadius:3,background:active===i?'var(--gold)':'var(--border)',border:'none',cursor:'pointer',padding:0,transition:'all .25s ease'}} aria-label={`Go to photo ${i+1}`}/>
           ))}
         </div>
       )}
-
-      {/* Thumbnail strip — desktop only */}
       {!isMobile && images.length > 1 && (
         <div className="gallery-grid" style={{marginTop:10}}>
           {images.map((img,i)=>(
-            <div
-              key={i}
-              onClick={()=>goTo(i)}
-              style={{aspectRatio:'4/3',borderRadius:7,overflow:'hidden',cursor:'pointer',border:`2px solid ${active===i?'var(--gold)':'var(--border)'}`,transition:'border-color .18s',background:'var(--parch)'}}
-            >
+            <div key={i} onClick={()=>goTo(i)} style={{aspectRatio:'4/3',borderRadius:7,overflow:'hidden',cursor:'pointer',border:`2px solid ${active===i?'var(--gold)':'var(--border)'}`,transition:'border-color .18s',background:'var(--parch)'}}>
               <img src={img} loading="lazy" decoding="async" alt={`${propName} — thumbnail ${i+1}`} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
             </div>
           ))}
         </div>
       )}
-
-      {/* Lightbox */}
       {lightbox && (
         <div className="lightbox anim-fadeIn" onClick={()=>setLightbox(false)}>
           <button onClick={()=>setLightbox(false)} style={{position:'absolute',top:16,right:20,background:'rgba(255,255,255,.1)',border:'none',color:'#fff',fontSize:'1.5rem',lineHeight:1,cursor:'pointer',width:40,height:40,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
@@ -588,12 +532,19 @@ function Gallery({ images, propName }) {
 
 /* ══════════════════════════════════════════════════════════
    EMI CALCULATOR
+   FIX: priceStr prop now correctly sets initial loan value on mobile too
 ══════════════════════════════════════════════════════════ */
 function EMICalc({ priceStr, onApply }) {
-  const base = (() => { const v=priceInCr(priceStr); return v>0?Math.round(v*10000000):10000000; })();
+  const base = useMemo(() => {
+    const v = priceInCr(priceStr);
+    return v > 0 ? Math.round(v * 10000000) : 10000000;
+  }, [priceStr]);
+
   const [loan, setLoan] = useState(base);
   const [rate, setRate] = useState(8.5);
   const [yrs, setYrs]   = useState(20);
+
+  // Sync loan to base whenever priceStr changes (fixes mobile not syncing)
   useEffect(() => { setLoan(base); }, [base]);
 
   const { emi, totalInt, pPct } = useMemo(() => {
@@ -832,44 +783,29 @@ function PropCard({ p, idx, onClick, isMobile }) {
   const sc      = statusStyle(status);
 
   if(isMobile) {
-    /* ── MOBILE CARD: Clean, image-first, minimal overlay ── */
     return (
       <article className="prop-card" onClick={onClick}>
-        {/* Full image — no heavy overlay */}
         <div className="card-img-wrap" style={{height:200,position:'relative'}}>
-          <img
-            src={img} loading={idx<4?'eager':'lazy'} decoding="async"
-            className="card-img"
-            alt={`${name} by ${builder} — ${type} in ${loc}`}
+          <img src={img} loading={idx<4?'eager':'lazy'} decoding="async" className="card-img" alt={`${name} by ${builder} — ${type} in ${loc}`}
             onError={e=>{e.target.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 220%22><rect width=%22400%22 height=%22220%22 fill=%22%23F2EDE3%22/><text x=%22200%22 y=%22110%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2248%22>🏗️</text></svg>'}}
           />
-          {/* Light scrim at bottom only for price readability */}
           <div style={{position:'absolute',bottom:0,left:0,right:0,height:'50%',background:'linear-gradient(to top,rgba(7,14,29,.78),transparent)',pointerEvents:'none'}}/>
-          {/* Type tag — small, top-left */}
           <div style={{position:'absolute',top:8,left:8,background:'rgba(7,14,29,.8)',backdropFilter:'blur(8px)',color:'#FCD34D',fontSize:'.48rem',fontWeight:800,letterSpacing:'.14em',textTransform:'uppercase',padding:'3px 9px',borderRadius:5,border:'1px solid rgba(200,134,10,.3)'}}>
             {type}
           </div>
-          {/* Status — top right */}
           {status && (
             <div style={{position:'absolute',top:8,right:8}}>
               <span style={{background:sc.bg,color:sc.cl,fontSize:'.46rem',fontWeight:800,padding:'3px 8px',borderRadius:999,letterSpacing:'.08em',textTransform:'uppercase'}}>{status}</span>
             </div>
           )}
-          {/* Price — bottom-left on image */}
           <div style={{position:'absolute',bottom:10,left:12,zIndex:3}}>
             <div style={{fontSize:'.44rem',fontWeight:700,color:'rgba(255,255,255,.7)',textTransform:'uppercase',letterSpacing:'.14em',marginBottom:2}}>From</div>
             <div style={{fontSize:'1.1rem',fontWeight:800,color:'#fff',lineHeight:1,textShadow:'0 2px 8px rgba(0,0,0,.5)'}}>{price}</div>
           </div>
-          {/* Call button — bottom right on image */}
-          <a
-            href={`tel:${CALL}`}
-            onClick={e=>e.stopPropagation()}
-            style={{position:'absolute',bottom:10,right:12,zIndex:3,display:'flex',alignItems:'center',gap:5,background:'linear-gradient(135deg,#B8720A,#DA9610)',border:'none',borderRadius:8,padding:'7px 12px',fontSize:'.56rem',fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:'.1em',textDecoration:'none',boxShadow:'0 2px 10px rgba(184,114,10,.4)'}}
-          >
+          <a href={`tel:${CALL}`} onClick={e=>e.stopPropagation()} style={{position:'absolute',bottom:10,right:12,zIndex:3,display:'flex',alignItems:'center',gap:5,background:'linear-gradient(135deg,#B8720A,#DA9610)',border:'none',borderRadius:8,padding:'7px 12px',fontSize:'.56rem',fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:'.1em',textDecoration:'none',boxShadow:'0 2px 10px rgba(184,114,10,.4)'}}>
             📞 Call
           </a>
         </div>
-        {/* Card body — only essentials */}
         <div style={{padding:'12px 14px 0',flex:1,display:'flex',flexDirection:'column'}}>
           <div style={{fontSize:'.48rem',fontWeight:700,color:'var(--gold)',textTransform:'uppercase',letterSpacing:'.12em',marginBottom:3}}>{builder}</div>
           <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.05rem',fontWeight:700,color:'var(--navy)',lineHeight:1.2,marginBottom:6}}>{name}</h2>
@@ -885,14 +821,10 @@ function PropCard({ p, idx, onClick, isMobile }) {
     );
   }
 
-  /* ── DESKTOP CARD: Full detail ── */
   return (
     <article className="prop-card" onClick={onClick}>
       <div className="card-img-wrap">
-        <img
-          src={img} loading={idx<6?'eager':'lazy'} decoding="async"
-          fetchpriority={idx<3?'high':'auto'}
-          className="card-img"
+        <img src={img} loading={idx<6?'eager':'lazy'} decoding="async" fetchpriority={idx<3?'high':'auto'} className="card-img"
           alt={`${name} by ${builder} — ${type} for sale in ${loc}, Bengaluru`}
           onError={e=>{e.target.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 220%22><rect width=%22400%22 height=%22220%22 fill=%22%23F2EDE3%22/><text x=%22200%22 y=%22110%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2248%22>🏗️</text></svg>'}}
         />
@@ -968,8 +900,7 @@ function LocationHighlights({ raw }) {
             <React.Fragment key={s.key}>
               <button onClick={()=>toggle(s.key)} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',background:isOpen?'#fef9ec':'var(--parch)',border:'none',borderBottom:isOpen||!isLast?'1px solid var(--border)':'none',cursor:'pointer',textAlign:'left',transition:'background .18s'}}>
                 <span style={{display:'flex',alignItems:'center',gap:8,fontSize:'.65rem',fontWeight:700,color:'var(--navy)',textTransform:'uppercase',letterSpacing:'.1em'}}>
-                  <span style={{fontSize:'1rem'}}>{s.icon}</span>
-                  {s.label}
+                  <span style={{fontSize:'1rem'}}>{s.icon}</span>{s.label}
                   <span style={{background:'var(--parch)',border:'1px solid var(--border)',borderRadius:999,padding:'1px 7px',fontSize:'.52rem',color:'var(--muted)',fontWeight:700}}>{s.items.length}</span>
                 </span>
                 <span style={{fontSize:'.6rem',color:'var(--muted)',transition:'transform .22s',display:'inline-block',transform:isOpen?'rotate(180deg)':'none'}}>▼</span>
@@ -977,8 +908,7 @@ function LocationHighlights({ raw }) {
               <div style={{maxHeight:isOpen?s.items.length*52+'px':'0',overflow:'hidden',transition:'max-height .3s cubic-bezier(.4,0,.2,1)',borderBottom:isOpen&&!isLast?'1px solid var(--border)':'none'}}>
                 {s.items.map((item,j)=>(
                   <div key={j} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',background:'#fff',borderBottom:j<s.items.length-1?'1px solid var(--border)':'none',fontSize:'.78rem',fontWeight:500,color:'var(--navy)',lineHeight:1.5}}>
-                    <span style={{color:'var(--gold)',fontSize:'.6rem',flexShrink:0}}>●</span>
-                    {item}
+                    <span style={{color:'var(--gold)',fontSize:'.6rem',flexShrink:0}}>●</span>{item}
                   </div>
                 ))}
               </div>
@@ -991,7 +921,7 @@ function LocationHighlights({ raw }) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   FAQ ACCORDION
+   FAQ SECTION
 ══════════════════════════════════════════════════════════ */
 function FAQSection({ raw, title }) {
   const [open, setOpen] = useState({});
@@ -1049,10 +979,7 @@ function GrowthRateDisplay({ raw, location }) {
       </div>
       <div>
         <div style={{fontSize:'.52rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--muted)',marginBottom:4}}>Area Growth Rate</div>
-        <div style={{fontSize:'.85rem',fontWeight:700,color:'var(--navy)',marginBottom:4}}>
-          {area && <span>{area} · </span>}
-          Strong appreciation potential
-        </div>
+        <div style={{fontSize:'.85rem',fontWeight:700,color:'var(--navy)',marginBottom:4}}>{area && <span>{area} · </span>}Strong appreciation potential</div>
         <div style={{fontSize:'.72rem',color:'var(--muted)'}}>Based on recent registration data and infrastructure development</div>
       </div>
     </div>
@@ -1061,20 +988,27 @@ function GrowthRateDisplay({ raw, location }) {
 
 /* ══════════════════════════════════════════════════════════
    PROPERTY DETAIL PAGE
+   Changes:
+   - Mobile topbar: only logo/back + call button (no WA, no Enquire)
+   - Mobile hero: full-bleed cover image, name/builder/location text at bottom-left only, no config/possession/price bar
+   - No gap between hero and content
+   - Section order: About → Key Highlights → Amenities → Master Plan → Floor Plan → Gallery → Location
+   - EMI synced to property price via useEffect
 ══════════════════════════════════════════════════════════ */
 function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
   const [modal, setModal]        = useState(null);
   const [unlocked, setUnlocked]  = useState(false);
-  const [activeTab, setActiveTab]= useState('gallery');
+  const [activeTab, setActiveTab]= useState('about');
   const [legal, setLegal]        = useState(null);
   const [showLead, setShowLead]  = useState(false);
 
   const refs = {
-    gallery:useRef(), about:useRef(), amenities:useRef(), highlights:useRef(),
-    masterplan:useRef(), floorplan:useRef(), location:useRef(), faq:useRef()
+    about:useRef(), highlights:useRef(), amenities:useRef(),
+    masterplan:useRef(), floorplan:useRef(), gallery:useRef(),
+    location:useRef(), faq:useRef()
   };
 
-  useEffect(()=>{ window.scrollTo(0,0); setActiveTab('gallery'); },[p]);
+  useEffect(()=>{ window.scrollTo(0,0); setActiveTab('about'); },[p]);
 
   useEffect(()=>{
     const obs=[];
@@ -1110,17 +1044,17 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
   const faqRaw = propType.includes('villa')?gv(p,'villa_faq'):propType.includes('plot')?gv(p,'plot_faq'):gv(p,'apartment_faq');
   const phFaqRaw = gv(p,'perfect_horizons_faq');
 
+  // Cover image — shown at TOP of mobile hero, crisp and full-bleed
   const cover  = gdThumb(gv(p,'cover_image')||gv(p,'cover-image')||gv(p,'Cover Image'));
-  const galRaw = gv(p,'gallery_images')||gv(p,'gallery-images')||gv(p,'Images and short videos \nif any')||'';
-  const gal    = typeof galRaw==='string'&&galRaw.length>5 ? galRaw.split(',').map(l=>gdThumb(l.trim())).filter(x=>x&&!x.includes('undefined')) : [];
 
-  // Gallery images: cover + gallery combined, cover first if not duplicate
-  const allGalleryImgs = useMemo(() => {
-    const imgs = [];
-    if(cover) imgs.push(cover);
-    gal.forEach(img => { if(img && !imgs.includes(img)) imgs.push(img); });
-    return imgs;
-  }, [cover, gal]);
+  // Gallery images (separate from cover — NOT combined)
+  const galRaw = gv(p,'gallery_images')||gv(p,'gallery-images')||gv(p,'Images and short videos \nif any')||'';
+  const galleryImgs = useMemo(() => {
+    if(typeof galRaw==='string'&&galRaw.length>5) {
+      return galRaw.split(',').map(l=>gdThumb(l.trim())).filter(x=>x&&!x.includes('undefined'));
+    }
+    return [];
+  }, [galRaw]);
 
   const fpRaw  = gv(p,'floor_plan')||gv(p,'Floor Plan')||gv(p,'floor plan');
   const mpRaw  = gv(p,'master_plan')||gv(p,'Master Plan')||gv(p,'master plan');
@@ -1135,16 +1069,18 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
 
   const hasHighlights = hlLines.length > 0;
   const hasLocHL = !!(locHL && String(locHL).trim().length > 2);
+  const hasGallery = galleryImgs.length > 0;
 
+  // Build tabs in correct order: About → Highlights → Amenities → Master Plan → Floor Plan → Gallery → Location → FAQs
   const tabs = [
-    {k:'gallery',  lbl:'Gallery',    hide:!allGalleryImgs.length},
-    {k:'about',    lbl:'About'},
-    {k:'amenities',lbl:'Amenities',  hide:!amen},
-    {k:'highlights',lbl:'Highlights',hide:!hasHighlights},
-    {k:'masterplan',lbl:'Master Plan',hide:!mpImgs.length},
-    {k:'floorplan', lbl:'Floor Plan', hide:!fpImgs.length},
-    {k:'location',  lbl:'Location'},
-    {k:'faq',       lbl:'FAQs',       hide:!faqRaw},
+    {k:'about',      lbl:'About'},
+    {k:'highlights', lbl:'Highlights', hide:!hasHighlights},
+    {k:'amenities',  lbl:'Amenities',  hide:!amen},
+    {k:'masterplan', lbl:'Master Plan',hide:!mpImgs.length},
+    {k:'floorplan',  lbl:'Floor Plan', hide:!fpImgs.length},
+    {k:'gallery',    lbl:'Gallery',    hide:!hasGallery},
+    {k:'location',   lbl:'Location'},
+    {k:'faq',        lbl:'FAQs',       hide:!faqRaw},
   ].filter(t=>!t.hide);
 
   const handleModalSubmit = async d => {
@@ -1172,90 +1108,74 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
     const titleStr = `${name}${bhkStr?' | '+bhkStr:''} in ${loc} | Perfect Horizons`;
     const metaDesc = `${name} by ${builder} — ${bhkStr||'Premium'} ${gv(p,'Property Type')||'property'} in ${loc}, Bengaluru. Starting from ${price||'₹On Request'}. RERA verified. Free advisory. Call +91 ${CALL}.`;
     const url = `${SITE}${propPath(p)}`;
-    const breadcrumbSchema = {
-      "@context":"https://schema.org","@type":"BreadcrumbList",
-      "itemListElement":[
-        {"@type":"ListItem","position":1,"name":"Home","item":SITE},
-        {"@type":"ListItem","position":2,"name":"Properties","item":SITE+'/properties'},
-        {"@type":"ListItem","position":3,"name":name,"item":url}
-      ]
-    };
-    const listingSchema = {
-      "@context":"https://schema.org","@type":"RealEstateListing",
-      "name":name,"description":metaDesc,"url":url,
-      "address":{"@type":"PostalAddress","addressLocality":loc,"addressRegion":"Karnataka","addressCountry":"IN"},
-      "image":cover||"","price":price||""
-    };
-    updateMeta({title:titleStr, desc:metaDesc, url, schema:[breadcrumbSchema, listingSchema]});
+    updateMeta({title:titleStr, desc:metaDesc, url});
   },[p]);
 
   return (
-    <div style={{minHeight:'100vh',background:'var(--cream)',paddingTop:0}} className="overflow-x-hidden">
+    <div style={{minHeight:'100vh',background:'var(--cream)'}} className="overflow-x-hidden">
 
-      {/* FIXED TOP BAR */}
+      {/* ── STICKY TOP BAR ── */}
       <div className="detail-topbar">
-        <div style={{maxWidth:'72rem',margin:'0 auto',padding:'0 1.5rem',display:'flex',justifyContent:'space-between',alignItems:'center',height:54}}>
-          <button onClick={onBack} style={{display:'flex',alignItems:'center',gap:8,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.14em',color:'var(--teal)',background:'none',border:'none',cursor:'pointer'}} className="hover:opacity-65 group">
-            <span className="group-hover:-translate-x-1 inline-block transition">←</span>
-            <span className="hidden sm:inline">Back to Listings</span>
-            <span className="sm:hidden">Back</span>
+        <div style={{maxWidth:'72rem',margin:'0 auto',padding:'0 1.25rem',display:'flex',justifyContent:'space-between',alignItems:'center',height:54}}>
+          {/* Left: back + logo */}
+          <button onClick={onBack} style={{display:'flex',alignItems:'center',gap:8,background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,.8)',padding:'4px 0'}} className="group">
+            <span style={{fontSize:'1rem',transition:'transform .18s'}} className="group-hover:-translate-x-1 inline-block">←</span>
+            <span style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1rem',fontWeight:700,fontStyle:'italic',color:'rgba(255,255,255,.9)'}}>Perfect Horizons</span>
           </button>
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <span className="hidden md:block" style={{fontSize:'.6rem',fontWeight:600,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.1em'}}>📍 {loc} · {builder}</span>
-            <a href={`tel:${CALL}`} style={{display:'flex',alignItems:'center',gap:6,fontSize:'.72rem',fontWeight:700,color:'var(--navy)'}} className="hover:text-yellow-600 transition hidden md:flex">📞 {CALL}</a>
-            <a href={`https://wa.me/${WA}?text=Hi, I'm interested in ${encodeURIComponent(name)}`} target="_blank" style={{display:'flex',alignItems:'center',gap:5,border:'1px solid rgba(37,211,102,.4)',borderRadius:8,fontSize:'.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em',color:'#166534',padding:'7px 12px',background:'rgba(37,211,102,.06)'}} className="md:hidden">
-              <WASvg size={14} color="#166534" /> WA
-            </a>
-            <button onClick={()=>setShowLead(true)} className="btn-gold md:hidden" style={{fontSize:'.6rem',padding:'8px 14px'}}>Enquire</button>
+          {/* Right: call button only */}
+          <a href={`tel:${CALL}`} style={{display:'flex',alignItems:'center',gap:7,background:'linear-gradient(135deg,#B8720A,#DA9610)',border:'none',borderRadius:10,padding:'9px 16px',fontSize:'.62rem',fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:'.1em',textDecoration:'none',boxShadow:'0 2px 10px rgba(184,114,10,.35)'}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.61 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Call Us
+          </a>
+        </div>
+      </div>
+
+      {/* ── MOBILE HERO: Full-bleed cover, text bottom-left, no stats bar ── */}
+      <div className="md:hidden" style={{position:'relative',height:280,background:'var(--navy)',overflow:'hidden'}}>
+        {cover ? (
+          <img
+            src={cover}
+            alt={`${name} by ${builder} in ${loc}`}
+            style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center',display:'block'}}
+          />
+        ) : (
+          <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <span style={{fontSize:'3rem'}}>🏗️</span>
+          </div>
+        )}
+        {/* Gentle gradient only at bottom for text legibility */}
+        <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(7,14,29,.82) 0%,rgba(7,14,29,.18) 50%,transparent 100%)',pointerEvents:'none'}}/>
+        {/* Property type tag — top left, small */}
+        <div style={{position:'absolute',top:10,left:10}}>
+          <span style={{background:'rgba(7,14,29,.78)',backdropFilter:'blur(8px)',color:'#FCD34D',fontSize:'.5rem',fontWeight:800,letterSpacing:'.14em',textTransform:'uppercase',padding:'4px 10px',borderRadius:5,border:'1px solid rgba(200,134,10,.28)'}}>
+            {gv(p,'Property Type')||'Property'}
+          </span>
+        </div>
+        {/* Status badge — top right */}
+        {status && (
+          <div style={{position:'absolute',top:10,right:10}}>
+            <span style={{background:sc.bg,color:sc.cl,fontSize:'.5rem',fontWeight:800,padding:'4px 9px',borderRadius:999,letterSpacing:'.1em',textTransform:'uppercase'}}>{status}</span>
+          </div>
+        )}
+        {/* Name / Builder / Location — bottom left, clean */}
+        <div style={{position:'absolute',bottom:14,left:14,right:14,zIndex:3}}>
+          <div style={{fontSize:'.52rem',fontWeight:700,color:'rgba(200,134,10,.9)',textTransform:'uppercase',letterSpacing:'.14em',marginBottom:4}}>{builder}</div>
+          <h1 style={{fontSize:'1.25rem',fontWeight:800,color:'#fff',lineHeight:1.2,marginBottom:6,textShadow:'0 2px 12px rgba(0,0,0,.5)'}}>{name}</h1>
+          <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+            <span style={{display:'inline-flex',alignItems:'center',gap:4,fontSize:'.56rem',fontWeight:700,color:'rgba(255,255,255,.75)',background:'rgba(255,255,255,.1)',backdropFilter:'blur(4px)',padding:'3px 8px',borderRadius:999}}>
+              <svg width="8" height="10" viewBox="0 0 10 14" fill="none"><path d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 5 3.5a1.5 1.5 0 0 1 0 3z" fill="currentColor"/></svg>
+              {loc}
+            </span>
+            {rera && <span style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:'.5rem',fontWeight:700,color:'#93C5FD',background:'rgba(147,197,253,.12)',padding:'3px 8px',borderRadius:999}}>✓ RERA</span>}
           </div>
         </div>
       </div>
 
-      {/* MOBILE HERO */}
-      <div className="md:hidden" style={{paddingTop:54,background:'var(--navy)'}}>
-        <div style={{position:'relative',height:240,overflow:'hidden'}}>
-          {cover ? (
-            <img src={cover} alt={`${name} by ${builder} in ${loc}`} style={{width:'100%',height:'100%',objectFit:'cover',display:'block',opacity:.88}}/>
-          ) : (
-            <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:'3rem'}}>🏗️</span></div>
-          )}
-          <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(7,14,29,.9) 0%,rgba(7,14,29,.35) 60%,transparent 100%)'}}/>
-          <div style={{position:'absolute',top:10,left:10}}>
-            <span style={{background:'rgba(7,14,29,.88)',color:'#FCD34D',fontSize:'.52rem',fontWeight:800,letterSpacing:'.14em',textTransform:'uppercase',padding:'4px 10px',borderRadius:5}}>{gv(p,'Property Type')||'Property'}</span>
-          </div>
-          {status && (
-            <div style={{position:'absolute',top:10,right:10}}>
-              <span style={{background:statusStyle(status).bg,color:statusStyle(status).cl,fontSize:'.5rem',fontWeight:800,padding:'4px 9px',borderRadius:999,letterSpacing:'.1em',textTransform:'uppercase'}}>{status}</span>
-            </div>
-          )}
-        </div>
-        <div style={{padding:'14px 16px 0',background:'var(--navy)'}}>
-          <div style={{fontSize:'.56rem',fontWeight:700,color:'rgba(200,134,10,.85)',textTransform:'uppercase',letterSpacing:'.14em',marginBottom:4}}>{builder}</div>
-          <h1 style={{fontSize:'1.2rem',fontWeight:800,color:'#fff',lineHeight:1.2,marginBottom:6}}>{name}</h1>
-          <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:12}}>
-            <span style={{fontSize:'.56rem',fontWeight:700,color:'rgba(255,255,255,.65)',background:'rgba(255,255,255,.08)',padding:'3px 8px',borderRadius:999}}>📍 {loc}</span>
-            {rera && <span style={{fontSize:'.54rem',fontWeight:700,color:'#93C5FD',background:'rgba(147,197,253,.1)',padding:'3px 8px',borderRadius:999}}>✓ RERA</span>}
-          </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:0,borderTop:'1px solid rgba(255,255,255,.08)',paddingTop:10,marginBottom:0}}>
-            {[
-              {l:'Config',v:bhk?(bhk.includes('BHK')?bhk:bhk+' BHK'):'—'},
-              {l:'Possession',v:poss||'—'},
-              {l:'From',v:price||'On Request'},
-            ].map((s,i)=>(
-              <div key={i} style={{padding:'8px 0',borderRight:i<2?'1px solid rgba(255,255,255,.07)':undefined,paddingLeft:i>0?12:0}}>
-                <div style={{fontSize:'.44rem',fontWeight:700,color:'rgba(200,134,10,.72)',textTransform:'uppercase',letterSpacing:'.18em',marginBottom:2}}>{s.l}</div>
-                <div style={{fontSize:'.72rem',fontWeight:700,color:'#fff',wordBreak:'break-word'}}>{s.v}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* DESKTOP HERO */}
-      <div className="hidden md:block" style={{position:'relative',background:'#060D1C',minHeight:'clamp(240px,40vw,500px)',overflow:'hidden',marginTop:54}}>
+      {/* ── DESKTOP HERO ── */}
+      <div className="hidden md:block" style={{position:'relative',background:'#060D1C',minHeight:'clamp(240px,40vw,500px)',overflow:'hidden'}}>
         {cover ? (
           <>
-            <img src={cover} aria-hidden="true" alt="" className="absolute inset-0 w-full h-full object-cover opacity-15 scale-110" style={{filter:'blur(28px)'}} />
+            <img src={cover} aria-hidden="true" alt="" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:.15,filter:'blur(28px)',transform:'scale(1.1)'}} />
             <img src={cover} alt={`${name} by ${builder} — ${gv(p,'Property Type')||'Property'} in ${loc}, Bengaluru`} style={{position:'relative',zIndex:2,width:'100%',height:'100%',objectFit:'contain',maxHeight:'clamp(240px,40vw,500px)',display:'block',margin:'0 auto'}}/>
           </>
         ) : (
@@ -1280,7 +1200,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
         </div>
       </div>
 
-      {/* STATS BAR — desktop only */}
+      {/* ── DESKTOP STATS BAR ── */}
       <div className="hidden md:block" style={{background:'var(--navy)'}}>
         <div style={{maxWidth:'72rem',margin:'0 auto',display:'grid',gridTemplateColumns:'repeat(4,1fr)'}}>
           {[
@@ -1297,7 +1217,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
         </div>
       </div>
 
-      {/* ANCHOR NAV */}
+      {/* ── ANCHOR NAV ── */}
       <div className="detail-anchor-nav">
         <div style={{maxWidth:'72rem',margin:'0 auto',display:'flex',overflowX:'auto',padding:'0 1rem'}} className="hide-scroll">
           {tabs.map(t=>(
@@ -1308,23 +1228,14 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
         </div>
       </div>
 
-      {/* PAGE CONTENT — offset for topbar + anchor nav (54 + 48 = 102px) */}
-      <div style={{paddingTop:'calc(54px + 48px)'}}>
-
-        {/* MAIN CONTENT */}
+      {/* ── PAGE CONTENT ── */}
+      <div>
         <div style={{maxWidth:'72rem',margin:'0 auto',padding:'1.5rem',display:'grid',gridTemplateColumns:'1fr',gap:'1.5rem'}} className="lg:grid-cols-[1fr_320px]">
 
-          {/* LEFT COLUMN */}
+          {/* LEFT COLUMN — sections in new order */}
           <div style={{display:'flex',flexDirection:'column',gap:'1.5rem',minWidth:0}}>
 
-            {/* ── GALLERY SECTION — first in content flow ── */}
-            {allGalleryImgs.length > 0 && (
-              <section ref={refs.gallery} className="section-block" style={{scrollMarginTop:'7rem'}}>
-                <Gallery images={allGalleryImgs} propName={name} />
-              </section>
-            )}
-
-            {/* ABOUT */}
+            {/* 1. ABOUT */}
             <section ref={refs.about} className="section-block" style={{scrollMarginTop:'7rem'}}>
               <div className="section-label"><span style={{fontSize:15}}>🏗️</span> About the Project</div>
               {desc
@@ -1347,19 +1258,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               {growthRaw && <GrowthRateDisplay raw={growthRaw} location={loc} />}
             </section>
 
-            {/* AMENITIES */}
-            {amen && (
-              <section ref={refs.amenities} className="section-block" style={{scrollMarginTop:'7rem'}}>
-                <div className="section-label"><span style={{fontSize:15}}>✓</span> Amenities</div>
-                <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
-                  {String(amen).split(',').filter(a=>a.trim()).map((a,i)=>(
-                    <span key={i} className="amenity-chip"><span style={{color:'var(--emerald)',fontSize:'.72rem'}}>✓</span>{a.trim()}</span>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* KEY HIGHLIGHTS */}
+            {/* 2. KEY HIGHLIGHTS */}
             {hasHighlights && (
               <section ref={refs.highlights} className="section-block" style={{scrollMarginTop:'7rem'}}>
                 <div className="section-label"><span style={{fontSize:15}}>✦</span> Key Highlights</div>
@@ -1374,7 +1273,19 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               </section>
             )}
 
-            {/* MASTER PLAN */}
+            {/* 3. AMENITIES */}
+            {amen && (
+              <section ref={refs.amenities} className="section-block" style={{scrollMarginTop:'7rem'}}>
+                <div className="section-label"><span style={{fontSize:15}}>✓</span> Amenities</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                  {String(amen).split(',').filter(a=>a.trim()).map((a,i)=>(
+                    <span key={i} className="amenity-chip"><span style={{color:'var(--emerald)',fontSize:'.72rem'}}>✓</span>{a.trim()}</span>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* 4. MASTER PLAN */}
             {mpImgs.length>0 && (
               <section ref={refs.masterplan} className="section-block" style={{scrollMarginTop:'7rem'}}>
                 <div className="section-label"><span style={{fontSize:15}}>🗺️</span> Master Plan</div>
@@ -1388,7 +1299,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               </section>
             )}
 
-            {/* FLOOR PLAN */}
+            {/* 5. FLOOR PLAN */}
             {fpImgs.length>0 && (
               <section ref={refs.floorplan} className="section-block" style={{scrollMarginTop:'7rem'}}>
                 <div className="section-label"><span style={{fontSize:15}}>📐</span> Floor Plans</div>
@@ -1420,7 +1331,14 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               </section>
             )}
 
-            {/* LOCATION */}
+            {/* 6. GALLERY (gallery images only, not cover) */}
+            {hasGallery && (
+              <section ref={refs.gallery} className="section-block" style={{scrollMarginTop:'7rem'}}>
+                <Gallery images={galleryImgs} propName={name} />
+              </section>
+            )}
+
+            {/* 7. LOCATION */}
             <section ref={refs.location} className="section-block" style={{scrollMarginTop:'7rem'}}>
               <div className="section-label"><span style={{fontSize:15}}>📍</span> Location</div>
               <div className="location-grid">
@@ -1439,11 +1357,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
                     </a>
                   )}
                 </div>
-                {hasLocHL && (
-                  <div>
-                    <LocationHighlights raw={locHL} />
-                  </div>
-                )}
+                {hasLocHL && <div><LocationHighlights raw={locHL} /></div>}
               </div>
               <a href={`https://wa.me/${WA}?text=Hi, I'm interested in ${encodeURIComponent(name)}`} target="_blank" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,background:'rgba(37,211,102,.06)',border:'1px solid rgba(37,211,102,.2)',borderRadius:10,padding:'13px',fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'#166634',transition:'background .18s',marginTop:'1.25rem',textDecoration:'none'}} className="hover:bg-green-50">
                 <WASvg size={16} color="#166634" />
@@ -1451,7 +1365,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
               </a>
             </section>
 
-            {/* PROPERTY FAQ */}
+            {/* 8. FAQs */}
             {faqRaw && (
               <div ref={refs.faq} style={{scrollMarginTop:'7rem'}}>
                 <FAQSection raw={faqRaw} title={`${gv(p,'Property Type')||'Property'} FAQs`} />
@@ -1460,7 +1374,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
 
           </div>
 
-          {/* SIDEBAR */}
+          {/* ── SIDEBAR ── */}
           <aside style={{minWidth:0}}>
             <div style={{display:'flex',flexDirection:'column',gap:14}}>
               {/* Price + CTA */}
@@ -1476,8 +1390,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
                 </div>
                 <button onClick={()=>setModal('brochure')} className="btn-outline" style={{fontSize:'.65rem',padding:'11px',width:'100%',display:'flex',justifyContent:'center',alignItems:'center',gap:6,marginTop:8}}>📥 Brochure</button>
               </div>
-
-              {/* EMI */}
+              {/* EMI — price synced via useEffect in EMICalc */}
               <EMICalc priceStr={price} onApply={()=>setModal('apply')} />
             </div>
           </aside>
@@ -1536,50 +1449,60 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
       {showLead && (
         <LeadModal title="Get in Touch" subtitle={`About: ${name}`} onClose={()=>setShowLead(false)} onSubmit={async d=>{const ok=await submitLead(d,name,'General');if(ok)setShowLead(false);return ok;}} />
       )}
-      {legal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 anim-fadeIn" style={{background:'rgba(7,14,29,.88)',backdropFilter:'blur(6px)'}} onClick={()=>setLegal(null)}>
-          <div className="card" style={{maxWidth:600,width:'100%',maxHeight:'80vh',overflowY:'auto',padding:'2.25rem',position:'relative'}} onClick={e=>e.stopPropagation()}>
-            <button onClick={()=>setLegal(null)} style={{position:'absolute',top:14,right:18,fontSize:'1.4rem',color:'rgba(100,116,139,.5)',background:'none',border:'none',cursor:'pointer'}}>×</button>
-            <div style={{height:3,background:'linear-gradient(90deg,var(--gold),transparent)',borderRadius:2,marginBottom:'1.5rem'}} />
-            <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.5rem',fontWeight:700,color:'var(--navy)',textTransform:'uppercase',marginBottom:'1.25rem',paddingBottom:'1rem',borderBottom:'1px solid var(--border)'}}>{legal==='terms'?'Terms & Conditions':'Privacy Policy'}</h2>
-            <div style={{fontSize:'.8rem',color:'var(--muted)',lineHeight:1.85,display:'flex',flexDirection:'column',gap:12}}>
-              <p style={{fontWeight:600,color:'var(--navy)',background:'var(--gold-lt)',padding:'1rem',borderRadius:10,border:'1px solid rgba(200,134,10,.15)',fontSize:'.78rem'}}>Disclaimer: Perfect Horizons acts solely as an authorized channel partner. We are not the developers or builders of the listed properties.</p>
-              <p><strong>Logos & Trademarks:</strong> Any builder logos are representational and remain the property of their respective owners.</p>
-              <p><strong>Information Accuracy:</strong> All images, layouts, pricing, and project details are for informational purposes only. Verify all RERA documents independently.</p>
-              <p><strong>Data Privacy:</strong> Information submitted via enquiry forms is kept strictly confidential and used only by our internal advisors.</p>
-            </div>
-          </div>
+      {legal && <LegalModal legal={legal} onClose={()=>setLegal(null)} />}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   LEGAL MODAL
+══════════════════════════════════════════════════════════ */
+function LegalModal({ legal, onClose }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 anim-fadeIn" style={{background:'rgba(7,14,29,.88)',backdropFilter:'blur(6px)'}} onClick={onClose}>
+      <div className="card" style={{maxWidth:600,width:'100%',maxHeight:'80vh',overflowY:'auto',padding:'2.25rem',position:'relative'}} onClick={e=>e.stopPropagation()}>
+        <button onClick={onClose} style={{position:'absolute',top:14,right:18,fontSize:'1.4rem',color:'rgba(100,116,139,.5)',background:'none',border:'none',cursor:'pointer',lineHeight:1}}>×</button>
+        <div style={{height:3,background:'linear-gradient(90deg,var(--gold),transparent)',borderRadius:2,marginBottom:'1.5rem'}} />
+        <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.5rem',fontWeight:700,color:'var(--navy)',textTransform:'uppercase',marginBottom:'1.25rem',paddingBottom:'1rem',borderBottom:'1px solid var(--border)'}}>{legal==='terms'?'Terms & Conditions':'Privacy Policy'}</h2>
+        <div style={{fontSize:'.8rem',color:'var(--muted)',lineHeight:1.85,display:'flex',flexDirection:'column',gap:12}}>
+          <p style={{fontWeight:600,color:'var(--navy)',background:'var(--gold-lt)',padding:'1rem',borderRadius:10,border:'1px solid rgba(200,134,10,.15)',fontSize:'.78rem'}}>Disclaimer: Perfect Horizons acts solely as an authorized channel partner. We are not the developers or builders of the listed properties.</p>
+          <p><strong>Logos & Trademarks:</strong> Any builder logos are representational and remain the property of their respective owners.</p>
+          <p><strong>Information Accuracy:</strong> All images, layouts, pricing, and project details are for informational purposes only. Verify all RERA documents independently.</p>
+          <p><strong>Data Privacy:</strong> Information submitted via enquiry forms is kept strictly confidential and used only by our internal advisors.</p>
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
 /* ══════════════════════════════════════════════════════════
    INFO PAGE TEMPLATE
+   Now includes a sticky dark back-bar at top
 ══════════════════════════════════════════════════════════ */
 function InfoPage({ children, legal, setLegal, navTo }) {
   return (
     <div style={{minHeight:'100vh',display:'flex',flexDirection:'column'}}>
+      {/* Sticky back bar */}
+      <div className="info-back-bar">
+        <button
+          onClick={()=>navTo('home')}
+          style={{display:'flex',alignItems:'center',gap:8,background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,.8)',padding:'4px 0'}}
+          className="group"
+        >
+          <span style={{fontSize:'1rem',transition:'transform .18s'}} className="group-hover:-translate-x-1 inline-block">←</span>
+          <span style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1rem',fontWeight:700,fontStyle:'italic',color:'rgba(255,255,255,.9)'}}>Perfect Horizons</span>
+        </button>
+        <div style={{flex:1}}/>
+        <a href={`tel:${CALL}`} style={{display:'flex',alignItems:'center',gap:7,background:'linear-gradient(135deg,#B8720A,#DA9610)',border:'none',borderRadius:10,padding:'8px 14px',fontSize:'.6rem',fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:'.1em',textDecoration:'none'}}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.61 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Call Us
+        </a>
+      </div>
       <div style={{flexGrow:1,maxWidth:'72rem',margin:'0 auto',width:'100%',padding:'2rem 1.5rem'}}>
         {children}
       </div>
       <Footer navTo={navTo} setLegal={setLegal} />
-      {legal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 anim-fadeIn" style={{background:'rgba(7,14,29,.88)',backdropFilter:'blur(6px)'}} onClick={()=>setLegal(null)}>
-          <div className="card" style={{maxWidth:600,width:'100%',maxHeight:'80vh',overflowY:'auto',padding:'2.25rem',position:'relative'}} onClick={e=>e.stopPropagation()}>
-            <button onClick={()=>setLegal(null)} style={{position:'absolute',top:14,right:18,fontSize:'1.4rem',color:'rgba(100,116,139,.5)',background:'none',border:'none',cursor:'pointer'}}>×</button>
-            <div style={{height:3,background:'linear-gradient(90deg,var(--gold),transparent)',borderRadius:2,marginBottom:'1.5rem'}} />
-            <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.45rem',fontWeight:700,color:'var(--navy)',textTransform:'uppercase',marginBottom:'1.25rem'}}>{legal==='terms'?'Terms & Conditions':'Privacy Policy'}</h2>
-            <div style={{fontSize:'.8rem',color:'var(--muted)',lineHeight:1.85,display:'flex',flexDirection:'column',gap:12}}>
-              <p style={{fontWeight:600,color:'var(--navy)',background:'var(--gold-lt)',padding:'1rem',borderRadius:10,border:'1px solid rgba(200,134,10,.15)'}}>Disclaimer: Perfect Horizons acts solely as an authorized channel partner and real estate advisory.</p>
-              <p><strong>Logos & Trademarks:</strong> Any builder logos used are for representative purposes only.</p>
-              <p><strong>Accuracy:</strong> All images, layouts, and pricing are for informational purposes only. Verify legal documents independently.</p>
-              <p><strong>Privacy:</strong> Enquiry data is kept strictly confidential and never sold.</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {legal && <LegalModal legal={legal} onClose={()=>setLegal(null)} />}
     </div>
   );
 }
@@ -1612,7 +1535,6 @@ function App() {
     return () => window.removeEventListener('resize', h);
   }, []);
 
-  /* ── History API routing ── */
   const resolvePath = useCallback((pathname, loadedProps) => {
     const allProps = loadedProps || propsRef.current;
     if(pathname === '/' || pathname === '') { setSelProp(null); setPage('home'); return; }
@@ -1621,7 +1543,6 @@ function App() {
       const slug = parts.slice(1).join('/');
       const found = allProps.find(p => propSlug(p) === slug);
       if(found){ setSelProp(found); setPage('home'); return; }
-      /* Property not loaded yet — will resolve after Supabase load */
     }
     if(parts[0]==='blogs' && parts[1]){
       const id=parseInt(parts[1]);
@@ -1632,32 +1553,26 @@ function App() {
     }
     const staticPages=['about-us','our-journey','what-we-do','what-we-dont-do','advisor','blogs','customers','interiors','home-loan'];
     if(staticPages.includes(parts[0])){ setPage(parts[0]); setSelProp(null); return; }
-    /* Unknown path: show home, don't 404 */
     setPage('home'); setSelProp(null);
   }, []);
 
   useEffect(()=>{
-    /* Initialise from current URL */
     resolvePath(window.location.pathname, []);
 
-    /* Load properties */
     supabase.from('properties').select('*').eq('is_live',true).order('display_order',{ascending:true,nullsFirst:false})
       .then(({data,error})=>{
         if(!error){
           propsRef.current = data||[];
           setProps(data||[]);
-          /* Re-resolve now that props are loaded (handles /property/slug direct load) */
           resolvePath(window.location.pathname, data||[]);
         }
         setLoading(false);
       })
       .catch(()=>setLoading(false));
 
-    /* Browser back/forward */
     const onPop = () => resolvePath(window.location.pathname, propsRef.current);
     window.addEventListener('popstate', onPop);
 
-    /* Realtime */
     const ch=supabase.channel('public:properties')
       .on('postgres_changes',{event:'*',schema:'public',table:'properties'},payload=>{
         if(payload.eventType==='INSERT'){if(payload.new.is_live===true)setProps(prev=>{propsRef.current=[payload.new,...prev];return[payload.new,...prev];});}
@@ -1668,7 +1583,6 @@ function App() {
     return ()=>{ window.removeEventListener('popstate',onPop); supabase.removeChannel(ch); };
   },[]);
 
-  /* ── SEO per page ── */
   useEffect(()=>{
     if(selProp) return;
     if(activeBlog){
@@ -1715,7 +1629,6 @@ function App() {
     window.scrollTo(0,0);
   }, []);
 
-  /* Filtered listing */
   const filtered = useMemo(()=>{
     if(!Array.isArray(props))return[];
     const t=search.toLowerCase();
@@ -1735,7 +1648,6 @@ function App() {
     });
   },[props,search,filters]);
 
-  /* Nav helpers */
   const NavLink = ({label,p}) => (
     <button className={`nav-link ${page===p?'active':''}`} onClick={()=>navTo(p)}>{label}</button>
   );
@@ -1985,15 +1897,14 @@ function App() {
   return (
     <div style={{minHeight:'100vh',display:'flex',flexDirection:'column'}}>
 
-      {/* ══ UNIFIED STICKY TOP BLOCK (nav + filters) ══ */}
+      {/* ── STICKY TOP BLOCK ──
+          Desktop: nav + filter bar both sticky
+          Mobile: only nav sticky; filter bar scrolls away
+      ── */}
       <div className="sticky-top-block">
         {/* Main Nav */}
         <nav className="ph-main-nav">
-          <div
-            style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.35rem',fontWeight:700,fontStyle:'italic',color:'#fff',textTransform:'uppercase',letterSpacing:'-.01em',cursor:'pointer',flexShrink:0,transition:'color .18s'}}
-            className="hover:text-yellow-300"
-            onClick={()=>navTo('home')}
-          >
+          <div style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.35rem',fontWeight:700,fontStyle:'italic',color:'#fff',textTransform:'uppercase',letterSpacing:'-.01em',cursor:'pointer',flexShrink:0,transition:'color .18s'}} className="hover:text-yellow-300" onClick={()=>navTo('home')}>
             Perfect Horizons
           </div>
 
@@ -2022,10 +1933,7 @@ function App() {
 
           {/* Mobile controls */}
           <div className="md:hidden flex items-center gap-2">
-            <button
-              onClick={()=>setMobileSearch(v=>!v)}
-              style={{display:'flex',alignItems:'center',gap:5,border:'1px solid rgba(255,255,255,.16)',borderRadius:999,padding:'7px 12px',background:'none',cursor:'pointer',color:'rgba(255,255,255,.8)',fontSize:'.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em'}}
-            >
+            <button onClick={()=>setMobileSearch(v=>!v)} style={{display:'flex',alignItems:'center',gap:5,border:'1px solid rgba(255,255,255,.16)',borderRadius:999,padding:'7px 12px',background:'none',cursor:'pointer',color:'rgba(255,255,255,.8)',fontSize:'.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.1em'}}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Search
             </button>
             <button onClick={()=>setMobileMenu(v=>!v)} style={{background:'none',border:'none',cursor:'pointer',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',width:44,height:44}}>
@@ -2034,29 +1942,10 @@ function App() {
           </div>
         </nav>
 
-        {/* Filter Bar */}
-        <div className="ph-filter-bar">
+        {/* Desktop Filter Bar (sticky) */}
+        <div className="ph-filter-bar hidden md:block">
           <div style={{maxWidth:'72rem',margin:'0 auto'}}>
-            {/* Mobile search input */}
-            {mobileSearch && (
-              <div style={{position:'relative',marginBottom:10}}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'var(--muted)',pointerEvents:'none'}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input type="search" placeholder="Search location, project…" autoFocus aria-label="Search properties"
-                  style={{width:'100%',border:'2px solid var(--teal)',borderRadius:10,paddingLeft:36,paddingRight:14,paddingTop:11,paddingBottom:11,fontSize:'.8rem',fontFamily:'Inter,sans-serif',outline:'none'}}
-                  value={search} onChange={e=>setSearch(e.target.value)}
-                />
-              </div>
-            )}
-            {/* Mobile filter toggle */}
-            <div className="md:hidden flex justify-between items-center" style={{height:36}}>
-              <span style={{fontSize:'.58rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--muted)'}}>Property Finder</span>
-              <button onClick={()=>setMobileFilter(v=>!v)} style={{display:'flex',alignItems:'center',gap:6,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--teal)',background:'none',border:'none',cursor:'pointer',minHeight:44}}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-                Filters {mobileFilter?'▲':'▼'}
-              </button>
-            </div>
-            {/* Filter selects */}
-            <div className={`${mobileFilter?'grid':'hidden'} md:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-2 md:mt-0`}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:8}}>
               {selects.map(s=>(
                 <select key={s.k} className="ph-select" style={{width:'100%',background:'#fff',padding:'9px 12px',fontSize:'.72rem',fontWeight:600,color:'var(--navy)',cursor:'pointer',minHeight:44}}
                   value={filters[s.k]} onChange={e=>setFilters(f=>({...f,[s.k]:e.target.value}))}>
@@ -2064,11 +1953,7 @@ function App() {
                   {s.opts.map(([l,v])=><option key={v} value={v}>{l}</option>)}
                 </select>
               ))}
-              <button
-                onClick={()=>{setSearch('');setFilters({bhk:'',status:'',type:'',price:'',poss:''});setMobileFilter(false);setMobileSearch(false);}}
-                style={{border:'1.5px solid var(--border)',borderRadius:10,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--muted)',background:'#fff',cursor:'pointer',minHeight:44,padding:'0 12px',transition:'border-color .18s,color .18s'}}
-                className="hover:border-red-300 hover:text-red-500 col-span-2 md:col-span-1"
-              >
+              <button onClick={()=>{setSearch('');setFilters({bhk:'',status:'',type:'',price:'',poss:''});}} style={{border:'1.5px solid var(--border)',borderRadius:10,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--muted)',background:'#fff',cursor:'pointer',minHeight:44,padding:'0 12px',transition:'border-color .18s,color .18s'}} className="hover:border-red-300 hover:text-red-500">
                 ✕ Reset
               </button>
             </div>
@@ -2106,9 +1991,46 @@ function App() {
           </div>
         )}
       </div>
-      {/* ══ END STICKY BLOCK ══ */}
+      {/* ── END STICKY BLOCK ── */}
 
-      {/* PARTNER LOGOS — in normal flow, NOT sticky */}
+      {/* MOBILE FILTER BAR — outside sticky block, scrolls away */}
+      <div className="md:hidden" style={{background:'#fff',borderBottom:'1px solid var(--border)',padding:'8px 1rem'}}>
+        {/* Mobile search input */}
+        {mobileSearch && (
+          <div style={{position:'relative',marginBottom:8}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'var(--muted)',pointerEvents:'none'}}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="search" placeholder="Search location, project…" autoFocus aria-label="Search properties"
+              style={{width:'100%',border:'2px solid var(--teal)',borderRadius:10,paddingLeft:36,paddingRight:14,paddingTop:11,paddingBottom:11,fontSize:'.8rem',fontFamily:'Inter,sans-serif',outline:'none'}}
+              value={search} onChange={e=>setSearch(e.target.value)}
+            />
+          </div>
+        )}
+        {/* Mobile filter toggle */}
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',height:36}}>
+          <span style={{fontSize:'.58rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--muted)'}}>Property Finder</span>
+          <button onClick={()=>setMobileFilter(v=>!v)} style={{display:'flex',alignItems:'center',gap:6,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--teal)',background:'none',border:'none',cursor:'pointer',minHeight:44}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+            Filters {mobileFilter?'▲':'▼'}
+          </button>
+        </div>
+        {/* Mobile filter selects — collapse when scrolled */}
+        {mobileFilter && (
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:8}}>
+            {selects.map(s=>(
+              <select key={s.k} className="ph-select" style={{width:'100%',background:'#fff',padding:'9px 12px',fontSize:'.72rem',fontWeight:600,color:'var(--navy)',cursor:'pointer',minHeight:44}}
+                value={filters[s.k]} onChange={e=>setFilters(f=>({...f,[s.k]:e.target.value}))}>
+                <option value="">{s.ph}</option>
+                {s.opts.map(([l,v])=><option key={v} value={v}>{l}</option>)}
+              </select>
+            ))}
+            <button onClick={()=>{setSearch('');setFilters({bhk:'',status:'',type:'',price:'',poss:''});setMobileFilter(false);setMobileSearch(false);}} style={{border:'1.5px solid var(--border)',borderRadius:10,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--muted)',background:'#fff',cursor:'pointer',minHeight:44,padding:'0 12px',gridColumn:'span 2'}} className="hover:border-red-300 hover:text-red-500">
+              ✕ Reset All Filters
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* PARTNER LOGOS */}
       <div className="partners-bar">
         <div style={{fontSize:'.52rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.2em',color:'rgba(146,96,10,.9)',textAlign:'center',marginBottom:6}}>Associated With</div>
         <div className="marquee-wrap">
@@ -2118,17 +2040,14 @@ function App() {
         </div>
       </div>
 
-      {/* SEO H1 */}
       <h1 style={{position:'absolute',width:1,height:1,padding:0,margin:-1,overflow:'hidden',clip:'rect(0,0,0,0)',whiteSpace:'nowrap',border:0}}>
         Trusted Real Estate Advisory in Bengaluru — Perfect Horizons
       </h1>
 
-      {/* GET IN TOUCH SIDEBAR BTN */}
       <button className="git-btn" onClick={()=>setShowLead(true)}>Get in Touch</button>
 
       {/* MAIN CONTENT */}
       <main style={{maxWidth:'72rem',margin:'0 auto',padding:'1.5rem',paddingTop:'2rem',flexGrow:1,width:'100%'}}>
-
         {loading ? (
           <div style={{textAlign:'center',paddingTop:'5rem',paddingBottom:'5rem',color:'var(--teal)',fontWeight:700,fontSize:'.82rem',textTransform:'uppercase',letterSpacing:'.16em'}}>
             <div style={{fontSize:'2.5rem',marginBottom:'1rem',animation:'pulseSlow 1s ease-in-out infinite',display:'inline-block'}}>🏗️</div>
@@ -2174,29 +2093,12 @@ function App() {
       <Footer navTo={navTo} setLegal={setLegal} />
       <StickyBar onSubmitLead={submitLead} />
 
-      {/* WA FAB */}
       <a href={`https://wa.me/${WA}?text=Hi, what properties are available?`} target="_blank" className="wa-fab" aria-label="Chat with Perfect Horizons on WhatsApp">
         <WASvg size={26} color="#fff" />
       </a>
 
       {showLead && <LeadModal title="Get in Touch" subtitle="Our advisor will call you shortly" onClose={()=>setShowLead(false)} onSubmit={async d=>{const ok=await submitLead(d,'General Enquiry','General');if(ok)setShowLead(false);return ok;}} />}
-
-      {legal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 anim-fadeIn" style={{background:'rgba(7,14,29,.88)',backdropFilter:'blur(6px)'}} onClick={()=>setLegal(null)}>
-          <div className="card" style={{maxWidth:600,width:'100%',maxHeight:'80vh',overflowY:'auto',padding:'2.25rem',position:'relative'}} onClick={e=>e.stopPropagation()}>
-            <button onClick={()=>setLegal(null)} style={{position:'absolute',top:14,right:18,fontSize:'1.4rem',color:'rgba(100,116,139,.5)',background:'none',border:'none',cursor:'pointer'}}>×</button>
-            <div style={{height:3,background:'linear-gradient(90deg,var(--gold),transparent)',borderRadius:2,marginBottom:'1.5rem'}} />
-            <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.45rem',fontWeight:700,color:'var(--navy)',textTransform:'uppercase',marginBottom:'1.25rem',paddingBottom:'1rem',borderBottom:'1px solid var(--border)'}}>{legal==='terms'?'Terms & Conditions':'Privacy Policy'}</h2>
-            <div style={{fontSize:'.8rem',color:'var(--muted)',lineHeight:1.85,display:'flex',flexDirection:'column',gap:12}}>
-              <p style={{fontWeight:600,color:'var(--navy)',background:'var(--gold-lt)',padding:'1rem',borderRadius:10,border:'1px solid rgba(200,134,10,.15)'}}>Disclaimer: Perfect Horizons acts solely as an authorized channel partner. We are not the developers or builders of any listed properties.</p>
-              <p><strong>Logos & Trademarks:</strong> Builder logos are representative and remain property of their respective owners.</p>
-              <p><strong>Information Accuracy:</strong> All images, layouts, pricing, and project details are for informational purposes. Verify all RERA documents independently before committing.</p>
-              <p><strong>Liability:</strong> Perfect Horizons is not liable for builder disputes, delays, or discrepancies between promised and delivered specifications.</p>
-              <p><strong>Data Privacy:</strong> Your personal data is kept strictly confidential and never sold to third parties.</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {legal && <LegalModal legal={legal} onClose={()=>setLegal(null)} />}
     </div>
   );
 }
