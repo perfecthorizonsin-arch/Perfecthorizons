@@ -364,7 +364,7 @@ const SITE = "https://perfecthorizons.in";
 const GS_URL = "https://script.google.com/macros/s/AKfycbzV-nr4UWVqFao58BD_tJoZF9kL5ODzX18b86KsX3z27Yt2EWfBAj8lR36-XbBtcyrXSQ/exec";
 const SB_URL = 'https://uiiovtsktllvtecfokik.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpaW92dHNrdGxsdnRlY2Zva2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NjkxMjMsImV4cCI6MjA4OTU0NTEyM30.fL6cU7YkH4-50w55GrnutoBhmH5sofe8-rOMZetmuvU';
-const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+const supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
 
 const PARTNERS = [
   "https://drive.google.com/file/d/1IsWpoHNh1Wj0toMnzXc4FFvqCHxMoK85/view?usp=drive_link",
@@ -1564,7 +1564,7 @@ function App() {
   useEffect(()=>{
     resolvePath(window.location.pathname, []);
 
-    supabase.from('properties').select('*').eq('is_live',true).order('display_order',{ascending:true,nullsFirst:false})
+   supabaseClient.from('properties').select('*').eq('is_live',true).order('display_order',{ascending:true,nullsFirst:false})
       .then(({data,error})=>{
         if(!error){
           propsRef.current = data||[];
@@ -1585,7 +1585,7 @@ function App() {
         else if(payload.eventType==='DELETE'){setProps(prev=>{const f=prev.filter(p=>p.id!==payload.old.id);propsRef.current=f;return f;});setSelProp(prev=>prev&&prev.id===payload.old.id?null:prev);}
       }).subscribe();
 
-    return ()=>{ window.removeEventListener('popstate',onPop); supabase.removeChannel(ch); };
+    return ()=>{ window.removeEventListener('popstate',onPop); supabaseClient.removeChannel(ch); };
   },[]);
 
   useEffect(()=>{
@@ -1604,7 +1604,7 @@ function App() {
     if(!/^[6-9]\d{9}$/.test(data.phone)){alert('Enter valid 10-digit number');return false;}
     const src=action==='brochure'?'Website - Brochure':action==='cost_sheet'?'Website - Cost Sheet':action==='apply'?'Website - EMI Apply':'Website - General';
     try{
-      const {error}=await supabase.from('leads').insert([{customer_name:data.name,phone_number:data.phone,customer_email:data.email||null,project_interested_in:project,lead_status:'Un called',lead_source:src,psa_agent_name:null}]);
+      const {error}=await supabaseClient.from('leads').insert([{customer_name:data.name,phone_number:data.phone,customer_email:data.email||null,project_interested_in:project,lead_status:'Un called',lead_source:src,psa_agent_name:null}]);
       if(error)throw error;
       fetch(GS_URL,{method:'POST',body:JSON.stringify({action:'sendLead',Name:data.name,Phone:data.phone,Email:data.email||'N/A',Project:project,Source:src,Requirements:'None'})}).catch(()=>{});
       return true;
