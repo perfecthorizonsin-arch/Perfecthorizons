@@ -58,6 +58,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+  Babel.registerPreset('ph-react-classic', {
+    presets: [[Babel.availablePresets['react'], { runtime: 'classic' }]]
+  });
+</script>
 <style>
 :root {
   --navy:      #070E1D;
@@ -349,7 +354,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);box-shadow:0
 
 <div id="root"></div>
 
-<script type="text/babel" data-presets="react,classic">
+<script type="text/babel" data-presets="ph-react-classic">
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
 /* ── Constants ── */
