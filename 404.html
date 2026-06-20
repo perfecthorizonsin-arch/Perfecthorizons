@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Perfect Horizons</title>
+<meta name="robots" content="noindex">
+<script type="text/javascript">
+  // ── GitHub Pages SPA Routing: 404 fallback ──
+  // https://github.com/rafgraph/spa-github-pages
+  //
+  // GitHub Pages serves this file for any path it doesn't recognise
+  // (e.g. a direct load of /about-us or /property/some-slug). Rather than
+  // showing a real 404, we re-encode the requested path into a query
+  // string and redirect to the site root, where index.html's restore
+  // script converts it back into the original clean URL via
+  // history.replaceState — so the app still mounts on the right route
+  // and the address bar ends up clean again, with no #/ in sight.
+  //
+  // pathSegmentsToKeep = 0 because perfecthorizons.in is a custom domain
+  // serving this repo from its root (not a /reponame/ project path).
+  var pathSegmentsToKeep = 0;
+
+  var l = window.location;
+  l.replace(
+    l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+    l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+    l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+    (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+    l.hash
+  );
+</script>
+</head>
+<body>
+</body>
+</html>
