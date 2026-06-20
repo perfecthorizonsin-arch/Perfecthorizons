@@ -21,10 +21,10 @@
         }
     </script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.10/babel.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(8px);} to { opacity:1; transform:translateY(0);} }
@@ -571,14 +571,13 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
             setTimeout(() => triggerDownload(dlUrl, fname), i * 400);
         }
         setIsSharing(false); setShareModal(null);
-        showToast(`⬇️ ${n} file${n>1?'s':''} downloading in background… WhatsApp opening — attach from Downloads 📎`, 'bg-green-600');
-        const waOpenUrl = isMobile()
-            ? `https://wa.me/?text=${encodeURIComponent(waText)}`
-            : `https://web.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
-        setTimeout(() => {
-            if (isMobile()) window.location.href = waOpenUrl;
-            else window.open(waOpenUrl, '_blank');
-        }, n * 400 + 600);
+        if (isMobile()) {
+            showToast(`⬇️ ${n} file${n>1?'s':''} downloading… Open WhatsApp & attach from Downloads 📎`, 'bg-green-600');
+            setTimeout(() => { window.location.href = `https://wa.me/?text=${encodeURIComponent(waText)}`; }, n * 400 + 700);
+        } else {
+            showToast(`⬇️ ${n} file${n>1?'s':''} downloading… Then attach in WhatsApp Web 📎`, 'bg-blue-600');
+            setTimeout(() => window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(waText)}`, '_blank'), n * 400 + 600);
+        }
     };
     const pocNumber = getVal(property,"point_of_contact")?.replace(/\D/g,'') || WHATSAPP_NUMBER;
 
@@ -688,27 +687,6 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                             </div>
                         )}
                     </div>
-                    {imgs.length > 1 && (
-                        <>
-                            <button
-                                onClick={() => galleryRef.current?.scrollBy({ left: -(galleryRef.current.offsetWidth * 0.85), behavior: 'smooth' })}
-                                className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-800 shadow-lg hover:bg-white transition text-xl font-black border border-white/50 select-none">
-                                ‹
-                            </button>
-                            <button
-                                onClick={() => galleryRef.current?.scrollBy({ left: galleryRef.current.offsetWidth * 0.85, behavior: 'smooth' })}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-slate-800 shadow-lg hover:bg-white transition text-xl font-black border border-white/50 select-none">
-                                ›
-                            </button>
-                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-                                {imgs.map((_, i) => (
-                                    <button key={i}
-                                        onClick={() => galleryRef.current?.scrollTo({ left: i * galleryRef.current.offsetWidth * 0.85, behavior: 'smooth' })}
-                                        className="w-1.5 h-1.5 rounded-full bg-white/60 hover:bg-white transition" />
-                                ))}
-                            </div>
-                        </>
-                    )}
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                     <div className="lg:col-span-2 space-y-8">
@@ -746,16 +724,7 @@ const PropertyDetailsPage = ({ property: initProp, onBack }) => {
                                 <EditableField field="rera_number"            label="RERA Number"       value={getVal(property,'rera_number')}            onSave={saveField} />
                                 <EditableField field="location"               label="Location / Area"   value={getVal(property,'location')}               onSave={saveField} />
                                 <EditableField field="property_name"          label="Property Name"     value={getVal(property,'property_name')}          onSave={saveField} />
-                                <div className="col-span-2">
-                                    <EditableField field="info_for_psa" label="PSA Pitch Notes (Admin Only)" value={getVal(property,'info_for_psa')} multiline onSave={saveField} />
-                                </div>
                             </div>
-                            {getVal(property,'info_for_psa') && (
-                                <div className="mt-4 bg-amber-50 border-2 border-amber-300 rounded-2xl p-5">
-                                    <div className="text-[9px] font-black uppercase tracking-widest text-amber-600 mb-2">🎯 PSA Agent Pitch Notes (Admin Only)</div>
-                                    <p className="text-sm font-semibold text-amber-900 whitespace-pre-wrap leading-relaxed">{getVal(property,'info_for_psa')}</p>
-                                </div>
-                            )}
                         </div>
                     </div>
                     <div className="lg:col-span-1">
@@ -946,44 +915,13 @@ function ProjectLibrary({ properties, setProp, supabase, setProperties, onEdit }
                         <div className="p-5 flex-grow flex flex-col">
                             <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 leading-tight truncate">{getVal(p,'property_name')}</h3>
                             <p className="text-slate-500 text-xs font-bold mt-1 truncate">📍 {getVal(p,'location')}</p>
-                            <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-start">
+                            <div className="mt-4 flex justify-between items-end pt-4 border-t border-slate-100">
                                 <div>
                                     <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Starting Price</div>
                                     <div className="text-lg font-black text-blue-900">{getVal(p,'price')}</div>
                                 </div>
                                 {!ordering && <button className="bg-slate-900 text-white text-[10px] font-bold px-4 py-2 rounded-lg hover:bg-blue-600 transition">Preview</button>}
                             </div>
-                            {!ordering && (
-                                <div className="mt-2 flex flex-wrap gap-1.5">
-                                    {getVal(p,'floor_plan') && getVal(p,'floor_plan').split(',').filter(Boolean).map((url, i) => {
-                                        const fpId = extractDriveId(url.trim());
-                                        const fpUrl = fpId ? `https://drive.google.com/file/d/${fpId}/view` : url.trim();
-                                        const fpCount = getVal(p,'floor_plan').split(',').filter(Boolean).length;
-                                        return (
-                                            <a key={i} href={fpUrl} target="_blank" onClick={e => e.stopPropagation()}
-                                                className="text-[8px] font-black uppercase tracking-widest bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-lg hover:bg-blue-100 transition">
-                                                📐 Floor {fpCount > 1 ? i+1 : 'Plan'}
-                                            </a>
-                                        );
-                                    })}
-                                    {getVal(p,'master_plan') && (() => {
-                                        const mpId = extractDriveId(getVal(p,'master_plan'));
-                                        const mpUrl = mpId ? `https://drive.google.com/file/d/${mpId}/view` : getVal(p,'master_plan');
-                                        return (
-                                            <a href={mpUrl} target="_blank" onClick={e => e.stopPropagation()}
-                                                className="text-[8px] font-black uppercase tracking-widest bg-purple-50 text-purple-700 border border-purple-200 px-2 py-1 rounded-lg hover:bg-purple-100 transition">
-                                                🗺️ Master Plan
-                                            </a>
-                                        );
-                                    })()}
-                                    {getVal(p,'map_link') && (
-                                        <a href={getVal(p,'map_link')} target="_blank" onClick={e => e.stopPropagation()}
-                                            className="text-[8px] font-black uppercase tracking-widest bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded-lg hover:bg-green-100 transition">
-                                            📍 Location
-                                        </a>
-                                    )}
-                                </div>
-                            )}
                         </div>
                     </div>
                 ))}
@@ -1000,7 +938,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
         total_units:'', availability:'', description:'', usp_details:'', amenities:'',
         point_of_contact:'', commission_details:'', video_link:'', website_link:'',
         lead_registration_link:'', map_link:'', cover_image:'', gallery_images:'',
-        floor_plan:'', brochure:'', cost_sheet:'', miscellaneous:'', info_for_psa:''
+        floor_plan:'', brochure:'', cost_sheet:'', miscellaneous:''
     };
     const [form,          setForm]          = useState(blank);
     const [loading,       setLoading]       = useState(false);
@@ -1108,7 +1046,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                             <select multiple className={`${selectCls} h-28`}
                                 value={form.bhk ? form.bhk.split(',').map(s => s.trim()).filter(Boolean) : []}
                                 onChange={e => set('bhk', [...e.target.selectedOptions].map(o => o.value).join(', '))}>
-                                {['1 BHK','2 BHK','2.5 BHK','3 BHK','3.5 BHK','4 BHK','5 BHK','Studio','Duplex','Penthouse'].map(b => <option key={b}>{b}</option>)}
+                                {['1 BHK','2 BHK','3 BHK','4 BHK','5 BHK','Studio','Duplex','Penthouse'].map(b => <option key={b}>{b}</option>)}
                             </select>
                         </div>
                         <input className={inputCls} placeholder="Super Built-up Area (SqFt)" value={form.super_built_up_area} onChange={e => set('super_built_up_area', e.target.value)} />
@@ -1116,7 +1054,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                         <input className={inputCls} placeholder="Possession Date (e.g. Dec 2026)" value={form.possession_date} onChange={e => set('possession_date', e.target.value)} />
                         <select className={selectCls} value={form.construction_status} onChange={e => set('construction_status', e.target.value)}>
                             <option value="">Construction Status</option>
-                            <option>Ready to Move In</option><option>Under Construction</option><option>Pre Launch</option><option>New Launch</option><option>Ready to Construct</option>
+                            <option>Ready to Move In</option><option>Under Construction</option><option>New Launch</option><option>Ready to Construct</option>
                         </select>
                         <input className={inputCls} placeholder="Approvals (e.g. BDA, RERA)" value={form.approval} onChange={e => set('approval', e.target.value)} />
                         <input className={inputCls} placeholder="RERA Number" value={form.rera_number} onChange={e => set('rera_number', e.target.value)} />
@@ -1158,10 +1096,6 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                         <div><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Builder Website</label><input className={darkInput} placeholder="https://..." value={form.website_link} onChange={e => set('website_link', e.target.value)} /></div>
                         <div><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Lead Register Link / Email</label><input className={darkInput} placeholder="URL or email" value={form.lead_registration_link} onChange={e => set('lead_registration_link', e.target.value)} /></div>
                         <div className="sm:col-span-2"><label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Map Link</label><input className={darkInput} placeholder="https://maps.google.com/..." value={form.map_link} onChange={e => set('map_link', e.target.value)} /></div>
-                        <div className="sm:col-span-2">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-amber-400 mb-1.5 block">🎯 Info for PSA Agents (Pitch Script)</label>
-                            <textarea className="w-full p-4 bg-slate-800 border-2 border-amber-600 rounded-2xl font-bold text-sm text-white outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition placeholder:text-slate-500 h-28 resize-none" placeholder="How to pitch this property — key talking points, objection handling, what to highlight first..." value={form.info_for_psa} onChange={e => set('info_for_psa', e.target.value)} />
-                        </div>
                     </div>
                 </div>
                 <div>
@@ -1182,7 +1116,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                             { field:'gallery_images', label:'Gallery Images (select multiple)', multi:true  },
                             { field:'brochure',       label:'Brochure (PDF)',                   multi:false },
                             { field:'cost_sheet',     label:'Cost Sheet (PDF / Images)',        multi:true  },
-                            { field:'floor_plan',     label:'Floor Plans (PDF / Images)',       multi:true  },
+                            { field:'floor_plan',     label:'Floor Plan (PDF / Image)',         multi:false },
                             { field:'master_plan',    label:'Master Plan (PDF / Image)',        multi:false },
                             { field:'miscellaneous',  label:'Miscellaneous Docs',               multi:true  },
                         ].map(({ field, label, multi }) => {
@@ -1939,15 +1873,7 @@ function LoginForm({ supabase }) {
     return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
             <form onSubmit={handleLogin} className="bg-white p-10 rounded-[40px] shadow-2xl w-full max-w-sm text-center border-t-8 border-blue-500">
-                <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center relative">
-                    <img
-                        src="https://raw.githubusercontent.com/perfecthorizonsin-arch/Perfecthorizons/main/icon.png"
-                        alt="Horizon CRM"
-                        className="w-20 h-20 rounded-2xl object-contain shadow-lg"
-                        onError={e => { e.target.style.display='none'; e.target.nextElementSibling.style.display='flex'; }}
-                    />
-                    <div style={{display:'none'}} className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl items-center justify-center text-white font-black text-3xl italic shadow-lg absolute inset-0">H</div>
-                </div>
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-3xl italic mx-auto mb-4 shadow-lg">H</div>
                 <h1 className="text-3xl font-black italic uppercase mb-1">Horizon CRM</h1>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-8">Command Center · Real Estate</p>
                 {errMsg && <div className="text-red-500 text-xs font-bold mb-4 bg-red-50 border border-red-200 p-3 rounded-2xl">{errMsg}</div>}
@@ -2021,9 +1947,26 @@ const getInitialRoute = () => {
     return { v:'dashboard', c:'website' };
 };
 
+// ─── CRM UI STATE PERSISTENCE ──────────────────────────────────────────────
+// Mobile browsers commonly evict/reload a backgrounded tab once the user
+// switches to the native dialer via a tel: link. `view`/`leadCategory`
+// already survive that via the URL hash above — this extends the same idea
+// to bucket/filters/search/selected lead/scroll position, none of which are
+// reflected in the URL. Stored in sessionStorage so it's scoped to this tab
+// and this login session, and is cleared on sign-out.
+const CRM_UI_KEY = '__crm_ui_state_v1';
+const loadCrmUIState = () => {
+    try { return JSON.parse(sessionStorage.getItem(CRM_UI_KEY) || '{}'); } catch { return {}; }
+};
+const persistCrmUIState = (partial) => {
+    try { sessionStorage.setItem(CRM_UI_KEY, JSON.stringify({ ...loadCrmUIState(), ...partial })); } catch {}
+};
+const clearCrmUIState = () => { try { sessionStorage.removeItem(CRM_UI_KEY); } catch {} };
+
 // ─── ADMIN APP ─────────────────────────────────────────────────────────────
 function AdminApp() {
     const initRoute = getInitialRoute();
+    const initUI = useRef(loadCrmUIState()).current;
     const [session,        setSession]        = useState(null);
     const [authChecking,   setAuthChecking]   = useState(true);
     const [leads,          setLeads]          = useState([]);
@@ -2040,16 +1983,22 @@ function AdminApp() {
     const [selectedProp,   setSelectedProp]   = useState(null);
     const [selectedLead,   setSelectedLead]   = useState(null);
     const [visibleCount,   setVisibleCount]   = useState(50);
-    const [searchTerm,     setSearchTerm]     = useState("");
+    const [searchTerm,     setSearchTerm]     = useState(initUI.searchTerm || "");
     const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [sessionTimeLeft,setSessionTimeLeft]= useState('');
-    const [leadBucket,     setLeadBucket]     = useState('new');
+    const [leadBucket,     setLeadBucket]     = useState(initUI.leadBucket || 'new');
     const [showBulkUpload, setShowBulkUpload] = useState(false);
-    const [scheduleFilter, setScheduleFilter] = useState('ALL');
-    const [priorityFilter, setPriorityFilter] = useState('ALL');
+    const [scheduleFilter, setScheduleFilter] = useState(initUI.scheduleFilter || 'ALL');
+    const [priorityFilter, setPriorityFilter] = useState(initUI.priorityFilter || 'ALL');
     // FIX 4: Mobile menu drawer state
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const prevLeadsRef = useRef(0);
+    // Reject-flow: leads pending a rejection reason (UI-only, not yet persisted)
+    const [pendingRejects, setPendingRejects] = useState({});
+    // One-time restore targets captured from sessionStorage at mount
+    const [restoredLeadId] = useState(initUI.selectedLeadId || null);
+    const [restoredScrollY] = useState(typeof initUI.scrollY === 'number' ? initUI.scrollY : null);
+    const uiRestoredRef = useRef(false);
 
     const userEmail    = session?.user?.email || '';
     const agentName    = getAgentFromEmail(userEmail);
@@ -2117,6 +2066,33 @@ function AdminApp() {
 
     useEffect(() => { setVisibleCount(50); }, [leadCategory, leadBucket, scheduleFilter, summaryAgent, searchTerm, priorityFilter]);
 
+    // ─── Call-state persistence: write CRM UI state to sessionStorage ─────────
+    useEffect(() => { persistCrmUIState({ leadBucket }); }, [leadBucket]);
+    useEffect(() => { persistCrmUIState({ searchTerm }); }, [searchTerm]);
+    useEffect(() => { persistCrmUIState({ scheduleFilter }); }, [scheduleFilter]);
+    useEffect(() => { persistCrmUIState({ priorityFilter }); }, [priorityFilter]);
+    useEffect(() => { persistCrmUIState({ selectedLeadId: selectedLead?.id || null }); }, [selectedLead]);
+    useEffect(() => {
+        const onScroll = () => persistCrmUIState({ scrollY: window.scrollY });
+        window.addEventListener('scroll', onScroll, { passive:true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+
+    // ─── Call-state persistence: restore once, after leads finish loading ─────
+    useEffect(() => {
+        if (uiRestoredRef.current) return;
+        if (view !== 'dashboard') return;
+        if (loading) return;
+        uiRestoredRef.current = true;
+        if (restoredLeadId) {
+            const match = leads.find(l => l.id === restoredLeadId);
+            if (match) setSelectedLead(match);
+        }
+        if (restoredScrollY != null) {
+            requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, restoredScrollY)));
+        }
+    }, [leads, loading, view]);
+
     const AUTO_LOGOUT_MS = 3 * 60 * 60 * 1000;
     const logoutTimerRef = useRef(null);
     const rescheduleFromStored = useCallback(() => {
@@ -2137,7 +2113,7 @@ function AdminApp() {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
             setSession(s);
             if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && s) { if (!localStorage.getItem('__crm_login_time')) localStorage.setItem('__crm_login_time', String(Date.now())); rescheduleFromStored(); }
-            else if (event === 'SIGNED_OUT') { if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current); localStorage.removeItem('__crm_login_time'); }
+            else if (event === 'SIGNED_OUT') { if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current); localStorage.removeItem('__crm_login_time'); clearCrmUIState(); }
         });
         return () => { subscription.unsubscribe(); if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current); };
     }, [rescheduleFromStored]);
@@ -2218,7 +2194,6 @@ function AdminApp() {
         else if (field === 'follow_up_at')  { updates.follow_up_at  = value; updates.call_remark = `[${stamp}] [${actorName}] Callback Set: ${new Date(value).toLocaleString('en-IN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}\n\n${lead.call_remark||''}`; }
         else if (field === 'site_visit_at') { updates.site_visit_at = value; updates.call_remark = `[${stamp}] [${actorName}] SV Booked: ${value}\n\n${lead.call_remark||''}`; }
         else if (field === 'add_note')      { if (!value.trim()) return; updates.add_note = value; updates.call_remark = `[${stamp}] [${actorName}] Note: ${value}\n\n${lead.call_remark||''}`; }
-        else if (field === 'reject_reason') { updates.reject_reason = value; updates.call_remark = `[${stamp}] [${actorName}] Rejected: ${value}\n\n${lead.call_remark||''}`; }
         else if (field === 'psa_agent_name'){ updates.psa_agent_name = value; updates.call_remark = `[${stamp}] [Admin] ${lead.psa_agent_name ? 'Reassigned: ' + lead.psa_agent_name + ' → ' + value : 'Assigned to ' + value}\n\n${lead.call_remark||''}`; }
         else                                { updates[field] = value; }
         const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
@@ -2253,25 +2228,55 @@ function AdminApp() {
 
     const visibleLeads = displayedLeads.slice(0, visibleCount);
 
+    // A lead only "counts" as Rejected once a reason has actually been confirmed —
+    // mirrors the same rule filterLeadsByBucket() uses, so the dashboard numbers
+    // and the visible buckets never disagree with each other.
+    const isConfirmedRejected = l => l.lead_status === 'Rejected' && !!l.reject_reason;
+
     const stats = useMemo(() => {
-        let t = leads.filter(l => !l.is_hidden && l.lead_status !== 'Rejected');
+        let t = leads.filter(l => !l.is_hidden && !isConfirmedRejected(l));
         if (summaryAgent !== 'All') t = t.filter(l => l.psa_agent_name === summaryAgent);
         return {
             total:     t.length,
             uncalled:  t.filter(l => !l.lead_status || l.lead_status === 'Un called').length,
             called:    t.filter(l => l.lead_status && l.lead_status !== 'Un called').length,
             converted: t.filter(l => l.lead_status === 'Converted').length,
-            rejected:  leads.filter(l => !l.is_hidden && l.lead_status === 'Rejected').length,
+            rejected:  leads.filter(l => !l.is_hidden && isConfirmedRejected(l)).length,
         };
     }, [leads, summaryAgent]);
 
-    // ─── FIX 1: Simplified status change — no prompt() dialogs ───────────────
-    // Status is set immediately; RNR bucket move happens when agent sets callback date
-    // Rejected bucket move happens when agent picks reject reason from inline dropdown
+    // ─── FIX 1 (revised): Reject reason confirmed BEFORE the move ─────────────
+    // Selecting "Rejected" no longer writes lead_status to the DB immediately —
+    // that was the actual bug: it caused the lead to jump out of its current
+    // bucket and into "New" before a reason existed, and skewed the stats.
+    // Instead we hold it locally (pendingRejects) until a reason is confirmed,
+    // then write lead_status + reject_reason together in a single update.
+    // Other statuses are unaffected and still write immediately as before.
     const handleStatusChange = (l, newStatus) => {
+        if (newStatus === 'Rejected') {
+            setPendingRejects(prev => ({ ...prev, [l.id]: true }));
+            return; // wait for a reason — see confirmReject()
+        }
+        if (pendingRejects[l.id]) {
+            setPendingRejects(prev => { const n = { ...prev }; delete n[l.id]; return n; });
+        }
         updateLead(l, 'lead_status', newStatus);
-        // For RNR: a hint/toast that callback date must be set to move to Open bucket
-        // For Rejected: the inline dropdown already handles reject_reason
+    };
+
+    const confirmReject = async (lead, reason) => {
+        if (!reason) return;
+        const stamp     = new Date().toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+        const actorName = isAdminUser ? (ADMIN_AGENT_NAME || 'Admin') : (agentName || lead.psa_agent_name || 'Unknown');
+        const updates = {
+            lead_status:  'Rejected',
+            reject_reason: reason,
+            call_remark:  `[${stamp}] [${actorName}] Rejected: ${reason}\n\n${lead.call_remark||''}`
+        };
+        setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, ...updates } : l));
+        setPendingRejects(prev => { const n = { ...prev }; delete n[lead.id]; return n; });
+        const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
+        const { error } = await supabase.from(table).update(updates).eq('id', lead.id);
+        if (error) { alert("Save error: " + error.message); fetchLeads(); }
     };
 
     if (authChecking) return <div className="min-h-screen bg-slate-950"></div>;
