@@ -19,23 +19,21 @@
 <meta name="twitter:description" id="tw-desc" content="Curated properties in Bengaluru. We only recommend what we'd confidently suggest to family.">
 
 <script>
-// ── GitHub Pages SPA Routing ──
-// On first load, if we were redirected via 404.html, restore the real path
-(function() {
-  var query = window.location.search;
-  if (query) {
-    var params = {};
-    query.slice(1).split('&').forEach(function(p) {
-      var kv = p.split('=');
-      params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
-    });
-    if (params.p) {
-      var path = '/' + params.p;
-      // Remove ?p=... from the URL and set the real path
-      window.history.replaceState(null, '', path);
-    }
+// ── GitHub Pages SPA Routing: route restoration ──
+// https://github.com/rafgraph/spa-github-pages
+// On first load, if we were redirected here by 404.html, this converts the
+// encoded "?/real/path" back into a clean URL via replaceState — before
+// React mounts and reads window.location.pathname.
+(function(l) {
+  if (l.search[1] === '/') {
+    var decoded = l.search.slice(1).split('&').map(function(s) {
+      return s.replace(/~and~/g, '&');
+    }).join('?');
+    window.history.replaceState(null, null,
+      l.pathname.slice(0, -1) + decoded + l.hash
+    );
   }
-})();
+})(window.location);
 </script>
 
 <script id="schema-localbusiness" type="application/ld+json">
@@ -165,6 +163,20 @@ html,body{width:100%;overflow-x:hidden}
     border-bottom:1px solid var(--border);
     padding:10px 1.5rem;
     box-shadow:0 4px 16px rgba(7,14,29,.08);
+    transition:padding .22s cubic-bezier(.22,.68,0,1),box-shadow .22s ease;
+  }
+  /* Premium "stuck" state — fires once the block has scrolled under the nav.
+     Slightly shorter + a deeper shadow signals the filters are actively pinned. */
+  .sticky-top-block.is-scrolled .ph-filter-bar{
+    padding:6px 1.5rem;
+    box-shadow:0 10px 28px rgba(7,14,29,.16);
+  }
+  .sticky-top-block.is-scrolled .ph-filter-bar .ph-select,
+  .sticky-top-block.is-scrolled .ph-filter-bar button{
+    min-height:36px!important;
+    padding-top:6px!important;
+    padding-bottom:6px!important;
+    transition:min-height .22s,padding .22s;
   }
 }
 /* Mobile: filter bar scrolls away — NOT in sticky block */
@@ -175,6 +187,27 @@ html,body{width:100%;overflow-x:hidden}
     padding:8px 1rem;
   }
 }
+
+/* ── Filter select: selected / active state ── */
+.ph-select.is-active{
+  border-color:var(--gold)!important;
+  background-color:var(--gold-lt)!important;
+  color:#92400E!important;
+  font-weight:700!important;
+  box-shadow:0 0 0 3px rgba(200,134,10,.12);
+}
+.ph-select.is-active:hover{border-color:var(--gold)!important}
+.ph-reset-btn{transition:border-color .18s,color .18s,background .18s}
+.ph-reset-btn.is-active{
+  border-color:#FCA5A5!important;
+  color:#DC2626!important;
+  background:#FEF2F2!important;
+}
+
+/* ── Header phone CTA (desktop number vs mobile call button) ── */
+.ph-call-desktop{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.92);font-size:.78rem;font-weight:700;letter-spacing:.01em;text-decoration:none;padding:6px 4px;transition:color .18s}
+.ph-call-desktop:hover{color:#FCD34D}
+.ph-call-desktop svg{flex-shrink:0;color:var(--gold)}
 
 /* Nav links */
 .nav-link{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.65);cursor:pointer;padding:4px 0;position:relative;transition:color .18s}
@@ -405,6 +438,24 @@ const updateMeta = ({title,desc,url,schema}) => {
   const sd = document.getElementById('schema-dynamic');
   if(sd && schema) sd.textContent = JSON.stringify(schema);
 };
+
+/* ── Phone CTA: desktop shows the number, mobile keeps a Call Us button ── */
+function PhoneCTA() {
+  return (
+    <React.Fragment>
+      {/* Desktop: phone number, clickable, no button chrome */}
+      <a href={`tel:${CALL}`} className="ph-call-desktop hidden md:flex">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.61 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        +91 {CALL}
+      </a>
+      {/* Mobile: Call Us button → opens dialer directly */}
+      <a href={`tel:${CALL}`} className="md:hidden" style={{display:'flex',alignItems:'center',gap:7,background:'linear-gradient(135deg,#B8720A,#DA9610)',border:'none',borderRadius:10,padding:'8px 14px',fontSize:'.6rem',fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:'.1em',textDecoration:'none'}}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.61 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Call Us
+      </a>
+    </React.Fragment>
+  );
+}
 
 /* ── WhatsApp SVG ── */
 const WASvg = ({size=26,color="#fff"}) => (
@@ -1123,11 +1174,8 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
             <span style={{fontSize:'1rem',transition:'transform .18s'}} className="group-hover:-translate-x-1 inline-block">←</span>
             <span style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1rem',fontWeight:700,fontStyle:'italic',color:'rgba(255,255,255,.9)'}}>Perfect Horizons</span>
           </button>
-          {/* Right: call button only */}
-          <a href={`tel:${CALL}`} style={{display:'flex',alignItems:'center',gap:7,background:'linear-gradient(135deg,#B8720A,#DA9610)',border:'none',borderRadius:10,padding:'9px 16px',fontSize:'.62rem',fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:'.1em',textDecoration:'none',boxShadow:'0 2px 10px rgba(184,114,10,.35)'}}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.61 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            Call Us
-          </a>
+          {/* Right: call CTA */}
+          <PhoneCTA />
         </div>
       </div>
 
@@ -1494,10 +1542,7 @@ function InfoPage({ children, legal, setLegal, navTo }) {
           <span style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1rem',fontWeight:700,fontStyle:'italic',color:'rgba(255,255,255,.9)'}}>Perfect Horizons</span>
         </button>
         <div style={{flex:1}}/>
-        <a href={`tel:${CALL}`} style={{display:'flex',alignItems:'center',gap:7,background:'linear-gradient(135deg,#B8720A,#DA9610)',border:'none',borderRadius:10,padding:'8px 14px',fontSize:'.6rem',fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:'.1em',textDecoration:'none'}}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.61 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-          Call Us
-        </a>
+        <PhoneCTA />
       </div>
       <div style={{flexGrow:1,maxWidth:'72rem',margin:'0 auto',width:'100%',padding:'2rem 1.5rem'}}>
         {children}
@@ -1528,12 +1573,22 @@ function App() {
   const [activeBlog, setActiveBlog] = useState(null);
   const [legal, setLegal]           = useState(null);
   const [isMobile, setIsMobile]     = useState(window.innerWidth < 768);
+  const [isScrolled, setIsScrolled] = useState(false);
   const propsRef = useRef([]);
 
   useEffect(() => {
     const h = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', h);
     return () => window.removeEventListener('resize', h);
+  }, []);
+
+  // Detect scroll past the nav height so the desktop filter bar can shrink
+  // and pick up a deeper shadow once it's actively pinned under the header.
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   const resolvePath = useCallback((pathname, loadedProps) => {
@@ -1902,7 +1957,7 @@ function App() {
           Desktop: nav + filter bar both sticky
           Mobile: only nav sticky; filter bar scrolls away
       ── */}
-      <div className="sticky-top-block">
+      <div className={`sticky-top-block${isScrolled?' is-scrolled':''}`}>
         {/* Main Nav */}
         <nav className="ph-main-nav">
           <div style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.35rem',fontWeight:700,fontStyle:'italic',color:'#fff',textTransform:'uppercase',letterSpacing:'-.01em',cursor:'pointer',flexShrink:0,transition:'color .18s'}} className="hover:text-yellow-300" onClick={()=>navTo('home')}>
@@ -1948,13 +2003,13 @@ function App() {
           <div style={{maxWidth:'72rem',margin:'0 auto'}}>
             <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:8}}>
               {selects.map(s=>(
-                <select key={s.k} className="ph-select" style={{width:'100%',background:'#fff',padding:'9px 12px',fontSize:'.72rem',fontWeight:600,color:'var(--navy)',cursor:'pointer',minHeight:44}}
+                <select key={s.k} className={`ph-select${filters[s.k]?' is-active':''}`} style={{width:'100%',background:'#fff',padding:'9px 12px',fontSize:'.72rem',fontWeight:600,color:'var(--navy)',cursor:'pointer',minHeight:44}}
                   value={filters[s.k]} onChange={e=>setFilters(f=>({...f,[s.k]:e.target.value}))}>
                   <option value="">{s.ph}</option>
                   {s.opts.map(([l,v])=><option key={v} value={v}>{l}</option>)}
                 </select>
               ))}
-              <button onClick={()=>{setSearch('');setFilters({bhk:'',status:'',type:'',price:'',poss:''});}} style={{border:'1.5px solid var(--border)',borderRadius:10,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--muted)',background:'#fff',cursor:'pointer',minHeight:44,padding:'0 12px',transition:'border-color .18s,color .18s'}} className="hover:border-red-300 hover:text-red-500">
+              <button onClick={()=>{setSearch('');setFilters({bhk:'',status:'',type:'',price:'',poss:''});}} className={`ph-reset-btn hover:border-red-300 hover:text-red-500${Object.values(filters).some(Boolean)||search?' is-active':''}`} style={{border:'1.5px solid var(--border)',borderRadius:10,fontSize:'.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'.12em',color:'var(--muted)',background:'#fff',cursor:'pointer',minHeight:44,padding:'0 12px'}}>
                 ✕ Reset
               </button>
             </div>
@@ -2018,7 +2073,7 @@ function App() {
         {mobileFilter && (
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:8}}>
             {selects.map(s=>(
-              <select key={s.k} className="ph-select" style={{width:'100%',background:'#fff',padding:'9px 12px',fontSize:'.72rem',fontWeight:600,color:'var(--navy)',cursor:'pointer',minHeight:44}}
+              <select key={s.k} className={`ph-select${filters[s.k]?' is-active':''}`} style={{width:'100%',background:'#fff',padding:'9px 12px',fontSize:'.72rem',fontWeight:600,color:'var(--navy)',cursor:'pointer',minHeight:44}}
                 value={filters[s.k]} onChange={e=>setFilters(f=>({...f,[s.k]:e.target.value}))}>
                 <option value="">{s.ph}</option>
                 {s.opts.map(([l,v])=><option key={v} value={v}>{l}</option>)}
