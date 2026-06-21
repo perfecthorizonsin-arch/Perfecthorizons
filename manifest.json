@@ -33,5 +33,20 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "screenshots": [
+    {
+      "src": "./screenshot-desktop-wide.png",
+      "sizes": "1918x872",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Horizon CRM dashboard on desktop"
+    },
+    {
+      "src": "./screenshot-mobile.png",
+      "sizes": "620x1386",
+      "type": "image/png",
+      "label": "Horizon CRM dashboard on mobile"
+    }
   ]
 }
