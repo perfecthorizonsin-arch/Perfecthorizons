@@ -52,6 +52,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
@@ -1026,28 +1030,84 @@ function FAQSection({ raw, title }) {
 
 /* ══════════════════════════════════════════════════════════
    GROWTH RATE DISPLAY
+   - Primary path: regionData from the `growth_rates` table
+     (region, annual_growth_pct, notes) → investment-insight
+     card with a dynamic 5-year compounded appreciation projection.
+   - Fallback path: legacyRaw from the old properties.growth_rate
+     column, preserved as-is for backward compatibility when no
+     matching growth_rates record exists.
 ══════════════════════════════════════════════════════════ */
-function GrowthRateDisplay({ raw, location }) {
-  const data = useMemo(()=>{
-    if(!raw) return null;
-    try { return typeof raw==='string'?JSON.parse(raw):raw; } catch { return typeof raw==='string'?{rate:raw}:raw; }
-  },[raw]);
-  if(!data) return null;
-  const rate = data.rate||data.growth_rate||data.yoy||raw;
-  const area = data.area||data.direction||location||'';
-  return (
-    <div style={{background:'var(--parch)',border:'1px solid var(--border)',borderRadius:14,padding:'1.25rem',display:'flex',alignItems:'center',gap:16,marginTop:'1rem'}}>
-      <div className="growth-badge">
-        <div className="growth-rate-val">{rate}</div>
-        <div className="growth-rate-lbl">YoY Growth</div>
+function GrowthRateDisplay({ regionData, legacyRaw, location }) {
+  const pct = useMemo(() => {
+    if(!regionData) return null;
+    const n = parseFloat(regionData.annual_growth_pct);
+    return isNaN(n) ? null : n;
+  }, [regionData]);
+
+  // ── New: region-matched data with 5-year projection ──
+  if(regionData && pct!==null){
+    const projections = [1,2,3,4,5].map(yr => ({
+      year: yr,
+      cum: Math.round((Math.pow(1+pct/100, yr)-1)*100)
+    }));
+    const maxCum = Math.max(...projections.map(pr=>pr.cum), 1);
+    const regionName = regionData.region || location || '';
+    return (
+      <div style={{background:'linear-gradient(135deg,#F9F6F0,#F2EDE3)',border:'1px solid var(--border)',borderRadius:16,padding:'1.25rem 1.25rem 1.4rem',marginTop:'1rem'}}>
+        <div style={{display:'flex',alignItems:'center',gap:16,flexWrap:'wrap',marginBottom:'1.1rem'}}>
+          <div className="growth-badge">
+            <div className="growth-rate-val">{pct}%</div>
+            <div className="growth-rate-lbl">Annual Growth</div>
+          </div>
+          <div style={{flex:1,minWidth:160}}>
+            <div style={{fontSize:'.52rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--muted)',marginBottom:4}}>Investment Insight</div>
+            <div style={{fontSize:'.86rem',fontWeight:700,color:'var(--navy)',marginBottom:4}}>{regionName && <span>{regionName} · </span>}Strong appreciation potential</div>
+            {regionData.notes
+              ? <div style={{fontSize:'.74rem',color:'var(--muted)',lineHeight:1.65}}>{regionData.notes}</div>
+              : <div style={{fontSize:'.72rem',color:'var(--muted)'}}>Based on recent registration data and infrastructure development</div>
+            }
+          </div>
+        </div>
+        <div style={{paddingTop:'1.05rem',borderTop:'1px solid var(--border)'}}>
+          <div style={{fontSize:'.58rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.14em',color:'var(--muted)',marginBottom:12}}>Estimated Value Growth · 5-Year Projection</div>
+          <div style={{display:'flex',alignItems:'flex-end',gap:'6%',height:88}}>
+            {projections.map(pr=>(
+              <div key={pr.year} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',gap:6,height:'100%'}}>
+                <div style={{fontSize:'.6rem',fontWeight:800,color:'#15803D',whiteSpace:'nowrap'}}>+{pr.cum}%</div>
+                <div style={{width:'100%',maxWidth:34,height:Math.max(10,(pr.cum/maxCum)*52),background:'linear-gradient(180deg,#34D399,#059669)',borderRadius:'6px 6px 2px 2px',boxShadow:'0 2px 8px rgba(5,150,105,.25)'}} />
+                <div style={{fontSize:'.56rem',fontWeight:600,color:'var(--muted)'}}>Yr {pr.year}</div>
+              </div>
+            ))}
+          </div>
+          <p style={{fontSize:'.62rem',color:'var(--muted)',marginTop:12,fontStyle:'italic',lineHeight:1.5}}>*Illustrative projection compounding the current annual growth rate. Actual property appreciation depends on market conditions and is not guaranteed.</p>
+        </div>
       </div>
-      <div>
-        <div style={{fontSize:'.52rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--muted)',marginBottom:4}}>Area Growth Rate</div>
-        <div style={{fontSize:'.85rem',fontWeight:700,color:'var(--navy)',marginBottom:4}}>{area && <span>{area} · </span>}Strong appreciation potential</div>
-        <div style={{fontSize:'.72rem',color:'var(--muted)'}}>Based on recent registration data and infrastructure development</div>
+    );
+  }
+
+  // ── Fallback: legacy properties.growth_rate column (unchanged behavior) ──
+  if(legacyRaw){
+    let data;
+    try { data = typeof legacyRaw==='string'?JSON.parse(legacyRaw):legacyRaw; } catch { data = typeof legacyRaw==='string'?{rate:legacyRaw}:legacyRaw; }
+    if(!data) return null;
+    const rate = data.rate||data.growth_rate||data.yoy||legacyRaw;
+    const area = data.area||data.direction||location||'';
+    return (
+      <div style={{background:'var(--parch)',border:'1px solid var(--border)',borderRadius:14,padding:'1.25rem',display:'flex',alignItems:'center',gap:16,marginTop:'1rem'}}>
+        <div className="growth-badge">
+          <div className="growth-rate-val">{rate}</div>
+          <div className="growth-rate-lbl">YoY Growth</div>
+        </div>
+        <div>
+          <div style={{fontSize:'.52rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--muted)',marginBottom:4}}>Area Growth Rate</div>
+          <div style={{fontSize:'.85rem',fontWeight:700,color:'var(--navy)',marginBottom:4}}>{area && <span>{area} · </span>}Strong appreciation potential</div>
+          <div style={{fontSize:'.72rem',color:'var(--muted)'}}>Based on recent registration data and infrastructure development</div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1059,7 +1119,7 @@ function GrowthRateDisplay({ raw, location }) {
    - Section order: About → Key Highlights → Amenities → Master Plan → Floor Plan → Gallery → Location
    - EMI synced to property price via useEffect
 ══════════════════════════════════════════════════════════ */
-function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
+function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp, phFaqItems, growthRates }) {
   const [modal, setModal]        = useState(null);
   const [unlocked, setUnlocked]  = useState(false);
   const [activeTab, setActiveTab]= useState('about');
@@ -1101,12 +1161,29 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
   const mapLnk  = gv(p,'map_link')||gv(p,'map link')||gv(p,'maplink');
   const mapSrc  = mapEmbed(mapLnk);
   const locHL   = gv(p,'location_highlights');
-  const growthRaw = gv(p,'growth_rate');
+  const growthRaw = gv(p,'growth_rate'); // legacy fallback — old per-property column
   const sc      = statusStyle(status);
+
+  // Match the property's location/region against the growth_rates table.
+  // Falls back gracefully (regionGrowth === null) if no match is found,
+  // in which case the legacy `growthRaw` property column is used instead.
+  const regionGrowth = useMemo(() => {
+    if(!growthRates || !growthRates.length) return null;
+    const locStr = String(loc||'').trim().toLowerCase();
+    if(!locStr) return null;
+    let match = growthRates.find(g => String(g.region||'').trim().toLowerCase()===locStr);
+    if(!match) match = growthRates.find(g => {
+      const r = String(g.region||'').trim().toLowerCase();
+      return r && (locStr.includes(r) || r.includes(locStr));
+    });
+    return match || null;
+  }, [growthRates, loc]);
 
   const propType = String(gv(p,'Property Type')||'').toLowerCase();
   const faqRaw = propType.includes('villa')?gv(p,'villa_faq'):propType.includes('plot')?gv(p,'plot_faq'):gv(p,'apartment_faq');
-  const phFaqRaw = gv(p,'perfect_horizons_faq');
+  // Perfect Horizons FAQ now comes from the perfecthorizons_faq table (sorted by sort_order),
+  // fetched once in App and passed down — no longer a property column.
+  const phFaqRaw = (phFaqItems && phFaqItems.length) ? phFaqItems : null;
 
   // Cover image — shown at TOP of mobile hero, crisp and full-bleed
   const cover  = gdThumb(gv(p,'cover_image')||gv(p,'cover-image')||gv(p,'Cover Image'));
@@ -1316,7 +1393,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp }) {
                   </div>
                 ))}
               </div>
-              {growthRaw && <GrowthRateDisplay raw={growthRaw} location={loc} />}
+              {(regionGrowth || growthRaw) && <GrowthRateDisplay regionData={regionGrowth} legacyRaw={growthRaw} location={loc} />}
             </section>
 
             {/* 2. KEY HIGHLIGHTS */}
@@ -1586,6 +1663,8 @@ function App() {
   const [legal, setLegal]           = useState(null);
   const [isMobile, setIsMobile]     = useState(window.innerWidth < 768);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [phFaqItems, setPhFaqItems] = useState([]);
+  const [growthRates, setGrowthRates] = useState([]);
   const propsRef = useRef([]);
 
   useEffect(() => {
@@ -1637,6 +1716,16 @@ function App() {
         setLoading(false);
       })
       .catch(()=>setLoading(false));
+
+    // Perfect Horizons FAQ — sourced from the perfecthorizons_faq table, ordered by sort_order.
+    supabase.from('perfecthorizons_faq').select('*').order('sort_order',{ascending:true})
+      .then(({data,error})=>{ if(!error) setPhFaqItems(data||[]); })
+      .catch(()=>{});
+
+    // Region growth rates — sourced from the growth_rates table, matched to a property's location.
+    supabase.from('growth_rates').select('*')
+      .then(({data,error})=>{ if(!error) setGrowthRates(data||[]); })
+      .catch(()=>{});
 
     const onPop = () => resolvePath(window.location.pathname, propsRef.current);
     window.addEventListener('popstate', onPop);
@@ -1745,7 +1834,7 @@ function App() {
   /* ── DETAIL PAGE ── */
   if(selProp) return (
     <>
-      <DetailPage p={selProp} all={props} onBack={goBack} navTo={navTo} submitLead={submitLead} onPickProp={pickProp} />
+      <DetailPage p={selProp} all={props} onBack={goBack} navTo={navTo} submitLead={submitLead} onPickProp={pickProp} phFaqItems={phFaqItems} growthRates={growthRates} />
       <button className="git-btn" onClick={()=>setShowLead(true)}>Get in Touch</button>
       <a href={`https://wa.me/${WA}`} target="_blank" className="wa-fab" aria-label="Chat on WhatsApp">
         <WASvg size={26} color="#fff" />
