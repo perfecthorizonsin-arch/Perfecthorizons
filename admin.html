@@ -2456,61 +2456,193 @@ function SiteFaqManager({ supabase }) {
 }
 
 // ─── GENERAL → GROWTH RATE MANAGEMENT ──────────────────────────────────────
-// Reads/writes the `growth_rates` table. Each row is one region/location's
-// annual appreciation estimate, used wherever the public frontend currently
-// shows a hardcoded growth %. See the schema-change recommendation in the
-// delivered notes — this admin UI assumes that table exists.
+// DB stays exactly row-based: growth_rates(id, region, year, annual_growth_pct,
+// notes, created_at, updated_at) — one row per region+year, untouched.
+// The UI groups those rows into one card per region so admins never retype
+// a location name or scroll through a flat list of duplicated regions.
+//
+// FIXED DEFAULT YEARS — intentionally NOT calendar-relative. These are
+// historical appreciation records, not a rolling "last 5 years" window, so
+// a brand-new region always starts with 2021–2025 regardless of what year
+// it is when the admin creates it. This list does not shift on its own next
+// year (no "current year" math anywhere in this file) — extending it to
+// cover later years is a manual one-time edit to GROWTH_RATE_DEFAULT_YEARS
+// below, done deliberately, not automatically on a clock.
+// Admins can still add/remove individual years per region via the UI.
+const GROWTH_RATE_DEFAULT_YEARS = [2021, 2022, 2023, 2024, 2025];
+
+function groupGrowthRatesByRegion(rawRows) {
+    const byRegion = new Map();
+    rawRows.forEach(r => {
+        if (!byRegion.has(r.region)) byRegion.set(r.region, []);
+        byRegion.get(r.region).push(r);
+    });
+
+    const cards = [];
+    byRegion.forEach((regionRows, region) => {
+        const yearsPresent = regionRows.map(r => r.year).filter(y => y !== null && y !== undefined);
+        // Union of the fixed default range and whatever years already have
+        // data, so existing rows outside 2021–2025 (e.g. a future 2026 an
+        // admin added manually) are never hidden, but a region with only
+        // the defaults doesn't grow or shrink based on today's date.
+        const yearSet = new Set([...GROWTH_RATE_DEFAULT_YEARS, ...yearsPresent]);
+        const years = [...yearSet].sort((a, b) => a - b);
+        const byYear = {};
+        regionRows.forEach(r => { byYear[r.year] = r; });
+        // Card-level Notes starts from the most recently updated row's notes
+        // that actually has text, so existing per-row notes aren't lost from view.
+        const notesSource = [...regionRows]
+            .filter(r => (r.notes || '').trim())
+            .sort((a, b) => new Date(b.updated_at||0) - new Date(a.updated_at||0))[0];
+        cards.push({
+            _cardId: region, // stable key while editing an existing region
+            _originalRegion: region,
+            region,
+            notes: notesSource ? notesSource.notes : '',
+            years: years.map(y => ({
+                year: y,
+                value: byYear[y] ? (byYear[y].annual_growth_pct ?? '') : '',
+                rowId: byYear[y] ? byYear[y].id : null
+            })),
+            _dirty: false,
+            _new: false
+        });
+    });
+
+    cards.sort((a, b) => a.region.localeCompare(b.region));
+    return cards;
+}
+
+function blankGrowthCard() {
+    return {
+        _cardId: `new-${Date.now()}`,
+        region: '',
+        notes: '',
+        years: GROWTH_RATE_DEFAULT_YEARS.map(y => ({ year: y, value: '', rowId: null })),
+        _dirty: true,
+        _new: true
+    };
+}
+
 function GrowthRateManager({ supabase }) {
-    const [rows,    setRows]    = useState([]);
+    const [cards,   setCards]   = useState([]);
     const [loading, setLoading] = useState(true);
-    const [saving,  setSaving]  = useState(false);
+    const [savingId,setSavingId] = useState(null);
     const [error,   setError]   = useState('');
+    // Manual "add a year" entry per card — admin types the year explicitly;
+    // nothing here is derived from today's date.
+    const [newYearInput, setNewYearInput] = useState({});
 
     const load = async () => {
         setLoading(true); setError('');
-        const { data, error: err } = await supabase.from('growth_rates').select('*').order('region', { ascending:true });
-        if (err) { setError(err.message); setRows([]); }
-        else setRows((data||[]).map(r => ({ ...r, _dirty:false })));
+        const { data, error: err } = await supabase.from('growth_rates').select('*').order('region', { ascending:true }).order('year', { ascending:true });
+        if (err) { setError(err.message); setCards([]); }
+        else setCards(groupGrowthRatesByRegion(data || []));
         setLoading(false);
     };
     useEffect(() => { load(); }, []);
 
-    const updateRow = (id, key, val) => setRows(rs => rs.map(r => r.id === id ? { ...r, [key]:val, _dirty:true } : r));
+    const updateCard = (cardId, key, val) =>
+        setCards(cs => cs.map(c => c._cardId === cardId ? { ...c, [key]:val, _dirty:true } : c));
 
-    const addRow = () => {
-        const tempId = -(Date.now());
-        setRows(rs => [...rs, { id:tempId, region:'', annual_growth_pct:'', notes:'', _dirty:true, _new:true }]);
+    const updateYearValue = (cardId, year, val) =>
+        setCards(cs => cs.map(c => c._cardId === cardId
+            ? { ...c, _dirty:true, years: c.years.map(y => y.year === year ? { ...y, value:val } : y) }
+            : c));
+
+    // Admin types the exact year to add (e.g. "2020" or "2026") — no
+    // auto-increment, no "current year + 1" guess.
+    const addYearToCard = (cardId) => {
+        const raw = (newYearInput[cardId] || '').trim();
+        const yearNum = parseInt(raw, 10);
+        if (!raw || isNaN(yearNum) || yearNum < 1900 || yearNum > 2999) {
+            alert('Enter a valid 4-digit year, e.g. 2026.');
+            return;
+        }
+        setCards(cs => cs.map(c => {
+            if (c._cardId !== cardId) return c;
+            if (c.years.some(y => y.year === yearNum)) { alert(`${yearNum} is already on this card.`); return c; }
+            const years = [...c.years, { year: yearNum, value:'', rowId:null }].sort((a, b) => a.year - b.year);
+            return { ...c, _dirty:true, years };
+        }));
+        setNewYearInput(prev => ({ ...prev, [cardId]: '' }));
     };
 
-    const removeRow = async (row) => {
-        if (row._new) { setRows(rs => rs.filter(r => r.id !== row.id)); return; }
-        if (!window.confirm('Delete this growth rate entry?')) return;
-        const { error: err } = await supabase.from('growth_rates').delete().eq('id', row.id);
+    const removeYearFromCard = async (card, yearEntry) => {
+        if (yearEntry.rowId) {
+            if (!window.confirm(`Delete the ${yearEntry.year} entry for "${card.region}"? This removes that row from the database.`)) return;
+            const { error: err } = await supabase.from('growth_rates').delete().eq('id', yearEntry.rowId);
+            if (err) { alert(err.message); return; }
+        }
+        setCards(cs => cs.map(c => c._cardId === card._cardId
+            ? { ...c, years: c.years.filter(y => y.year !== yearEntry.year) }
+            : c));
+    };
+
+    const addCard = () => setCards(cs => [...cs, blankGrowthCard()]);
+
+    // Deletes the region's card AND every year row behind it in one atomic
+    // request — nothing is left orphaned in Supabase.
+    const removeCard = async (card) => {
+        const rowIds = card.years.map(y => y.rowId).filter(Boolean);
+        if (rowIds.length === 0) { setCards(cs => cs.filter(c => c._cardId !== card._cardId)); return; }
+        if (!window.confirm(`Delete "${card.region}" entirely? This removes all ${rowIds.length} year row(s) for this region from the database. This cannot be undone.`)) return;
+        const { error: err } = await supabase.from('growth_rates').delete().in('id', rowIds);
         if (err) { alert(err.message); return; }
-        setRows(rs => rs.filter(r => r.id !== row.id));
+        setCards(cs => cs.filter(c => c._cardId !== card._cardId));
     };
 
-    const saveAll = async () => {
-        const dirty = rows.filter(r => r._dirty);
-        if (dirty.length === 0) { alert('Nothing to save.'); return; }
-        if (dirty.some(r => !r.region || !r.region.trim())) { alert('Every row needs a Region / Location name.'); return; }
-        setSaving(true);
-        for (const row of dirty) {
-            const payload = {
-                region: row.region.trim(),
-                annual_growth_pct: row.annual_growth_pct === '' ? null : Number(row.annual_growth_pct),
-                notes: row.notes || ''
-            };
-            if (row._new) {
-                const { error: err } = await supabase.from('growth_rates').insert([payload]);
-                if (err) { alert('Save failed: ' + err.message); setSaving(false); return; }
-            } else {
-                const { error: err } = await supabase.from('growth_rates').update(payload).eq('id', row.id);
-                if (err) { alert('Save failed: ' + err.message); setSaving(false); return; }
+    // SAVE LOGIC: one card → up to N rows (one per filled-in year), upserted
+    // on the natural (region, year) key. Blank year inputs are skipped
+    // entirely — they never produce a row. The card's single Notes value is
+    // written onto every row for that region, since notes live per-row in
+    // the DB but are edited once per region in this UI.
+    const saveCard = async (card) => {
+        const region = (card.region || '').trim();
+        if (!region) { alert('Region is required.'); return; }
+
+        const filledYears = card.years.filter(y => y.value !== '' && y.value !== null && !isNaN(Number(y.value)));
+        if (filledYears.length === 0) { alert('Enter at least one year\'s growth % before saving.'); return; }
+
+        setSavingId(card._cardId);
+
+        // Guard against creating a duplicate card for a region that already
+        // exists, or renaming a card so its name collides with a different
+        // existing region — both would silently merge two locations' rows
+        // together under one region string. Since `region` here is already
+        // confirmed different from this card's original name (isRename),
+        // any row found under `region` belongs to a genuinely different card.
+        const isRename = !card._new && card.region !== card._originalRegion;
+        if (card._new || isRename) {
+            const { data: clash } = await supabase.from('growth_rates').select('id').eq('region', region).limit(1);
+            if (clash && clash.length > 0) {
+                alert(`"${region}" already exists as a card. Edit that card instead of creating a duplicate or renaming into it.`);
+                setSavingId(null);
+                return;
             }
         }
-        setSaving(false);
-        alert('Growth rates saved!');
+
+        for (const y of filledYears) {
+            const payload = {
+                region,
+                year: Number(y.year),
+                annual_growth_pct: Number(y.value),
+                notes: card.notes || ''
+            };
+            if (y.rowId) {
+                const { error: err } = await supabase.from('growth_rates').update(payload).eq('id', y.rowId);
+                if (err) { alert('Save failed: ' + err.message); setSavingId(null); return; }
+            } else {
+                // Upsert-by-natural-key: in case a row for this region+year
+                // already exists from outside this UI session, this avoids
+                // violating the unique(region, year) constraint.
+                const { error: err } = await supabase.from('growth_rates')
+                    .upsert([payload], { onConflict: 'region,year' });
+                if (err) { alert('Save failed: ' + err.message); setSavingId(null); return; }
+            }
+        }
+        setSavingId(null);
+        alert(`Saved "${region}".`);
         load();
     };
 
@@ -2525,40 +2657,86 @@ function GrowthRateManager({ supabase }) {
     );
 
     return (
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 md:p-7 space-y-4">
-            <div>
-                <h3 className="text-xs font-black uppercase tracking-widest text-slate-700">Growth Rate Management</h3>
-                <p className="text-[10px] text-slate-400 font-bold mt-0.5">Annual appreciation % by region/location — existing frontend behavior is unchanged until it's wired to read from here</p>
+        <div className="space-y-4">
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 md:p-7">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-700">Growth Rate Management</h3>
+                        <p className="text-[10px] text-slate-400 font-bold mt-0.5">One card per region — historical data entry only, no charts here</p>
+                    </div>
+                    <button type="button" onClick={addCard} className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition shrink-0">
+                        + Add Region
+                    </button>
+                </div>
             </div>
 
-            {rows.length === 0 && (
-                <p className="text-[10px] text-slate-400 font-bold">No growth rate entries yet — click "+ Add Region" to start.</p>
+            {cards.length === 0 && (
+                <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center">
+                    <p className="text-[11px] text-slate-400 font-bold">No regions yet — click "+ Add Region" to start.</p>
+                </div>
             )}
 
-            <div className="space-y-2">
-                {rows.map(row => (
-                    <div key={row.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-3 grid grid-cols-1 sm:grid-cols-[2fr_1fr_2fr_auto] gap-2 items-start">
-                        <input className="text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:border-blue-400 bg-white w-full"
-                            placeholder="Region / Location" value={row.region||''} onChange={e => updateRow(row.id, 'region', e.target.value)} />
-                        <div className="relative">
-                            <input type="number" step="0.1" className="text-xs font-bold p-2.5 pr-7 border border-slate-200 rounded-xl outline-none focus:border-blue-400 bg-white w-full"
-                                placeholder="0.0" value={row.annual_growth_pct ?? ''} onChange={e => updateRow(row.id, 'annual_growth_pct', e.target.value)} />
-                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">%</span>
+            <div className="space-y-4">
+                {cards.map(card => (
+                    <div key={card._cardId} className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 md:p-7 space-y-4">
+                        <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Region</label>
+                            <input value={card.region} onChange={e => updateCard(card._cardId, 'region', e.target.value)}
+                                placeholder="e.g. Off Sarjapur Road, Bangalore"
+                                className="w-full mt-1 text-sm font-black text-slate-900 p-3 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 bg-slate-50" />
                         </div>
-                        <input className="text-xs font-bold p-2.5 border border-slate-200 rounded-xl outline-none focus:border-blue-400 bg-white w-full"
-                            placeholder="Notes (optional)" value={row.notes||''} onChange={e => updateRow(row.id, 'notes', e.target.value)} />
-                        <button type="button" onClick={() => removeRow(row)} className="text-red-500 hover:text-red-700 text-xs font-black px-2 py-2.5 shrink-0 justify-self-end sm:justify-self-auto">✕</button>
+
+                        {/* Mobile-first: 2-up grid on phones, single row from sm: up */}
+                        <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Annual Appreciation %</label>
+                            <div className="mt-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                                {card.years.map(y => (
+                                    <div key={y.year} className="relative bg-slate-50 border border-slate-200 rounded-2xl p-2.5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[9px] font-black text-slate-400">{y.year}</span>
+                                            <button type="button" onClick={() => removeYearFromCard(card, y)} title={`Remove ${y.year}`} className="text-slate-300 hover:text-red-500 text-[10px] font-black leading-none">✕</button>
+                                        </div>
+                                        <div className="relative mt-1">
+                                            <input type="number" step="0.1" value={y.value}
+                                                onChange={e => updateYearValue(card._cardId, y.year, e.target.value)}
+                                                placeholder="—"
+                                                className="w-full text-sm font-black text-blue-900 p-1.5 pr-5 border-0 outline-none bg-transparent" />
+                                            <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">%</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Manual year add — admin types the exact year, nothing auto-suggested */}
+                            <div className="mt-2 flex items-center gap-2">
+                                <input type="number" placeholder="Add year e.g. 2026" value={newYearInput[card._cardId] || ''}
+                                    onChange={e => setNewYearInput(prev => ({ ...prev, [card._cardId]: e.target.value }))}
+                                    className="w-36 text-xs font-bold p-2 border border-slate-200 rounded-xl outline-none focus:border-blue-400 bg-white" />
+                                <button type="button" onClick={() => addYearToCard(card._cardId)}
+                                    className="text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                                    + Add Year
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Notes</label>
+                            <textarea rows={2} value={card.notes} onChange={e => updateCard(card._cardId, 'notes', e.target.value)}
+                                placeholder="Optional context for this region's appreciation trend"
+                                className="w-full mt-1 text-xs p-3 border border-slate-200 rounded-2xl outline-none focus:border-blue-400 resize-none bg-slate-50" />
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <button onClick={() => saveCard(card)} disabled={savingId === card._cardId}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest px-5 py-3 rounded-2xl transition disabled:opacity-50">
+                                {savingId === card._cardId ? '⏳ Saving…' : '💾 Save'}
+                            </button>
+                            <button type="button" onClick={() => removeCard(card)}
+                                className="flex-1 sm:flex-none bg-white border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-[10px] font-black uppercase tracking-widest px-5 py-3 rounded-2xl transition">
+                                🗑️ Delete Region
+                            </button>
+                        </div>
                     </div>
                 ))}
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                <button type="button" onClick={addRow} className="text-[9px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 text-left">+ Add Region</button>
-                <div className="flex-1"></div>
-                <button onClick={saveAll} disabled={saving}
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest px-5 py-3 rounded-2xl transition disabled:opacity-50">
-                    {saving ? '⏳ Saving…' : '💾 Save Changes'}
-                </button>
             </div>
         </div>
     );
