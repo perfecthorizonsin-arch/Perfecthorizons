@@ -52,10 +52,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
@@ -388,7 +384,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);box-shadow:0
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useEffect, useMemo, useRef, useCallback } = React;
+const { useState, useEffect, useMemo, useRef, useCallback, useId } = React;
 
 /* ── Constants ── */
 const WA = "919113261205";
@@ -1029,58 +1025,93 @@ function FAQSection({ raw, title }) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   GROWTH RATE — HISTORY LINE CHART
+   Plain inline SVG, no charting library. Renders a clean,
+   investment-report style line from a sorted [{year,pct}] array.
+══════════════════════════════════════════════════════════ */
+function GrowthHistoryChart({ data }) {
+  const gradId = useId().replace(/:/g,'');
+  const W = 600, H = 200, padL = 30, padR = 18, padT = 26, padB = 26;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+
+  const pcts = data.map(d => d.pct);
+  let min = Math.min(...pcts), max = Math.max(...pcts);
+  if(min === max){ min -= 2; max += 2; }
+  const pad = (max - min) * 0.25 || 2;
+  min -= pad; max += pad;
+
+  const x = i => padL + (data.length === 1 ? innerW/2 : (innerW * i/(data.length-1)));
+  const y = v => padT + innerH - ((v - min)/(max - min)) * innerH;
+  const pts = data.map((d,i) => [x(i), y(d.pct)]);
+  const linePath = pts.map((p,i) => (i===0?'M':'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const baseline = (padT + innerH).toFixed(1);
+  const areaPath = `${linePath} L${pts[pts.length-1][0].toFixed(1)},${baseline} L${pts[0][0].toFixed(1)},${baseline} Z`;
+  const summary = data.map(d => `${d.year}: ${d.pct}%`).join(', ');
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',height:'auto',display:'block'}} role="img" aria-label={`Year by year annual growth rate. ${summary}`}>
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#059669" stopOpacity=".22" />
+          <stop offset="100%" stopColor="#059669" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {[0,0.5,1].map((t,i) => {
+        const yy = padT + innerH * t;
+        return <line key={i} x1={padL} x2={W-padR} y1={yy} y2={yy} stroke="var(--border)" strokeWidth="1" />;
+      })}
+      {data.length > 1 && <path d={areaPath} fill={`url(#${gradId})`} stroke="none" />}
+      <path d={linePath} fill="none" stroke="#059669" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      {pts.map((p,i) => (
+        <g key={i}>
+          <circle cx={p[0]} cy={p[1]} r="4" fill="#fff" stroke="#059669" strokeWidth="2.5" />
+          <text x={p[0]} y={p[1]-11} textAnchor="middle" fontSize="11" fontWeight="700" fill="#15803D">{data[i].pct}%</text>
+          <text x={p[0]} y={H-8} textAnchor="middle" fontSize="10" fontWeight="600" fill="#64748B">{data[i].year}</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
    GROWTH RATE DISPLAY
-   - Primary path: regionData from the `growth_rates` table
-     (region, annual_growth_pct, notes) → investment-insight
-     card with a dynamic 5-year compounded appreciation projection.
+   - Primary path: regionGrowth from the `growth_rates` table
+     ({ region, history:[{year,pct,notes}] }) → investment-insight
+     card with the current rate plus an actual year-by-year
+     historical line chart (no projections).
    - Fallback path: legacyRaw from the old properties.growth_rate
      column, preserved as-is for backward compatibility when no
-     matching growth_rates record exists.
+     matching growth_rates records exist.
 ══════════════════════════════════════════════════════════ */
-function GrowthRateDisplay({ regionData, legacyRaw, location }) {
-  const pct = useMemo(() => {
-    if(!regionData) return null;
-    const n = parseFloat(regionData.annual_growth_pct);
-    return isNaN(n) ? null : n;
-  }, [regionData]);
-
-  // ── New: region-matched data with 5-year projection ──
-  if(regionData && pct!==null){
-    const projections = [1,2,3,4,5].map(yr => ({
-      year: yr,
-      cum: Math.round((Math.pow(1+pct/100, yr)-1)*100)
-    }));
-    const maxCum = Math.max(...projections.map(pr=>pr.cum), 1);
-    const regionName = regionData.region || location || '';
+function GrowthRateDisplay({ regionGrowth, legacyRaw, location }) {
+  // ── New: region-matched historical data ──
+  if(regionGrowth && regionGrowth.history && regionGrowth.history.length){
+    const { region, history } = regionGrowth;
+    const latest = history[history.length-1];
+    const regionName = region || location || '';
     return (
       <div style={{background:'linear-gradient(135deg,#F9F6F0,#F2EDE3)',border:'1px solid var(--border)',borderRadius:16,padding:'1.25rem 1.25rem 1.4rem',marginTop:'1rem'}}>
         <div style={{display:'flex',alignItems:'center',gap:16,flexWrap:'wrap',marginBottom:'1.1rem'}}>
           <div className="growth-badge">
-            <div className="growth-rate-val">{pct}%</div>
-            <div className="growth-rate-lbl">Annual Growth</div>
+            <div className="growth-rate-val">{latest.pct}%</div>
+            <div className="growth-rate-lbl">Current Annual Growth</div>
           </div>
           <div style={{flex:1,minWidth:160}}>
             <div style={{fontSize:'.52rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.18em',color:'var(--muted)',marginBottom:4}}>Investment Insight</div>
-            <div style={{fontSize:'.86rem',fontWeight:700,color:'var(--navy)',marginBottom:4}}>{regionName && <span>{regionName} · </span>}Strong appreciation potential</div>
-            {regionData.notes
-              ? <div style={{fontSize:'.74rem',color:'var(--muted)',lineHeight:1.65}}>{regionData.notes}</div>
-              : <div style={{fontSize:'.72rem',color:'var(--muted)'}}>Based on recent registration data and infrastructure development</div>
+            <div style={{fontSize:'.86rem',fontWeight:700,color:'var(--navy)',marginBottom:4}}>{regionName && <span>{regionName} · </span>}{latest.year} appreciation data</div>
+            {latest.notes
+              ? <div style={{fontSize:'.74rem',color:'var(--muted)',lineHeight:1.65}}>{latest.notes}</div>
+              : <div style={{fontSize:'.72rem',color:'var(--muted)'}}>Based on tracked registration data for this corridor</div>
             }
           </div>
         </div>
-        <div style={{paddingTop:'1.05rem',borderTop:'1px solid var(--border)'}}>
-          <div style={{fontSize:'.58rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.14em',color:'var(--muted)',marginBottom:12}}>Estimated Value Growth · 5-Year Projection</div>
-          <div style={{display:'flex',alignItems:'flex-end',gap:'6%',height:88}}>
-            {projections.map(pr=>(
-              <div key={pr.year} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',gap:6,height:'100%'}}>
-                <div style={{fontSize:'.6rem',fontWeight:800,color:'#15803D',whiteSpace:'nowrap'}}>+{pr.cum}%</div>
-                <div style={{width:'100%',maxWidth:34,height:Math.max(10,(pr.cum/maxCum)*52),background:'linear-gradient(180deg,#34D399,#059669)',borderRadius:'6px 6px 2px 2px',boxShadow:'0 2px 8px rgba(5,150,105,.25)'}} />
-                <div style={{fontSize:'.56rem',fontWeight:600,color:'var(--muted)'}}>Yr {pr.year}</div>
-              </div>
-            ))}
+        {history.length > 1 && (
+          <div style={{paddingTop:'1.05rem',borderTop:'1px solid var(--border)'}}>
+            <div style={{fontSize:'.58rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'.14em',color:'var(--muted)',marginBottom:10}}>Historical Appreciation · {history[0].year}–{latest.year}</div>
+            <GrowthHistoryChart data={history} />
+            <p style={{fontSize:'.62rem',color:'var(--muted)',marginTop:8,lineHeight:1.5}}>Tracked annual growth rate by year for {regionName || 'this area'}. Past performance is not a guarantee of future appreciation.</p>
           </div>
-          <p style={{fontSize:'.62rem',color:'var(--muted)',marginTop:12,fontStyle:'italic',lineHeight:1.5}}>*Illustrative projection compounding the current annual growth rate. Actual property appreciation depends on market conditions and is not guaranteed.</p>
-        </div>
+        )}
       </div>
     );
   }
@@ -1119,7 +1150,7 @@ function GrowthRateDisplay({ regionData, legacyRaw, location }) {
    - Section order: About → Key Highlights → Amenities → Master Plan → Floor Plan → Gallery → Location
    - EMI synced to property price via useEffect
 ══════════════════════════════════════════════════════════ */
-function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp, phFaqItems, growthRates }) {
+function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp, growthRates }) {
   const [modal, setModal]        = useState(null);
   const [unlocked, setUnlocked]  = useState(false);
   const [activeTab, setActiveTab]= useState('about');
@@ -1164,26 +1195,32 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp, phFaqItems,
   const growthRaw = gv(p,'growth_rate'); // legacy fallback — old per-property column
   const sc      = statusStyle(status);
 
-  // Match the property's location/region against the growth_rates table.
-  // Falls back gracefully (regionGrowth === null) if no match is found,
-  // in which case the legacy `growthRaw` property column is used instead.
+  // Match the property's location/region against the growth_rates table,
+  // then collect every year on record for that region into a sorted
+  // history array. Falls back gracefully (regionGrowth === null) if no
+  // match is found, in which case the legacy `growthRaw` property
+  // column is used instead.
   const regionGrowth = useMemo(() => {
     if(!growthRates || !growthRates.length) return null;
     const locStr = String(loc||'').trim().toLowerCase();
     if(!locStr) return null;
-    let match = growthRates.find(g => String(g.region||'').trim().toLowerCase()===locStr);
-    if(!match) match = growthRates.find(g => {
-      const r = String(g.region||'').trim().toLowerCase();
-      return r && (locStr.includes(r) || r.includes(locStr));
+    const regions = [...new Set(growthRates.map(g => String(g.region||'').trim()).filter(Boolean))];
+    let matchedRegion = regions.find(r => r.toLowerCase()===locStr);
+    if(!matchedRegion) matchedRegion = regions.find(r => {
+      const rl = r.toLowerCase();
+      return rl && (locStr.includes(rl) || rl.includes(locStr));
     });
-    return match || null;
+    if(!matchedRegion) return null;
+    const history = growthRates
+      .filter(g => String(g.region||'').trim() === matchedRegion)
+      .map(g => ({ year: parseInt(g.year,10), pct: parseFloat(g.annual_growth_pct), notes: g.notes||'' }))
+      .filter(d => !isNaN(d.year) && !isNaN(d.pct))
+      .sort((a,b) => a.year-b.year);
+    return history.length ? { region: matchedRegion, history } : null;
   }, [growthRates, loc]);
 
   const propType = String(gv(p,'Property Type')||'').toLowerCase();
   const faqRaw = propType.includes('villa')?gv(p,'villa_faq'):propType.includes('plot')?gv(p,'plot_faq'):gv(p,'apartment_faq');
-  // Perfect Horizons FAQ now comes from the perfecthorizons_faq table (sorted by sort_order),
-  // fetched once in App and passed down — no longer a property column.
-  const phFaqRaw = (phFaqItems && phFaqItems.length) ? phFaqItems : null;
 
   // Cover image — shown at TOP of mobile hero, crisp and full-bleed
   const cover  = gdThumb(gv(p,'cover_image')||gv(p,'cover-image')||gv(p,'Cover Image'));
@@ -1393,7 +1430,7 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp, phFaqItems,
                   </div>
                 ))}
               </div>
-              {(regionGrowth || growthRaw) && <GrowthRateDisplay regionData={regionGrowth} legacyRaw={growthRaw} location={loc} />}
+              {(regionGrowth || growthRaw) && <GrowthRateDisplay regionGrowth={regionGrowth} legacyRaw={growthRaw} location={loc} />}
             </section>
 
             {/* 2. KEY HIGHLIGHTS */}
@@ -1533,13 +1570,6 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp, phFaqItems,
             </div>
           </aside>
         </div>
-
-        {/* Perfect Horizons FAQ */}
-        {phFaqRaw && (
-          <div style={{maxWidth:'72rem',margin:'0 auto',padding:'0 1.5rem 1.5rem'}}>
-            <FAQSection raw={phFaqRaw} title="About Perfect Horizons" />
-          </div>
-        )}
 
         {/* SIMILAR PROPERTIES */}
         {similar.length>0 && (
