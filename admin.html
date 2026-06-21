@@ -19,7 +19,7 @@
                     .catch(function(e) { console.warn('SW failed', e); });
             });
         }
-      </script>
+   </script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
@@ -931,32 +931,169 @@ function ProjectLibrary({ properties, setProp, supabase, setProperties, onEdit }
 }
 
 // ─── PROPERTY FORM ─────────────────────────────────────────────────────────
+// ─── FIX 4: FAQ Builder — default questions + sensible default answers ────
+// Bucket mapping mirrors the public site's exact lookup logic
+// (propType.includes('villa') / .includes('plot') / else apartment), so
+// whatever bucket the admin sees here is guaranteed to be the one the
+// frontend actually reads for that property.
+const faqBucketForType = (type) => {
+    const t = String(type||'').toLowerCase();
+    if (t.includes('villa')) return 'villa';
+    if (t.includes('plot'))  return 'plot';
+    return 'apartment';
+};
+
+const FAQ_DEFAULTS = {
+    apartment: [
+        { q:'Is this project RERA approved?',                         a:'Yes, this project is RERA approved.' },
+        { q:'What configurations are available in this project?',     a:'2, 3 and 4 BHK apartments are available.' },
+        { q:'What is the possession date?',                           a:'Please contact our team for the latest possession timeline.' },
+        { q:'What is the starting price of the apartments?',          a:'Starting price details are available on request.' },
+        { q:'What amenities are available in the project?',           a:'Clubhouse, swimming pool, gymnasium, landscaped gardens and 24/7 security.' },
+        { q:'Are home loans available for this project?',             a:'Yes, home loans are available from leading banks.' },
+        { q:'What are the maintenance charges?',                      a:'Maintenance charges are applicable as per the association/builder norms.' },
+        { q:'Is this project suitable for investment?',                a:'Yes, the project offers strong potential for both investment and end-use.' },
+    ],
+    villa: [
+        { q:'Is this villa project RERA approved?',                    a:'Yes, this villa project is RERA approved.' },
+        { q:'What villa configurations are available?',                a:'3 and 4 BHK villas are available.' },
+        { q:'What are the plot size and built-up area options?',       a:'Multiple plot size and built-up area options are available.' },
+        { q:'What is the possession timeline for the project?',        a:'Please contact our team for the latest possession timeline.' },
+        { q:'Is this a gated community villa project?',                a:'Yes, this is a fully gated community.' },
+        { q:'What amenities are available within the community?',     a:'Clubhouse, parks, walking trails and 24/7 security.' },
+        { q:'Are home loans available for this project?',              a:'Yes, home loans are available from leading banks.' },
+        { q:'Is this villa project suitable for investment and end-use?', a:'Yes, suitable for both investment and end-use.' },
+    ],
+    plot: [
+        { q:'Is this project approved by BMRDA, DTCP or RERA?',        a:'Yes, this project is approved.' },
+        { q:'What plot sizes and dimensions are available?',           a:'Multiple plot sizes are available — contact our team for exact dimensions.' },
+        { q:'Is the project ready for registration?',                  a:'Yes, registration details are available on request.' },
+        { q:'Are bank loans available for this project?',              a:'Yes, loans are available from leading banks.' },
+        { q:'What infrastructure developments are planned nearby?',    a:'Upcoming infrastructure includes improved road connectivity and civic amenities.' },
+        { q:'What amenities are available within the layout?',        a:'Parks, internal roads, underground drainage and security.' },
+        { q:'What is the appreciation potential of this location?',    a:'This location offers strong appreciation potential given ongoing infrastructure growth.' },
+        { q:'Is this plot suitable for long-term investment?',         a:'Yes, ideal for long-term investment.' },
+    ],
+};
+
+// ─── FIX 5: Location Highlights Builder — categories matching the public
+// site's icon-recognized keys exactly, so admin entries render correctly.
+const LOC_HL_CATEGORIES = [
+    { key:'schools',       label:'🏫 Schools' },
+    { key:'colleges',      label:'🎓 Colleges' },
+    { key:'hospitals',     label:'🏥 Hospitals' },
+    { key:'malls',         label:'🛍️ Malls' },
+    { key:'connectivity',  label:'🛣️ Connectivity' },
+    { key:'metro',         label:'🚇 Metro' },
+    { key:'it parks',      label:'🏢 IT Parks' },
+    { key:'restaurants',   label:'🍽️ Restaurants' },
+    { key:'parks',         label:'🌳 Parks' },
+];
+
 function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
+    // FIX 3: Image upload limits — images only. Brochures/cost sheets/floor
+    // plans/misc documents are intentionally left unrestricted.
+    const IMAGE_SIZE_LIMITS = { cover_image: 500 * 1024, gallery_images: 300 * 1024 }; // bytes
+    const ALLOWED_IMAGE_TYPES = ['image/webp', 'image/jpeg', 'image/jpg', 'image/png'];
+    const isImageField = (field) => field === 'cover_image' || field === 'gallery_images';
     const blank = {
         property_name:'', builder_name:'', property_region:'', property_type:'', location:'', price:'', bhk:'',
         super_built_up_area:'', possession_date:'', construction_status:'', approval:'', rera_number:'',
         total_units:'', availability:'', description:'', usp_details:'', amenities:'',
         point_of_contact:'', commission_details:'', video_link:'', website_link:'',
         lead_registration_link:'', map_link:'', cover_image:'', gallery_images:'',
-        floor_plan:'', brochure:'', cost_sheet:'', miscellaneous:''
+        floor_plan:'', brochure:'', cost_sheet:'', miscellaneous:'',
+        apartment_faq:'', villa_faq:'', plot_faq:'', location_highlights:''
     };
     const [form,          setForm]          = useState(blank);
     const [loading,       setLoading]       = useState(false);
     const [uploadingField,setUploadingField] = useState(null);
     const [uploadProgress,setUploadProgress] = useState({});
-    useEffect(() => { setForm(editingProp ? { ...blank, ...editingProp } : blank); }, [editingProp]);
+    // FIX 4: FAQ Builder rows — [{q,a}, ...] for whichever type-bucket is active
+    const [faqRows, setFaqRows] = useState([]);
+    // FIX 5: Location Highlights Builder data — { schools:[...], hospitals:[...], ... }
+    const [locHL, setLocHL] = useState({});
+    const prevTypeRef = useRef(form.property_type);
+
+    useEffect(() => {
+        const f = editingProp ? { ...blank, ...editingProp } : blank;
+        setForm(f);
+        const col = faqBucketForType(f.property_type) + '_faq';
+        try { setFaqRows(f[col] ? JSON.parse(f[col]) : []); } catch { setFaqRows([]); }
+        try { setLocHL(f.location_highlights ? JSON.parse(f.location_highlights) : {}); } catch { setLocHL({}); }
+    }, [editingProp]);
+
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+    // FIX 4: auto-load defaults the moment a Property Type is chosen — but
+    // only if the FAQ list is still empty, so an admin's in-progress edits
+    // are never silently overwritten by switching the type dropdown.
+    useEffect(() => {
+        if (prevTypeRef.current === form.property_type) return;
+        prevTypeRef.current = form.property_type;
+        if (form.property_type && faqRows.length === 0) {
+            const bucket = faqBucketForType(form.property_type);
+            setFaqRows(FAQ_DEFAULTS[bucket].map(r => ({ ...r })));
+        }
+    }, [form.property_type]);
+
+    const loadFaqDefaults = () => {
+        if (!form.property_type) { alert('Select a Property Type first.'); return; }
+        if (faqRows.length > 0 && !window.confirm(`Replace the current FAQ questions & answers with the default set for ${form.property_type}?`)) return;
+        const bucket = faqBucketForType(form.property_type);
+        setFaqRows(FAQ_DEFAULTS[bucket].map(r => ({ ...r })));
+    };
+    const updateFaqRow = (idx, key, val) => setFaqRows(rows => rows.map((r,i) => i===idx ? { ...r, [key]: val } : r));
+    const removeFaqRow = (idx) => setFaqRows(rows => rows.filter((_,i) => i !== idx));
+    const addFaqRow    = () => setFaqRows(rows => [...rows, { q:'', a:'' }]);
+
+    // FIX 5: Location Highlights row helpers
+    const addLocEntry    = (key) => setLocHL(d => ({ ...d, [key]: [...(d[key]||[]), ''] }));
+    const updateLocEntry = (key, idx, val) => setLocHL(d => ({ ...d, [key]: (d[key]||[]).map((v,i) => i===idx ? val : v) }));
+    const removeLocEntry = (key, idx) => setLocHL(d => ({ ...d, [key]: (d[key]||[]).filter((_,i) => i !== idx) }));
+    const moveLocEntry   = (key, idx, dir) => setLocHL(d => {
+        const arr = [...(d[key]||[])];
+        const j = idx + dir;
+        if (j < 0 || j >= arr.length) return d;
+        [arr[idx], arr[j]] = [arr[j], arr[idx]];
+        return { ...d, [key]: arr };
+    });
 
     const upload = async (e, field, append = false) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
+
+        // FIX 3: validate images only — reject oversized/wrong-format files
+        // before anything is uploaded, with a friendly message per file.
+        let validFiles = Array.from(files);
+        if (isImageField(field)) {
+            const limit = IMAGE_SIZE_LIMITS[field];
+            const limitKB = Math.round(limit / 1024);
+            const rejected = [];
+            validFiles = validFiles.filter(file => {
+                if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+                    rejected.push(`"${file.name}" — unsupported format (use WebP, JPG or PNG)`);
+                    return false;
+                }
+                if (file.size > limit) {
+                    rejected.push(`"${file.name}" — ${Math.round(file.size/1024)}KB exceeds the ${limitKB}KB limit for ${field === 'cover_image' ? 'the cover image' : 'gallery images'}`);
+                    return false;
+                }
+                return true;
+            });
+            if (rejected.length) {
+                alert("Some images couldn't be added:\n\n" + rejected.join('\n') + "\n\nPlease compress or resize them and try again.");
+            }
+            if (validFiles.length === 0) { e.target.value = ''; return; }
+        }
+
         setLoading(true); setUploadingField(field);
         const categoryMap = { cover_image:'Cover Image', gallery_images:'Gallery', brochure:'Brochures', cost_sheet:'Cost Sheets', floor_plan:'Floor Plans', miscellaneous:'Miscellaneous' };
         const category = categoryMap[field] || 'General';
         let newUrls = [];
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            setUploadProgress(p => ({ ...p, [field]: `${i + 1}/${files.length}` }));
+        for (let i = 0; i < validFiles.length; i++) {
+            const file = validFiles[i];
+            setUploadProgress(p => ({ ...p, [field]: `${i + 1}/${validFiles.length}` }));
             try {
                 const base64 = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
@@ -992,12 +1129,25 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
     const save = async () => {
         if (!form.property_name || !form.price || !form.cover_image) { alert("Required: Property Name, Price, and Cover Image."); return; }
         setLoading(true);
+        // FIX 4/5: serialize the builders into the columns the public site reads.
+        const faqCol   = faqBucketForType(form.property_type) + '_faq';
+        const cleanFaq = faqRows.filter(r => (r.q||'').trim() || (r.a||'').trim());
+        const cleanLocHL = Object.fromEntries(
+            Object.entries(locHL)
+                .map(([k, arr]) => [k, (arr||[]).map(v => (v||'').trim()).filter(Boolean)])
+                .filter(([, arr]) => arr.length > 0)
+        );
+        const payload = {
+            ...form,
+            [faqCol]: cleanFaq.length ? JSON.stringify(cleanFaq) : '',
+            location_highlights: Object.keys(cleanLocHL).length ? JSON.stringify(cleanLocHL) : ''
+        };
         if (editingProp) {
-            const { error } = await supabase.from('properties').update(form).eq('id', editingProp.id);
+            const { error } = await supabase.from('properties').update(payload).eq('id', editingProp.id);
             if (!error) { alert("Listing Updated!"); setView('library'); } else alert(error.message);
         } else {
-            const { error } = await supabase.from('properties').insert([form]);
-            if (!error) { alert("Listing Published!"); setForm(blank); } else alert(error.message);
+            const { error } = await supabase.from('properties').insert([payload]);
+            if (!error) { alert("Listing Published!"); setForm(blank); setFaqRows([]); setLocHL({}); } else alert(error.message);
         }
         setLoading(false);
     };
@@ -1084,9 +1234,74 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                         </div>
                     </div>
                 </div>
+
+                {/* FIX 4 / FIX 5: FAQ Builder + Location Highlights Builder */}
+                <div>
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">4</div>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-700">FAQs & Location Highlights</h3>
+                        <div className="flex-1 h-px bg-slate-200"></div>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4">
+                        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                Project FAQs {form.property_type && <span className="text-blue-500">({form.property_type})</span>}
+                            </label>
+                            <button type="button" onClick={loadFaqDefaults} disabled={!form.property_type}
+                                className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl transition ${form.property_type ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>
+                                📋 Load Default Answers
+                            </button>
+                        </div>
+                        {!form.property_type && (
+                            <p className="text-[10px] text-slate-400 font-bold mb-2">Select a Property Type above to load default questions for it.</p>
+                        )}
+                        {faqRows.length === 0 && form.property_type && (
+                            <p className="text-[10px] text-slate-400 font-bold mb-2">No FAQs yet — click "Load Default Answers" to start, then edit as needed.</p>
+                        )}
+                        <div className="space-y-2">
+                            {faqRows.map((row, idx) => (
+                                <div key={idx} className="bg-white border border-slate-200 rounded-xl p-3">
+                                    <div className="flex items-start gap-2">
+                                        <input className="flex-1 text-xs font-bold p-2 border border-slate-200 rounded-lg outline-none focus:border-blue-400" placeholder="Question" value={row.q} onChange={e => updateFaqRow(idx, 'q', e.target.value)} />
+                                        <button type="button" onClick={() => removeFaqRow(idx)} className="text-red-500 hover:text-red-700 text-xs font-black px-2 shrink-0">✕</button>
+                                    </div>
+                                    <textarea rows={2} className="w-full mt-2 text-xs p-2 border border-slate-200 rounded-lg outline-none focus:border-blue-400 resize-none" placeholder="Answer" value={row.a} onChange={e => updateFaqRow(idx, 'a', e.target.value)} />
+                                </div>
+                            ))}
+                        </div>
+                        <button type="button" onClick={addFaqRow} className="mt-2 text-[9px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800">+ Add Question</button>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block mb-3">Location Highlights</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {LOC_HL_CATEGORIES.map(({ key, label }) => (
+                                <div key={key} className="bg-white border border-slate-200 rounded-xl p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-[10px] font-black text-slate-600">{label}</span>
+                                        <button type="button" onClick={() => addLocEntry(key)} className="text-[9px] font-black text-blue-600 hover:text-blue-800">+ Add</button>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {(locHL[key]||[]).map((val, idx) => (
+                                            <div key={idx} className="flex items-center gap-1">
+                                                <input className="flex-1 text-[11px] font-bold p-1.5 border border-slate-200 rounded-lg outline-none focus:border-blue-400" placeholder="Entry name" value={val} onChange={e => updateLocEntry(key, idx, e.target.value)} />
+                                                <button type="button" onClick={() => moveLocEntry(key, idx, -1)} disabled={idx===0} className="text-slate-400 hover:text-slate-700 disabled:opacity-30 text-[10px] px-0.5">↑</button>
+                                                <button type="button" onClick={() => moveLocEntry(key, idx, 1)} disabled={idx===(locHL[key]||[]).length-1} className="text-slate-400 hover:text-slate-700 disabled:opacity-30 text-[10px] px-0.5">↓</button>
+                                                <button type="button" onClick={() => removeLocEntry(key, idx)} className="text-red-500 hover:text-red-700 text-[10px] font-black px-0.5">✕</button>
+                                            </div>
+                                        ))}
+                                        {(locHL[key]||[]).length === 0 && <p className="text-[10px] text-slate-300 font-bold">No entries yet</p>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
                 <div className="bg-slate-900 rounded-3xl p-5 md:p-8">
                     <div className="flex items-center gap-3 mb-5">
-                        <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">4</div>
+                        <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">5</div>
                         <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Internal Data & Links</h3>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1100,7 +1315,7 @@ function PropertyForm({ supabase, scriptUrl, editingProp, setView }) {
                 </div>
                 <div>
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">5</div>
+                        <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[10px] font-black shrink-0">6</div>
                         <h3 className="text-xs font-black uppercase tracking-widest text-slate-700">Files & Media</h3>
                         <div className="flex-1 h-px bg-slate-200"></div>
                     </div>
@@ -2520,7 +2735,7 @@ function AdminApp() {
                                                         </div>
                                                     )}
                                                     {!isAdminUser && l.psa_agent_name && <div className="text-[8px] font-black text-blue-400 bg-slate-900 border border-slate-700 px-2 py-1.5 rounded-xl mb-2 uppercase tracking-widest">👤 {l.psa_agent_name}</div>}
-                                                    <select onChange={e => handleStatusChange(l, e.target.value)} value={l.lead_status||''} className={`w-full p-2 mb-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`}>
+                                                    <select onChange={e => handleStatusChange(l, e.target.value)} value={pendingRejects[l.id] ? 'Rejected' : (l.lead_status||'')} className={`w-full p-2 mb-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(pendingRejects[l.id] ? 'Rejected' : l.lead_status)}`}>
                                                         {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">🔵 Un called</option>}
                                                         <option value="Called">✅ Called</option><option value="RNR">🔔 RNR</option><option value="Details Shared">📤 Details Shared</option><option value="SV Scheduled">📅 SV Scheduled</option><option value="Converted">🏆 Converted</option><option value="Rejected">❌ Rejected</option>
                                                     </select>
@@ -2530,15 +2745,15 @@ function AdminApp() {
                                                             ⚠️ Set callback date → moves to Open
                                                         </div>
                                                     )}
-                                                    {l.lead_status==='Rejected' && (
+                                                    {(l.lead_status==='Rejected' || pendingRejects[l.id]) && (
                                                         <div>
-                                                            {/* FIX 1: Hint if no reason yet */}
+                                                            {/* Reason not yet confirmed — lead stays right here until it is */}
                                                             {!l.reject_reason && (
                                                                 <div className="text-[8px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-1 rounded-lg mb-1">
-                                                                    ⚠️ Select reason → moves to Rejected
+                                                                    ⚠️ Select reason to confirm rejection
                                                                 </div>
                                                             )}
-                                                            <select onChange={e => updateLead(l,'reject_reason',e.target.value)} value={l.reject_reason||''} className="w-full p-2 mb-2 border-2 border-red-300 rounded-xl font-black uppercase text-[9px] outline-none bg-red-50 text-red-800 cursor-pointer">
+                                                            <select onChange={e => confirmReject(l, e.target.value)} value={l.reject_reason||''} className="w-full p-2 mb-2 border-2 border-red-300 rounded-xl font-black uppercase text-[9px] outline-none bg-red-50 text-red-800 cursor-pointer">
                                                                 <option value="" disabled>Select Reason</option>
                                                                 <option>Not Interested</option><option>No Response</option><option>Wrong Number</option><option>No Incoming Call</option><option>Budget Mismatch</option><option>Already Purchased</option>
                                                             </select>
@@ -2638,7 +2853,7 @@ function AdminApp() {
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div className="flex flex-col gap-1">
                                                     <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Status</label>
-                                                    <select onChange={e => handleStatusChange(l, e.target.value)} value={l.lead_status||''} className={`p-2.5 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`}>
+                                                    <select onChange={e => handleStatusChange(l, e.target.value)} value={pendingRejects[l.id] ? 'Rejected' : (l.lead_status||'')} className={`p-2.5 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(pendingRejects[l.id] ? 'Rejected' : l.lead_status)}`}>
                                                         {(!l.lead_status||l.lead_status==='Un called')&&<option value="Un called">🔵 Un called</option>}
                                                         <option value="Called">✅ Called</option><option value="RNR">🔔 RNR</option><option value="Details Shared">📤 Details</option><option value="SV Scheduled">📅 SV Sched.</option><option value="Converted">🏆 Converted</option><option value="Rejected">❌ Rejected</option>
                                                     </select>
@@ -2656,14 +2871,14 @@ function AdminApp() {
                                                     ⚠️ Set callback date below → moves to Open bucket
                                                 </div>
                                             )}
-                                            {l.lead_status==='Rejected' && (
+                                            {(l.lead_status==='Rejected' || pendingRejects[l.id]) && (
                                                 <div>
                                                     {!l.reject_reason && (
                                                         <div className="text-[8px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-1.5 rounded-lg mb-1">
-                                                            ⚠️ Select reason below → moves to Rejected bucket
+                                                            ⚠️ Select reason below to confirm rejection
                                                         </div>
                                                     )}
-                                                    <select onChange={e => updateLead(l,'reject_reason',e.target.value)} value={l.reject_reason||''} className="w-full p-2.5 border-2 border-red-300 bg-red-50 text-red-800 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer">
+                                                    <select onChange={e => confirmReject(l, e.target.value)} value={l.reject_reason||''} className="w-full p-2.5 border-2 border-red-300 bg-red-50 text-red-800 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer">
                                                         <option value="" disabled>Select Reject Reason</option>
                                                         <option>Not Interested</option><option>No Response</option><option>Wrong Number</option><option>No Incoming Call</option><option>Budget Mismatch</option><option>Already Purchased</option>
                                                     </select>
