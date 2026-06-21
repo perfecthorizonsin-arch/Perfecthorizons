@@ -338,6 +338,11 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18);box-shadow:0
 .wa-fab:hover{transform:scale(1.08);box-shadow:0 7px 22px rgba(37,211,102,.45)}
 @media(min-width:768px){.wa-fab{bottom:6rem;right:1.5rem}}
 
+/* ── Scroll To Top FAB — sits directly above the WhatsApp button ── */
+.scroll-top-fab{position:fixed;bottom:9.25rem;right:1.25rem;z-index:55;width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#B8720A,#DA9610);border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(184,114,10,.32);cursor:pointer;transition:transform .18s,box-shadow .18s,opacity .25s,visibility .25s}
+.scroll-top-fab:hover{transform:scale(1.08);box-shadow:0 7px 22px rgba(184,114,10,.42)}
+@media(min-width:768px){.scroll-top-fab{bottom:9.75rem;right:1.5rem}}
+
 /* ── Sticky get-in-touch vertical btn ── */
 .git-btn{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:50;writing-mode:vertical-rl;text-orientation:mixed;background:linear-gradient(180deg,#B8720A,#DA9610);color:#fff;font-size:.58rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;padding:16px 9px;border-radius:10px 0 0 10px;box-shadow:-4px 0 22px rgba(184,114,10,.32);cursor:pointer;transition:padding-right .18s;border:none}
 .git-btn:hover{padding-right:13px}
@@ -472,6 +477,27 @@ function PhoneCTA() {
   );
 }
 
+/* ── Scroll To Top Button ── */
+function ScrollTopButton() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 500);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      className="scroll-top-fab"
+      aria-label="Scroll to top"
+      style={{ opacity: visible?1:0, visibility: visible?'visible':'hidden', pointerEvents: visible?'auto':'none' }}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </button>
+  );
+}
+
 /* ── WhatsApp SVG ── */
 const WASvg = ({size=26,color="#fff"}) => (
   <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -499,7 +525,7 @@ function Gallery({ images, propName }) {
 
   useEffect(() => {
     if(images.length <= 1 || paused || lightbox) return;
-    timerRef.current = setInterval(() => setActive(a => (a + 1) % images.length), 3200);
+    timerRef.current = setInterval(() => setActive(a => (a + 1) % images.length), 2800);
     return () => clearInterval(timerRef.current);
   }, [images.length, paused, lightbox]);
 
@@ -538,7 +564,7 @@ function Gallery({ images, propName }) {
         )}
       </div>
       <div
-        style={{position:'relative',borderRadius:12,overflow:'hidden',cursor:'pointer',aspectRatio:isMobile?'4/3':'16/9',background:'var(--parch)',userSelect:'none'}}
+        style={{position:'relative',borderRadius:12,overflow:'hidden',cursor:'pointer',aspectRatio:isMobile?'6/5':'16/9',background:'var(--parch)',userSelect:'none'}}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onTouchStart={onTouchStart}
@@ -990,16 +1016,17 @@ function LocationHighlights({ raw }) {
 /* ══════════════════════════════════════════════════════════
    FAQ SECTION
 ══════════════════════════════════════════════════════════ */
+function parseFaqItems(raw){
+  if(!raw) return [];
+  let data;
+  try { data = typeof raw==='string'?JSON.parse(raw):raw; } catch { return []; }
+  if(Array.isArray(data)) return data;
+  if(typeof data==='object') return Object.entries(data).map(([q,a])=>({q,a}));
+  return [];
+}
 function FAQSection({ raw, title }) {
   const [open, setOpen] = useState({});
-  const items = useMemo(() => {
-    if(!raw) return [];
-    let data;
-    try { data = typeof raw==='string'?JSON.parse(raw):raw; } catch { return []; }
-    if(Array.isArray(data)) return data;
-    if(typeof data==='object') return Object.entries(data).map(([q,a])=>({q,a}));
-    return [];
-  }, [raw]);
+  const items = useMemo(() => parseFaqItems(raw), [raw]);
   if(!items.length) return null;
   const toggle = i => setOpen(o=>({...o,[i]:!o[i]}));
   return (
@@ -1034,7 +1061,20 @@ function FAQSection({ raw, title }) {
 ══════════════════════════════════════════════════════════ */
 function GrowthHistoryChart({ data }) {
   const gradId = useId().replace(/:/g,'');
-  const W = 600, H = 200, padL = 30, padR = 18, padT = 26, padB = 26;
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Desktop sizing is untouched. Mobile uses a taller viewBox (renders ~230px
+  // at typical phone widths) plus larger fonts/markers and extra padding so
+  // points aren't crammed together.
+  const cfg = isMobile
+    ? { W:340, H:248, padL:34, padR:14, padT:32, padB:38, pctFS:14, yearFS:12.5, r:5.5, sw:3 }
+    : { W:600, H:200, padL:30, padR:18, padT:26, padB:26, pctFS:11, yearFS:10,   r:4,   sw:2.5 };
+  const { W,H,padL,padR,padT,padB,pctFS,yearFS,r,sw } = cfg;
   const innerW = W - padL - padR, innerH = H - padT - padB;
 
   const pcts = data.map(d => d.pct);
@@ -1064,12 +1104,12 @@ function GrowthHistoryChart({ data }) {
         return <line key={i} x1={padL} x2={W-padR} y1={yy} y2={yy} stroke="var(--border)" strokeWidth="1" />;
       })}
       {data.length > 1 && <path d={areaPath} fill={`url(#${gradId})`} stroke="none" />}
-      <path d={linePath} fill="none" stroke="#059669" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={linePath} fill="none" stroke="#059669" strokeWidth={sw} strokeLinejoin="round" strokeLinecap="round" />
       {pts.map((p,i) => (
         <g key={i}>
-          <circle cx={p[0]} cy={p[1]} r="4" fill="#fff" stroke="#059669" strokeWidth="2.5" />
-          <text x={p[0]} y={p[1]-11} textAnchor="middle" fontSize="11" fontWeight="700" fill="#15803D">{data[i].pct}%</text>
-          <text x={p[0]} y={H-8} textAnchor="middle" fontSize="10" fontWeight="600" fill="#64748B">{data[i].year}</text>
+          <circle cx={p[0]} cy={p[1]} r={r} fill="#fff" stroke="#059669" strokeWidth={sw} />
+          <text x={p[0]} y={p[1]-r-7} textAnchor="middle" fontSize={pctFS} fontWeight="700" fill="#15803D">{data[i].pct}%</text>
+          <text x={p[0]} y={H-(isMobile?14:8)} textAnchor="middle" fontSize={yearFS} fontWeight="600" fill="#64748B">{data[i].year}</text>
         </g>
       ))}
     </svg>
@@ -1425,13 +1465,22 @@ function DetailPage({ p, all, onBack, navTo, submitLead, onPickProp, growthRates
                   {l:'Configurations', v:bhk?(bhk.includes('BHK')?bhk:`${bhk} BHK`):'—'},
                   {l:'Possession',     v:poss||'—'},
                   {l:'Property Type',  v:gv(p,'Property Type')||'—'},
-                  {l:'Approval',       v:rera?`${appr||'RERA'} · ${rera}`:(appr||'—')}
                 ].map((s,i)=>(
                   <div key={i} className="stat-box">
                     <div className="stat-box-label">{s.l}</div>
                     <div className="stat-box-val">{s.v}</div>
                   </div>
                 ))}
+                {/* Approval — stays in the 2x2 grid on desktop (unchanged) */}
+                <div className="stat-box hidden md:block">
+                  <div className="stat-box-label">Approval</div>
+                  <div className="stat-box-val">{rera?`${appr||'RERA'} · ${rera}`:(appr||'—')}</div>
+                </div>
+              </div>
+              {/* Approval — full-width horizontal row on mobile for readability */}
+              <div className="stat-box md:hidden" style={{marginTop:10,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
+                <div className="stat-box-label" style={{marginBottom:0,flexShrink:0}}>Approval</div>
+                <div className="stat-box-val" style={{textAlign:'right'}}>{rera?`${appr||'RERA'} · ${rera}`:(appr||'—')}</div>
               </div>
               {(regionGrowth || growthRaw) && <GrowthRateDisplay regionGrowth={regionGrowth} legacyRaw={growthRaw} location={loc} />}
             </section>
@@ -1839,21 +1888,16 @@ function App() {
   },[props,search,filters]);
 
   // Apartment / Villa FAQ content for the homepage FAQ hub — sourced from
-  // the first live property of each type that has FAQ content filled in
-  // (these property-type FAQs are generic copy, not project-specific).
+  // the first live property whose FAQ column actually parses to at least
+  // one usable {question, answer} item (guards against a property whose
+  // field holds an empty "[]"/"{}" string, which is truthy but empty).
   const apartmentFaqRaw = useMemo(() => {
-    const match = props.find(p => {
-      const t = String(gv(p,'Property Type')||'').toLowerCase();
-      return !t.includes('villa') && !t.includes('plot') && gv(p,'apartment_faq');
-    });
+    const match = props.find(p => parseFaqItems(gv(p,'apartment_faq')).length > 0);
     return match ? gv(match,'apartment_faq') : null;
   }, [props]);
 
   const villaFaqRaw = useMemo(() => {
-    const match = props.find(p => {
-      const t = String(gv(p,'Property Type')||'').toLowerCase();
-      return t.includes('villa') && gv(p,'villa_faq');
-    });
+    const match = props.find(p => parseFaqItems(gv(p,'villa_faq')).length > 0);
     return match ? gv(match,'villa_faq') : null;
   }, [props]);
 
@@ -1888,6 +1932,7 @@ function App() {
     <>
       <DetailPage p={selProp} all={props} onBack={goBack} navTo={navTo} submitLead={submitLead} onPickProp={pickProp} growthRates={growthRates} />
       <button className="git-btn" onClick={()=>setShowLead(true)}>Get in Touch</button>
+      <ScrollTopButton />
       <a href={`https://wa.me/${WA}`} target="_blank" className="wa-fab" aria-label="Chat on WhatsApp">
         <WASvg size={26} color="#fff" />
       </a>
@@ -1964,13 +2009,13 @@ function App() {
     </>);
 
     if(page==='advisor') return mkPage(<>
-      <div className="card md:grid-cols-2" style={{padding:'2.5rem',display:'grid',gridTemplateColumns:'1fr',gap:'2.5rem',alignItems:'start'}}>
+      <div className="card grid grid-cols-1 md:grid-cols-2" style={{padding:'2.5rem',gap:'2.5rem',alignItems:'start'}}>
         <div className="flex justify-center md:order-2 md:justify-end">
-          <div style={{width:'min(280px,100%)',aspectRatio:'1',borderRadius:'1.25rem',overflow:'hidden',border:'4px solid #fff',boxShadow:'var(--sh-lg)'}}>
+          <div style={{width:'min(280px,100%)',aspectRatio:'1',borderRadius:'1.25rem',overflow:'hidden',border:'4px solid #fff',boxShadow:'var(--sh-lg)',flexShrink:0}}>
             <img src="https://drive.google.com/thumbnail?id=1KyIqvQ2zqrkUWp_750uvmEAtfONfZ3Sd&sz=w1920" alt="Perfect Horizons real estate advisor, Bengaluru" style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'top'}} onError={e=>e.target.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 200%22><rect width=%22200%22 height=%22200%22 fill=%22%23F2EDE3%22/><text x=%22100%22 y=%22100%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2248%22>👤</text></svg>'}/>
           </div>
         </div>
-        <div className="md:order-1">
+        <div className="md:order-1" style={{minWidth:0}}>
           {secHead('Your Expert','Meet Our Advisory Team','Real estate experts committed to your success')}
           <div style={{color:'var(--muted)',fontSize:'.875rem',lineHeight:1.88,display:'flex',flexDirection:'column',gap:'1rem',marginBottom:'1.5rem'}}>
             <p>At Perfect Horizons, our advisory team combines deep local market knowledge with a genuine commitment to finding you the right property — not just any property.</p>
@@ -2314,7 +2359,7 @@ function App() {
               <h2 style={{fontFamily:"'Cormorant Garamond',Georgia,serif",fontSize:'1.4rem',fontWeight:700,fontStyle:'italic',color:'var(--navy)'}}>Frequently Asked Questions</h2>
               <p style={{fontSize:'.7rem',color:'var(--muted)',marginTop:6}}>About Perfect Horizons, apartments, and villas</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3" style={{gap:'1.5rem'}}>
+            <div className="grid grid-cols-1 md:grid-cols-3 items-start" style={{gap:'1.5rem'}}>
               {phFaqItems.length>0 && <FAQSection raw={phFaqItems} title="About Perfect Horizons" />}
               {apartmentFaqRaw && <FAQSection raw={apartmentFaqRaw} title="Apartment FAQs" />}
               {villaFaqRaw && <FAQSection raw={villaFaqRaw} title="Villa FAQs" />}
@@ -2326,6 +2371,7 @@ function App() {
       <Footer navTo={navTo} setLegal={setLegal} />
       <StickyBar onSubmitLead={submitLead} />
 
+      <ScrollTopButton />
       <a href={`https://wa.me/${WA}?text=Hi, what properties are available?`} target="_blank" className="wa-fab" aria-label="Chat with Perfect Horizons on WhatsApp">
         <WASvg size={26} color="#fff" />
       </a>
