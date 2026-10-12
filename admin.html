@@ -2373,20 +2373,15 @@ function AdminApp() {
         else if (scheduleFilter === 'MISSED_SV')      f = f.filter(l => l.site_visit_at && l.site_visit_at < today && !['Rejected','Converted'].includes(l.lead_status));
         else if (scheduleFilter === 'DETAILS_SHARED') f = f.filter(l => l.lead_status === 'Details Shared');
         if (priorityFilter !== 'ALL') f = f.filter(l => (l.lead_priority||'Warm') === priorityFilter);
-        // FIX 3: Morning (before 1PM) / Evening (1PM onward) callback-time filter
-        // Bug fix: Evening previously cut off at 10PM (mins<=22*60), so any callback
-        // scheduled after 10PM matched neither bucket and silently vanished from both
-        // filters. Evening now runs from 1PM through the end of the day so every
-        // callback with a time falls into exactly one bucket.
+        // FIX 3: Morning (before 1PM) / Evening (1PM–10PM) callback-time filter
         if (callTimeFilter !== 'ALL') {
             f = f.filter(l => {
                 const timeStr = l.follow_up_at?.slice(11,16); // "HH:MM"
                 if (!timeStr) return false;
                 const [hh, mm] = timeStr.split(':').map(Number);
-                if (Number.isNaN(hh) || Number.isNaN(mm)) return false;
                 const mins = hh*60 + mm;
                 if (callTimeFilter === 'MORNING') return mins < 13*60;
-                if (callTimeFilter === 'EVENING') return mins >= 13*60;
+                if (callTimeFilter === 'EVENING') return mins >= 13*60 && mins <= 22*60;
                 return true;
             });
         }
@@ -2432,23 +2427,21 @@ function AdminApp() {
     // ─── FIX 4: Desktop nav items (all) + mobile nav items (CRM only) ─────────
     // FIX 5: CRM-only agents don't get Library / Add Property in the nav at all
     const isCrmOnlyAgent = CRM_ONLY_AGENTS.includes(agentName);
-    // TEMP: Library / Add Property nav entries hidden (not removed) — only CRM + Admin Overview shown
-    const SHOW_LIBRARY_AND_ADD_NAV = false;
     const allNavItems = [
         { id:'dashboard', label:'📊 CRM',     mobileLabel:'CRM',     showMobile:true  },
-        ...(SHOW_LIBRARY_AND_ADD_NAV && !isCrmOnlyAgent ? [
+        ...(isCrmOnlyAgent ? [] : [
             { id:'library', label:'🏢 Library',  mobileLabel:'Library', showMobile:false },
             { id:'add',     label:'➕ Property', mobileLabel:'Add',     showMobile:false },
-        ] : []),
+        ]),
         ...(isAdminUser ? [{ id:'admin', label:'🛡️ Admin', mobileLabel:'Admin', showMobile:false }] : []),
     ];
 
     // Drawer items (mobile menu)
     const drawerItems = [
-        ...(SHOW_LIBRARY_AND_ADD_NAV && !isCrmOnlyAgent ? [
+        ...(isCrmOnlyAgent ? [] : [
             { id:'library', label:'🏢 Property Library', desc:'Browse & manage listings' },
             { id:'add',     label:'➕ Add Property',      desc:'Publish a new listing' },
-        ] : []),
+        ]),
         ...(isAdminUser ? [{ id:'admin', label:'🛡️ Admin Overview', desc:'Agent stats & performance' }] : []),
     ];
 
