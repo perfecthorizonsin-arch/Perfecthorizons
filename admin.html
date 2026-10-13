@@ -133,6 +133,7 @@ window.onerror = function() { if (!window.__appMounted) document.getElementById(
 if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone) {
     document.getElementById('splash-screen').style.display = 'none';
 }
+try { var __r = JSON.parse(localStorage.getItem('__crm_resume') || 'null'); if (localStorage.getItem('__crm_callmode') !== 'off' && __r && Date.now() - __r.ts < 3600000) document.getElementById('splash-screen').style.display = 'none'; } catch (e) {}
 (function() {
     const messages = ['Initializing...','Connecting to Supabase...','Loading CRM engine...','Fetching lead data...','Preparing command center...','Almost ready...'];
     let idx = 0;
@@ -818,33 +819,11 @@ const DuplicateHistoryModal = ({
 };
 const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
 const IS_ANDROID = /Android/i.test(navigator.userAgent);
-const VOICE_LANGS = [{
-  code: 'en-IN',
-  label: 'EN'
-}, {
-  code: 'hi-IN',
-  label: 'हिं'
-}, {
-  code: 'kn-IN',
-  label: 'ಕನ್ನಡ'
-}, {
-  code: 'te-IN',
-  label: 'తెలుగు'
-}, {
-  code: 'ta-IN',
-  label: 'தமிழ்'
-}];
 const joinText = (...p) => p.map(s => (s || '').trim()).filter(Boolean).join(' ');
 function useDictation(getText, setText, focusInput) {
   const [listening, setListening] = useState(false);
   const [error, setError] = useState('');
-  const [lang, setLangState] = useState(() => {
-    try {
-      return localStorage.getItem('__crm_voice_lang') || 'en-IN';
-    } catch {
-      return 'en-IN';
-    }
-  });
+  const lang = 'en-IN';
   const R = useRef({
     rec: null,
     want: false,
@@ -873,13 +852,6 @@ function useDictation(getText, setText, focusInput) {
     } catch {}
     setListening(false);
   }, []);
-  const setLang = l => {
-    if (R.want) stop();
-    setLangState(l);
-    try {
-      localStorage.setItem('__crm_voice_lang', l);
-    } catch {}
-  };
   const begin = () => {
     const rec = new SpeechRecognitionAPI();
     rec.lang = langRef.current;
@@ -901,10 +873,10 @@ function useDictation(getText, setText, focusInput) {
     rec.onerror = e => {
       if (e.error === 'no-speech' || e.error === 'aborted') return;
       R.want = false;
-      setError(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Mic unavailable. Allow microphone access for this site (iPhone home-screen app: use the keyboard mic instead).' : e.error === 'audio-capture' ? 'No microphone found.' : e.error === 'network' ? 'Voice needs an internet connection.' : 'Voice error: ' + e.error);
+      setError(e.error === 'not-allowed' ? 'Mic blocked. Allow microphone access for this site in your browser settings.' : e.error === 'audio-capture' ? 'No microphone found.' : e.error === 'network' || e.error === 'service-not-allowed' ? navigator.onLine === false ? 'You’re offline. Voice needs an internet connection.' : 'This browser can’t reach its speech service (Brave, Samsung Internet and some Wi-Fi block it). Open the CRM in Chrome, or use your keyboard’s 🎤.' : e.error === 'language-not-supported' ? 'This browser can’t recognise that language. Switch the language or use the keyboard 🎤.' : 'Voice error: ' + e.error);
     };
     rec.onend = () => {
-      R.committed = joinText(R.committed, R.sessFinal || R.lastInterim);
+      R.committed = joinText(R.committed, R.sessFinal, R.lastInterim);
       R.sessFinal = '';
       R.lastInterim = '';
       fnRef.current.setText(compose('', ''));
@@ -919,7 +891,7 @@ function useDictation(getText, setText, focusInput) {
               setListening(false);
             }
           }
-        }, 120);
+        }, 250);
       } else {
         if (R.want && idle) setError('Stopped: no speech heard for a while.');
         R.want = false;
@@ -931,7 +903,7 @@ function useDictation(getText, setText, focusInput) {
   };
   const start = () => {
     if (!SpeechRecognitionAPI) {
-      setError('Voice typing isn’t supported in this browser. Tap the 🎤 on your keyboard instead, or open the CRM in Chrome.');
+      setError('Voice typing isn’t supported in this browser. Open the CRM in Chrome, or tap the 🎤 on your keyboard.');
       try {
         fnRef.current.focusInput && fnRef.current.focusInput();
       } catch {}
@@ -964,7 +936,6 @@ function useDictation(getText, setText, focusInput) {
     listening,
     error,
     lang,
-    setLang,
     start,
     stop,
     supported: !!SpeechRecognitionAPI
@@ -973,21 +944,21 @@ function useDictation(getText, setText, focusInput) {
 const MicControls = ({
   voice
 }) => React.createElement("div", {
-  className: "flex flex-col gap-1 w-11 shrink-0"
+  className: "flex flex-col w-11 shrink-0"
 }, React.createElement("button", {
   type: "button",
   onClick: voice.listening ? voice.stop : voice.start,
   title: voice.listening ? 'Stop dictation' : 'Dictate remark',
   className: `flex-1 min-h-[30px] rounded-xl flex items-center justify-center text-sm border-2 shadow-sm transition ${voice.listening ? 'bg-red-500 border-red-500 text-white animate-pulse' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600'} ${voice.supported ? '' : 'opacity-60'}`
-}, voice.listening ? '⏹' : '🎤'), React.createElement("select", {
-  value: voice.lang,
-  onChange: e => voice.setLang(e.target.value),
-  title: "Dictation language",
-  className: "w-full text-[8px] font-black p-0.5 rounded-lg border border-slate-200 bg-white text-slate-600 outline-none cursor-pointer"
-}, VOICE_LANGS.map(l => React.createElement("option", {
-  key: l.code,
-  value: l.code
-}, l.label))));
+}, voice.listening ? '⏹' : '🎤'));
+const VoiceStatus = ({
+  voice,
+  hint = ''
+}) => React.createElement(React.Fragment, null, voice.listening && React.createElement("p", {
+  className: "text-[8px] font-black text-red-500 uppercase tracking-widest"
+}, "🔴 Listening… tap ⏹ when done", hint), voice.error && React.createElement("p", {
+  className: "text-[8px] font-bold text-orange-600 leading-snug"
+}, voice.error));
 const NoteCell = ({
   lead,
   onSave
@@ -1030,11 +1001,10 @@ const NoteCell = ({
   }), React.createElement("button", {
     onClick: save,
     className: `text-white px-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition shadow-sm ${dirty ? 'bg-blue-600 ring-2 ring-blue-300' : 'bg-slate-900'}`
-  }, "Save")), voice.listening && React.createElement("p", {
-    className: "text-[8px] font-black text-red-500 uppercase tracking-widest"
-  }, "🔴 Listening… tap ⏹ when done, then Save"), voice.error && React.createElement("p", {
-    className: "text-[8px] font-bold text-orange-600 leading-snug"
-  }, voice.error));
+  }, "Save")), React.createElement(VoiceStatus, {
+    voice: voice,
+    hint: ", then Save"
+  }));
 };
 const LeadDetailModal = ({
   lead,
@@ -1043,8 +1013,7 @@ const LeadDetailModal = ({
   userEmail,
   onCall,
   dupMatches,
-  onShowDups,
-  dupMe
+  onShowDups
 }) => {
   if (!lead) return null;
   const isAdminUser = isAdmin(userEmail);
@@ -1072,7 +1041,7 @@ const LeadDetailModal = ({
     matches: dupMatches,
     onClick: onShowDups,
     className: "mt-1.5",
-    me: dupMe
+    me: getAgentFromEmail(userEmail)
   }), lead.customer_email && React.createElement("p", {
     className: "text-[9px] text-slate-400 font-medium mt-0.5"
   }, lead.customer_email)), React.createElement("button", {
@@ -2392,11 +2361,11 @@ function ManualLeadForm({
     }
   }), React.createElement(MicControls, {
     voice: noteVoice
-  })), noteVoice.listening && React.createElement("p", {
-    className: "text-[8px] font-black text-red-500 uppercase tracking-widest mt-1"
-  }, "🔴 Listening… tap ⏹ when done"), noteVoice.error && React.createElement("p", {
-    className: "text-[8px] font-bold text-orange-600 leading-snug mt-1"
-  }, noteVoice.error)), agentName && React.createElement("div", {
+  })), React.createElement("div", {
+    className: "mt-1"
+  }, React.createElement(VoiceStatus, {
+    voice: noteVoice
+  }))), agentName && React.createElement("div", {
     className: "bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-[9px] font-black text-blue-700 uppercase tracking-widest"
   }, "⚡ Lead will be assigned to: ", agentName), React.createElement("button", {
     disabled: loading,
@@ -3471,6 +3440,29 @@ function getAllowedStatusOptions(lead) {
   allowedValues.forEach(v => list.push(STATUS_OPTS[v]));
   return list;
 }
+const CALLMODE_KEY = '__crm_callmode',
+  RESUME_KEY = '__crm_resume',
+  RESUME_WINDOW_MS = 60 * 60 * 1000;
+const readCallMode = () => {
+  try {
+    return localStorage.getItem(CALLMODE_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+};
+const __resume = (() => {
+  try {
+    if (!readCallMode()) return null;
+    const r = JSON.parse(localStorage.getItem(RESUME_KEY) || 'null');
+    if (r && Date.now() - r.ts < RESUME_WINDOW_MS) return r;
+  } catch {}
+  return null;
+})();
+if (__resume && __resume.hash && !window.location.hash) {
+  try {
+    history.replaceState(null, '', __resume.hash);
+  } catch {}
+}
 const getInitialRoute = () => {
   const hash = window.location.hash.replace('#', '');
   if (hash.startsWith('/library')) return {
@@ -3512,22 +3504,82 @@ function AdminApp() {
   const [leadCategory, setLeadCategory] = useState(initRoute.c);
   const [loading, setLoading] = useState(true);
   const [showManualModal, setShowManualModal] = useState(false);
-  const [summaryAgent, setSummaryAgent] = useState(ADMIN_AGENT_NAME || 'All');
+  const [summaryAgent, setSummaryAgent] = useState(__resume && __resume.summaryAgent || ADMIN_AGENT_NAME || 'All');
   const [selectedProp, setSelectedProp] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
-  const [visibleCount, setVisibleCount] = useState(50);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [visibleCount, setVisibleCount] = useState(__resume && __resume.visibleCount || 50);
+  const [searchTerm, setSearchTerm] = useState(__resume && __resume.searchTerm || "");
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [sessionTimeLeft, setSessionTimeLeft] = useState('');
-  const [leadBucket, setLeadBucket] = useState('new');
+  const [leadBucket, setLeadBucket] = useState(__resume && __resume.leadBucket || 'new');
   const [showBulkUpload, setShowBulkUpload] = useState(false);
-  const [scheduleFilter, setScheduleFilter] = useState('ALL');
-  const [priorityFilter, setPriorityFilter] = useState('ALL');
-  const [callTimeFilter, setCallTimeFilter] = useState('ALL');
-  const [showGreeting, setShowGreeting] = useState(true);
+  const [scheduleFilter, setScheduleFilter] = useState(__resume && __resume.scheduleFilter || 'ALL');
+  const [priorityFilter, setPriorityFilter] = useState(__resume && __resume.priorityFilter || 'ALL');
+  const [callTimeFilter, setCallTimeFilter] = useState(__resume && __resume.callTimeFilter || 'ALL');
+  const [showGreeting, setShowGreeting] = useState(!__resume);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const prevLeadsRef = useRef(0);
   const propsLoadedRef = useRef(false);
+  const summaryRestoredRef = useRef(false);
+  const firstFilterRun = useRef(true);
+  const resumeDone = useRef(!__resume);
+  const [callMode, setCallModeState] = useState(readCallMode);
+  const toggleCallMode = () => {
+    const next = !callMode;
+    setCallModeState(next);
+    try {
+      localStorage.setItem(CALLMODE_KEY, next ? 'on' : 'off');
+      if (!next) localStorage.removeItem(RESUME_KEY);
+    } catch {}
+  };
+  const snapRef = useRef(null);
+  snapRef.current = {
+    authed: !!session,
+    view,
+    leadBucket,
+    scheduleFilter,
+    priorityFilter,
+    callTimeFilter,
+    searchTerm,
+    summaryAgent,
+    visibleCount,
+    selectedLeadId: selectedLead ? selectedLead.id : null
+  };
+  const saveResume = useCallback(() => {
+    const sn = snapRef.current;
+    if (!sn || !sn.authed || !readCallMode()) return;
+    try {
+      localStorage.setItem(RESUME_KEY, JSON.stringify({
+        ...sn,
+        hash: window.location.hash,
+        scrollY: window.scrollY || 0,
+        ts: Date.now()
+      }));
+    } catch {}
+  }, []);
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') saveResume();
+    };
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', saveResume);
+    const t = setInterval(saveResume, 15000);
+    return () => {
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', saveResume);
+      clearInterval(t);
+    };
+  }, []);
+  useEffect(() => {
+    if (resumeDone.current || loading || leads.length === 0) return;
+    resumeDone.current = true;
+    const r = __resume;
+    if (r.selectedLeadId != null) {
+      const l = leads.find(x => String(x.id) === String(r.selectedLeadId));
+      if (l) setSelectedLead(l);
+    }
+    setTimeout(() => window.scrollTo(0, r.scrollY || 0), 80);
+  }, [loading, leads]);
   const [lightRows, setLightRows] = useState([]);
   const [dupLead, setDupLead] = useState(null);
   const userEmail = session?.user?.email || '';
@@ -3558,6 +3610,10 @@ function AdminApp() {
   useEffect(() => {
     if (!session) return;
     const email = session.user?.email || '';
+    if (__resume && __resume.summaryAgent && !summaryRestoredRef.current) {
+      summaryRestoredRef.current = true;
+      return;
+    }
     if (email === ADMIN_EMAIL) setSummaryAgent(ADMIN_AGENT_NAME || 'All');else {
       const name = AGENT_EMAIL_MAP[email];
       if (name) setSummaryAgent(name);
@@ -3607,6 +3663,10 @@ function AdminApp() {
     }
   }, [session, agentName, view]);
   useEffect(() => {
+    if (firstFilterRun.current) {
+      firstFilterRun.current = false;
+      if (__resume) return;
+    }
     setVisibleCount(50);
   }, [leadCategory, leadBucket, scheduleFilter, summaryAgent, searchTerm, priorityFilter]);
   const AUTO_LOGOUT_MS = 3 * 60 * 60 * 1000;
@@ -3653,6 +3713,9 @@ function AdminApp() {
       } else if (event === 'SIGNED_OUT') {
         if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
         localStorage.removeItem('__crm_login_time');
+        try {
+          localStorage.removeItem(RESUME_KEY);
+        } catch {}
       }
     });
     return () => {
@@ -3787,7 +3850,6 @@ function AdminApp() {
     return idx;
   }, [lightRows]);
   const currentLeadTable = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-  const myPsaName = isAdminUser ? ADMIN_AGENT_NAME || '' : agentName;
   const dupMatchesFor = l => {
     if (!l) return [];
     const keys = [normPhone(l.phone_number) && 'p:' + normPhone(l.phone_number), normEmail(l.customer_email) && 'e:' + normEmail(l.customer_email)].filter(Boolean);
@@ -3824,7 +3886,7 @@ function AdminApp() {
     leads.filter(l => !seenSet.has(String(l.id)) && !l.is_hidden && Date.now() - new Date(l.created_at).getTime() < 48 * 3600 * 1000).forEach(l => {
       const prev = dupMatchesFor(l);
       if (!prev.length) return;
-      const mine = prev.filter(m => m.psa_agent_name && m.psa_agent_name === myPsaName);
+      const mine = prev.filter(m => m.psa_agent_name && (m.psa_agent_name === agentName || isAdminUser && m.psa_agent_name === (ADMIN_AGENT_NAME || '')));
       if (!isAdminUser && !mine.length) return;
       const who = mine.length ? 'You handled this earlier' : 'Earlier PSA: ' + ((prev.find(m => m.psa_agent_name) || {}).psa_agent_name || 'unassigned');
       if (window.__showNotification) window.__showNotification('🔁 Repeat enquiry', (l.customer_name || 'Unknown') + ' · ' + (l.phone_number || '') + ' · ' + who);
@@ -3965,6 +4027,7 @@ function AdminApp() {
     }, 500);
   }
   async function logCallInitiated(lead) {
+    saveResume();
     const shouldClaim = !isAdminUser && leadCategory === 'website' && !lead.psa_agent_name && agentName && agentName !== '__UNKNOWN__';
     if (shouldClaim) {
       setLeads(prev => prev.map(l => l.id === lead.id ? {
@@ -4091,8 +4154,7 @@ function AdminApp() {
     userEmail: userEmail,
     onCall: logCallInitiated,
     dupMatches: dupMatchesFor(selectedLead),
-    onShowDups: () => setDupLead(selectedLead),
-    dupMe: myPsaName
+    onShowDups: () => setDupLead(selectedLead)
   }), dupLead && React.createElement(DuplicateHistoryModal, {
     lead: dupLead,
     matches: dupMatchesFor(dupLead),
@@ -4157,6 +4219,21 @@ function AdminApp() {
     onClick: handleInstallClick,
     className: "hidden md:flex items-center gap-1 ml-1 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-md"
   }, "⬇ Install"), React.createElement("button", {
+    type: "button",
+    role: "switch",
+    "aria-checked": callMode,
+    onClick: toggleCallMode,
+    title: callMode ? 'Call mode ON: if the phone reloads the CRM while you are on a call, you come back to the same screen, filters and lead.' : 'Call mode OFF: the CRM starts fresh whenever it reloads.',
+    className: "flex items-center gap-1.5 px-2 py-1.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 transition shrink-0"
+  }, React.createElement("span", {
+    className: "text-xs"
+  }, "📞"), React.createElement("span", {
+    className: `relative w-8 h-[18px] rounded-full transition-colors ${callMode ? 'bg-emerald-500' : 'bg-slate-600'}`
+  }, React.createElement("span", {
+    className: `absolute top-[2px] left-[2px] w-[14px] h-[14px] bg-white rounded-full shadow transition-transform ${callMode ? 'translate-x-[14px]' : ''}`
+  })), React.createElement("span", {
+    className: `hidden md:inline text-[9px] font-black uppercase tracking-widest ${callMode ? 'text-emerald-400' : 'text-slate-400'}`
+  }, callMode ? 'Call mode on' : 'Call mode off')), React.createElement("button", {
     onClick: () => supabase.auth.signOut(),
     className: "text-[9px] font-black uppercase tracking-widest text-red-400 border border-red-900/60 px-2.5 py-2 rounded-xl hover:bg-red-900/40 transition"
   }, React.createElement("span", {
@@ -4421,7 +4498,7 @@ function AdminApp() {
     matches: dupMatchesFor(l),
     onClick: () => setDupLead(l),
     className: "mt-1.5",
-    me: myPsaName
+    me: agentName
   }), l.customer_email && React.createElement("p", {
     className: "text-slate-400 text-[9px] mt-0.5 lowercase truncate font-medium max-w-[160px]"
   }, l.customer_email), (isAdminUser || l.lead_source !== 'Bulk Upload') && React.createElement("p", {
@@ -4592,7 +4669,7 @@ function AdminApp() {
     matches: dupMatchesFor(l),
     onClick: () => setDupLead(l),
     className: "mt-1.5",
-    me: myPsaName
+    me: agentName
   }), l.customer_email && React.createElement("p", {
     className: "font-medium text-slate-400 text-[9px] truncate mt-0.5"
   }, l.customer_email), (isAdminUser || l.lead_source !== 'Bulk Upload') && React.createElement("p", {
