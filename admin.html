@@ -18,7 +18,13 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('./sw.js')
-                    .then(function(r) { console.log('SW registered', r); })
+                    .then(function(r) {
+                        console.log('SW registered', r);
+                        // Pick up a newly deployed version quickly instead of waiting for the browser's own schedule.
+                        var check = function () { try { r.update().catch(function () {}); } catch (e) {} };
+                        check();
+                        document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
+                    })
                     .catch(function(e) { console.warn('SW failed', e); });
             });
         }
@@ -87,15 +93,24 @@
     </style>
     <script>
 async function registerPushNotifications() {
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') return;
-    console.log('Push notifications enabled');
+    try {
+        if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+        if (Notification.permission !== 'default') return;          // already allowed or blocked: don't ask again on every login
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') console.log('Push notifications enabled');
+    } catch (e) { console.warn('[CRM] Notification permission request failed:', e && e.message); }
 }
 function showNotification(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body, icon: './icon.png', badge: './icon.png' });
-    }
+    // Android Chrome (browser AND installed app) throws "Illegal constructor" for `new Notification()`;
+    // it only allows notifications through the service worker. This must never throw, or React unmounts the whole app.
+    try {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        const opts = { body: body, icon: './icon.png', badge: './icon.png' };
+        const direct = function () { try { new Notification(title, opts); } catch (e) { console.warn('[CRM] Notification unavailable:', e && e.message); } };
+        if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+            navigator.serviceWorker.getRegistration().then(function (reg) { if (reg && reg.showNotification) reg.showNotification(title, opts); else direct(); }).catch(direct);
+        } else { direct(); }
+    } catch (e) { console.warn('[CRM] Notification failed:', e && e.message); }
 }
 window.__showNotification = showNotification;
     </script>
@@ -167,6 +182,28 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
     autoRefreshToken: true
   }
 });
+const ls = {
+  get: k => {
+    try {
+      return localStorage.getItem(k);
+    } catch {
+      return null;
+    }
+  },
+  set: (k, v) => {
+    try {
+      localStorage.setItem(k, v);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  del: k => {
+    try {
+      localStorage.removeItem(k);
+    } catch {}
+  }
+};
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzV-nr4UWVqFao58BD_tJoZF9kL5ODzX18b86KsX3z27Yt2EWfBAj8lR36-XbBtcyrXSQ/exec";
 const WHATSAPP_NUMBER = "9113261205";
 const ADMIN_EMAIL = "saishetty1623@gmail.com";
@@ -642,35 +679,317 @@ const parseRemarkLog = txt => {
   });
 };
 const isRemarkEntry = e => /^(Note|Rejected|Requirement)\b/i.test(e.text);
+const logCrash = (label, error, info) => {
+  console.error('[CRM] ' + label + ' crashed:', error, info && info.componentStack);
+  try {
+    sessionStorage.setItem('__crm_last_error', JSON.stringify({
+      label,
+      msg: String(error && error.message || error).slice(0, 300),
+      at: new Date().toISOString()
+    }));
+  } catch {}
+};
+class ErrorBoundary extends React.Component {
+  constructor(p) {
+    super(p);
+    this.state = {
+      error: null
+    };
+  }
+  static getDerivedStateFromError(error) {
+    return {
+      error
+    };
+  }
+  componentDidCatch(error, info) {
+    logCrash(this.props.label || 'Section', error, info);
+  }
+  componentDidUpdate(prev) {
+    if (this.state.error && prev.resetKey !== this.props.resetKey) this.setState({
+      error: null
+    });
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    const msg = String(this.state.error && this.state.error.message || this.state.error).slice(0, 160);
+    if (this.props.compact) return React.createElement("div", {
+      role: "alert",
+      className: "fixed inset-x-3 bottom-3 z-[400] bg-white border-2 border-red-200 rounded-2xl shadow-2xl p-4 text-center max-w-md mx-auto"
+    }, React.createElement("p", {
+      className: "text-[11px] font-black uppercase tracking-widest text-red-600"
+    }, "⚠️ Couldn’t open ", this.props.label || 'this'), React.createElement("p", {
+      className: "text-[9px] text-slate-400 font-mono mt-1 break-words"
+    }, msg), React.createElement("button", {
+      onClick: () => {
+        this.setState({
+          error: null
+        });
+        this.props.onClose && this.props.onClose();
+      },
+      className: "mt-3 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl"
+    }, "Close"));
+    return React.createElement("div", {
+      role: "alert",
+      className: `${this.props.root ? 'min-h-screen flex items-center justify-center bg-slate-950 p-6' : ''}`
+    }, React.createElement("div", {
+      className: "bg-white border-2 border-red-200 rounded-2xl p-5 md:p-8 text-center shadow-sm max-w-xl mx-auto"
+    }, React.createElement("div", {
+      className: "text-3xl mb-2"
+    }, "⚠️"), React.createElement("h2", {
+      className: "font-black uppercase tracking-widest text-sm text-slate-900"
+    }, "Something went wrong in ", this.props.label || 'this section'), React.createElement("p", {
+      className: "text-[11px] text-slate-500 font-semibold mt-2"
+    }, "Your leads and saved changes are safe. Remarks you haven’t saved are kept on this device."), React.createElement("p", {
+      className: "text-[9px] text-slate-400 font-mono mt-2 break-words"
+    }, msg), React.createElement("div", {
+      className: "flex flex-wrap gap-2 justify-center mt-4"
+    }, !this.props.root && React.createElement("button", {
+      onClick: () => this.setState({
+        error: null
+      }),
+      className: "bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl"
+    }, "Try again"), this.props.onHome && React.createElement("button", {
+      onClick: () => {
+        this.setState({
+          error: null
+        });
+        this.props.onHome();
+      },
+      className: "bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl"
+    }, "Go to Website leads"), React.createElement("button", {
+      onClick: () => window.location.reload(),
+      className: "bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl"
+    }, "Reload app"))));
+  }
+}
+class RowBoundary extends React.Component {
+  constructor(p) {
+    super(p);
+    this.state = {
+      error: null
+    };
+  }
+  static getDerivedStateFromError(error) {
+    return {
+      error
+    };
+  }
+  componentDidCatch(error, info) {
+    logCrash('Lead row #' + this.props.id, error, info);
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    const msg = React.createElement("span", null, "⚠️ This lead couldn’t be displayed (ID ", String(this.props.id), "). The other leads are fine. ", React.createElement("button", {
+      onClick: () => this.setState({
+        error: null
+      }),
+      className: "underline font-black"
+    }, "Retry"));
+    return this.props.as === 'tr' ? React.createElement("tr", null, React.createElement("td", {
+      colSpan: 6,
+      className: "px-5 py-4 text-[10px] font-bold text-red-600 bg-red-50"
+    }, msg)) : React.createElement("div", {
+      className: "rounded-2xl border-2 border-red-200 bg-red-50 p-4 text-[10px] font-bold text-red-600"
+    }, msg);
+  }
+}
+const searchTokens = q => String(q || '').toLowerCase().split(/\s+/).filter(Boolean);
+const digitsOf = s => String(s || '').replace(/\D/g, '');
+const leadHaystack = l => [l.customer_name, l.phone_number, digitsOf(l.phone_number), l.customer_email, l.project_interested_in, l.lead_status, l.psa_agent_name, l.reject_reason, l.lead_source, formatCallback(l), l.add_note, l.call_remark].filter(Boolean).join(' \n ').toLowerCase();
+const hayCache = new WeakMap();
+const hayOf = l => {
+  let h = hayCache.get(l);
+  if (h === undefined) {
+    h = leadHaystack(l);
+    hayCache.set(l, h);
+  }
+  return h;
+};
+const leadMatches = (l, tokens) => {
+  const h = hayOf(l);
+  return tokens.every(t => {
+    if (h.includes(t)) return true;
+    if (!/^[+\d\-()]+$/.test(t)) return false;
+    const dg = digitsOf(t);
+    return dg.length >= 3 && (h.includes(dg) || dg.length > 10 && h.includes(dg.slice(-10)));
+  });
+};
+const remarkHits = (l, tokens) => {
+  const out = [];
+  const note = String(l.add_note || '');
+  if (note && tokens.some(t => note.toLowerCase().includes(t))) out.push({
+    kind: 'Note',
+    who: '',
+    when: '',
+    text: note
+  });
+  parseRemarkLog(l.call_remark).forEach(e => {
+    if (tokens.some(t => e.text.toLowerCase().includes(t))) out.push({
+      kind: 'Remark',
+      who: e.actor,
+      when: e.stamp,
+      text: e.text
+    });
+  });
+  return out;
+};
+const clipAround = (text, tokens, max) => {
+  const s = String(text),
+    low = s.toLowerCase();
+  const at = tokens.map(t => low.indexOf(t)).filter(i => i >= 0).sort((a, b) => a - b)[0] || 0;
+  if (s.length <= max) return s;
+  const from = Math.max(0, at - 40);
+  return (from > 0 ? '… ' : '') + s.slice(from, from + max) + (from + max < s.length ? ' …' : '');
+};
+const Hl = ({
+  text,
+  tokens
+}) => {
+  const toks = tokens.filter(t => t.length >= 2).map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  if (!toks.length) return text;
+  return String(text).split(new RegExp('(' + toks.join('|') + ')', 'gi')).map((p, i) => i % 2 ? React.createElement("mark", {
+    key: i,
+    className: "bg-yellow-200 text-slate-900 rounded px-0.5"
+  }, p) : p);
+};
+const SearchContext = ({
+  lead,
+  tokens
+}) => {
+  const hits = remarkHits(lead, tokens);
+  const bucket = LEAD_BUCKETS.find(b => filterLeadsByBucket([lead], b.id).length > 0);
+  return React.createElement("div", {
+    className: "mt-1.5 space-y-1"
+  }, bucket && React.createElement("span", {
+    className: "inline-block text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200"
+  }, "In: ", bucket.label), hits.length > 0 && React.createElement("div", {
+    className: "rounded-lg border border-yellow-200 bg-yellow-50 px-2 py-1.5"
+  }, React.createElement("div", {
+    className: "text-[8px] font-black uppercase tracking-widest text-yellow-700"
+  }, "💬 ", hits[0].kind, hits[0].who ? ' · ' + hits[0].who : '', hits[0].when ? ' · ' + hits[0].when : '', hits.length > 1 ? ' · +' + (hits.length - 1) + ' more match' + (hits.length > 2 ? 'es' : '') : ''), React.createElement("div", {
+    className: "text-[10px] font-semibold text-slate-700 break-words"
+  }, React.createElement(Hl, {
+    text: clipAround(hits[0].text, tokens, 130),
+    tokens: tokens
+  }))));
+};
+const isJunkPhone = k => /^(\d)\1{9}$/.test(k) || k === '1234567890' || k === '0123456789' || k === '9876543210';
+function compareRecords(a, b) {
+  const ta = Date.parse(a.created_at) || 0,
+    tb = Date.parse(b.created_at) || 0;
+  if (ta !== tb) return ta - tb;
+  if (a.table !== b.table) return a.table === 'leads' ? -1 : 1;
+  const na = Number(a.id),
+    nb = Number(b.id);
+  if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+  return String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0;
+}
+function buildDupGroups(rows) {
+  const uid = r => r.table + ':' + r.id;
+  const parent = new Map(rows.map(r => [uid(r), uid(r)]));
+  const find = x => {
+    while (parent.get(x) !== x) {
+      parent.set(x, parent.get(parent.get(x)));
+      x = parent.get(x);
+    }
+    return x;
+  };
+  const union = (a, b) => {
+    const ra = find(a),
+      rb = find(b);
+    if (ra !== rb) parent.set(ra, rb);
+  };
+  const byKey = new Map();
+  rows.forEach(r => {
+    const keys = [];
+    if (r.pk && !isJunkPhone(r.pk)) keys.push('p:' + r.pk);
+    if (r.ek) keys.push('e:' + r.ek);
+    keys.forEach(k => {
+      if (!byKey.has(k)) byKey.set(k, []);
+      byKey.get(k).push(r);
+    });
+  });
+  byKey.forEach((list, k) => {
+    if (list.length < 2) return;
+    if (k[0] === 'p' && list.length > 8) return;
+    if (k[0] === 'e' && new Set(list.map(r => r.pk).filter(Boolean)).size > 4) return;
+    list.slice(1).forEach(r => union(uid(list[0]), uid(r)));
+  });
+  const groups = new Map();
+  rows.forEach(r => {
+    const root = find(uid(r));
+    if (!groups.has(root)) groups.set(root, []);
+    groups.get(root).push(r);
+  });
+  const out = new Map();
+  groups.forEach(members => {
+    if (members.length < 2) return;
+    members.sort(compareRecords);
+    const g = {
+      members,
+      primary: members.find(m => !m.is_hidden) || null
+    };
+    members.forEach(m => out.set(uid(m), g));
+  });
+  return out;
+}
 const DupTag = ({
-  matches,
+  info,
   onClick,
   className = '',
-  me = ''
+  me = '',
+  onOpenPrimary
 }) => {
-  if (!matches || !matches.length) return null;
-  const deleted = matches.filter(m => m.is_hidden).length;
-  const mine = !!me && matches.some(m => m.psa_agent_name === me);
-  return React.createElement("button", {
+  if (!info) return null;
+  const {
+    role,
+    primary,
+    others,
+    deleted,
+    activeDupes
+  } = info;
+  const mine = !!me && others.some(m => m.psa_agent_name === me);
+  const tone = role === 'primary' ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border-emerald-300' : role === 'duplicate' ? 'bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-300' : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-300';
+  const pname = primary && primary.name ? primary.name : 'primary lead';
+  const label = role === 'primary' ? '⭐ Primary Lead' + (activeDupes > 0 ? ' · ' + activeDupes + (activeDupes === 1 ? ' duplicate' : ' duplicates') : '') : role === 'duplicate' ? '🔁 Duplicate of ' + pname : '🔁 Repeat enquiry';
+  const title = role === 'primary' ? 'This is the original (earliest active) lead for this contact. Tap to see its duplicates.' : role === 'duplicate' ? 'Same contact as the primary lead “' + pname + '”. Tap for details.' : 'This contact enquired before; the earlier record was deleted. Tap to see its history.';
+  return React.createElement("span", {
+    className: `inline-flex items-center gap-1 max-w-full ${className}`
+  }, React.createElement("button", {
     type: "button",
     onClick: e => {
       e.stopPropagation();
       onClick && onClick();
     },
-    title: "This phone number already exists in earlier lead records. Tap to see the history.",
-    className: `inline-flex flex-wrap items-center gap-1 bg-orange-100 hover:bg-orange-200 text-orange-700 border border-orange-300 text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-widest transition shadow-sm ${className}`
-  }, "🔁 Duplicate", matches.length > 1 ? ` ×${matches.length}` : '', mine && React.createElement("span", {
+    title: title,
+    className: `inline-flex flex-wrap items-center gap-1 text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-widest transition shadow-sm border max-w-full ${tone}`
+  }, React.createElement("span", {
+    className: "truncate max-w-[190px]"
+  }, label), mine && React.createElement("span", {
     className: "text-blue-600"
   }, "· 👤 yours"), deleted > 0 && React.createElement("span", {
     className: "text-red-500"
-  }, "· 🗑 ", deleted, " deleted"));
+  }, "· 🗑 ", deleted, " deleted")), role === 'duplicate' && onOpenPrimary && React.createElement("button", {
+    type: "button",
+    onClick: e => {
+      e.stopPropagation();
+      onOpenPrimary();
+    },
+    title: "Open the primary lead",
+    "aria-label": "Open the primary lead",
+    className: "shrink-0 w-7 h-7 rounded-full bg-white border border-orange-300 text-orange-700 text-[11px] font-black hover:bg-orange-50 transition"
+  }, "↗"));
 };
 const DuplicateHistoryModal = ({
   lead,
   matches,
+  info,
   isAdminUser,
-  onClose
+  onClose,
+  canOpen,
+  onOpen
 }) => {
+  const primaryUid = info && info.primary ? info.primary.table + ':' + info.primary.id : '';
   const [records, setRecords] = useState(null);
   const [error, setError] = useState('');
   const [fullLog, setFullLog] = useState(false);
@@ -701,7 +1020,7 @@ const DuplicateHistoryModal = ({
             __table: table
           }));
         }
-        out.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        out.sort((a, b) => (b.__table + ':' + b.id === primaryUid) - (a.__table + ':' + a.id === primaryUid) || new Date(b.created_at) - new Date(a.created_at));
         if (!cancelled) setRecords(out);
       } catch (e) {
         if (!cancelled) setError(e.message || 'Could not load history');
@@ -732,7 +1051,9 @@ const DuplicateHistoryModal = ({
     className: "w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-black text-sm"
   }, "✕")), React.createElement("div", {
     className: "overflow-y-auto p-5 space-y-4 flex-1 history-scroll"
-  }, !records && !error && React.createElement("div", {
+  }, info && React.createElement("div", {
+    className: `rounded-2xl border px-4 py-3 text-[11px] font-bold ${info.role === 'primary' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-orange-50 border-orange-200 text-orange-800'}`
+  }, info.role === 'primary' && '⭐ This is the Primary Lead for this contact. The other records below are duplicates of it.', info.role === 'duplicate' && '🔁 This lead is a duplicate of ' + (info.primary && info.primary.name || 'the primary lead') + '. The primary lead is shown first.', info.role === 'repeat' && '🔁 This contact enquired before. The earlier record(s) below were deleted, so this lead stands on its own.'), !records && !error && React.createElement("div", {
     className: "py-10 text-center text-[10px] font-black uppercase tracking-widest text-slate-400"
   }, "Loading history…"), error && React.createElement("div", {
     className: "bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-2xl p-4"
@@ -760,7 +1081,11 @@ const DuplicateHistoryModal = ({
       className: "px-4 py-3 flex flex-wrap items-center gap-1.5 border-b border-slate-200/70 bg-white/70"
     }, React.createElement("span", {
       className: `text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${earlier ? 'bg-slate-900 text-white border-slate-900' : 'bg-blue-50 text-blue-700 border-blue-200'}`
-    }, earlier ? 'Earlier lead' : 'Later lead'), r.is_hidden && React.createElement("span", {
+    }, earlier ? 'Earlier lead' : 'Later lead'), r.__table + ':' + r.id === primaryUid ? React.createElement("span", {
+      className: "text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border bg-emerald-100 text-emerald-800 border-emerald-300"
+    }, "⭐ Primary lead") : !r.is_hidden && React.createElement("span", {
+      className: "text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border bg-orange-100 text-orange-700 border-orange-300"
+    }, "Duplicate"), r.is_hidden && React.createElement("span", {
       className: "text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border bg-red-100 text-red-600 border-red-300"
     }, "🗑 Deleted"), React.createElement("span", {
       className: `text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${getStatusStyles(r.lead_status)}`
@@ -768,7 +1093,11 @@ const DuplicateHistoryModal = ({
       className: "text-[8px] font-bold text-slate-400 uppercase tracking-widest ml-auto"
     }, r.lead_source || 'Website')), React.createElement("div", {
       className: "p-4 space-y-3"
-    }, React.createElement("div", {
+    }, canOpen && canOpen(r) && React.createElement("button", {
+      type: "button",
+      onClick: () => onOpen(r),
+      className: "w-full py-2.5 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition"
+    }, "Open this lead ↗"), React.createElement("div", {
       className: "grid grid-cols-2 gap-2"
     }, React.createElement("div", {
       className: "bg-white rounded-xl p-2.5 border border-slate-200"
@@ -961,16 +1290,35 @@ const VoiceStatus = ({
 }, voice.error));
 const NoteCell = ({
   lead,
-  onSave
+  onSave,
+  draftScope = ''
 }) => {
-  const [note, setNote] = useState(lead.add_note || '');
+  const draftKey = draftScope + ':' + lead.id;
+  const serverNote = lead.add_note || '';
+  const initDraft = useRef(undefined);
+  if (initDraft.current === undefined) {
+    const dr = getDraft(draftKey);
+    initDraft.current = dr !== null && dr.trim() !== serverNote.trim() ? dr : null;
+  }
+  const [note, setNote] = useState(initDraft.current !== null ? initDraft.current : serverNote);
+  const [restored, setRestored] = useState(initDraft.current !== null);
   const taRef = useRef(null);
   const noteRef = useRef(note);
   noteRef.current = note;
   const voice = useDictation(() => noteRef.current, setNote, () => taRef.current && taRef.current.focus());
+  const prevServer = useRef(serverNote);
   useEffect(() => {
-    setNote(lead.add_note || '');
-  }, [lead.add_note]);
+    const prev = prevServer.current;
+    prevServer.current = serverNote;
+    if (prev === serverNote) return;
+    setNote(cur => cur.trim() === prev.trim() || cur.trim() === serverNote.trim() ? serverNote : cur);
+  }, [serverNote]);
+  useEffect(() => {
+    if (note.trim() === serverNote.trim()) {
+      clearDraft(draftKey);
+      setRestored(false);
+    } else setDraft(draftKey, note);
+  }, [note, serverNote]);
   useEffect(() => {
     if (voice.listening && taRef.current) taRef.current.scrollTop = taRef.current.scrollHeight;
   }, [note, voice.listening]);
@@ -1001,7 +1349,9 @@ const NoteCell = ({
   }), React.createElement("button", {
     onClick: save,
     className: `text-white px-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition shadow-sm ${dirty ? 'bg-blue-600 ring-2 ring-blue-300' : 'bg-slate-900'}`
-  }, "Save")), React.createElement(VoiceStatus, {
+  }, "Save")), restored && dirty && React.createElement("p", {
+    className: "text-[8px] font-black text-amber-600 uppercase tracking-widest"
+  }, "📝 Unsaved draft restored. Tap Save to keep it"), React.createElement(VoiceStatus, {
     voice: voice,
     hint: ", then Save"
   }));
@@ -1012,8 +1362,9 @@ const LeadDetailModal = ({
   leadCategory,
   userEmail,
   onCall,
-  dupMatches,
-  onShowDups
+  dupInfo,
+  onShowDups,
+  dupMe
 }) => {
   if (!lead) return null;
   const isAdminUser = isAdmin(userEmail);
@@ -1038,10 +1389,10 @@ const LeadDetailModal = ({
   }, lead.customer_name), React.createElement("p", {
     className: "text-[10px] text-blue-600 font-black uppercase tracking-widest mt-0.5"
   }, lead.phone_number), React.createElement(DupTag, {
-    matches: dupMatches,
+    info: dupInfo,
     onClick: onShowDups,
     className: "mt-1.5",
-    me: getAgentFromEmail(userEmail)
+    me: dupMe
   }), lead.customer_email && React.createElement("p", {
     className: "text-[9px] text-slate-400 font-medium mt-0.5"
   }, lead.customer_email)), React.createElement("button", {
@@ -1103,7 +1454,7 @@ const LeadDetailModal = ({
     className: "text-blue-400 font-bold"
   }, "Callback Scheduled"), React.createElement("span", {
     className: "text-white font-black"
-  }, formatDateTime(lead.follow_up_at))), lead.site_visit_at && React.createElement("div", {
+  }, formatCallback(lead))), lead.site_visit_at && React.createElement("div", {
     className: "flex justify-between text-[10px]"
   }, React.createElement("span", {
     className: "text-teal-400 font-bold"
@@ -1654,9 +2005,17 @@ function ProjectLibrary({
   const saveOrder = async reordered => {
     setProperties(reordered);
     for (let i = 0; i < reordered.length; i++) {
-      await supabase.from('properties').update({
-        display_order: i + 1
-      }).eq('id', reordered[i].id);
+      {
+        const {
+          error: ordErr
+        } = await supabase.from('properties').update({
+          display_order: i + 1
+        }).eq('id', reordered[i].id);
+        if (ordErr) {
+          console.error('[CRM] order not saved:', ordErr);
+          window.__toast && window.__toast('Could not save the new order: ' + ordErr.message, 'error');
+        }
+      }
     }
   };
   const handleNumberChange = async (p, val) => {
@@ -1667,9 +2026,17 @@ function ProjectLibrary({
       display_order: num
     } : item);
     setProperties(updated);
-    await supabase.from('properties').update({
-      display_order: num
-    }).eq('id', p.id);
+    {
+      const {
+        error: ord2Err
+      } = await supabase.from('properties').update({
+        display_order: num
+      }).eq('id', p.id);
+      if (ord2Err) {
+        console.error('[CRM] order not saved:', ord2Err);
+        window.__toast && window.__toast('Could not save the new order: ' + ord2Err.message, 'error');
+      }
+    }
   };
   const handleDragStart = i => setDragIdx(i);
   const handleDragOver = (e, i) => {
@@ -2482,12 +2849,20 @@ function ChatBox({
   const sendMessage = async () => {
     if (!reply.trim()) return;
     setSending(true);
-    await supabase.from('agent_messages').insert({
-      agent_name: agentName,
-      message: reply.trim(),
-      sender: senderRole,
-      is_read: false
-    });
+    {
+      const {
+        error: sendErr
+      } = await supabase.from('agent_messages').insert({
+        agent_name: agentName,
+        message: reply.trim(),
+        sender: senderRole,
+        is_read: false
+      });
+      if (sendErr) {
+        console.error('[CRM] message not sent:', sendErr);
+        window.__toast && window.__toast('Message not sent: ' + sendErr.message, 'error');
+      }
+    }
     setReply('');
     const updated = await fetchAgentMessages(agentName);
     setMessages(updated);
@@ -2496,7 +2871,15 @@ function ChatBox({
   const clearChat = async () => {
     if (!window.confirm(`Clear all messages with ${agentName}? This cannot be undone.`)) return;
     setClearing(true);
-    await supabase.from('agent_messages').delete().eq('agent_name', agentName);
+    {
+      const {
+        error: delErr
+      } = await supabase.from('agent_messages').delete().eq('agent_name', agentName);
+      if (delErr) {
+        console.error('[CRM] chat not cleared:', delErr);
+        window.__toast && window.__toast('Could not clear the chat: ' + delErr.message, 'error');
+      }
+    }
     setMessages([]);
     setClearing(false);
   };
@@ -2657,7 +3040,15 @@ function AdminNoteEditor({
   const deleteNote = async () => {
     if (!window.confirm('Delete this note for ' + agentName + '?')) return;
     setDeleting(true);
-    await supabase.from('admin_notes').delete().eq('agent_name', agentName);
+    {
+      const {
+        error: noteErr
+      } = await supabase.from('admin_notes').delete().eq('agent_name', agentName);
+      if (noteErr) {
+        console.error('[CRM] note not deleted:', noteErr);
+        window.__toast && window.__toast('Could not delete the note: ' + noteErr.message, 'error');
+      }
+    }
     setNote('');
     setDeleting(false);
     setStatus('deleted');
@@ -3296,6 +3687,495 @@ function LoginForm({
     className: "text-[9px] text-slate-400 font-bold mt-6 uppercase tracking-widest"
   }, "Contact admin to reset password")));
 }
+const pad2 = n => String(n).padStart(2, '0');
+const toDateStr = dt => dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate());
+const localDay = () => toDateStr(new Date());
+const parseDateStr = str => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(str || ''));
+  if (!m) return null;
+  const dt = new Date(+m[1], +m[2] - 1, +m[3]);
+  return dt.getFullYear() === +m[1] && dt.getMonth() === +m[2] - 1 && dt.getDate() === +m[3] ? dt : null;
+};
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTHS3 = MONTH_NAMES.map(n => n.slice(0, 3).toLowerCase());
+const WEEKDAYS = [{
+  s: 'Mon',
+  f: 'Monday'
+}, {
+  s: 'Tue',
+  f: 'Tuesday'
+}, {
+  s: 'Wed',
+  f: 'Wednesday'
+}, {
+  s: 'Thu',
+  f: 'Thursday'
+}, {
+  s: 'Fri',
+  f: 'Friday'
+}, {
+  s: 'Sat',
+  f: 'Saturday'
+}, {
+  s: 'Sun',
+  f: 'Sunday'
+}];
+const fmtDateOnly = str => {
+  const dt = parseDateStr(str);
+  return dt ? dt.toLocaleDateString('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  }) : '';
+};
+const cbDate = l => {
+  const x = String(l && l.follow_up_at || '').slice(0, 10);
+  return parseDateStr(x) ? x : '';
+};
+const cbSlot = l => {
+  if (!l) return null;
+  if (l.follow_up_slot === 'Morning' || l.follow_up_slot === 'Evening') return l.follow_up_slot;
+  const t = String(l.follow_up_at || '').slice(11, 16);
+  if (!/^\d\d:\d\d$/.test(t) || t === '00:00') return null;
+  const mins = +t.slice(0, 2) * 60 + +t.slice(3);
+  return mins < 13 * 60 ? 'Morning' : mins <= 22 * 60 ? 'Evening' : null;
+};
+function formatCallback(l) {
+  if (!l || !l.follow_up_at) return '';
+  const day = cbDate(l);
+  if (l.follow_up_slot) return (day ? fmtDateOnly(day) : formatDateTime(l.follow_up_at)) + ' · ' + (l.follow_up_slot === 'Morning' ? '🌅 Morning' : '🌆 Evening');
+  const t = String(l.follow_up_at).slice(11, 16);
+  if (t && t !== '00:00') return formatDateTime(l.follow_up_at);
+  return day ? fmtDateOnly(day) : formatDateTime(l.follow_up_at);
+}
+const CALLBACK_STATUSES = ['Called', 'RNR', 'Details Shared', 'Plan On Hold'];
+const REJECT_REASONS = ['Not Interested', 'No Response', 'Wrong Number', 'No Incoming Call', 'Budget Mismatch', 'Already Purchased', 'Location Not Suitable'];
+function hasCallInitiated(l) {
+  return !!(l && typeof l.call_remark === 'string' && l.call_remark.includes('📞 Initiated call'));
+}
+const stampToDay = stamp => {
+  const m = /^(\d{1,2})\s+([A-Za-z]{3,5})\.?\s+(\d{2}),/.exec(String(stamp || '').trim());
+  if (!m) return null;
+  const mi = MONTHS3.indexOf(m[2].slice(0, 3).toLowerCase());
+  return mi < 0 ? null : '20' + m[3] + '-' + pad2(mi + 1) + '-' + pad2(+m[1]);
+};
+const callKey = (table, id, stamp, text) => {
+  const day = stampToDay(stamp);
+  return day ? day + '|' + table + '|' + id + '|' + stamp + '|' + text : null;
+};
+const CalendarPicker = ({
+  value,
+  onChange,
+  minDate
+}) => {
+  const sel = parseDateStr(value);
+  const todayD = new Date();
+  todayD.setHours(0, 0, 0, 0);
+  const min = parseDateStr(minDate) || null;
+  const [view, setView] = useState(() => {
+    const b = sel || todayD;
+    return {
+      y: b.getFullYear(),
+      m: b.getMonth()
+    };
+  });
+  const go = dm => setView(v => {
+    const t = new Date(v.y, v.m + dm, 1);
+    return {
+      y: t.getFullYear(),
+      m: t.getMonth()
+    };
+  });
+  const lead = (new Date(view.y, view.m, 1).getDay() + 6) % 7;
+  const days = new Date(view.y, view.m + 1, 0).getDate();
+  const cells = [...Array(lead).fill(null), ...Array.from({
+    length: days
+  }, (_, i) => i + 1)];
+  while (cells.length % 7) cells.push(null);
+  const y0 = Math.min(view.y, todayD.getFullYear());
+  const years = Array.from({
+    length: Math.max(view.y, todayD.getFullYear() + 3) - y0 + 1
+  }, (_, i) => y0 + i);
+  const navBtn = 'w-10 h-10 md:w-8 md:h-8 shrink-0 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-base flex items-center justify-center transition';
+  return React.createElement("div", {
+    className: "select-none"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between gap-1 mb-2"
+  }, React.createElement("button", {
+    type: "button",
+    "aria-label": "Previous year",
+    onClick: () => go(-12),
+    className: navBtn
+  }, "«"), React.createElement("button", {
+    type: "button",
+    "aria-label": "Previous month",
+    onClick: () => go(-1),
+    className: navBtn
+  }, "‹"), React.createElement("div", {
+    className: "flex-1 min-w-0 flex gap-1 justify-center"
+  }, React.createElement("select", {
+    "aria-label": "Month",
+    value: view.m,
+    onChange: e => setView(v => ({
+      ...v,
+      m: +e.target.value
+    })),
+    className: "min-w-0 flex-1 p-2 rounded-xl border border-slate-200 bg-white text-[11px] font-black text-slate-700 outline-none"
+  }, MONTH_NAMES.map((n, i) => React.createElement("option", {
+    key: n,
+    value: i
+  }, n))), React.createElement("select", {
+    "aria-label": "Year",
+    value: view.y,
+    onChange: e => setView(v => ({
+      ...v,
+      y: +e.target.value
+    })),
+    className: "w-[72px] p-2 rounded-xl border border-slate-200 bg-white text-[11px] font-black text-slate-700 outline-none"
+  }, years.map(y => React.createElement("option", {
+    key: y,
+    value: y
+  }, y)))), React.createElement("button", {
+    type: "button",
+    "aria-label": "Next month",
+    onClick: () => go(1),
+    className: navBtn
+  }, "›"), React.createElement("button", {
+    type: "button",
+    "aria-label": "Next year",
+    onClick: () => go(12),
+    className: navBtn
+  }, "»")), React.createElement("div", {
+    className: "grid grid-cols-7 gap-1 text-center mb-1"
+  }, WEEKDAYS.map(w => React.createElement("div", {
+    key: w.s,
+    title: w.f,
+    "aria-label": w.f,
+    className: `text-[9px] font-black uppercase tracking-widest py-1 ${w.s === 'Sun' ? 'text-red-400' : 'text-slate-400'}`
+  }, w.s))), React.createElement("div", {
+    className: "grid grid-cols-7 gap-1",
+    role: "grid",
+    "aria-label": MONTH_NAMES[view.m] + ' ' + view.y
+  }, cells.map((dn, i) => {
+    if (!dn) return React.createElement("div", {
+      key: 'b' + i,
+      className: "h-11 md:h-9"
+    });
+    const dt = new Date(view.y, view.m, dn);
+    const ds = toDateStr(dt);
+    const disabled = !!min && dt < min;
+    const isSel = ds === value,
+      isToday = ds === toDateStr(todayD);
+    return React.createElement("button", {
+      key: ds,
+      type: "button",
+      disabled: disabled,
+      "aria-label": fmtDateOnly(ds) + (isToday ? ' (today)' : ''),
+      "aria-pressed": isSel,
+      onClick: () => onChange(ds),
+      className: `h-11 md:h-9 rounded-xl text-[13px] md:text-[11px] font-black transition ${isSel ? 'bg-blue-600 text-white shadow-md' : disabled ? 'text-slate-300 cursor-not-allowed' : isToday ? 'ring-2 ring-blue-400 text-blue-700 bg-blue-50 hover:bg-blue-100' : 'text-slate-700 hover:bg-blue-50'}`
+    }, dn);
+  })));
+};
+const useBodyLock = () => useEffect(() => {
+  const prev = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+  return () => {
+    document.body.style.overflow = prev;
+  };
+}, []);
+const CallbackScheduler = ({
+  lead,
+  onSave,
+  onClose
+}) => {
+  const existing = cbDate(lead);
+  const [date, setDate] = useState(existing && existing >= localDay() ? existing : '');
+  const [slot, setSlot] = useState(cbSlot(lead) || '');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+  useBodyLock();
+  const ready = !!date && !!slot && !saving;
+  const submit = async () => {
+    if (!ready) return;
+    setSaving(true);
+    setErr('');
+    const ok = await onSave({
+      date,
+      slot
+    });
+    if (ok) onClose();else {
+      setSaving(false);
+      setErr('Could not save the callback. Please try again.');
+    }
+  };
+  return ReactDOM.createPortal(React.createElement("div", {
+    className: "fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[330] flex items-end md:items-center justify-center animate-fadeIn",
+    onClick: e => e.target === e.currentTarget && !saving && onClose()
+  }, React.createElement("div", {
+    role: "dialog",
+    "aria-label": "Schedule callback",
+    className: "bg-white rounded-t-[28px] md:rounded-[24px] w-full max-w-sm p-5 pb-6 max-h-[94vh] overflow-y-auto shadow-2xl animate-slideUp"
+  }, React.createElement("div", {
+    className: "w-10 h-1 bg-slate-200 rounded-full mx-auto mb-3 md:hidden"
+  }), React.createElement("div", {
+    className: "flex items-start justify-between gap-3 mb-3"
+  }, React.createElement("div", {
+    className: "min-w-0"
+  }, React.createElement("div", {
+    className: "text-[9px] font-black uppercase tracking-widest text-blue-600"
+  }, "📅 Schedule callback"), React.createElement("h2", {
+    className: "text-base font-black uppercase tracking-tight text-slate-900 truncate"
+  }, lead.customer_name), React.createElement("p", {
+    className: "text-[10px] font-black text-slate-400 tracking-widest"
+  }, lead.phone_number)), React.createElement("button", {
+    type: "button",
+    "aria-label": "Close",
+    onClick: onClose,
+    disabled: saving,
+    className: "w-8 h-8 shrink-0 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-black text-sm"
+  }, "✕")), React.createElement(CalendarPicker, {
+    value: date,
+    onChange: setDate,
+    minDate: localDay()
+  }), React.createElement("div", {
+    className: "mt-4"
+  }, React.createElement("div", {
+    className: "text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5"
+  }, "Time of day"), React.createElement("div", {
+    className: "grid grid-cols-2 gap-2",
+    role: "radiogroup",
+    "aria-label": "Time of day"
+  }, [['Morning', '🌅'], ['Evening', '🌆']].map(([s, em]) => React.createElement("button", {
+    key: s,
+    type: "button",
+    role: "radio",
+    "aria-checked": slot === s,
+    onClick: () => setSlot(s),
+    className: `py-3 rounded-2xl border-2 text-[12px] font-black uppercase tracking-widest transition ${slot === s ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300'}`
+  }, em, " ", s)))), React.createElement("p", {
+    className: `mt-3 text-center text-[11px] font-black ${ready ? 'text-slate-800' : 'text-slate-400'}`
+  }, date && slot ? fmtDateOnly(date) + ' · ' + slot : 'Pick a date and Morning or Evening'), err && React.createElement("p", {
+    role: "alert",
+    className: "mt-2 text-center text-[10px] font-bold text-red-600"
+  }, err), React.createElement("div", {
+    className: "grid grid-cols-2 gap-2 mt-4"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: onClose,
+    disabled: saving,
+    className: "py-3 rounded-2xl bg-slate-100 text-slate-600 text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition"
+  }, "Cancel"), React.createElement("button", {
+    type: "button",
+    onClick: submit,
+    disabled: !ready,
+    className: `py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition ${ready ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`
+  }, saving ? 'Saving…' : 'Save callback')))), document.body);
+};
+const CallbackChip = ({
+  lead,
+  onOpen
+}) => {
+  const text = formatCallback(lead);
+  return React.createElement("button", {
+    type: "button",
+    onClick: onOpen,
+    className: `w-full text-left px-3 py-2.5 rounded-xl border-2 text-[10px] font-black transition ${text ? 'border-blue-200 bg-blue-50 text-blue-800 hover:border-blue-400' : 'border-dashed border-blue-300 bg-white text-blue-600 hover:bg-blue-50'}`
+  }, text ? React.createElement("span", null, "📅 ", text, " ", React.createElement("span", {
+    className: "text-blue-400 font-bold"
+  }, "· change")) : React.createElement("span", null, "📅 Set callback date"));
+};
+const RejectReasonModal = ({
+  lead,
+  onConfirm,
+  onClose
+}) => {
+  const [reason, setReason] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+  useBodyLock();
+  const submit = async () => {
+    if (!reason || saving) return;
+    setSaving(true);
+    setErr('');
+    const ok = await onConfirm(reason);
+    if (ok) onClose();else {
+      setSaving(false);
+      setErr('Could not save. Please try again.');
+    }
+  };
+  return ReactDOM.createPortal(React.createElement("div", {
+    className: "fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[330] flex items-end md:items-center justify-center animate-fadeIn",
+    onClick: e => e.target === e.currentTarget && !saving && onClose()
+  }, React.createElement("div", {
+    role: "dialog",
+    "aria-label": "Rejection reason",
+    className: "bg-white rounded-t-[28px] md:rounded-[24px] w-full max-w-sm p-5 pb-6 max-h-[94vh] overflow-y-auto shadow-2xl animate-slideUp"
+  }, React.createElement("div", {
+    className: "w-10 h-1 bg-slate-200 rounded-full mx-auto mb-3 md:hidden"
+  }), React.createElement("div", {
+    className: "text-[9px] font-black uppercase tracking-widest text-red-600"
+  }, "❌ Reject lead"), React.createElement("h2", {
+    className: "text-base font-black uppercase tracking-tight text-slate-900 truncate"
+  }, lead.customer_name), React.createElement("p", {
+    className: "text-[10px] font-black text-slate-400 tracking-widest mb-3"
+  }, lead.phone_number), React.createElement("div", {
+    className: "text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5"
+  }, "Why is this lead being rejected? ", React.createElement("span", {
+    className: "text-red-500"
+  }, "*")), React.createElement("div", {
+    className: "space-y-1.5",
+    role: "radiogroup",
+    "aria-label": "Rejection reason"
+  }, REJECT_REASONS.map(r => React.createElement("button", {
+    key: r,
+    type: "button",
+    role: "radio",
+    "aria-checked": reason === r,
+    onClick: () => setReason(r),
+    className: `w-full text-left px-4 py-3 rounded-2xl border-2 text-[12px] font-black transition flex items-center gap-3 ${reason === r ? 'border-red-500 bg-red-50 text-red-700' : 'border-slate-200 bg-white text-slate-700 hover:border-red-200'}`
+  }, React.createElement("span", {
+    className: `w-4 h-4 rounded-full border-2 shrink-0 ${reason === r ? 'border-red-500 bg-red-500' : 'border-slate-300'}`
+  }), r))), err && React.createElement("p", {
+    role: "alert",
+    className: "mt-2 text-center text-[10px] font-bold text-red-600"
+  }, err), React.createElement("div", {
+    className: "grid grid-cols-2 gap-2 mt-4"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: onClose,
+    disabled: saving,
+    className: "py-3 rounded-2xl bg-slate-100 text-slate-600 text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition"
+  }, "Cancel"), React.createElement("button", {
+    type: "button",
+    onClick: submit,
+    disabled: !reason || saving,
+    className: `py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition ${reason && !saving ? 'bg-red-600 text-white hover:bg-red-700 shadow-md' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`
+  }, saving ? 'Saving…' : 'Reject lead')))), document.body);
+};
+const CallOutcomeSheet = ({
+  lead,
+  options,
+  onPick,
+  onClose
+}) => {
+  useBodyLock();
+  return ReactDOM.createPortal(React.createElement("div", {
+    className: "fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[320] flex items-end md:items-center justify-center animate-fadeIn",
+    onClick: e => e.target === e.currentTarget && onClose()
+  }, React.createElement("div", {
+    role: "dialog",
+    "aria-label": "Call outcome",
+    className: "bg-white rounded-t-[28px] md:rounded-[24px] w-full max-w-sm p-5 pb-6 max-h-[94vh] overflow-y-auto shadow-2xl animate-slideUp"
+  }, React.createElement("div", {
+    className: "w-10 h-1 bg-slate-200 rounded-full mx-auto mb-3 md:hidden"
+  }), React.createElement("div", {
+    className: "text-[9px] font-black uppercase tracking-widest text-blue-600"
+  }, "📞 Call ended?"), React.createElement("h2", {
+    className: "text-base font-black uppercase tracking-tight text-slate-900 truncate"
+  }, lead.customer_name), React.createElement("p", {
+    className: "text-[10px] font-black text-slate-400 tracking-widest mb-3"
+  }, "How did it go? Pick the status."), React.createElement("div", {
+    className: "grid grid-cols-2 gap-2"
+  }, options.map(o => React.createElement("button", {
+    key: o.value,
+    type: "button",
+    onClick: () => onPick(o.value),
+    className: `py-3 px-2 rounded-2xl border-2 text-[11px] font-black transition ${lead.lead_status === o.value ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300'}`
+  }, o.label))), React.createElement("button", {
+    type: "button",
+    onClick: onClose,
+    className: "mt-3 w-full py-3 rounded-2xl bg-slate-100 text-slate-500 text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition"
+  }, "Decide later"))), document.body);
+};
+const DailyCallGoal = ({
+  calls,
+  goal,
+  onGoalChange,
+  unavailable
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(String(goal));
+  useEffect(() => {
+    if (!editing) setVal(String(goal));
+  }, [goal, editing]);
+  const pct = Math.min(100, Math.round(calls / goal * 100));
+  const done = calls >= goal,
+    remaining = Math.max(0, goal - calls);
+  const msg = done ? calls > goal ? 'Goal smashed: ' + (calls - goal) + ' over the target!' : 'Daily goal complete. Great consistency!' : calls === 0 ? 'Start strong: ' + goal + ' dials to reach today’s goal.' : pct >= 80 ? 'Almost there: just ' + remaining + ' more ' + (remaining === 1 ? 'dial' : 'dials') + '.' : pct >= 50 ? 'Halfway there. Keep the momentum going.' : 'Just ' + remaining + ' more dials to reach today’s goal.';
+  const save = () => {
+    const n = Math.round(Number(val));
+    if (n >= 1 && n <= 500) {
+      onGoalChange(n);
+      setEditing(false);
+    }
+  };
+  return React.createElement("div", {
+    className: "bg-white rounded-2xl shadow-sm border border-slate-200 p-4",
+    "data-testid": "daily-goal"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between gap-2"
+  }, React.createElement("div", {
+    className: "min-w-0"
+  }, React.createElement("div", {
+    className: "text-[9px] font-black uppercase tracking-widest text-slate-400"
+  }, "🎯 Daily Call Goal"), React.createElement("div", {
+    className: "flex items-baseline gap-2 mt-0.5"
+  }, React.createElement("span", {
+    className: "text-xl font-black text-slate-900 leading-none"
+  }, calls, " / ", goal), React.createElement("span", {
+    className: "text-[10px] font-black text-slate-500"
+  }, "calls"), React.createElement("span", {
+    className: `text-[10px] font-black px-2 py-0.5 rounded-full ${done ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-600'}`
+  }, pct, "%"))), editing ? React.createElement("div", {
+    className: "flex items-center gap-1.5 shrink-0"
+  }, React.createElement("input", {
+    type: "number",
+    min: "1",
+    max: "500",
+    inputMode: "numeric",
+    "aria-label": "Daily call target",
+    value: val,
+    onChange: e => setVal(e.target.value),
+    onKeyDown: e => e.key === 'Enter' && save(),
+    className: "w-16 p-2 border-2 border-blue-300 rounded-xl text-[12px] font-black text-center outline-none"
+  }), React.createElement("button", {
+    type: "button",
+    onClick: save,
+    className: "px-3 py-2 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase"
+  }, "Set"), React.createElement("button", {
+    type: "button",
+    onClick: () => setEditing(false),
+    "aria-label": "Cancel",
+    className: "px-2 py-2 rounded-xl bg-slate-100 text-slate-500 text-[10px] font-black"
+  }, "✕")) : React.createElement("button", {
+    type: "button",
+    onClick: () => setEditing(true),
+    className: "shrink-0 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-[9px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 transition"
+  }, "✏️ Target")), React.createElement("div", {
+    className: "mt-3 h-3 w-full rounded-full bg-slate-100 overflow-hidden",
+    role: "progressbar",
+    "aria-label": "Daily call progress",
+    "aria-valuemin": 0,
+    "aria-valuemax": goal,
+    "aria-valuenow": Math.min(calls, goal),
+    "aria-valuetext": calls + ' of ' + goal + ' calls'
+  }, React.createElement("div", {
+    className: `h-full rounded-full transition-all duration-500 ${done ? 'bg-gradient-to-r from-emerald-400 to-emerald-600' : 'bg-gradient-to-r from-blue-500 to-indigo-500'}`,
+    style: {
+      width: pct + '%'
+    }
+  })), React.createElement("div", {
+    className: "mt-2 flex items-center justify-between gap-2"
+  }, React.createElement("p", {
+    className: "text-[11px] font-bold text-slate-600"
+  }, done ? '🏆 ' : '🔥 ', msg), !done && React.createElement("span", {
+    className: "shrink-0 text-[9px] font-black uppercase tracking-widest text-slate-400"
+  }, remaining, " left")), unavailable && React.createElement("p", {
+    className: "mt-1 text-[9px] font-bold text-amber-600"
+  }, "Couldn’t refresh from the server; showing calls made on this device."));
+};
 const LEAD_BUCKETS = [{
   id: 'new',
   label: '🆕 New',
@@ -3435,7 +4315,7 @@ function getAllowedStatusOptions(lead) {
       allowedValues = ['Called', 'RNR', 'Details Shared', 'Plan On Hold', 'SV Scheduled', 'SV Done', 'Converted', 'Rejected'];
   }
   const list = [];
-  if (!status || status === 'Un called') list.push(STATUS_OPTS['Un called']);
+  if ((!status || status === 'Un called') && !hasCallInitiated(lead)) list.push(STATUS_OPTS['Un called']);
   if (status && status !== 'Un called' && !allowedValues.includes(status)) list.push(STATUS_OPTS[status]);
   allowedValues.forEach(v => list.push(STATUS_OPTS[v]));
   return list;
@@ -3443,6 +4323,45 @@ function getAllowedStatusOptions(lead) {
 const CALLMODE_KEY = '__crm_callmode',
   RESUME_KEY = '__crm_resume',
   RESUME_WINDOW_MS = 60 * 60 * 1000;
+const DRAFTS_KEY = '__crm_drafts',
+  DRAFT_TTL_MS = 3 * 24 * 60 * 60 * 1000;
+const loadDrafts = () => {
+  try {
+    const all = JSON.parse(localStorage.getItem(DRAFTS_KEY) || '{}');
+    const now = Date.now();
+    Object.keys(all).forEach(k => {
+      if (!all[k] || now - all[k].ts > DRAFT_TTL_MS) delete all[k];
+    });
+    return all;
+  } catch {
+    return {};
+  }
+};
+const getDraft = key => {
+  if (!readCallMode()) return null;
+  const d = loadDrafts()[key];
+  return d ? d.text : null;
+};
+const setDraft = (key, text) => {
+  if (!readCallMode()) return;
+  try {
+    const all = loadDrafts();
+    all[key] = {
+      text,
+      ts: Date.now()
+    };
+    localStorage.setItem(DRAFTS_KEY, JSON.stringify(all));
+  } catch {}
+};
+const clearDraft = key => {
+  try {
+    const all = loadDrafts();
+    if (key in all) {
+      delete all[key];
+      localStorage.setItem(DRAFTS_KEY, JSON.stringify(all));
+    }
+  } catch {}
+};
 const readCallMode = () => {
   try {
     return localStorage.getItem(CALLMODE_KEY) !== 'off';
@@ -3529,7 +4448,10 @@ function AdminApp() {
     setCallModeState(next);
     try {
       localStorage.setItem(CALLMODE_KEY, next ? 'on' : 'off');
-      if (!next) localStorage.removeItem(RESUME_KEY);
+      if (!next) {
+        localStorage.removeItem(RESUME_KEY);
+        localStorage.removeItem(DRAFTS_KEY);
+      }
     } catch {}
   };
   const snapRef = useRef(null);
@@ -3588,7 +4510,7 @@ function AdminApp() {
   const isKnownAgent = agentName && agentName !== '__ADMIN__' && agentName !== '__UNKNOWN__';
   useEffect(() => {
     const tick = () => {
-      const stored = localStorage.getItem('__crm_login_time');
+      const stored = ls.get('__crm_login_time');
       if (!stored) {
         setSessionTimeLeft('');
         return;
@@ -3673,16 +4595,16 @@ function AdminApp() {
   const logoutTimerRef = useRef(null);
   const rescheduleFromStored = useCallback(() => {
     if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
-    const stored = localStorage.getItem('__crm_login_time');
+    const stored = ls.get('__crm_login_time');
     if (!stored) return;
     const remaining = AUTO_LOGOUT_MS - (Date.now() - parseInt(stored, 10));
     if (remaining <= 0) {
       supabase.auth.signOut();
-      localStorage.removeItem('__crm_login_time');
+      ls.del('__crm_login_time');
     } else {
       logoutTimerRef.current = setTimeout(async () => {
         await supabase.auth.signOut();
-        localStorage.removeItem('__crm_login_time');
+        ls.del('__crm_login_time');
         alert('Session expired after 3 hours. Please log in again.');
       }, remaining);
     }
@@ -3697,7 +4619,7 @@ function AdminApp() {
       setAuthChecking(false);
       if (window.__dismissSplash) window.__dismissSplash();
       if (session) {
-        if (!localStorage.getItem('__crm_login_time')) localStorage.setItem('__crm_login_time', String(Date.now()));
+        if (!ls.get('__crm_login_time')) ls.set('__crm_login_time', String(Date.now()));
         rescheduleFromStored();
       }
     });
@@ -3708,11 +4630,11 @@ function AdminApp() {
     } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(prev => prev && s && prev.user?.id === s.user?.id ? prev : s);
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && s) {
-        if (!localStorage.getItem('__crm_login_time')) localStorage.setItem('__crm_login_time', String(Date.now()));
+        if (!ls.get('__crm_login_time')) ls.set('__crm_login_time', String(Date.now()));
         rescheduleFromStored();
       } else if (event === 'SIGNED_OUT') {
         if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
-        localStorage.removeItem('__crm_login_time');
+        ls.del('__crm_login_time');
         try {
           localStorage.removeItem(RESUME_KEY);
         } catch {}
@@ -3738,6 +4660,7 @@ function AdminApp() {
     if (!silent) {
       setLoading(true);
       prevLeadsRef.current = 0;
+      orderRef.current = new Map();
     }
     const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
     const {
@@ -3745,8 +4668,14 @@ function AdminApp() {
       error
     } = await supabase.from(table).select('*').order('created_at', {
       ascending: false
+    }).order('id', {
+      ascending: true
     });
-    if (!error) {
+    if (error) {
+      console.error('[CRM] Could not load leads:', error);
+      setLoadError(error.message || 'Could not load leads');
+    } else {
+      setLoadError('');
       let raw = data || [];
       if (table === 'leads') {
         if (leadCategory === 'website') raw = raw.filter(l => !l.lead_source || l.lead_source.trim() === '' || l.lead_source.toLowerCase().includes('website'));else if (leadCategory === 'manual') raw = raw.filter(l => l.lead_source && l.lead_source.trim() !== '' && !l.lead_source.toLowerCase().includes('website'));
@@ -3761,14 +4690,21 @@ function AdminApp() {
         if (window.__showNotification) window.__showNotification('🏠 New Lead!', (newest.customer_name || 'Unknown') + ' · ' + (newest.phone_number || ''));
       }
       prevLeadsRef.current = raw.length;
+      const rank = orderRef.current;
+      if (rank.size) {
+        const fresh = raw.filter(l => !rank.has(String(l.id)));
+        const known = raw.filter(l => rank.has(String(l.id))).sort((a, b) => rank.get(String(a.id)) - rank.get(String(b.id)));
+        raw = [...fresh, ...known];
+      }
+      orderRef.current = new Map(raw.map((l, i) => [String(l.id), i]));
       setLeads(raw);
     }
     if (!silent) setLoading(false);
   }
   async function fetchLightRows() {
     const COLS = {
-      leads: ['id, phone_number, customer_email, created_at, is_hidden, psa_agent_name, lead_source', 'id, phone_number, created_at, is_hidden, psa_agent_name, lead_source'],
-      bulk_leads: ['id, phone_number, customer_email, created_at, is_hidden, psa_agent_name', 'id, phone_number, created_at, is_hidden, psa_agent_name']
+      leads: ['id, customer_name, phone_number, customer_email, created_at, is_hidden, psa_agent_name, lead_source', 'id, customer_name, phone_number, created_at, is_hidden, psa_agent_name, lead_source'],
+      bulk_leads: ['id, customer_name, phone_number, customer_email, created_at, is_hidden, psa_agent_name', 'id, customer_name, phone_number, created_at, is_hidden, psa_agent_name']
     };
     const perTable = await Promise.all(['leads', 'bulk_leads'].map(async table => {
       const out = [];
@@ -3791,6 +4727,7 @@ function AdminApp() {
         data.forEach(r => out.push({
           table,
           id: r.id,
+          name: r.customer_name || '',
           pk: normPhone(r.phone_number),
           ek: normEmail(r.customer_email),
           created_at: r.created_at,
@@ -3838,60 +4775,221 @@ function AdminApp() {
       manual: man.length
     };
   }, [lightRows, isAdminUser, agentName, summaryAgent]);
-  const dupIndex = useMemo(() => {
-    const idx = {};
-    const add = (k, r) => {
-      (idx[k] = idx[k] || []).push(r);
-    };
-    lightRows.forEach(r => {
-      if (r.pk) add('p:' + r.pk, r);
-      if (r.ek) add('e:' + r.ek, r);
-    });
-    return idx;
-  }, [lightRows]);
+  const dupGroups = useMemo(() => buildDupGroups(lightRows), [lightRows]);
   const currentLeadTable = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-  const dupMatchesFor = l => {
-    if (!l) return [];
-    const keys = [normPhone(l.phone_number) && 'p:' + normPhone(l.phone_number), normEmail(l.customer_email) && 'e:' + normEmail(l.customer_email)].filter(Boolean);
-    const seen = new Set(),
-      out = [];
-    keys.forEach(k => (dupIndex[k] || []).forEach(e => {
-      const uid = e.table + ':' + e.id;
-      if (seen.has(uid) || e.table === currentLeadTable && String(e.id) === String(l.id)) return;
-      seen.add(uid);
-      out.push(e);
-    }));
-    return out;
+  const myPsaName = isAdminUser ? ADMIN_AGENT_NAME || '' : agentName;
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
+  const notify = useCallback((msg, type = 'info') => {
+    setToast({
+      msg,
+      type,
+      id: Date.now()
+    });
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), type === 'error' ? 7000 : 3500);
+  }, []);
+  useEffect(() => {
+    window.__toast = notify;
+    return () => {
+      if (window.__toast === notify) window.__toast = null;
+    };
+  }, [notify]);
+  const [rejectForId, setRejectForId] = useState(null);
+  const [scheduleForId, setScheduleForId] = useState(null);
+  const [outcomeFor, setOutcomeFor] = useState(null);
+  const [highlightId, setHighlightId] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const orderRef = useRef(new Map());
+  const dialGuardRef = useRef({});
+  const rejectBusy = useRef(false);
+  const hiddenAtRef = useRef(0);
+  const leadById = id => leads.find(x => String(x.id) === String(id)) || null;
+  const statusValue = l => (!l.lead_status || l.lead_status === 'Un called') && hasCallInitiated(l) ? '' : l.lead_status || '';
+  const OUTCOME_KEY = '__crm_pending_outcome';
+  const savePending = p => {
+    if (p) ls.set(OUTCOME_KEY, JSON.stringify(p));else ls.del(OUTCOME_KEY);
+  };
+  const readPending = () => {
+    try {
+      const p = JSON.parse(ls.get(OUTCOME_KEY) || 'null');
+      return p && Date.now() - p.ts < 60 * 60 * 1000 ? p : null;
+    } catch {
+      return null;
+    }
+  };
+  const closeOutcome = () => {
+    savePending(null);
+    setOutcomeFor(null);
+    setHighlightId(null);
+  };
+  const promptOutcome = () => {
+    const p = readPending();
+    if (!p || p.table !== currentLeadTable || document.visibilityState !== 'visible') return;
+    if (!leadById(p.id)) return;
+    setOutcomeFor({
+      id: p.id,
+      table: p.table
+    });
+    setHighlightId(p.id);
+    setTimeout(() => {
+      const el = [...document.querySelectorAll('[data-lead-id="' + p.id + '"]')].find(e => e.offsetParent !== null);
+      if (el && el.scrollIntoView) el.scrollIntoView({
+        block: 'center',
+        behavior: 'smooth'
+      });
+    }, 150);
   };
   useEffect(() => {
-    if (!session || !agentName || view !== 'dashboard' || loading || lightRows.length === 0) return;
-    const key = '__crm_seen_' + userEmail + '_' + leadCategory;
-    let seen = null;
-    try {
-      seen = JSON.parse(localStorage.getItem(key) || 'null');
-    } catch {
-      seen = null;
-    }
-    const ids = leads.map(l => String(l.id));
-    const save = arr => {
-      try {
-        localStorage.setItem(key, JSON.stringify(arr.slice(0, 3000)));
-      } catch {}
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') hiddenAtRef.current = Date.now();else if (hiddenAtRef.current && Date.now() - hiddenAtRef.current > 2000) {
+        hiddenAtRef.current = 0;
+        promptOutcome();
+      }
     };
-    if (!seen) {
-      save(ids);
-      return;
-    }
-    const seenSet = new Set(seen);
-    leads.filter(l => !seenSet.has(String(l.id)) && !l.is_hidden && Date.now() - new Date(l.created_at).getTime() < 48 * 3600 * 1000).forEach(l => {
-      const prev = dupMatchesFor(l);
-      if (!prev.length) return;
-      const mine = prev.filter(m => m.psa_agent_name && (m.psa_agent_name === agentName || isAdminUser && m.psa_agent_name === (ADMIN_AGENT_NAME || '')));
-      if (!isAdminUser && !mine.length) return;
-      const who = mine.length ? 'You handled this earlier' : 'Earlier PSA: ' + ((prev.find(m => m.psa_agent_name) || {}).psa_agent_name || 'unassigned');
-      if (window.__showNotification) window.__showNotification('🔁 Repeat enquiry', (l.customer_name || 'Unknown') + ' · ' + (l.phone_number || '') + ' · ' + who);
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [leads, currentLeadTable]);
+  const outcomeReloadRef = useRef(false);
+  useEffect(() => {
+    if (outcomeReloadRef.current || loading || !leads.length) return;
+    outcomeReloadRef.current = true;
+    if (readPending()) promptOutcome();
+  }, [loading, leads]);
+  const [today, setToday] = useState(localDay);
+  const [goal, setGoalState] = useState(40);
+  const [remoteCallKeys, setRemoteCallKeys] = useState(() => new Set());
+  const [localCallKeys, setLocalCallKeys] = useState(() => new Set());
+  const [callStatsFailed, setCallStatsFailed] = useState(false);
+  const actorNow = isAdminUser ? ADMIN_AGENT_NAME || 'Admin' : agentName;
+  useEffect(() => {
+    const g = Number(ls.get('__crm_goal_' + userEmail));
+    if (g >= 1 && g <= 500) setGoalState(g);
+  }, [userEmail]);
+  const setGoal = n => {
+    const v = Math.round(Number(n));
+    if (!(v >= 1 && v <= 500)) return;
+    setGoalState(v);
+    ls.set('__crm_goal_' + userEmail, String(v));
+  };
+  const callsToday = useMemo(() => {
+    const all = new Set([...remoteCallKeys, ...localCallKeys]);
+    let n = 0;
+    all.forEach(k => {
+      if (k.startsWith(today + '|')) n++;
     });
-    save([...ids, ...seen.filter(x => !ids.includes(x))]);
+    return n;
+  }, [remoteCallKeys, localCallKeys, today]);
+  async function fetchCallStats() {
+    const actor = actorNow;
+    if (!actor || actor === '__UNKNOWN__' || actor === '__ADMIN__') return;
+    const keys = new Set();
+    let failed = false;
+    await Promise.all(['leads', 'bulk_leads'].map(async table => {
+      let from = 0;
+      const size = 1000;
+      while (true) {
+        const {
+          data,
+          error
+        } = await supabase.from(table).select('id, call_remark').ilike('call_remark', '%[' + actor + '] 📞 Initiated call%').range(from, from + size - 1);
+        if (error || !data) {
+          failed = true;
+          break;
+        }
+        data.forEach(r => parseRemarkLog(r.call_remark).forEach(e => {
+          if (e.actor === actor && e.text.startsWith('📞 Initiated call')) {
+            const k = callKey(table, r.id, e.stamp, e.text);
+            if (k) keys.add(k);
+          }
+        }));
+        if (data.length < size) break;
+        from += size;
+      }
+    }));
+    setCallStatsFailed(failed);
+    if (!failed) {
+      setRemoteCallKeys(keys);
+      setLocalCallKeys(new Set());
+    }
+  }
+  useEffect(() => {
+    if (!session || !actorNow || actorNow === '__UNKNOWN__' || actorNow === '__ADMIN__') return;
+    fetchCallStats();
+    const refresh = () => {
+      setToday(localDay());
+      if (document.visibilityState === 'visible') fetchCallStats();
+    };
+    const iv = setInterval(refresh, 60000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      clearInterval(iv);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [session, actorNow]);
+  const CALLBACK_NEEDS_SLOT_MSG = 'Callback date saved. To also store Morning/Evening, run the one-time database update (see SQL migration).';
+  const dupInfoFor = l => {
+    if (!l) return null;
+    const g = dupGroups.get(currentLeadTable + ':' + l.id);
+    if (!g) return null;
+    const isSelf = m => m.table === currentLeadTable && String(m.id) === String(l.id);
+    const others = g.members.filter(m => !isSelf(m));
+    const active = g.members.filter(m => !m.is_hidden);
+    const role = active.length >= 2 ? g.primary && isSelf(g.primary) ? 'primary' : 'duplicate' : 'repeat';
+    return {
+      role,
+      primary: g.primary,
+      others,
+      deleted: others.filter(m => m.is_hidden).length,
+      activeDupes: Math.max(0, active.length - 1)
+    };
+  };
+  const dupMatchesFor = l => {
+    const i = dupInfoFor(l);
+    return i ? i.others : [];
+  };
+  const canOpenLead = m => m.table === currentLeadTable && leads.some(x => String(x.id) === String(m.id));
+  const openLeadRecord = m => {
+    const t = leads.find(x => String(x.id) === String(m.id));
+    if (t) {
+      setDupLead(null);
+      setSelectedLead(t);
+    }
+  };
+  useEffect(() => {
+    try {
+      if (!session || !agentName || view !== 'dashboard' || loading || lightRows.length === 0) return;
+      const key = '__crm_seen_' + userEmail + '_' + leadCategory;
+      let seen = null;
+      try {
+        seen = JSON.parse(ls.get(key) || 'null');
+      } catch {
+        seen = null;
+      }
+      const ids = leads.map(l => String(l.id));
+      const save = arr => ls.set(key, JSON.stringify(arr.slice(0, 3000)));
+      if (!seen) {
+        save(ids);
+        return;
+      }
+      const seenSet = new Set(seen);
+      const msgs = [];
+      leads.filter(l => !seenSet.has(String(l.id)) && !l.is_hidden && Date.now() - new Date(l.created_at).getTime() < 48 * 3600 * 1000).forEach(l => {
+        const prev = dupMatchesFor(l);
+        if (!prev.length) return;
+        const mine = prev.filter(m => m.psa_agent_name && m.psa_agent_name === myPsaName);
+        if (!isAdminUser && !mine.length) return;
+        const who = mine.length ? 'You handled this earlier' : 'Earlier PSA: ' + ((prev.find(m => m.psa_agent_name) || {}).psa_agent_name || 'unassigned');
+        msgs.push((l.customer_name || 'Unknown') + ' · ' + (l.phone_number || '') + ' · ' + who);
+      });
+      msgs.slice(0, 3).forEach(m => {
+        if (window.__showNotification) window.__showNotification('🔁 Repeat enquiry', m);
+      });
+      if (msgs.length > 3 && window.__showNotification) window.__showNotification('🔁 Repeat enquiries', '+' + (msgs.length - 3) + ' more repeat leads in ' + leadCategory);
+      save([...ids, ...seen.filter(x => !ids.includes(x))]);
+    } catch (e) {
+      console.warn('[CRM] repeat-enquiry alert skipped:', e && e.message);
+    }
   }, [leads, lightRows]);
   useEffect(() => {
     if (!session || view !== 'dashboard' || !agentName) return;
@@ -3952,139 +5050,212 @@ function AdminApp() {
     setProperties(data || []);
   }
   async function updateLead(lead, field, value) {
+    const table = currentLeadTable;
     const shouldClaim = !isAdminUser && leadCategory === 'website' && !lead.psa_agent_name && agentName && agentName !== '__UNKNOWN__';
-    if (shouldClaim) {
-      setLeads(prev => prev.map(l => l.id === lead.id ? {
-        ...l,
-        psa_agent_name: agentName
-      } : l));
-      await supabase.from('leads').update({
-        psa_agent_name: agentName
-      }).eq('id', lead.id);
-      lead = {
-        ...lead,
-        psa_agent_name: agentName
-      };
-    }
-    let updates = {};
+    const claim = shouldClaim ? {
+      psa_agent_name: agentName
+    } : {};
     const stamp = crmStamp();
     const actorName = isAdminUser ? ADMIN_AGENT_NAME || 'Admin' : agentName || lead.psa_agent_name || 'Unknown';
-    if (field === 'lead_status') {
-      updates.lead_status = value;
-      updates.call_remark = `[${stamp}] [${actorName}] Status → ${value}\n\n${lead.call_remark || ''}`;
-    } else if (field === 'follow_up_at') {
-      updates.follow_up_at = value;
-      updates.call_remark = `[${stamp}] [${actorName}] Callback Set: ${new Date(value).toLocaleString('en-IN', {
+    const E = text => `[${stamp}] [${actorName}] ${text}`;
+    let build = null;
+    if (field === 'lead_status') build = b => ({
+      lead_status: value,
+      call_remark: `${E('Status → ' + value)}\n\n${b}`
+    });else if (field === 'follow_up') build = b => ({
+      follow_up_at: value.date,
+      follow_up_slot: value.slot,
+      call_remark: `${E('Callback Set: ' + fmtDateOnly(value.date) + ' · ' + value.slot)}\n\n${b}`
+    });else if (field === 'follow_up_at') build = b => ({
+      follow_up_at: value,
+      call_remark: `${E('Callback Set: ' + new Date(value).toLocaleString('en-IN', {
         month: 'short',
         day: 'numeric',
         year: '2-digit',
         hour: '2-digit',
         minute: '2-digit'
-      })}\n\n${lead.call_remark || ''}`;
-    } else if (field === 'site_visit_at') {
-      updates.site_visit_at = value;
-      updates.call_remark = `[${stamp}] [${actorName}] SV Booked: ${value}\n\n${lead.call_remark || ''}`;
-    } else if (field === 'site_visit_done_at') {
-      updates.site_visit_done_at = value;
-      updates.call_remark = `[${stamp}] [${actorName}] SV Done: ${value}\n\n${lead.call_remark || ''}`;
-    } else if (field === 'add_note') {
+      }))}\n\n${b}`
+    });else if (field === 'site_visit_at') build = b => ({
+      site_visit_at: value,
+      call_remark: `${E('SV Booked: ' + value)}\n\n${b}`
+    });else if (field === 'site_visit_done_at') build = b => ({
+      site_visit_done_at: value,
+      call_remark: `${E('SV Done: ' + value)}\n\n${b}`
+    });else if (field === 'reject_reason') build = b => ({
+      reject_reason: value,
+      call_remark: `${E('Rejected: ' + value)}\n\n${b}`
+    });else if (field === 'reject') build = b => ({
+      lead_status: 'Rejected',
+      reject_reason: value,
+      call_remark: `${E('Rejected: ' + value)}\n\n${E('Status → Rejected')}\n\n${b}`
+    });else if (field === 'psa_agent_name') build = b => ({
+      psa_agent_name: value,
+      call_remark: `[${stamp}] [Admin] ${lead.psa_agent_name ? 'Reassigned: ' + lead.psa_agent_name + ' → ' + value : 'Assigned to ' + value}\n\n${b}`
+    });else if (field === 'add_note') {
       const oldNote = (lead.add_note || '').trim(),
         newNote = (value || '').trim();
-      if (!newNote || newNote === oldNote) return;
+      if (!newNote || newNote === oldNote) return false;
       const logged = oldNote && newNote.startsWith(oldNote) ? 'Note: ' + newNote.slice(oldNote.length).trim() : oldNote ? 'Note (edited): ' + newNote : 'Note: ' + newNote;
-      updates.add_note = value;
-      updates.call_remark = `[${stamp}] [${actorName}] ${logged}\n\n${lead.call_remark || ''}`;
-    } else if (field === 'reject_reason') {
-      updates.reject_reason = value;
-      updates.call_remark = `[${stamp}] [${actorName}] Rejected: ${value}\n\n${lead.call_remark || ''}`;
-    } else if (field === 'psa_agent_name') {
-      updates.psa_agent_name = value;
-      updates.call_remark = `[${stamp}] [Admin] ${lead.psa_agent_name ? 'Reassigned: ' + lead.psa_agent_name + ' → ' + value : 'Assigned to ' + value}\n\n${lead.call_remark || ''}`;
-    } else {
-      updates[field] = value;
+      build = b => ({
+        add_note: value,
+        call_remark: `${E(logged)}\n\n${b}`
+      });
     }
-    const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
-    if (field === 'psa_agent_name') {
-      if (isAdminUser) setLeads(prev => prev.map(l => l.id === lead.id ? {
-        ...l,
-        ...updates
-      } : l));else setLeads(prev => prev.filter(l => l.id !== lead.id));
-    } else {
-      setLeads(prev => prev.map(l => l.id === lead.id ? {
-        ...l,
-        ...updates
-      } : l));
+    const mk = b => ({
+      ...claim,
+      ...(build ? build(b) : {
+        [field]: value
+      })
+    });
+    const local = mk(lead.call_remark || '');
+    if (field === 'psa_agent_name' && !isAdminUser) setLeads(prev => prev.filter(l => l.id !== lead.id));else setLeads(prev => prev.map(l => l.id === lead.id ? {
+      ...l,
+      ...local
+    } : l));
+    let base = lead.call_remark || '';
+    if (build) {
+      try {
+        const {
+          data
+        } = await supabase.from(table).select('call_remark').eq('id', lead.id).maybeSingle();
+        if (data && typeof data.call_remark === 'string') base = data.call_remark;
+      } catch {}
     }
-    const {
-      error
-    } = await supabase.from(table).update(updates).eq('id', lead.id);
-    if (error) {
-      alert("Save error: " + error.message);
-      fetchLeads();
-    } else if (field === 'psa_agent_name') setTimeout(() => {
+    const updates = mk(base);
+    let slotDropped = false;
+    let res = await supabase.from(table).update(updates).eq('id', lead.id).select('id');
+    if (res.error && /follow_up_slot/.test(res.error.message || '')) {
+      delete updates.follow_up_slot;
+      res = await supabase.from(table).update(updates).eq('id', lead.id).select('id');
+      if (!res.error && res.data && res.data.length) {
+        notify(CALLBACK_NEEDS_SLOT_MSG, 'error');
+        slotDropped = true;
+      }
+    }
+    if (res.error || !res.data || !res.data.length) {
+      notify(res.error ? 'Could not save: ' + res.error.message : 'Not saved: you may not have permission, or the lead was removed.', 'error');
+      fetchLeads(true);
+      return false;
+    }
+    if (updates.call_remark && updates.call_remark !== local.call_remark) setLeads(prev => prev.map(l => l.id === lead.id ? {
+      ...l,
+      call_remark: updates.call_remark
+    } : l));
+    if (field === 'psa_agent_name') setTimeout(() => {
       fetchLeads(true);
       fetchLightRows();
     }, 500);
+    return slotDropped ? 'partial' : true;
   }
   async function logCallInitiated(lead) {
     saveResume();
+    const table = currentLeadTable;
+    const gk = table + ':' + lead.id;
+    if (Date.now() - (dialGuardRef.current[gk] || 0) < 15000) return;
+    dialGuardRef.current[gk] = Date.now();
     const shouldClaim = !isAdminUser && leadCategory === 'website' && !lead.psa_agent_name && agentName && agentName !== '__UNKNOWN__';
-    if (shouldClaim) {
-      setLeads(prev => prev.map(l => l.id === lead.id ? {
-        ...l,
-        psa_agent_name: agentName
-      } : l));
-      await supabase.from('leads').update({
-        psa_agent_name: agentName
-      }).eq('id', lead.id);
-      lead = {
-        ...lead,
-        psa_agent_name: agentName
-      };
-    }
     const stamp = crmStamp();
     const timeStr = new Date().toLocaleTimeString('en-IN', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      second: '2-digit'
     });
     const actorName = isAdminUser ? ADMIN_AGENT_NAME || 'Admin' : agentName || lead.psa_agent_name || 'Unknown';
-    const newRemark = `[${stamp}] [${actorName}] 📞 Initiated call at ${timeStr}\n\n${lead.call_remark || ''}`;
-    const table = leadCategory === 'bulk' ? 'bulk_leads' : 'leads';
+    const text = '📞 Initiated call at ' + timeStr;
+    const newRemark = `[${stamp}] [${actorName}] ${text}\n\n${lead.call_remark || ''}`;
+    const updates = {
+      call_remark: newRemark,
+      ...(shouldClaim ? {
+        psa_agent_name: agentName
+      } : {})
+    };
+    const key = callKey(table, lead.id, stamp, text);
     setLeads(prev => prev.map(l => l.id === lead.id ? {
       ...l,
-      call_remark: newRemark
+      ...updates
     } : l));
-    await supabase.from(table).update({
-      call_remark: newRemark
-    }).eq('id', lead.id);
+    if (key) setLocalCallKeys(prev => new Set(prev).add(key));
+    savePending({
+      id: lead.id,
+      table,
+      ts: Date.now()
+    });
+    const res = await supabase.from(table).update(updates).eq('id', lead.id).select('id');
+    if (res.error || !res.data || !res.data.length) {
+      dialGuardRef.current[gk] = 0;
+      savePending(null);
+      if (key) setLocalCallKeys(prev => {
+        const n = new Set(prev);
+        n.delete(key);
+        return n;
+      });
+      notify(res.error ? 'Call was not logged: ' + res.error.message : 'Call was not logged: no permission, or the lead was removed.', 'error');
+      fetchLeads(true);
+      return;
+    }
+    fetchCallStats();
   }
   const filteredForCounts = useMemo(() => {
     let f = leads.filter(l => !l.is_hidden);
     if (isAdminUser && summaryAgent !== 'All') f = f.filter(l => l.psa_agent_name === summaryAgent);
-    const today = new Date().toISOString().split('T')[0];
-    if (scheduleFilter === 'TODAY_CB') f = f.filter(l => l.follow_up_at?.startsWith(today));else if (scheduleFilter === 'TODAY_SV') f = f.filter(l => l.site_visit_at === today);else if (scheduleFilter === 'MISSED_CB') f = f.filter(l => l.follow_up_at && l.follow_up_at < today && !['Rejected', 'Converted'].includes(l.lead_status));else if (scheduleFilter === 'MISSED_SV') f = f.filter(l => l.site_visit_at && l.site_visit_at < today && !['Rejected', 'Converted'].includes(l.lead_status));else if (scheduleFilter === 'DETAILS_SHARED') f = f.filter(l => l.lead_status === 'Details Shared');
+    const todayStr = today;
+    if (scheduleFilter === 'TODAY_CB') f = f.filter(l => cbDate(l) === todayStr);else if (scheduleFilter === 'TODAY_SV') f = f.filter(l => l.site_visit_at === todayStr);else if (scheduleFilter === 'MISSED_CB') f = f.filter(l => cbDate(l) && cbDate(l) < todayStr && !['Rejected', 'Converted'].includes(l.lead_status));else if (scheduleFilter === 'MISSED_SV') f = f.filter(l => l.site_visit_at && l.site_visit_at < todayStr && !['Rejected', 'Converted'].includes(l.lead_status));else if (scheduleFilter === 'DETAILS_SHARED') f = f.filter(l => l.lead_status === 'Details Shared');
     if (priorityFilter !== 'ALL') f = f.filter(l => (l.lead_priority || 'Warm') === priorityFilter);
-    if (callTimeFilter !== 'ALL') {
-      f = f.filter(l => {
-        const timeStr = l.follow_up_at?.slice(11, 16);
-        if (!timeStr) return false;
-        const [hh, mm] = timeStr.split(':').map(Number);
-        const mins = hh * 60 + mm;
-        if (callTimeFilter === 'MORNING') return mins < 13 * 60;
-        if (callTimeFilter === 'EVENING') return mins >= 13 * 60 && mins <= 22 * 60;
-        return true;
-      });
-    }
+    if (callTimeFilter !== 'ALL') f = f.filter(l => cbSlot(l) === (callTimeFilter === 'MORNING' ? 'Morning' : 'Evening'));
     return f;
-  }, [leads, isAdminUser, summaryAgent, scheduleFilter, priorityFilter, callTimeFilter]);
+  }, [leads, isAdminUser, summaryAgent, scheduleFilter, priorityFilter, callTimeFilter, today]);
+  const sTokens = useMemo(() => searchTokens(searchTerm), [searchTerm]);
+  const searchActive = sTokens.length > 0;
   const displayedLeads = useMemo(() => {
-    let f = searchTerm.trim() ? filteredForCounts : filterLeadsByBucket(filteredForCounts, leadBucket);
-    if (searchTerm.trim()) {
-      const t = searchTerm.toLowerCase();
-      f = f.filter(l => (l.customer_name || '').toLowerCase().includes(t) || (l.phone_number || '').toLowerCase().includes(t) || (l.project_interested_in || '').toLowerCase().includes(t));
+    if (!searchActive) return filterLeadsByBucket(filteredForCounts, leadBucket);
+    return leads.filter(l => !l.is_hidden && leadMatches(l, sTokens));
+  }, [filteredForCounts, leads, leadBucket, searchActive, sTokens]);
+  const filtersActive = scheduleFilter !== 'ALL' || priorityFilter !== 'ALL' || callTimeFilter !== 'ALL' || isAdminUser && summaryAgent !== 'All';
+  const [crossHits, setCrossHits] = useState({});
+  useEffect(() => {
+    const q = sTokens.slice().sort((a, b) => b.length - a.length)[0] || '';
+    const safe = q.replace(/[%,()*\\"']/g, '');
+    if (safe.length < 3) {
+      setCrossHits({});
+      return;
     }
-    return f;
-  }, [filteredForCounts, leadBucket, searchTerm]);
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const cols = 'id, customer_name, phone_number, customer_email, project_interested_in, lead_status, psa_agent_name, lead_source, call_remark, add_note, reject_reason, is_hidden, follow_up_at, follow_up_slot';
+        const orf = ['customer_name', 'phone_number', 'customer_email', 'project_interested_in', 'call_remark', 'add_note'].map(c => c + '.ilike.%' + safe + '%').join(',');
+        const found = {
+          website: 0,
+          bulk: 0,
+          manual: 0
+        };
+        await Promise.all(['leads', 'bulk_leads'].map(async table => {
+          const {
+            data,
+            error
+          } = await supabase.from(table).select(cols).or(orf).limit(500);
+          if (error) throw error;
+          (data || []).filter(r => !r.is_hidden && leadMatches(r, sTokens)).forEach(r => {
+            const isWeb = !r.lead_source || r.lead_source.trim() === '' || r.lead_source.toLowerCase().includes('website');
+            const section = table === 'bulk_leads' ? 'bulk' : isWeb ? 'website' : 'manual';
+            if (!isAdminUser) {
+              if (!agentName || agentName === '__UNKNOWN__') return;
+              if (section === 'website' ? r.psa_agent_name && r.psa_agent_name !== agentName : r.psa_agent_name !== agentName) return;
+            }
+            found[section]++;
+          });
+        }));
+        if (!cancelled) setCrossHits(found);
+      } catch (e) {
+        console.warn('[CRM] other-section search skipped:', e && e.message);
+        if (!cancelled) setCrossHits({});
+      }
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchTerm, isAdminUser, agentName]);
   const visibleLeads = displayedLeads.slice(0, visibleCount);
   const stats = useMemo(() => {
     let t = leads.filter(l => !l.is_hidden && l.lead_status !== 'Rejected');
@@ -4097,8 +5268,31 @@ function AdminApp() {
       rejected: leads.filter(l => !l.is_hidden && l.lead_status === 'Rejected').length
     };
   }, [leads, summaryAgent]);
-  const handleStatusChange = (l, newStatus) => {
-    updateLead(l, 'lead_status', newStatus);
+  const handleStatusChange = async (l, newStatus) => {
+    const p = readPending();
+    if (p && String(p.id) === String(l.id)) savePending(null);
+    if (newStatus === 'Rejected') {
+      if (l.lead_status !== 'Rejected' && rejectForId === null) setRejectForId(l.id);
+      return;
+    }
+    const ok = await updateLead(l, 'lead_status', newStatus);
+    if (ok && CALLBACK_STATUSES.includes(newStatus) && !cbDate(l)) setScheduleForId(l.id);
+  };
+  const confirmReject = async (lead, reason) => {
+    if (!reason || rejectBusy.current) return false;
+    rejectBusy.current = true;
+    try {
+      const ok = await updateLead(lead, 'reject', reason);
+      if (ok) notify('Lead rejected: ' + reason, 'success');
+      return ok;
+    } finally {
+      rejectBusy.current = false;
+    }
+  };
+  const saveCallback = async (lead, slotVal) => {
+    const ok = await updateLead(lead, 'follow_up', slotVal);
+    if (ok === true) notify('Callback set: ' + fmtDateOnly(slotVal.date) + ' · ' + slotVal.slot, 'success');
+    return ok;
   };
   if (authChecking) return React.createElement("div", {
     className: "min-h-screen bg-slate-950"
@@ -4147,20 +5341,64 @@ function AdminApp() {
   }] : [])];
   return React.createElement("div", {
     className: "min-h-screen flex flex-col animate-fadeIn"
-  }, selectedLead && React.createElement(LeadDetailModal, {
+  }, selectedLead && React.createElement(ErrorBoundary, {
+    compact: true,
+    label: "lead details",
+    resetKey: selectedLead.id,
+    onClose: () => setSelectedLead(null)
+  }, React.createElement(LeadDetailModal, {
     lead: selectedLead,
     onClose: () => setSelectedLead(null),
     leadCategory: leadCategory,
     userEmail: userEmail,
     onCall: logCallInitiated,
-    dupMatches: dupMatchesFor(selectedLead),
-    onShowDups: () => setDupLead(selectedLead)
-  }), dupLead && React.createElement(DuplicateHistoryModal, {
+    dupInfo: dupInfoFor(selectedLead),
+    onShowDups: () => setDupLead(selectedLead),
+    dupMe: myPsaName
+  })), dupLead && React.createElement(DuplicateHistoryModal, {
     lead: dupLead,
     matches: dupMatchesFor(dupLead),
+    info: dupInfoFor(dupLead),
+    canOpen: canOpenLead,
+    onOpen: openLeadRecord,
     isAdminUser: isAdminUser,
     onClose: () => setDupLead(null)
-  }), mobileMenuOpen && React.createElement(React.Fragment, null, React.createElement("div", {
+  }), rejectForId !== null && (() => {
+    const rl = leadById(rejectForId);
+    return rl ? React.createElement(RejectReasonModal, {
+      key: rl.id,
+      lead: rl,
+      onConfirm: r => confirmReject(rl, r),
+      onClose: () => setRejectForId(null)
+    }) : null;
+  })(), scheduleForId !== null && (() => {
+    const sl = leadById(scheduleForId);
+    return sl ? React.createElement(CallbackScheduler, {
+      key: sl.id,
+      lead: sl,
+      onSave: v => saveCallback(sl, v),
+      onClose: () => setScheduleForId(null)
+    }) : null;
+  })(), outcomeFor && (() => {
+    const ol = leadById(outcomeFor.id);
+    if (!ol) return null;
+    const opts = getAllowedStatusOptions(ol).filter(o => o.value !== 'Un called');
+    return React.createElement(CallOutcomeSheet, {
+      key: ol.id,
+      lead: ol,
+      options: opts,
+      onPick: v => {
+        closeOutcome();
+        handleStatusChange(ol, v);
+      },
+      onClose: closeOutcome
+    });
+  })(), toast && React.createElement("div", {
+    key: toast.id,
+    role: "status",
+    "aria-live": "polite",
+    className: `fixed left-1/2 -translate-x-1/2 bottom-6 z-[600] max-w-[92vw] px-4 py-3 rounded-2xl shadow-2xl text-[11px] font-black animate-fadeIn ${toast.type === 'error' ? 'bg-red-600 text-white' : toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white'}`
+  }, toast.msg), mobileMenuOpen && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "mobile-drawer-overlay md:hidden",
     onClick: () => setMobileMenuOpen(false)
   }), React.createElement("div", {
@@ -4175,6 +5413,38 @@ function AdminApp() {
     onClick: () => setMobileMenuOpen(false),
     className: "w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white font-black transition"
   }, "✕")), React.createElement("div", {
+    className: "mb-5"
+  }, React.createElement("div", {
+    className: "text-slate-500 text-[9px] font-black uppercase tracking-widest mb-2"
+  }, "Lead sections"), React.createElement("div", {
+    className: "grid grid-cols-3 gap-2"
+  }, [{
+    id: 'website',
+    label: '🌐 Website',
+    count: sourceCounts.website
+  }, {
+    id: 'bulk',
+    label: '📦 Bulk',
+    count: sourceCounts.bulk
+  }, {
+    id: 'manual',
+    label: '✍️ Manual',
+    count: sourceCounts.manual
+  }].map(c => {
+    const on = view === 'dashboard' && leadCategory === c.id;
+    return React.createElement("button", {
+      key: c.id,
+      onClick: () => {
+        handleNavigate('dashboard', c.id);
+        setVisibleCount(50);
+        setLeadBucket('new');
+        setMobileMenuOpen(false);
+      },
+      className: `py-3 rounded-2xl border text-[10px] font-black uppercase tracking-wider flex flex-col items-center gap-1 transition ${on ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'}`
+    }, React.createElement("span", null, c.label), React.createElement("span", {
+      className: "text-[9px] opacity-70"
+    }, c.count));
+  }))), React.createElement("div", {
     className: "space-y-2 flex-1"
   }, drawerItems.map(item => React.createElement("button", {
     key: item.id,
@@ -4194,11 +5464,11 @@ function AdminApp() {
   }, "⬇ Install App"), sessionTimeLeft && React.createElement("div", {
     className: "mt-3 flex items-center justify-center gap-2 text-[9px] font-black text-amber-400 bg-amber-900/20 border border-amber-800/40 px-3 py-2 rounded-xl"
   }, "⏱ Session: ", sessionTimeLeft))), React.createElement("nav", {
-    className: "bg-slate-900 text-white px-4 md:px-8 py-3 flex justify-between items-center sticky top-0 z-50 shadow-lg border-b border-slate-800"
+    className: "bg-slate-900 text-white px-3 sm:px-4 md:px-8 py-3 flex justify-between items-center gap-2 sticky top-0 z-50 shadow-lg border-b border-slate-800"
   }, React.createElement("div", {
     className: "flex items-center gap-3"
   }, React.createElement("h1", {
-    className: "font-black tracking-tighter text-lg md:text-xl uppercase italic"
+    className: "font-black tracking-tighter text-base min-[360px]:text-lg md:text-xl uppercase italic leading-tight"
   }, "Horizon ", React.createElement("span", {
     className: "text-blue-400"
   }, "CRM")), userEmail && React.createElement("span", {
@@ -4207,14 +5477,14 @@ function AdminApp() {
     className: "hidden md:flex items-center gap-1 text-[9px] font-black text-amber-400 bg-amber-900/30 border border-amber-800/50 px-2 py-1 rounded-lg tracking-widest",
     title: "Session expires 3 hours after login"
   }, "⏱ ", sessionTimeLeft)), React.createElement("div", {
-    className: "flex gap-1.5 items-center"
+    className: "flex gap-1 sm:gap-1.5 items-center shrink-0"
   }, allNavItems.map(n => React.createElement("button", {
     key: n.id,
     onClick: () => handleNavigate(n.id, n.id === 'dashboard' ? leadCategory : 'website'),
     className: `hidden md:block px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition ${view === n.id ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`
   }, n.label)), React.createElement("button", {
     onClick: () => handleNavigate('dashboard', leadCategory),
-    className: `md:hidden px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition ${view === 'dashboard' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`
+    className: `md:hidden px-2 min-[360px]:px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition ${view === 'dashboard' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`
   }, "📊 CRM"), deferredPrompt && React.createElement("button", {
     onClick: handleInstallClick,
     className: "hidden md:flex items-center gap-1 ml-1 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-md"
@@ -4224,9 +5494,9 @@ function AdminApp() {
     "aria-checked": callMode,
     onClick: toggleCallMode,
     title: callMode ? 'Call mode ON: if the phone reloads the CRM while you are on a call, you come back to the same screen, filters and lead.' : 'Call mode OFF: the CRM starts fresh whenever it reloads.',
-    className: "flex items-center gap-1.5 px-2 py-1.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 transition shrink-0"
+    className: "flex items-center gap-1.5 px-1.5 min-[360px]:px-2 py-1.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 transition shrink-0"
   }, React.createElement("span", {
-    className: "text-xs"
+    className: "text-xs hidden min-[360px]:inline"
   }, "📞"), React.createElement("span", {
     className: `relative w-8 h-[18px] rounded-full transition-colors ${callMode ? 'bg-emerald-500' : 'bg-slate-600'}`
   }, React.createElement("span", {
@@ -4235,7 +5505,7 @@ function AdminApp() {
     className: `hidden md:inline text-[9px] font-black uppercase tracking-widest ${callMode ? 'text-emerald-400' : 'text-slate-400'}`
   }, callMode ? 'Call mode on' : 'Call mode off')), React.createElement("button", {
     onClick: () => supabase.auth.signOut(),
-    className: "text-[9px] font-black uppercase tracking-widest text-red-400 border border-red-900/60 px-2.5 py-2 rounded-xl hover:bg-red-900/40 transition"
+    className: "text-[9px] font-black uppercase tracking-widest text-red-400 border border-red-900/60 px-2 sm:px-2.5 py-2 rounded-xl hover:bg-red-900/40 transition"
   }, React.createElement("span", {
     className: "hidden md:inline"
   }, "Logout"), React.createElement("span", {
@@ -4272,6 +5542,10 @@ function AdminApp() {
     className: "shrink-0 text-[9px] font-black uppercase tracking-widest bg-white/15 hover:bg-white/25 px-3 py-2 rounded-xl transition"
   }, "✕ Dismiss"))), React.createElement("main", {
     className: "p-3 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8"
+  }, React.createElement(ErrorBoundary, {
+    label: "this section",
+    resetKey: view + ':' + leadCategory,
+    onHome: () => handleNavigate('dashboard', 'website')
   }, view === 'admin' && isAdminUser && React.createElement(AdminOverview, {
     allLeads: allLeadsAdmin,
     allBulkLeads: allBulkAdmin,
@@ -4330,12 +5604,19 @@ function AdminApp() {
     className: "text-[9px] uppercase font-black text-slate-400 mb-1"
   }, s.label), React.createElement("span", {
     className: `font-black ${s.tc} text-2xl leading-none`
-  }, s.val))))), React.createElement("div", {
+  }, s.val))))), React.createElement(DailyCallGoal, {
+    calls: callsToday,
+    goal: goal,
+    onGoalChange: setGoal,
+    unavailable: callStatsFailed
+  }), React.createElement("div", {
     className: "flex flex-col gap-3"
   }, React.createElement("div", {
     className: "flex flex-col md:flex-row md:flex-wrap items-start md:items-center gap-2"
   }, React.createElement("div", {
-    className: "flex gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm"
+    className: "grid grid-cols-3 gap-1 md:flex md:gap-2 w-full md:w-auto bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm",
+    role: "tablist",
+    "aria-label": "Lead sections"
   }, [{
     id: 'website',
     label: '🌐 Website',
@@ -4355,9 +5636,11 @@ function AdminApp() {
       setVisibleCount(50);
       setLeadBucket('new');
     },
-    className: `flex items-center gap-1.5 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${leadCategory === c.id ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`
+    role: "tab",
+    "aria-selected": leadCategory === c.id,
+    className: `flex items-center justify-center gap-1 md:gap-1.5 min-w-0 whitespace-nowrap px-1.5 md:px-4 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-wider md:tracking-widest transition-all ${leadCategory === c.id ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`
   }, c.label, React.createElement("span", {
-    className: `text-[9px] font-black px-1.5 py-0.5 rounded-full ${leadCategory === c.id ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'}`
+    className: `shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded-full ${leadCategory === c.id ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'}`
   }, c.count)))), React.createElement("div", {
     className: "flex gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm"
   }, [{
@@ -4429,11 +5712,20 @@ function AdminApp() {
     }, React.createElement("span", null, b.emoji), React.createElement("span", null, b.label.replace(/^[^\s]+\s/, '')), React.createElement("span", {
       className: `text-[9px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'}`
     }, count));
-  })), React.createElement("div", {
+  })), loadError && React.createElement("div", {
+    role: "alert",
+    className: "bg-red-50 border-2 border-red-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
+  }, React.createElement("p", {
+    className: "text-[11px] font-bold text-red-700"
+  }, "⚠️ Couldn’t load leads: ", loadError), React.createElement("button", {
+    type: "button",
+    onClick: () => fetchLeads(),
+    className: "shrink-0 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-xl"
+  }, "Retry")), React.createElement("div", {
     className: "relative"
   }, React.createElement("input", {
     type: "text",
-    placeholder: "Search name, phone or project...",
+    placeholder: "Search name, phone, email, project or remarks...",
     value: searchTerm,
     onChange: e => setSearchTerm(e.target.value),
     className: "w-full p-4 pl-12 pr-28 bg-white border-2 border-slate-200 rounded-2xl text-xs font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 transition-all"
@@ -4446,7 +5738,28 @@ function AdminApp() {
   }, displayedLeads.length), searchTerm && React.createElement("button", {
     onClick: () => setSearchTerm(""),
     className: "text-[9px] font-black text-red-400 hover:text-red-600 bg-red-50 border border-red-200 px-2 py-1 rounded-lg uppercase tracking-widest"
-  }, "✕"))), React.createElement("div", {
+  }, "✕"))), searchActive && React.createElement("div", {
+    className: "rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-2.5 text-[10px] font-bold text-yellow-800 space-y-1.5",
+    role: "status"
+  }, React.createElement("div", null, "🔍 Searching ", React.createElement("b", null, "all ", leads.filter(l => !l.is_hidden).length), " leads in ", {
+    website: 'Website',
+    bulk: 'Bulk',
+    manual: 'Manual'
+  }[leadCategory], ", including remarks and notes. Tabs", filtersActive ? ' and your active filters are' : ' are', " ignored while you search."), ['website', 'bulk', 'manual'].filter(s => s !== leadCategory && crossHits[s] > 0).length > 0 && React.createElement("div", {
+    className: "flex flex-wrap items-center gap-1.5"
+  }, React.createElement("span", null, "Also found in:"), ['website', 'bulk', 'manual'].filter(s => s !== leadCategory && crossHits[s] > 0).map(s => React.createElement("button", {
+    key: s,
+    type: "button",
+    onClick: () => {
+      handleNavigate('dashboard', s);
+      setVisibleCount(50);
+    },
+    className: "px-2.5 py-1 rounded-full bg-white border border-yellow-300 text-[9px] font-black uppercase tracking-widest text-yellow-800 hover:bg-yellow-100 transition"
+  }, {
+    website: '🌐 Website',
+    bulk: '📦 Bulk',
+    manual: '✍️ Manual'
+  }[s], " · ", crossHits[s])))), React.createElement("div", {
     className: "hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
   }, loading ? React.createElement("div", {
     className: "p-6 space-y-3"
@@ -4485,9 +5798,13 @@ function AdminApp() {
     className: "px-5 py-3.5 w-16"
   }, "Detail"))), React.createElement("tbody", {
     className: "divide-y divide-slate-100"
-  }, visibleLeads.map(l => React.createElement("tr", {
+  }, visibleLeads.map(l => React.createElement(RowBoundary, {
     key: l.id,
-    className: `border-l-[5px] hover:brightness-[0.97] transition-all ${l.lead_priority === 'Hot' ? 'border-l-red-500' : l.lead_priority === 'Cold' ? 'border-l-blue-400' : 'border-l-amber-400'} ${getCardTint(l.lead_status)}`
+    as: "tr",
+    id: l.id
+  }, React.createElement("tr", {
+    "data-lead-id": l.id,
+    className: `${highlightId === l.id ? 'outline outline-4 outline-blue-400 ' : ''}border-l-[5px] hover:brightness-[0.97] transition-all ${l.lead_priority === 'Hot' ? 'border-l-red-500' : l.lead_priority === 'Cold' ? 'border-l-blue-400' : 'border-l-amber-400'} ${getCardTint(l.lead_status)}`
   }, React.createElement("td", {
     className: "px-5 py-4 min-w-[200px]"
   }, React.createElement("p", {
@@ -4495,10 +5812,17 @@ function AdminApp() {
   }, l.customer_name), React.createElement("p", {
     className: "text-blue-600 font-black text-[11px] mt-0.5"
   }, l.phone_number), React.createElement(DupTag, {
-    matches: dupMatchesFor(l),
+    info: dupInfoFor(l),
     onClick: () => setDupLead(l),
     className: "mt-1.5",
-    me: agentName
+    me: myPsaName,
+    onOpenPrimary: (() => {
+      const i = dupInfoFor(l);
+      return i && i.role === 'duplicate' && i.primary && canOpenLead(i.primary) ? () => openLeadRecord(i.primary) : null;
+    })()
+  }), searchActive && React.createElement(SearchContext, {
+    lead: l,
+    tokens: sTokens
   }), l.customer_email && React.createElement("p", {
     className: "text-slate-400 text-[9px] mt-0.5 lowercase truncate font-medium max-w-[160px]"
   }, l.customer_email), (isAdminUser || l.lead_source !== 'Bulk Upload') && React.createElement("p", {
@@ -4537,9 +5861,12 @@ function AdminApp() {
     className: "text-[8px] font-black text-blue-400 bg-slate-900 border border-slate-700 px-2 py-1.5 rounded-xl mb-2 uppercase tracking-widest"
   }, "👤 ", l.psa_agent_name), React.createElement("select", {
     onChange: e => handleStatusChange(l, e.target.value),
-    value: l.lead_status || '',
+    value: statusValue(l),
     className: `w-full p-2 mb-2 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`
-  }, getAllowedStatusOptions(l).map(o => React.createElement("option", {
+  }, statusValue(l) === '' && hasCallInitiated(l) && React.createElement("option", {
+    value: "",
+    disabled: true
+  }, "➡️ Select call outcome"), getAllowedStatusOptions(l).map(o => React.createElement("option", {
     key: o.value,
     value: o.value
   }, o.label))), ['Called', 'RNR', 'Details Shared'].includes(l.lead_status) && !l.follow_up_at && React.createElement("div", {
@@ -4568,11 +5895,9 @@ function AdminApp() {
     className: "px-5 py-4 min-w-[170px]"
   }, ['Called', 'RNR', 'Details Shared', 'Plan On Hold'].includes(l.lead_status) && React.createElement("div", null, React.createElement("span", {
     className: "text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1"
-  }, "📅 Callback Date"), React.createElement("input", {
-    type: "datetime-local",
-    className: "w-full p-2 border-2 border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold text-slate-700 outline-none focus:border-blue-400",
-    value: l.follow_up_at?.slice(0, 16) || '',
-    onChange: e => updateLead(l, 'follow_up_at', e.target.value)
+  }, "📅 Callback Date"), React.createElement(CallbackChip, {
+    lead: l,
+    onOpen: () => setScheduleForId(l.id)
   })), l.lead_status === 'SV Scheduled' && React.createElement("div", {
     className: "mt-2"
   }, React.createElement("span", {
@@ -4603,7 +5928,8 @@ function AdminApp() {
     className: "italic text-slate-300"
   }, "No activity yet...")), React.createElement(NoteCell, {
     lead: l,
-    onSave: updateLead
+    onSave: updateLead,
+    draftScope: userEmail + '|' + currentLeadTable
   }))), React.createElement("td", {
     className: "px-3 py-4"
   }, React.createElement("div", {
@@ -4614,7 +5940,7 @@ function AdminApp() {
   }, "👁 Detail"), isAdminUser && React.createElement("button", {
     onClick: () => deleteLead(l),
     className: "text-[8px] font-black px-2 py-2 rounded-xl uppercase tracking-widest border transition w-full bg-red-50 text-red-500 border-red-200 hover:bg-red-100"
-  }, "🗑 Delete"))))))), !loading && visibleCount < displayedLeads.length && React.createElement("div", {
+  }, "🗑 Delete")))))))), !loading && visibleCount < displayedLeads.length && React.createElement("div", {
     className: "p-4 border-t border-slate-100 bg-slate-50 flex justify-center"
   }, React.createElement("button", {
     onClick: () => setVisibleCount(v => v + 50),
@@ -4650,9 +5976,13 @@ function AdminApp() {
     className: "text-sm font-black uppercase tracking-widest text-slate-400 mb-1"
   }, "No leads found"), React.createElement("div", {
     className: "text-[10px] text-slate-400 font-medium"
-  }, "Adjust filters or search")) : visibleLeads.map(l => React.createElement("div", {
+  }, "Adjust filters or search")) : visibleLeads.map(l => React.createElement(RowBoundary, {
     key: `m-${l.id}`,
-    className: `rounded-2xl shadow-sm border-2 overflow-hidden animate-fadeIn ${l.lead_priority === 'Hot' ? 'border-red-200' : l.lead_priority === 'Cold' ? 'border-blue-200' : 'border-amber-200'} ${getCardTint(l.lead_status)}`
+    as: "div",
+    id: l.id
+  }, React.createElement("div", {
+    "data-lead-id": l.id,
+    className: `${highlightId === l.id ? 'ring-4 ring-blue-400 ' : ''}rounded-2xl shadow-sm border-2 overflow-hidden animate-fadeIn ${l.lead_priority === 'Hot' ? 'border-red-200' : l.lead_priority === 'Cold' ? 'border-blue-200' : 'border-amber-200'} ${getCardTint(l.lead_status)}`
   }, React.createElement("div", {
     className: `h-1 w-full ${l.lead_priority === 'Hot' ? 'bg-red-500' : l.lead_priority === 'Cold' ? 'bg-blue-400' : 'bg-amber-400'}`
   }), React.createElement("div", {
@@ -4666,10 +5996,17 @@ function AdminApp() {
   }, l.customer_name), React.createElement("p", {
     className: "font-black text-blue-600 text-[12px] mt-0.5"
   }, l.phone_number), React.createElement(DupTag, {
-    matches: dupMatchesFor(l),
+    info: dupInfoFor(l),
     onClick: () => setDupLead(l),
     className: "mt-1.5",
-    me: agentName
+    me: myPsaName,
+    onOpenPrimary: (() => {
+      const i = dupInfoFor(l);
+      return i && i.role === 'duplicate' && i.primary && canOpenLead(i.primary) ? () => openLeadRecord(i.primary) : null;
+    })()
+  }), searchActive && React.createElement(SearchContext, {
+    lead: l,
+    tokens: sTokens
   }), l.customer_email && React.createElement("p", {
     className: "font-medium text-slate-400 text-[9px] truncate mt-0.5"
   }, l.customer_email), (isAdminUser || l.lead_source !== 'Bulk Upload') && React.createElement("p", {
@@ -4721,9 +6058,12 @@ function AdminApp() {
     className: "text-[8px] font-black text-slate-400 uppercase tracking-widest"
   }, "Status"), React.createElement("select", {
     onChange: e => handleStatusChange(l, e.target.value),
-    value: l.lead_status || '',
+    value: statusValue(l),
     className: `p-2.5 border-2 rounded-xl font-black uppercase text-[9px] outline-none cursor-pointer ${getStatusStyles(l.lead_status)}`
-  }, getAllowedStatusOptions(l).map(o => React.createElement("option", {
+  }, statusValue(l) === '' && hasCallInitiated(l) && React.createElement("option", {
+    value: "",
+    disabled: true
+  }, "➡️ Select call outcome"), getAllowedStatusOptions(l).map(o => React.createElement("option", {
     key: o.value,
     value: o.value
   }, o.label)))), React.createElement("div", {
@@ -4756,11 +6096,9 @@ function AdminApp() {
     className: "flex flex-col gap-1 mt-2"
   }, React.createElement("label", {
     className: "text-[8px] font-black text-blue-600 uppercase tracking-widest"
-  }, "📅 Callback Date"), React.createElement("input", {
-    type: "datetime-local",
-    className: "p-2.5 border-2 border-blue-200 bg-blue-50 rounded-xl text-[10px] font-bold outline-none focus:border-blue-400",
-    value: l.follow_up_at?.slice(0, 16) || '',
-    onChange: e => updateLead(l, 'follow_up_at', e.target.value)
+  }, "📅 Callback Date"), React.createElement(CallbackChip, {
+    lead: l,
+    onOpen: () => setScheduleForId(l.id)
   })), l.lead_status === 'SV Scheduled' && React.createElement("div", {
     className: "flex flex-col gap-1 mt-2"
   }, React.createElement("label", {
@@ -4787,8 +6125,9 @@ function AdminApp() {
     className: "italic text-slate-400"
   }, "System logs...")), React.createElement(NoteCell, {
     lead: l,
-    onSave: updateLead
-  })))))), !loading && visibleCount < displayedLeads.length && React.createElement("button", {
+    onSave: updateLead,
+    draftScope: userEmail + '|' + currentLeadTable
+  }))))))), !loading && visibleCount < displayedLeads.length && React.createElement("button", {
     onClick: () => setVisibleCount(v => v + 50),
     className: "w-full bg-white hover:bg-blue-50 text-blue-700 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition border-2 border-blue-200 hover:border-blue-400 shadow-sm"
   }, "Load More (", displayedLeads.length - visibleCount, " remaining)"))), view === 'library' && React.createElement(ProjectLibrary, {
@@ -4805,7 +6144,7 @@ function AdminApp() {
     supabase: supabase,
     editingProp: editingProp,
     setView: handleNavigate
-  })), showManualModal && React.createElement("div", {
+  }))), showManualModal && React.createElement("div", {
     className: "fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[100] flex items-end md:items-center justify-center p-0 md:p-4",
     onClick: e => e.target === e.currentTarget && setShowManualModal(false)
   }, React.createElement("div", {
@@ -4836,7 +6175,20 @@ function AdminApp() {
   })))));
 }
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(React.createElement(AdminApp, null));
+root.render(React.createElement(ErrorBoundary, {
+  label: "Horizon CRM",
+  root: true
+}, React.createElement(AdminApp, null)));
+window.addEventListener('unhandledrejection', function (e) {
+  console.error('[CRM] Unhandled promise rejection:', e && e.reason);
+  try {
+    sessionStorage.setItem('__crm_last_error', JSON.stringify({
+      label: 'promise',
+      msg: String(e && e.reason && e.reason.message || e && e.reason).slice(0, 300),
+      at: new Date().toISOString()
+    }));
+  } catch (x) {}
+});
 window.__appMounted = true;
 setTimeout(function () {
   if (window.__dismissSplash) window.__dismissSplash();
